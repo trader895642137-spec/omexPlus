@@ -1765,6 +1765,10 @@
             .c-overlay {
                 backdrop-filter: none !important;
             }
+
+            client-option-strategy-estimation-header .e-title-input{
+                width: 442px !important;
+            }
         `;
 
         const style = document.createElement("style");
