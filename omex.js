@@ -165,7 +165,7 @@
 
     const totalCostCalculator = _strategyPositions => {
 
-        const _totalCostCalculator = ({strategyPositions, getPrice}) => {
+        const _totalCostCalculator = ({strategyPositions, getPrice,getQuantity}={}) => {
             let totalCost = strategyPositions.reduce( (sum, _strategyPosition) => {
                 const price = getPrice(_strategyPosition);
                 if (!price)
@@ -175,7 +175,7 @@
 
                 const priceWithSideSign = price * (isBuy ? -1 : 1);
 
-                const quantity = _strategyPosition.getQuantity();
+                const quantity = getQuantity ? getQuantity(_strategyPosition) : _strategyPosition.getQuantity();
 
                 const commissionFactor = getCommissionFactor(_strategyPosition)[isBuy ? 'BUY' : 'SELL'];
 
@@ -195,6 +195,7 @@
 
         let totalCostOfCurrentPositions = _totalCostCalculator({
             strategyPositions: _strategyPositions,
+            getQuantity: (position) => position.getCurrentPositionQuantity(),
             getPrice: (position) => position.getCurrentPositionAvgPrice()
         });
         let totalCostByBestPrices = _totalCostCalculator({
@@ -633,6 +634,16 @@
             const getBestSecondPriceRatioDiff = (chooseBestPriceType) => {
                 return calcBestSecondOrderPriceRatioDiff(chooseBestPriceType ==='offset' ? getOffsetOrderPriceElements() : getOpenMoreOrderPriceElements() );
             }
+
+            const getCurrentPositionQuantity = () => {
+
+                const currentPositionQuantityEml = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy?'buyCount':'sellCount'}"]`;
+                const currentPositionQuantity = convertStringToInt(document.querySelector(currentPositionQuantityEml)?.innerHTML);
+                
+                const quantityMultiplier = isOption ? 1000 : 1;
+                return currentPositionQuantity * quantityMultiplier;
+
+            }
            
 
             const getCurrentPositionAvgPrice = () => {
@@ -757,6 +768,7 @@
                 getBaseInstrumentPriceOfOption,
                 getNearSettlementPrice,
                 getQuantity,
+                getCurrentPositionQuantity,
                 getInsertedPrice,
                 getInsertedQuantity,
                 getRequiredMargin,
