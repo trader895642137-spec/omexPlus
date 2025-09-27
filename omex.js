@@ -1786,7 +1786,8 @@
 
             client-option-reports-tabs c-k-tab-default:nth-child(3) button{
                     color: green !important;
-                text-shadow: 0 0 !important;
+                    text-shadow: 0 0 !important;
+                    box-shadow: 1px 0px 10px inset;
             }
 
             // client-trade-ui-input-quantity-advance-compact .o-rangeTooltipContainer{
