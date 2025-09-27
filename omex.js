@@ -175,7 +175,7 @@
 
                 const priceWithSideSign = price * (isBuy ? -1 : 1);
 
-                const quantity = getQuantity ? getQuantity(_strategyPosition) : _strategyPosition.getQuantity();
+                const quantity = getQuantity ? getQuantity(_strategyPosition,_strategyPositions) : _strategyPosition.getQuantity();
 
                 const commissionFactor = getCommissionFactor(_strategyPosition)[isBuy ? 'BUY' : 'SELL'];
 
@@ -195,7 +195,18 @@
 
         let totalCostOfCurrentPositions = _totalCostCalculator({
             strategyPositions: _strategyPositions,
-            getQuantity: (position) => position.getCurrentPositionQuantity(),
+            getQuantity: (position,__strategyPositions) =>{
+
+                const sumOfQuantityInEstimationPanel = __strategyPositions.filter(_position=>_position.instrumentName===position.instrumentName).reduce((_sumOfQuantityInEstimationPanel,position)=> _sumOfQuantityInEstimationPanel + position.getQuantity(),0);
+
+
+                const quantityInEstimationPanel = position.getQuantity();
+
+                const quantityFactor = quantityInEstimationPanel/sumOfQuantityInEstimationPanel;
+
+
+                return position.getCurrentPositionQuantity() * quantityFactor
+            } ,
             getPrice: (position) => position.getCurrentPositionAvgPrice()
         });
         let totalCostByBestPrices = _totalCostCalculator({
@@ -215,12 +226,12 @@
         }
     }
 
-    const mainTotalOffsetGainCalculator = ({strategyPositions, getBestPriceCb, getReservedMargin}) => {
+    const mainTotalOffsetGainCalculator = ({strategyPositions, getBestPriceCb,getQuantity, getReservedMargin}) => {
         return strategyPositions.reduce( (sum, _strategyPosition, index) => {
             const price = getBestPriceCb(_strategyPosition);
 
             const isBuy = _strategyPosition.isBuy;
-            const quantity = _strategyPosition.getQuantity();
+            const quantity = getQuantity ? getQuantity(_strategyPosition,strategyPositions) : _strategyPosition.getQuantity();
 
             const commissionFactor = getCommissionFactor(_strategyPosition)[isBuy ? 'SELL' : 'BUY'];
 
@@ -272,27 +283,43 @@
         }
     }
 
-    const totalOffsetGainCalculator = ({strategyPositions, marginCalcType}) => {
+    const totalOffsetGainOfCurrentPositionsCalculator = ({strategyPositions, marginCalcType}) => {
 
         const getReservedMargin = _strategyPosition => {
             return marginCalcType === MARGIN_CALC_TYPE.BY_CURRENT_POSITION ? _strategyPosition.getCurrentPositionReservedMargin() : (_strategyPosition.getRequiredMargin() * quantity)
         }
 
+        const getQuantityOfCurrentPosition = (position,__strategyPositions) =>{
+
+                const sumOfQuantityInEstimationPanel = __strategyPositions.filter(_position=>_position.instrumentName===position.instrumentName).reduce((_sumOfQuantityInEstimationPanel,position)=> _sumOfQuantityInEstimationPanel + position.getQuantity(),0);
+
+
+                const quantityInEstimationPanel = position.getQuantity();
+
+                const quantityFactor = quantityInEstimationPanel/sumOfQuantityInEstimationPanel;
+
+
+                return position.getCurrentPositionQuantity() * quantityFactor
+            }
+
         const totalOffsetGainByOffsetOrderPrices = mainTotalOffsetGainCalculator({
             strategyPositions,
             getBestPriceCb: (_strategyPosition) => _strategyPosition.getBestOffsetPrice(),
+            getQuantity: getQuantityOfCurrentPosition ,
             getReservedMargin
         });
 
         const totalOffsetGainByOpenMoreOrderPrices = mainTotalOffsetGainCalculator({
             strategyPositions,
             getBestPriceCb: (_strategyPosition) => _strategyPosition.getBestOpenMorePrice(),
+            getQuantity: getQuantityOfCurrentPosition ,
             getReservedMargin
         });
 
         const totalOffsetGainByInsertedPrices = mainTotalOffsetGainCalculator({
             strategyPositions,
             getBestPriceCb: (_strategyPosition) => _strategyPosition.getInsertedPrice(),
+            getQuantity: getQuantityOfCurrentPosition ,
             getReservedMargin
         });
 
@@ -303,7 +330,7 @@
         }
     }
 
-    const totalSettlementGain = (_strategyPositions, stock, sellType) => {
+    const totalSettlementGainByEstimationQuantity = (_strategyPositions, stock, sellType) => {
 
         const totalSettlementGainCalculator = (__strategyPositions, stock, stockPrice, sellType) => {
             return __strategyPositions.reduce( (sum, _position) => {
@@ -383,7 +410,7 @@
 
         const totalPositionCost = totalCostCalculator(_strategyPositions).totalCostOfCurrentPositions;
 
-        const totalOffsetGainObj = totalOffsetGainCalculator({
+        const totalOffsetGainObj = totalOffsetGainOfCurrentPositionsCalculator({
             strategyPositions: _strategyPositions,
             marginCalcType: MARGIN_CALC_TYPE.BY_CURRENT_POSITION
         });
@@ -1280,7 +1307,7 @@
                 return 0
             const stock = stocks[0];
 
-            const totalSettlementGainObj = totalSettlementGain(_strategyPositions.filter(strategyPosition => !strategyPosition.getRequiredMargin()), stock, "MIN");
+            const totalSettlementGainObj = totalSettlementGainByEstimationQuantity(_strategyPositions.filter(strategyPosition => !strategyPosition.getRequiredMargin()), stock, "MIN");
 
             const additionalSellPositions = _strategyPositions.filter(strategyPosition => strategyPosition.getRequiredMargin());
 
@@ -1309,7 +1336,7 @@
 
             const buyOptions = _strategyPositions.filter(_strategyPosition => _strategyPosition.isBuy);
 
-            const totalSettlementGainObj = totalSettlementGain(buyOptions);
+            const totalSettlementGainObj = totalSettlementGainByEstimationQuantity(buyOptions);
 
 
 
@@ -1333,7 +1360,7 @@
 
             const puts = _strategyPositions.filter(_strategyPosition => _strategyPosition.isPut);
 
-            const totalSettlementGainObj = totalSettlementGain(puts);
+            const totalSettlementGainObj = totalSettlementGainByEstimationQuantity(puts);
 
 
 
@@ -1357,7 +1384,7 @@
 
             const buyOptions = _strategyPositions.filter(_strategyPosition => _strategyPosition.isBuy);
 
-            const totalSettlementGainObj = totalSettlementGain(buyOptions);
+            const totalSettlementGainObj = totalSettlementGainByEstimationQuantity(buyOptions);
 
 
 
@@ -1422,7 +1449,7 @@
         BEPS(_strategyPositions) {
 
             const totalCostObj = totalCostCalculator(_strategyPositions);
-            const totalGainObj = totalSettlementGain(_strategyPositions);
+            const totalGainObj = totalSettlementGainByEstimationQuantity(_strategyPositions);
 
             const profitPercentByBestPrices = profitPercentCalculator({
                 costWithSign: totalCostObj.totalCostByBestPrices,
@@ -1443,7 +1470,7 @@
             const calOptions = _strategyPositions.filter(_strategyPosition => _strategyPosition.isCall);
 
             const totalCostObj = totalCostCalculator(_strategyPositions);
-            const totalGainObj = totalSettlementGain(calOptions);
+            const totalGainObj = totalSettlementGainByEstimationQuantity(calOptions);
 
             const profitPercentByBestPrices = profitPercentCalculator({
                 costWithSign: totalCostObj.totalCostByBestPrices,
@@ -1464,7 +1491,7 @@
             const calOptions = _strategyPositions.filter(_strategyPosition => _strategyPosition.isCall);
             const totalCostObj = totalCostCalculator(_strategyPositions);
 
-            const totalGainObj = totalSettlementGain(calOptions);
+            const totalGainObj = totalSettlementGainByEstimationQuantity(calOptions);
             const reservedMarginOfOtherSell = _strategyPositions.find(_strategyPosition=>!_strategyPosition.isBuy).getCurrentPositionReservedMargin();
 
 
@@ -1497,7 +1524,7 @@
             const stock = stocks[0];
 
             const totalCostObj = totalCostCalculator(calOptions.concat(putOptions).concat([stock]));
-            const totalGainObj = totalSettlementGain(calOptions, stock, "MIN");
+            const totalGainObj = totalSettlementGainByEstimationQuantity(calOptions, stock, "MIN");
 
             const profitPercentByBestPrices = profitPercentCalculator({
                 costWithSign: totalCostObj.totalCostByBestPrices,
@@ -1520,7 +1547,7 @@
             const totalCostObj = totalCostCalculator(_strategyPositions);
 
 
-            const totalSettlementGainObj = totalSettlementGain(_strategyPositions);
+            const totalSettlementGainObj = totalSettlementGainByEstimationQuantity(_strategyPositions);
 
 
             const profitPercentByBestPrices = profitPercentCalculator({
@@ -1543,7 +1570,7 @@
             const totalCostObj = totalCostCalculator(_strategyPositions);
 
 
-            const totalSettlementGainObj = totalSettlementGain(_strategyPositions);
+            const totalSettlementGainObj = totalSettlementGainByEstimationQuantity(_strategyPositions);
 
 
             const profitPercentByBestPrices = profitPercentCalculator({
