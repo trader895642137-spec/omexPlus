@@ -237,7 +237,7 @@
 
             const priceWithSideSign = price * (isBuy ? 1 : -1);
 
-            const reservedMargin = getReservedMargin(_strategyPosition);
+            const reservedMargin = getReservedMargin(_strategyPosition,strategyPositions);
 
             const _totalOffsetGain = (priceWithSideSign * quantity) + reservedMargin - (price * quantity * commissionFactor);
             return sum + _totalOffsetGain
@@ -245,7 +245,7 @@
         , 0);
     }
 
-    const totalOffsetGainNearSettlement = ({strategyPositions, marginCalcType}) => {
+    const totalOffsetGainNearSettlementOfEstimationPanel = ({strategyPositions}) => {
 
         const getBestPriceCb = (_strategyPosition) => _strategyPosition.getNearSettlementPrice();
 
@@ -253,8 +253,7 @@
             strategyPositions,
             getBestPriceCb,
             getReservedMargin: _strategyPosition => {
-                const quantity = _strategyPosition.getQuantity();
-                return marginCalcType === MARGIN_CALC_TYPE.BY_CURRENT_POSITION ? _strategyPosition.getCurrentPositionReservedMargin() : (_strategyPosition.getRequiredMargin() * quantity)
+                return _strategyPosition.getReservedMarginOfEstimationQuantity() 
             }
         });
 
@@ -262,8 +261,7 @@
             strategyPositions,
             getBestPriceCb,
             getReservedMargin: _strategyPosition => {
-                const quantity = _strategyPosition.getQuantity();
-                return marginCalcType === MARGIN_CALC_TYPE.BY_CURRENT_POSITION ? _strategyPosition.getCurrentPositionReservedMargin() : (_strategyPosition.getRequiredMargin() * quantity)
+                return _strategyPosition.getReservedMarginOfEstimationQuantity() 
             }
         });
 
@@ -271,8 +269,7 @@
             strategyPositions,
             getBestPriceCb,
             getReservedMargin: _strategyPosition => {
-                const quantity = _strategyPosition.getQuantity();
-                return marginCalcType === MARGIN_CALC_TYPE.BY_CURRENT_POSITION ? _strategyPosition.getCurrentPositionReservedMargin() : (_strategyPosition.getRequiredMargin() * quantity)
+                return _strategyPosition.getReservedMarginOfEstimationQuantity() 
             }
         });
 
@@ -283,10 +280,14 @@
         }
     }
 
-    const totalOffsetGainOfCurrentPositionsCalculator = ({strategyPositions, marginCalcType}) => {
+    const totalOffsetGainOfCurrentPositionsCalculator = ({strategyPositions}) => {
 
-        const getReservedMargin = _strategyPosition => {
-            return marginCalcType === MARGIN_CALC_TYPE.BY_CURRENT_POSITION ? _strategyPosition.getCurrentPositionReservedMargin() : (_strategyPosition.getRequiredMargin() * quantity)
+
+
+        const getReservedMargin = (position,__strategyPositions) => {
+
+            return getQuantityOfCurrentPosition(position,__strategyPositions) * position.getRequiredMargin()
+
         }
 
         const getQuantityOfCurrentPosition = (position,__strategyPositions) =>{
@@ -368,7 +369,7 @@
 
                 const gainWithSideSign = gain * sign;
 
-                const reservedMargin = _position.getCurrentPositionReservedMargin();
+                const reservedMargin = _position.getReservedMarginOfEstimationQuantity();
 
                 const _totalGain = (gainWithSideSign * quantity) + reservedMargin - (gain * quantity * commissionFactor);
                 return sum + _totalGain
@@ -411,8 +412,7 @@
         const totalPositionCost = totalCostCalculator(_strategyPositions).totalCostOfCurrentPositions;
 
         const totalOffsetGainObj = totalOffsetGainOfCurrentPositionsCalculator({
-            strategyPositions: _strategyPositions,
-            marginCalcType: MARGIN_CALC_TYPE.BY_CURRENT_POSITION
+            strategyPositions: _strategyPositions
         });
 
         const totalOffsetGainByOffsetOrderPrices = totalOffsetGainObj.byOffsetOrderPrices;
@@ -618,6 +618,16 @@
                 return quantity * quantityMultiplier;
             }
 
+            const getCurrentPositionQuantity = () => {
+
+                const currentPositionQuantityEml = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy?'buyCount':'sellCount'}"]`;
+                const currentPositionQuantity = convertStringToInt(document.querySelector(currentPositionQuantityEml)?.innerHTML);
+                
+                const quantityMultiplier = isOption ? 1000 : 1;
+                return currentPositionQuantity * quantityMultiplier;
+
+            }
+
             const getRequiredMargin = () => {
 
                 const isMarginRequired = optionRowEl.querySelector('input[formcontrolname="requiredMarginIsSelected"]')?.checked;
@@ -662,15 +672,7 @@
                 return calcBestSecondOrderPriceRatioDiff(chooseBestPriceType ==='offset' ? getOffsetOrderPriceElements() : getOpenMoreOrderPriceElements() );
             }
 
-            const getCurrentPositionQuantity = () => {
-
-                const currentPositionQuantityEml = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy?'buyCount':'sellCount'}"]`;
-                const currentPositionQuantity = convertStringToInt(document.querySelector(currentPositionQuantityEml)?.innerHTML);
-                
-                const quantityMultiplier = isOption ? 1000 : 1;
-                return currentPositionQuantity * quantityMultiplier;
-
-            }
+            
            
 
             const getCurrentPositionAvgPrice = () => {
@@ -701,7 +703,7 @@
 
             }
 
-            const getCurrentPositionReservedMargin = () => {
+            const getReservedMarginOfEstimationQuantity = () => {
 
                 const requiredMargin = getRequiredMargin();
 
@@ -712,6 +714,8 @@
                 return currentPositionReservedMargin
 
             }
+
+            
 
             const getStrategyName = () => {
                 return document.querySelector('client-option-strategy-estimation-header c-k-input-text input')?.value
@@ -799,7 +803,7 @@
                 getInsertedPrice,
                 getInsertedQuantity,
                 getRequiredMargin,
-                getCurrentPositionReservedMargin,
+                getReservedMarginOfEstimationQuantity,
                 getCurrentPositionAvgPrice,
                 strikePrice,
                 daysLeftToSettlement,
@@ -1311,9 +1315,8 @@
 
             const additionalSellPositions = _strategyPositions.filter(strategyPosition => strategyPosition.getRequiredMargin());
 
-            const totalOffsetGainObjOfAdditionalSellPositions = totalOffsetGainNearSettlement({
-                strategyPositions: additionalSellPositions,
-                marginCalcType: MARGIN_CALC_TYPE.BY_GIVEN_PRICE
+            const totalOffsetGainObjOfAdditionalSellPositions = totalOffsetGainNearSettlementOfEstimationPanel({
+                strategyPositions: additionalSellPositions
             });
 
             const profitPercentByBestPrices = profitPercentCalculator({
@@ -1404,9 +1407,8 @@
         },
         BECS(_strategyPositions){
             const totalCostObj = totalCostCalculator(_strategyPositions);
-            const totalGainObj = totalOffsetGainNearSettlement({
-                strategyPositions: _strategyPositions,
-                marginCalcType: MARGIN_CALC_TYPE.BY_GIVEN_PRICE
+            const totalGainObj = totalOffsetGainNearSettlementOfEstimationPanel({
+                strategyPositions: _strategyPositions
             });
 
             const profitPercentByBestPrices = profitPercentCalculator({
@@ -1426,9 +1428,8 @@
         },
         BUPS(_strategyPositions){
             const totalCostObj = totalCostCalculator(_strategyPositions);
-            const totalGainObj = totalOffsetGainNearSettlement({
-                strategyPositions: _strategyPositions,
-                marginCalcType: MARGIN_CALC_TYPE.BY_GIVEN_PRICE
+            const totalGainObj = totalOffsetGainNearSettlementOfEstimationPanel({
+                strategyPositions: _strategyPositions
             });
 
             const profitPercentByBestPrices = profitPercentCalculator({
@@ -1492,7 +1493,7 @@
             const totalCostObj = totalCostCalculator(_strategyPositions);
 
             const totalGainObj = totalSettlementGainByEstimationQuantity(calOptions);
-            const reservedMarginOfOtherSell = _strategyPositions.find(_strategyPosition=>!_strategyPosition.isBuy).getCurrentPositionReservedMargin();
+            const reservedMarginOfOtherSell = _strategyPositions.find(_strategyPosition=>!_strategyPosition.isBuy).getReservedMarginOfEstimationQuantity();
 
 
             const profitPercentByBestPrices = profitPercentCalculator({
