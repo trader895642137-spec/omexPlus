@@ -193,6 +193,11 @@
             return totalCost
         }
 
+        let totalCostOfChunkOfEstimationQuantity = _totalCostCalculator({
+            strategyPositions: _strategyPositions,
+            getPrice: (position) => position.getCurrentPositionAvgPrice()
+        }); 
+
         let totalCostOfCurrentPositions = _totalCostCalculator({
             strategyPositions: _strategyPositions,
             getQuantity: (position,__strategyPositions) =>{
@@ -221,6 +226,7 @@
 
         return {
             totalCostOfCurrentPositions,
+            totalCostOfChunkOfEstimationQuantity,
             totalCostByBestPrices,
             totalCostByInsertedPrices
         }
@@ -331,6 +337,45 @@
         }
     }
 
+
+
+
+     const totalOffsetGainOfChunkOfEstimationQuantityCalculator = ({strategyPositions}) => {
+
+
+
+        const getReservedMargin = (position,__strategyPositions) => {
+            return position.getReservedMarginOfEstimationQuantity() 
+        }
+
+
+        const totalOffsetGainByOffsetOrderPrices = mainTotalOffsetGainCalculator({
+            strategyPositions,
+            getBestPriceCb: (_strategyPosition) => _strategyPosition.getBestOffsetPrice(),
+            getReservedMargin
+        });
+
+        const totalOffsetGainByOpenMoreOrderPrices = mainTotalOffsetGainCalculator({
+            strategyPositions,
+            getBestPriceCb: (_strategyPosition) => _strategyPosition.getBestOpenMorePrice(),
+            getReservedMargin
+        });
+
+        const totalOffsetGainByInsertedPrices = mainTotalOffsetGainCalculator({
+            strategyPositions,
+            getBestPriceCb: (_strategyPosition) => _strategyPosition.getInsertedPrice(),
+            getReservedMargin
+        });
+
+        return {
+            byOffsetOrderPrices: totalOffsetGainByOffsetOrderPrices,
+            byOpenMoreOrderPrices: totalOffsetGainByOpenMoreOrderPrices,
+            byInsertedPrices: totalOffsetGainByInsertedPrices,
+        }
+    }
+
+
+
     const totalSettlementGainByEstimationQuantity = (_strategyPositions, stock, sellType) => {
 
         const totalSettlementGainCalculator = (__strategyPositions, stock, stockPrice, sellType) => {
@@ -409,107 +454,105 @@
     }
     const calcOffsetProfitOfStrategy = (_strategyPositions) => {
 
-        const totalPositionCost = totalCostCalculator(_strategyPositions).totalCostOfCurrentPositions;
-
-        const totalOffsetGainObj = totalOffsetGainOfCurrentPositionsCalculator({
+        const totalCurrentPositionCost = totalCostCalculator(_strategyPositions).totalCostOfCurrentPositions;
+        const totalCostOfChunkOfEstimationQuantity = totalCostCalculator(_strategyPositions).totalCostOfChunkOfEstimationQuantity;
+    
+        const totalOffsetGainOfChunkOfEstimation = totalOffsetGainOfChunkOfEstimationQuantityCalculator({
             strategyPositions: _strategyPositions
         });
 
-        const totalOffsetGainByOffsetOrderPrices = totalOffsetGainObj.byOffsetOrderPrices;
+        const totalOffsetGainOfCurrentPositionObj = totalOffsetGainOfCurrentPositionsCalculator({
+                strategyPositions: _strategyPositions
+        });
 
-        const totalOffsetGainByOpenMoreOrderPrices = totalOffsetGainObj.byOpenMoreOrderPrices;
 
-        const totalOffsetGainByInsertedPrices = totalOffsetGainObj.byInsertedPrices;
 
         let statusCnt = getStatusCnt();
 
         let profitLossByOffsetOrdersPercent = profitPercentCalculator({
-            costWithSign: totalPositionCost,
-            gainWithSign: totalOffsetGainByOffsetOrderPrices
+            costWithSign: totalCostOfChunkOfEstimationQuantity,
+            gainWithSign: totalOffsetGainOfChunkOfEstimation.byOffsetOrderPrices
         });
-        let profitLossByOpenMoreOrdersPercent = profitPercentCalculator({
-            costWithSign: totalPositionCost,
-            gainWithSign: totalOffsetGainByOpenMoreOrderPrices
-        });
+        
         let profitLossByInsertedPricesPercent = profitPercentCalculator({
-            costWithSign: totalPositionCost,
-            gainWithSign: totalOffsetGainByInsertedPrices
+            costWithSign: totalCostOfChunkOfEstimationQuantity,
+            gainWithSign: totalOffsetGainOfChunkOfEstimation.byInsertedPrices
         });
 
         statusCnt.innerHTML = `
-        <span style="
-            display: inline-block;
-            direction: ltr !important;
-        ">
-        ${totalPositionCost.toLocaleString('en-US', {
-            minimumFractionDigits: 1,
-            maximumFractionDigits: 1
+            <span style="
+                display: inline-block;
+                direction: ltr !important;
+            ">
+            ${totalCurrentPositionCost.toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
         })}
-        </span>
-        
-         __ 
-         
-         <span style="
-            display: inline-block;
-            direction: ltr !important;
-        ">
-        ${totalOffsetGainByOffsetOrderPrices.toLocaleString('en-US', {
-            minimumFractionDigits: 1,
-            maximumFractionDigits: 1
+            </span>
+            
+            __ 
+            
+            <span style="
+                display: inline-block;
+                direction: ltr !important;
+            ">
+            ${totalOffsetGainOfCurrentPositionObj.byOffsetOrderPrices.toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
         })} 
-        </span>
+            </span>
 
-        <div style="color:${profitLossByOffsetOrdersPercent >= 0 ? 'green' : 'red'}"> ${profitLossByOffsetOrdersPercent.toLocaleString('en-US', {
+            <div style="color:${profitLossByOffsetOrdersPercent >= 0 ? 'green' : 'red'};margin-right: 10px;"> ${profitLossByOffsetOrdersPercent.toLocaleString('en-US', {
             minimumFractionDigits: 1,
             maximumFractionDigits: 1
         })} </div>
 
-       
+        
 
 
 
-        <div style="margin-right: 200px;font-size: 85%;"> 
-         آفست با کادر قیمت
-         <span style="
-            display: inline-block;
-            direction: ltr !important;
-        ">
-             ${totalOffsetGainByInsertedPrices.toLocaleString('en-US', {
-                minimumFractionDigits: 1,
-                maximumFractionDigits: 1
-            })}
-         </span>
-            
-            <span style="color:${profitLossByInsertedPricesPercent >= 0 ? 'green' : 'red'}"> ${profitLossByInsertedPricesPercent.toLocaleString('en-US', {
+            <div style="margin-right: 200px;font-size: 85%;"> 
+            آفست با کادر قیمت
+            <span style="
+                display: inline-block;
+                direction: ltr !important;
+            ">
+                ${totalOffsetGainOfCurrentPositionObj.byInsertedPrices.toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        })}
+            </span>
+                
+                <span style="color:${profitLossByInsertedPricesPercent >= 0 ? 'green' : 'red'};margin-right: 10px;"> ${profitLossByInsertedPricesPercent.toLocaleString('en-US', {
             minimumFractionDigits: 1,
             maximumFractionDigits: 1
         })}</span>
-        </div>
-
-
-
-
-        <div style="margin-right: auto;font-size: 85%;display: flex;width: auto;flex-direction: column;"> 
-            <div style="
-                width: max-content;
-            "> 
-                <span> سرمایه درگیر</span>
-                <span style="
-                    color:${totalPositionCost >= 0 ? 'green' : ''};
-                    display: inline-block;
-                    direction: ltr !important;
-                ">
-                    ${totalPositionCost.toLocaleString('en-US', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                    })}
-                </span>
-
             </div>
-        </div>
 
-       
-    `;
+
+
+
+            <div style="margin-right: auto;font-size: 85%;display: flex;width: auto;flex-direction: column;"> 
+                <div style="
+                    width: max-content;
+                "> 
+                    <span> سرمایه درگیر</span>
+                    <span style="
+                        color:${totalCurrentPositionCost >= 0 ? 'green' : ''};
+                        display: inline-block;
+                        direction: ltr !important;
+                    ">
+                        ${totalCurrentPositionCost.toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        })}
+                    </span>
+
+                </div>
+            </div>
+
+        
+        `;
         if (profitLossByOffsetOrdersPercent > (window.expectedProfit?.currentPositions || 1)) {
 
             informExtremeOrderPrice(_strategyPositions, 'offset');
@@ -524,7 +567,6 @@
         }
 
     }
-
     const informExtremeOrderPrice = (_strategyPositions, type) => {
 
         const getOrderPriceElement = (___strategyPosition) => {
@@ -709,9 +751,9 @@
 
                 const quantity = getQuantity();
 
-                const currentPositionReservedMargin = requiredMargin ? (requiredMargin * quantity) : 0
+                const marginOfEstimation = requiredMargin ? (requiredMargin * quantity) : 0
 
-                return currentPositionReservedMargin
+                return marginOfEstimation
 
             }
 
