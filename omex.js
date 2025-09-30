@@ -1816,7 +1816,7 @@
 
 
             client-instrument-favorites-item-trade-panel .o-quantityContainer footer span{
-                font-size: 14px !important;
+                font-size: 17px !important;
             }
             client-instrument-favorites-item-trade-panel .o-priceContainer footer{
                 flex-wrap: wrap !important;
@@ -1826,10 +1826,10 @@
             }
 
 
-            client-option-reports-tabs c-k-tab-default:nth-child(3) button{
-                    color: green !important;
-                    text-shadow: 0 0 !important;
-                    box-shadow: 1px 0px 10px inset;
+            client-option-reports-tabs c-k-tab-default:nth-child(3) button {
+                color: green !important;
+                text-shadow: 0 0 !important;
+                font-size: 17px !important;
             }
 
             // client-trade-ui-input-quantity-advance-compact .o-rangeTooltipContainer{
