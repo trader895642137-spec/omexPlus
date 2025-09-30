@@ -587,7 +587,7 @@
             const ratioDiffOfAB =  (diffOfA/diffOfB) 
 
 
-            if(ratioOfB >= ratioOfA && (ratioDiffOfAB<1.5) ){
+            if((ratioOfB >= ratioOfA && (ratioDiffOfAB<1.5)) || (ratioOfA >= ratioOfB && (ratioDiffOfAB)<0.67)){
                 return 1
             }else{
                 return -1
