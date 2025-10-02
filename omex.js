@@ -47,25 +47,34 @@
     }
 
     const createStrategyExpectedProfitCnt = () => {
+        let parent = document.createElement('div');
         let cnt = document.createElement('div');
         cnt.classList.add('status-cnt');
-        cnt.style.cssText += `
-        position:absolute;
-        padding: 0 10px;
-        background: #FFF;
-        display: flex;
-        column-gap: 21px;
-        font-size: 20px;
-        left: 50%;
-        z-index: 500;
-        top: -8px;
-        transform: translateX(-50%);
-    `;
+        parent.style.cssText += `
+            position:absolute;
+            width: 169px;
+            padding: 0 10px;
+            background: #FFF;
+            display: flex;
+            flex-direction: column;
+            column-gap: 21px;
+            font-size: 20px;
+            left: 50%;
+            z-index: 500;
+            top: -8px;
+            transform: translateX(-50%);
+        `;
+        let currentStockPriceInput = document.createElement('input');
+        currentStockPriceInput.classList.add('current-stock-price');
+
+        currentStockPriceInput.style.cssText +=`border: 1px solid #EEE;`
+        parent.append(currentStockPriceInput)
+        parent.append(cnt)
 
         document.querySelector('client-option-strategy-estimation-main .o-footer').style.cssText += `
-       position: relative;
-    `;
-        document.querySelector('client-option-strategy-estimation-main .o-footer').append(cnt)
+            position: relative;
+        `;
+        document.querySelector('client-option-strategy-estimation-main .o-footer').append(parent)
         return cnt
     }
 
@@ -113,6 +122,8 @@
             SETTLEMENT: {
                 BUY: 0.0005,
                 SELL: 0.0055,
+                SELL_TAX: 0.005,
+                EXERCISE_FEE: 0.0005,
                 TAX_FREE_SELL: 0.0005,
             }
         },
@@ -255,7 +266,7 @@
 
         const getBestPriceCb = (_strategyPosition) => _strategyPosition.getNearSettlementPrice();
 
-        const totalOffsetGainByOffsetOrderPrices = mainTotalOffsetGainCalculator({
+        const totalOffsetGainNearSettlement = mainTotalOffsetGainCalculator({
             strategyPositions,
             getBestPriceCb,
             getReservedMargin: _strategyPosition => {
@@ -263,27 +274,7 @@
             }
         });
 
-        const totalOffsetGainByOpenMoreOrderPrices = mainTotalOffsetGainCalculator({
-            strategyPositions,
-            getBestPriceCb,
-            getReservedMargin: _strategyPosition => {
-                return _strategyPosition.getReservedMarginOfEstimationQuantity() 
-            }
-        });
-
-        const totalOffsetGainByInsertedPrices = mainTotalOffsetGainCalculator({
-            strategyPositions,
-            getBestPriceCb,
-            getReservedMargin: _strategyPosition => {
-                return _strategyPosition.getReservedMarginOfEstimationQuantity() 
-            }
-        });
-
-        return {
-            byOffsetOrderPrices: totalOffsetGainByOffsetOrderPrices,
-            byOpenMoreOrderPrices: totalOffsetGainByOpenMoreOrderPrices,
-            byInsertedPrices: totalOffsetGainByInsertedPrices,
-        }
+        return totalOffsetGainNearSettlement
     }
 
     const totalOffsetGainOfCurrentPositionsCalculator = ({strategyPositions}) => {
@@ -788,39 +779,40 @@
                     return
 
                 const strategyType = strategyName.split('@')[0];
-                return ['BUCS_COLLAR','BUPS_COLLAR','BEPS_COLLAR','BUCS','BECS', 'BUPS','BEPS','BOX_BUPS_BECS', 'BOX', 'COVERED','GUTS','LongGUTS_STRANGLE'].find(type => strategyType === type);
+                return ['BUCS_COLLAR','BUPS_COLLAR','BEPS_COLLAR','BUCS','BECS', 'BUPS','BEPS','BOX_BUPS_BECS', 'BOX', 'COVERED','GUTS','LongGUTS_STRANGLE','CALL_BUTT_CONDOR'].find(type => strategyType === type);
             }
 
-            const baseInstrumentPriceInputEl = ( () => {
-
-                if (!instrumentFullTitle)
-                    return
-
-                const baseInstrumentName = instrumentFullTitle.split("-")[0].replace('اختیارخ', '').replace('اختیارف', '').trim();
-
-                if (!baseInstrumentName)
-                    return
-
-                const baseInstrumentRowEl = Array.from(document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).find(rowEl => rowEl.querySelector('.o-instrument-container .instrument-title > span').innerHTML === baseInstrumentName);
-
-                if (!baseInstrumentRowEl)
-                    return
-
-                const _baseInstrumentPriceInputEl = baseInstrumentRowEl.querySelector('[formcontrolname="price"] .o-inputContainer input');
-
-                return _baseInstrumentPriceInputEl
-
-            }
-            )()
 
             const getBaseInstrumentPriceOfOption = () => {
 
-                return baseInstrumentPriceInputEl && convertStringToInt(baseInstrumentPriceInputEl.value);
+
+                const baseInstrumentPriceInputEl  = document.querySelector('.current-stock-price');
+
+                return baseInstrumentPriceInputEl && convertStringToInt(baseInstrumentPriceInputEl.value); 
+
             }
 
             const getNearSettlementPrice = () => {
 
-                const price = isCall ? (getBaseInstrumentPriceOfOption() - strikePrice) : (strikePrice - getBaseInstrumentPriceOfOption());
+                const tradeFee = isBuy ? COMMISSION_FACTOR.OPTION.BUY : COMMISSION_FACTOR.OPTION.SELL;
+                const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE
+                const tax = isTaxFree(strategyPosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
+
+                function calculateCallPrice(stockPrice, strikePrice) {
+                    if(stockPrice <= strikePrice) return 1
+
+                    return (stockPrice * (1 - tax) - strikePrice * (1 + exerciseFee)) / (1 + tradeFee);
+                }
+
+                function calculatePutPrice(stockPrice, strikePrice) {
+                    if(stockPrice >= strikePrice) return 1
+                    return (strikePrice * (1 - tax) - stockPrice * (1 + exerciseFee)) / (1 + tradeFee);
+                }
+
+
+                const stockPrice = getBaseInstrumentPriceOfOption();
+
+                const price = isCall ? calculateCallPrice(stockPrice,strikePrice)  : calculatePutPrice(stockPrice,strikePrice) 
                 return price > 0 ? price : 0
             }
 
@@ -1349,7 +1341,7 @@
             const totalCostObj = totalCostCalculator(_strategyPositions);
 
             const stocks = _unChekcedPositions.filter(_unChekcedPosition => !_unChekcedPosition.isOption);
-            if (!stocks || stocks.length > 1)
+            if (stocks.length > 1)
                 return 0
             const stock = stocks[0];
 
@@ -1363,11 +1355,11 @@
 
             const profitPercentByBestPrices = profitPercentCalculator({
                 costWithSign: totalCostObj.totalCostByBestPrices,
-                gainWithSign: totalSettlementGainObj.totalGainByBestPrices + totalOffsetGainObjOfAdditionalSellPositions.byOffsetOrderPrices
+                gainWithSign: totalSettlementGainObj.totalGainByBestPrices + totalOffsetGainObjOfAdditionalSellPositions
             });
             const profitPercentByInsertedPrices = profitPercentCalculator({
                 costWithSign: totalCostObj.totalCostByInsertedPrices,
-                gainWithSign: totalSettlementGainObj.totalGainByInsertedPrices + totalOffsetGainObjOfAdditionalSellPositions.byInsertedPrices
+                gainWithSign: totalSettlementGainObj.totalGainByInsertedPrices + totalOffsetGainObjOfAdditionalSellPositions
             });
 
             return {
@@ -1449,17 +1441,17 @@
         },
         BECS(_strategyPositions){
             const totalCostObj = totalCostCalculator(_strategyPositions);
-            const totalGainObj = totalOffsetGainNearSettlementOfEstimationPanel({
+            const totalOffsetGainNearSettlement = totalOffsetGainNearSettlementOfEstimationPanel({
                 strategyPositions: _strategyPositions
             });
 
             const profitPercentByBestPrices = profitPercentCalculator({
                 costWithSign: totalCostObj.totalCostByBestPrices,
-                gainWithSign: totalGainObj.byOffsetOrderPrices
+                gainWithSign: totalOffsetGainNearSettlement
             });
             const profitPercentByInsertedPrices = profitPercentCalculator({
                 costWithSign: totalCostObj.totalCostByInsertedPrices,
-                gainWithSign: totalGainObj.byInsertedPrices
+                gainWithSign: totalOffsetGainNearSettlement
             });
 
             return {
@@ -1470,17 +1462,17 @@
         },
         BUPS(_strategyPositions){
             const totalCostObj = totalCostCalculator(_strategyPositions);
-            const totalGainObj = totalOffsetGainNearSettlementOfEstimationPanel({
+            const totalOffsetGainNearSettlement = totalOffsetGainNearSettlementOfEstimationPanel({
                 strategyPositions: _strategyPositions
             });
 
             const profitPercentByBestPrices = profitPercentCalculator({
                 costWithSign: totalCostObj.totalCostByBestPrices,
-                gainWithSign: totalGainObj.byOffsetOrderPrices
+                gainWithSign: totalOffsetGainNearSettlement
             });
             const profitPercentByInsertedPrices = profitPercentCalculator({
                 costWithSign: totalCostObj.totalCostByInsertedPrices,
-                gainWithSign: totalGainObj.byInsertedPrices
+                gainWithSign: totalOffsetGainNearSettlement
             });
 
             return {
@@ -1623,6 +1615,31 @@
             const profitPercentByInsertedPrices = profitPercentCalculator({
                 costWithSign: totalCostObj.totalCostByInsertedPrices,
                 gainWithSign: totalSettlementGainObj.totalGainByInsertedPrices
+            });
+
+            return {
+                profitPercentByBestPrices,
+                profitPercentByInsertedPrices
+            }
+        },
+
+
+        CALL_BUTT_CONDOR(_strategyPositions, _unChekcedPositions) {
+
+            const totalCostObj = totalCostCalculator(_strategyPositions);
+
+
+            const totalOffsetGain = totalOffsetGainNearSettlementOfEstimationPanel({
+                strategyPositions: _strategyPositions
+            });
+
+            const profitPercentByBestPrices = profitPercentCalculator({
+                costWithSign: totalCostObj.totalCostByBestPrices,
+                gainWithSign: totalOffsetGain
+            });
+            const profitPercentByInsertedPrices = profitPercentCalculator({
+                costWithSign: totalCostObj.totalCostByInsertedPrices,
+                gainWithSign: totalOffsetGain
             });
 
             return {
@@ -1873,6 +1890,10 @@
         calcProfitOfStrategy(strategyPositions, unChekcedPositions);
 
         calcOffsetProfitOfStrategy(strategyPositions);
+
+
+
+        getStrategyExpectedProfitCnt();
 
         // let orderModals = Array.from(document.querySelectorAll('client-option-instrument-favorites-item-layout-modal'));
         // orderModals.forEach(el => ['input', 'change', 'click'].forEach(eventName => el.addEventListener(eventName, quantityInputElementInputChangeHandler)));
