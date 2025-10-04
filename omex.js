@@ -661,6 +661,35 @@
 
             }
 
+
+            let cachedOrderModalPortfolioQuantityElement;
+            const getOrderModalPortfolioQuantity=()=>{
+                cachedOrderModalPortfolioQuantityElement = document.body.contains(cachedOrderModalPortfolioQuantityElement) ? cachedOrderModalPortfolioQuantityElement :  ordersModal.querySelector('.o-quantityContainer footer span');
+                return convertStringToInt(cachedOrderModalPortfolioQuantityElement.innerHTML)
+
+            }
+            let cachedOrderModalQuantityFooterElement
+            const getOrderModalQuantityFooterElement=()=>{
+                if(!document.body.contains(cachedOrderModalQuantityFooterElement)){
+                   cachedOrderModalQuantityFooterElement = ordersModal.querySelector('.o-quantityContainer footer')
+                }
+
+
+                return cachedOrderModalQuantityFooterElement
+
+            }
+
+            let cachedOrderModalTradePanelElement
+            const getOrderModalTradePanelElement=()=>{
+                if(!document.body.contains(cachedOrderModalTradePanelElement)){
+                   cachedOrderModalTradePanelElement = ordersModal.querySelector('client-instrument-favorites-item-trade-panel')
+                }
+
+
+                return cachedOrderModalTradePanelElement
+
+            }
+
             const getRequiredMargin = () => {
 
                 const isMarginRequired = optionRowEl.querySelector('input[formcontrolname="requiredMarginIsSelected"]')?.checked;
@@ -834,6 +863,9 @@
                 getNearSettlementPrice,
                 getQuantity,
                 getCurrentPositionQuantity,
+                getOrderModalPortfolioQuantity,
+                getOrderModalQuantityFooterElement,
+                getOrderModalTradePanelElement,
                 getInsertedPrice,
                 getInsertedQuantity,
                 getRequiredMargin,
@@ -869,7 +901,7 @@
 
         const orderModalInputQuantityUnbalanceInformer = ()=>{
 
-             quantityUnbalanceInformer({
+            quantityUnbalanceInformer({
                 orderModalQuantityGetter:(strategyPosition) => convertStringToInt(strategyPosition.ordersModal.querySelector('#tabKey-optionTradeQuantityInput').value),
                 informer:(strategyPosition)=>{strategyPosition.ordersModal.querySelector('#tabKey-optionTradeQuantityInput').style.cssText = "border: 5px solid red"},
                 informCleaner:(strategyPosition)=>{strategyPosition.ordersModal.querySelector('#tabKey-optionTradeQuantityInput').style.border = ''}
@@ -982,22 +1014,35 @@
 
 
     const observePortfolioQuantityOfOrderModal = () => {
+        // TODO:FIXME: use document.body.contains(...)
+
+
+        let currentPositionQuantityUnbalanceInformerTimeout;
 
         const currentPositionQuantityUnbalanceInformer = ()=>{
-            quantityUnbalanceInformer({
-                orderModalQuantityGetter:(strategyPosition) => convertStringToInt(strategyPosition.ordersModal.querySelector('.o-quantityContainer footer span').innerHTML),
+            const hasIssue = quantityUnbalanceInformer({
+                orderModalQuantityGetter:(strategyPosition) =>  strategyPosition.getOrderModalPortfolioQuantity(),
                 informer:(strategyPosition)=>{
-                    strategyPosition.ordersModal.querySelector('.o-quantityContainer footer').style.cssText = "border: 2px solid red";
+                    strategyPosition.getOrderModalQuantityFooterElement().style.cssText = "border: 2px solid red";
+                    
+                },
+                informCleaner:(strategyPosition)=>{
+                    strategyPosition.getOrderModalQuantityFooterElement().style.cssText = ''
+                }
+            }).hasIssue;
 
+
+            if(hasIssue){
                     showNotification({
                         title: 'تعداد بالانس نیست',
-                        body: `${strategyPosition.instrumentName}`,
-                        tag: `${strategyPosition.instrumentName}-currentPositionQuantityUnbalance`
+                        body: `${strategyPositions[0].instrumentName}`,
+                        tag: `${strategyPositions[0].instrumentName}-currentPositionQuantityUnbalance`
                     });
-                    setTimeout(currentPositionQuantityUnbalanceInformer, 5000);
-                },
-                informCleaner:(strategyPosition)=>{strategyPosition.ordersModal.querySelector('.o-quantityContainer footer').style.border = ''}
-            })
+                    clearTimeout(currentPositionQuantityUnbalanceInformerTimeout);
+                    currentPositionQuantityUnbalanceInformerTimeout = setTimeout(currentPositionQuantityUnbalanceInformer, 20000);
+            }else{
+                clearTimeout(currentPositionQuantityUnbalanceInformerTimeout);
+            }
 
         }
 
@@ -1009,7 +1054,7 @@
             // const portfolioQuantityElement =strategyPositionObj.ordersModal.querySelector('client-instrument-favorites-item-trade-panel .o-quantityContainer footer span')
 
            
-            let previousStoredPortfolioQuantity = convertStringToInt(strategyPositionObj.ordersModal.querySelector('client-instrument-favorites-item-trade-panel .o-quantityContainer footer span').innerHTML)
+            let previousStoredPortfolioQuantity = strategyPositionObj.getOrderModalPortfolioQuantity();
 
             const config = {
                 //attributes: true,
@@ -1026,7 +1071,7 @@
                     // const oldValue = mutation.oldValue ? convertStringToInt(mutation.oldValue) : 0;
                     const oldValue = previousStoredPortfolioQuantity >=0 ? previousStoredPortfolioQuantity : 0;
                     // const newValue = mutation.target.nodeValue ? convertStringToInt(mutation.target.nodeValue) : null;
-                    const newValue = convertStringToInt(strategyPositionObj.ordersModal.querySelector('client-instrument-favorites-item-trade-panel .o-quantityContainer footer span').innerHTML)
+                    const newValue = strategyPositionObj.getOrderModalPortfolioQuantity();
                     // if(newValue===null) return
                     if(!newValue) return
                     let bgColor
@@ -1038,7 +1083,7 @@
                         bgColor ='#ff00009c'
                     }
 
-                    let quantityFooter = strategyPositionObj.ordersModal.querySelector('client-instrument-favorites-item-trade-panel .o-quantityContainer footer')
+                    let quantityFooter = strategyPositionObj.getOrderModalQuantityFooterElement();
 
 
                     quantityFooter.style.backgroundColor = bgColor;
@@ -1067,12 +1112,13 @@
 
             const PortfolioQuantityObserver = new MutationObserver(PortfolioQuantityCallback);
 
-            strategyPositionObj?.ordersModal && PortfolioQuantityObserver.observe(strategyPositionObj.ordersModal.querySelector('client-instrument-favorites-item-trade-panel .o-quantityContainer footer'), config);
+            strategyPositionObj?.ordersModal && PortfolioQuantityObserver.observe(strategyPositionObj.getOrderModalQuantityFooterElement(), config);
 
             strategyPositionObj.ordersModal.querySelectorAll('client-trade-ui-tabs,[iconname="details-outlined"]').forEach(el=>{
                 el.addEventListener('click', (e) => {
                     setTimeout( () => {
-                        const isTradePanelVisible = Boolean(strategyPositionObj.ordersModal.querySelector('client-instrument-favorites-item-trade-panel'));
+                        
+                        const isTradePanelVisible = document.body.contains(strategyPositionObj.getOrderModalTradePanelElement());
 
                         if (isTradePanelVisible) {
                             PortfolioQuantityObserver && PortfolioQuantityObserver.disconnect();
@@ -1107,7 +1153,7 @@
             const mouseMoveObserver = {
                 // TODO: remove click event listener
                 disconnect() {
-                    strategyPositionObj.ordersModal.removeEventListener('mousemove ', mousemoveEventHandler)
+                    strategyPositionObj.ordersModal.removeEventListener('mousemove', mousemoveEventHandler)
                 }
             }
 
@@ -1782,8 +1828,10 @@
         
         if (hasModalInsertedQuantityIssue) {
             strategyPositions.forEach(informer);
+            return {hasIssue:true}
         } else {
             strategyPositions.forEach(informCleaner);
+             return {hasIssue:false}
         }
     }
 
