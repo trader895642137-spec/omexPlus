@@ -1712,6 +1712,30 @@
                 profitPercentByInsertedPrices
             }
         },
+        OTHERS(_strategyPositions){
+
+            const totalCostObj = totalCostCalculator(_strategyPositions);
+
+
+            const totalOffsetGain = totalOffsetGainNearSettlementOfEstimationPanel({
+                strategyPositions: _strategyPositions
+            });
+
+            const profitPercentByBestPrices = profitPercentCalculator({
+                costWithSign: totalCostObj.totalCostByBestPrices,
+                gainWithSign: totalOffsetGain
+            });
+            const profitPercentByInsertedPrices = profitPercentCalculator({
+                costWithSign: totalCostObj.totalCostByInsertedPrices,
+                gainWithSign: totalOffsetGain
+            });
+
+            return {
+                profitPercentByBestPrices,
+                profitPercentByInsertedPrices
+            }
+
+        }
         
 
     }
@@ -1719,7 +1743,7 @@
     const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositions) => {
         // getStrategyName
 
-        const profitCalculator = STRATEGY_NAME_PROFIT_CALCULATOR[_strategyPositions[0].getStrategyType()];
+        const profitCalculator = STRATEGY_NAME_PROFIT_CALCULATOR[_strategyPositions[0].getStrategyType() || 'OTHERS'];
         if (!profitCalculator)
             return
 
