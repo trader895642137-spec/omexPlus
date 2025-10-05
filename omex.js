@@ -665,7 +665,7 @@
             let cachedOrderModalPortfolioQuantityElement;
             const getOrderModalPortfolioQuantity=()=>{
                 cachedOrderModalPortfolioQuantityElement = document.body.contains(cachedOrderModalPortfolioQuantityElement) ? cachedOrderModalPortfolioQuantityElement :  ordersModal.querySelector('.o-quantityContainer footer span');
-                return convertStringToInt(cachedOrderModalPortfolioQuantityElement.innerHTML)
+                return convertStringToInt(cachedOrderModalPortfolioQuantityElement.innerHTML) || 0
 
             }
             let cachedOrderModalQuantityFooterElement
