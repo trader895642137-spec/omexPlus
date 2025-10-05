@@ -1819,7 +1819,9 @@
         const hasModalInsertedQuantityIssue = strategyPositions.some(strategyPosition =>{
             if(!strategyPosition?.ordersModal) return true
             const positionModalQuantity = orderModalQuantityGetter(strategyPosition);
-            const positionInsertedQuantity = strategyPosition.getInsertedQuantity();
+            const sumOfSameOptionInsertedQuantity =  strategyPositions.filter(_position=>_position.instrumentName ===strategyPosition.instrumentName).reduce((sumOfQuantity,_position)=> sumOfQuantity + _position.getInsertedQuantity(),0);
+
+            const positionInsertedQuantity = sumOfSameOptionInsertedQuantity;
             const ratio = positionModalQuantity / positionInsertedQuantity;
             return p1Ratio!=ratio
         })
