@@ -19,7 +19,7 @@
     // FIXME:expectedProfitPerMonth is factor but minExpectedProfitOfStrategy is percent
     window.expectedProfit = {
         expectedProfitPerMonth: 1.05,
-        minExpectedProfitOfStrategy:2.8,
+        minExpectedProfitOfStrategy:3.9,
         currentPositions: 1
     }
 
