@@ -828,14 +828,13 @@
                 const tax = isTaxFree(strategyPosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
 
                 function calculateCallPrice(stockPrice, strikePrice) {
-                    if(stockPrice <= strikePrice) return 1
-
+                    if(stockPrice <= strikePrice) return 0
                     return (stockPrice * (1 - tax) - strikePrice * (1 + exerciseFee)) / (1 + tradeFee);
                 }
 
                 function calculatePutPrice(stockPrice, strikePrice) {
-                    if(stockPrice >= strikePrice) return 1
-                    return (strikePrice * (1 - tax) - stockPrice * (1 + exerciseFee)) / (1 + tradeFee);
+                    if(stockPrice >= strikePrice) return 0
+                    return (strikePrice * (1 - tax - exerciseFee) - stockPrice) / (1 + tradeFee);
                 }
 
 
