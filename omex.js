@@ -1022,7 +1022,7 @@
             const hasIssue = quantityUnbalanceInformer({
                 orderModalQuantityGetter:(strategyPosition) =>  strategyPosition.getOrderModalPortfolioQuantity(),
                 informer:(strategyPosition)=>{
-                    strategyPosition.getOrderModalQuantityFooterElement().style.cssText = "border: 2px solid red";
+                    strategyPosition.getOrderModalQuantityFooterElement().style.cssText = "border-bottom: 2px solid red";
                     
                 },
                 informCleaner:(strategyPosition)=>{
