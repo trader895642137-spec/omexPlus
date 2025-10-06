@@ -180,7 +180,7 @@
             let totalCost = strategyPositions.reduce( (sum, _strategyPosition) => {
                 const price = getPrice(_strategyPosition);
                 if (!price)
-                    return Infinity
+                    return NaN
 
                 const isBuy = _strategyPosition.isBuy;
 
@@ -225,6 +225,22 @@
             } ,
             getPrice: (position) => position.getCurrentPositionAvgPrice()
         });
+        let unreliableTotalCostOfCurrentPositions = _totalCostCalculator({
+            strategyPositions: _strategyPositions,
+            getQuantity: (position,__strategyPositions) =>{
+
+                const sumOfQuantityInEstimationPanel = __strategyPositions.filter(_position=>_position.instrumentName===position.instrumentName).reduce((_sumOfQuantityInEstimationPanel,position)=> _sumOfQuantityInEstimationPanel + position.getQuantity(),0);
+
+
+                const quantityInEstimationPanel = position.getQuantity();
+
+                const quantityFactor = quantityInEstimationPanel/sumOfQuantityInEstimationPanel;
+
+
+                return position.getCurrentPositionQuantity() * quantityFactor
+            } ,
+            getPrice: (position) => position.getCurrentPositionAvgPrice() || position.getUnreliableCurrentPositionAvgPrice()
+        });
         let totalCostByBestPrices = _totalCostCalculator({
             strategyPositions: _strategyPositions,
             getPrice: (position) => position.getBestOpenMorePrice()
@@ -237,6 +253,7 @@
 
         return {
             totalCostOfCurrentPositions,
+            unreliableTotalCostOfCurrentPositions,
             totalCostOfChunkOfEstimationQuantity,
             totalCostByBestPrices,
             totalCostByInsertedPrices
@@ -444,8 +461,10 @@
         BY_GIVEN_PRICE: "BY_GIVEN_PRICE"
     }
     const calcOffsetProfitOfStrategy = (_strategyPositions) => {
+        const totalCostInfoObj = totalCostCalculator(_strategyPositions);
 
-        const totalCurrentPositionCost = totalCostCalculator(_strategyPositions).totalCostOfCurrentPositions;
+        const totalCurrentPositionCost = totalCostInfoObj.totalCostOfCurrentPositions;
+        const unreliableTotalCostOfCurrentPositions = totalCostInfoObj.unreliableTotalCostOfCurrentPositions;
         const totalCostOfChunkOfEstimationQuantity = totalCostCalculator(_strategyPositions).totalCostOfChunkOfEstimationQuantity;
     
         const totalOffsetGainOfChunkOfEstimation = totalOffsetGainOfChunkOfEstimationQuantityCalculator({
@@ -529,11 +548,11 @@
                 "> 
                     <span> سرمایه درگیر</span>
                     <span style="
-                        color:${totalCurrentPositionCost >= 0 ? 'green' : ''};
+                        color:${(totalCurrentPositionCost || unreliableTotalCostOfCurrentPositions) >= 0 ? 'green' : ''};
                         display: inline-block;
                         direction: ltr !important;
                     ">
-                        ${totalCurrentPositionCost.toLocaleString('en-US', {
+                        ${(totalCurrentPositionCost || unreliableTotalCostOfCurrentPositions).toLocaleString('en-US', {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0
         })}
@@ -653,8 +672,13 @@
 
             const getCurrentPositionQuantity = () => {
 
-                const currentPositionQuantityEml = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy?'buyCount':'sellCount'}"]`;
-                const currentPositionQuantity = convertStringToInt(document.querySelector(currentPositionQuantityEml)?.innerHTML);
+                let currentPositionQuantity
+                if(optionID){
+                    const currentPositionQuantityEml = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy?'buyCount':'sellCount'}"]`;
+                    currentPositionQuantity = convertStringToInt(document.querySelector(currentPositionQuantityEml)?.innerHTML);
+                }else{
+                    currentPositionQuantity = getOrderModalPortfolioQuantity();
+                }
                 
                 const quantityMultiplier = isOption ? 1000 : 1;
                 return currentPositionQuantity * quantityMultiplier;
@@ -765,6 +789,32 @@
 
             }
 
+
+             let cachedUnreliableCurrentPositionAvgPriceElement;
+            const getUnreliableCurrentPositionAvgPrice=()=>{
+                
+                if(!document.body.contains(cachedUnreliableCurrentPositionAvgPriceElement)){
+                    const labelText = 'میانگین';
+                    const xpath = `.//label[normalize-space(text())='${labelText}']/following-sibling::span[1]`;
+
+                    const avgPriceElement = document.evaluate(
+                        xpath,
+                        ordersModal, // فقط در این محدوده بگرد
+                        null,
+                        XPathResult.FIRST_ORDERED_NODE_TYPE,
+                        null
+                    ).singleNodeValue;
+
+                    cachedUnreliableCurrentPositionAvgPriceElement = avgPriceElement || null
+
+                }
+                
+                return convertStringToInt(cachedUnreliableCurrentPositionAvgPriceElement.innerHTML) || 0
+
+            }
+
+           
+
             const getReservedMarginOfEstimationQuantity = () => {
 
                 const requiredMargin = getRequiredMargin();
@@ -870,6 +920,7 @@
                 getRequiredMargin,
                 getReservedMarginOfEstimationQuantity,
                 getCurrentPositionAvgPrice,
+                getUnreliableCurrentPositionAvgPrice,
                 strikePrice,
                 daysLeftToSettlement,
                 getStrikePriceWithSideSign,
