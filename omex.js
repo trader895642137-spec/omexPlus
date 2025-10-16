@@ -22,6 +22,8 @@
         minExpectedProfitOfStrategy:3.9,
         currentPositions: 1
     }
+    window.stockPriceForCallFactor = 0.98
+    window.stockPriceForPutFactor = 0.98
 
     const createStatusCnt = () => {
         let statusCnt = document.createElement('div');
@@ -876,16 +878,16 @@
                 const tradeFee = isBuy ? COMMISSION_FACTOR.OPTION.BUY : COMMISSION_FACTOR.OPTION.SELL;
                 const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE
                 const tax = isTaxFree(strategyPosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
-                const stockPriceFactor = 0.99;
+                
 
                 function calculateCallPrice(stockPrice, strikePrice) {
                     if(stockPrice <= strikePrice) return 0
-                    return ((stockPrice * stockPriceFactor) - (stockPrice * tax) - (strikePrice * (1 + exerciseFee))) / (1 + tradeFee);
+                    return ((stockPrice * window.stockPriceForCallFactor) - (stockPrice * tax) - (strikePrice * (1 + exerciseFee))) / (1 + tradeFee);
                 }
 
                 function calculatePutPrice(stockPrice, strikePrice) {
                     if(stockPrice >= strikePrice) return 0
-                    return (strikePrice * (1 - tax - exerciseFee) - (stockPrice/stockPriceFactor)) / (1 + tradeFee);
+                    return (strikePrice * (1 - tax - exerciseFee) - (stockPrice/window.stockPriceForPutFactor)) / (1 + tradeFee);
                 }
 
 
