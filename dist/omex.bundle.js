@@ -1,8 +1,186 @@
+var omexLib;
+/******/ (() => { // webpackBootstrap
+/******/ 	var __webpack_modules__ = ([
+/* 0 */,
+/* 1 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice } from './common.js';
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   COMMISSION_FACTOR: () => (/* binding */ COMMISSION_FACTOR),
+/* harmony export */   configs: () => (/* binding */ configs),
+/* harmony export */   getCommissionFactor: () => (/* binding */ getCommissionFactor),
+/* harmony export */   getNearSettlementPrice: () => (/* binding */ getNearSettlementPrice),
+/* harmony export */   isTaxFree: () => (/* binding */ isTaxFree),
+/* harmony export */   mainTotalOffsetGainCalculator: () => (/* binding */ mainTotalOffsetGainCalculator)
+/* harmony export */ });
+const COMMISSION_FACTOR = {
+  OPTION: {
+    BUY: 0.00103,
+    SELL: 0.00103,
+    SETTLEMENT: {
+      BUY: 0.0005,
+      SELL: 0.0055,
+      SELL_TAX: 0.005,
+      EXERCISE_FEE: 0.0005,
+      TAX_FREE_SELL: 0.0005,
+    }
+  },
+  STOCK: {
+    BUY: 0.003712,
+    SELL: 0.0088
+  },
+  ETF: {
+    BUY: 0.00116,
+    SELL: 0.001875
+  }
+}
+
+const configs = {
+  stockPriceForCallFactor: 0.98,
+  stockPriceForPutFactor: 0.98
+}
 
 
-export { configs } from './common.js';
+
+
+const isTaxFree = (_strategyPosition) => {
+  const TAX_FREE_NAMES = ['ضهرم', 'طهرم', 'ضتوان', 'طتوان', 'ضموج', 'طموج'];
+
+  return TAX_FREE_NAMES.some(taxFreeName => _strategyPosition.instrumentName.includes(taxFreeName))
+
+}
+const getCommissionFactor = (_strategyPosition) => {
+  if (_strategyPosition.isOption) {
+    return COMMISSION_FACTOR.OPTION
+  }
+
+  if (_strategyPosition.isETF) {
+    return COMMISSION_FACTOR.ETF
+  }
+
+  return COMMISSION_FACTOR.STOCK
+}
+
+
+const mainTotalOffsetGainCalculator = ({ strategyPositions, getBestPriceCb, getQuantity, getReservedMargin }) => {
+  return strategyPositions.reduce((sum, _strategyPosition, index) => {
+    const price = getBestPriceCb(_strategyPosition);
+
+    const isBuy = _strategyPosition.isBuy;
+    const quantity = getQuantity ? getQuantity(_strategyPosition, strategyPositions) : _strategyPosition.getQuantity();
+
+    const commissionFactor = getCommissionFactor(_strategyPosition)[isBuy ? 'SELL' : 'BUY'];
+
+    const priceWithSideSign = price * (isBuy ? 1 : -1);
+
+    const reservedMargin = getReservedMargin(_strategyPosition, strategyPositions);
+
+    const _totalOffsetGain = (priceWithSideSign * quantity) + reservedMargin - (price * quantity * commissionFactor);
+    return sum + _totalOffsetGain
+  }
+    , 0);
+}
+
+
+const getNearSettlementPrice = (strategyPosition) => {
+
+  const tradeFee = strategyPosition.isBuy ? COMMISSION_FACTOR.OPTION.BUY : COMMISSION_FACTOR.OPTION.SELL;
+  const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE
+  const tax = isTaxFree(strategyPosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
+
+
+  function calculateCallPrice(stockPrice, strikePrice) {
+    if (stockPrice <= strikePrice) return 0
+    return ((stockPrice * configs.stockPriceForCallFactor) - (stockPrice * tax) - (strikePrice * (1 + exerciseFee))) / (1 + tradeFee);
+  }
+
+  function calculatePutPrice(stockPrice, strikePrice) {
+    if (stockPrice >= strikePrice) return 0
+    return (strikePrice * (1 - tax - exerciseFee) - (stockPrice / configs.stockPriceForPutFactor)) / (1 + tradeFee);
+  }
+
+
+  const stockPrice = strategyPosition.getBaseInstrumentPriceOfOption();
+
+  const price = strategyPosition.isCall ? calculateCallPrice(stockPrice, strategyPosition.strikePrice) : calculatePutPrice(stockPrice, strategyPosition.strikePrice)
+  return price > 0 ? price : 0
+}
+
+/***/ })
+/******/ 	]);
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+var __webpack_exports__ = {};
+// This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
+(() => {
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   calcProfitOfStrategy: () => (/* binding */ calcProfitOfStrategy),
+/* harmony export */   configs: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.configs),
+/* harmony export */   expectedProfit: () => (/* binding */ expectedProfit),
+/* harmony export */   strategyPositions: () => (/* binding */ strategyPositions),
+/* harmony export */   unChekcedPositions: () => (/* binding */ unChekcedPositions)
+/* harmony export */ });
+/* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
+
+
+
+
+
 
 
 
@@ -17,7 +195,7 @@ try {
 } catch (error) { }
 
 // FIXME:expectedProfitPerMonth is factor but minExpectedProfitOfStrategy is percent
-export let expectedProfit = {
+let expectedProfit = {
     expectedProfitPerMonth: 1.05,
     minExpectedProfitOfStrategy: 3.9,
     currentPositions: 1
@@ -118,11 +296,11 @@ const showNotification = ({ title, body, tag }) => {
 
 const settlementCommissionFactor = (_strategyPosition) => {
 
-    const commissionFactorObj = _strategyPosition.isOption ? COMMISSION_FACTOR.OPTION.SETTLEMENT : COMMISSION_FACTOR.STOCK;
+    const commissionFactorObj = _strategyPosition.isOption ? _common_js__WEBPACK_IMPORTED_MODULE_0__.COMMISSION_FACTOR.OPTION.SETTLEMENT : _common_js__WEBPACK_IMPORTED_MODULE_0__.COMMISSION_FACTOR.STOCK;
 
     let commissionFactor;
 
-    const sellCommissionFactor = isTaxFree(_strategyPosition) ? commissionFactorObj.TAX_FREE_SELL : commissionFactorObj.SELL;
+    const sellCommissionFactor = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.isTaxFree)(_strategyPosition) ? commissionFactorObj.TAX_FREE_SELL : commissionFactorObj.SELL;
 
     if (_strategyPosition.isCall) {
         commissionFactor = _strategyPosition.isBuy ? commissionFactorObj.BUY : sellCommissionFactor;
@@ -150,7 +328,7 @@ const totalCostCalculator = _strategyPositions => {
 
             const quantity = getQuantity ? getQuantity(_strategyPosition, _strategyPositions) : _strategyPosition.getQuantity();
 
-            const commissionFactor = getCommissionFactor(_strategyPosition)[isBuy ? 'BUY' : 'SELL'];
+            const commissionFactor = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getCommissionFactor)(_strategyPosition)[isBuy ? 'BUY' : 'SELL'];
 
             const requiredMargin = _strategyPosition.getRequiredMargin();
 
@@ -226,9 +404,9 @@ const totalCostCalculator = _strategyPositions => {
 
 const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions }) => {
 
-    const getBestPriceCb = (_strategyPosition) => getNearSettlementPrice(_strategyPosition);
+    const getBestPriceCb = (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getNearSettlementPrice)(_strategyPosition);
 
-    const totalOffsetGainNearSettlement = mainTotalOffsetGainCalculator({
+    const totalOffsetGainNearSettlement = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
         strategyPositions,
         getBestPriceCb,
         getReservedMargin: _strategyPosition => {
@@ -262,21 +440,21 @@ const totalOffsetGainOfCurrentPositionsCalculator = ({ strategyPositions }) => {
         return position.getCurrentPositionQuantity() * quantityFactor
     }
 
-    const totalOffsetGainByOffsetOrderPrices = mainTotalOffsetGainCalculator({
+    const totalOffsetGainByOffsetOrderPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
         strategyPositions,
         getBestPriceCb: (_strategyPosition) => _strategyPosition.getBestOffsetPrice(),
         getQuantity: getQuantityOfCurrentPosition,
         getReservedMargin
     });
 
-    const totalOffsetGainByOpenMoreOrderPrices = mainTotalOffsetGainCalculator({
+    const totalOffsetGainByOpenMoreOrderPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
         strategyPositions,
         getBestPriceCb: (_strategyPosition) => _strategyPosition.getBestOpenMorePrice(),
         getQuantity: getQuantityOfCurrentPosition,
         getReservedMargin
     });
 
-    const totalOffsetGainByInsertedPrices = mainTotalOffsetGainCalculator({
+    const totalOffsetGainByInsertedPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
         strategyPositions,
         getBestPriceCb: (_strategyPosition) => _strategyPosition.getInsertedPrice(),
         getQuantity: getQuantityOfCurrentPosition,
@@ -302,19 +480,19 @@ const totalOffsetGainOfChunkOfEstimationQuantityCalculator = ({ strategyPosition
     }
 
 
-    const totalOffsetGainByOffsetOrderPrices = mainTotalOffsetGainCalculator({
+    const totalOffsetGainByOffsetOrderPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
         strategyPositions,
         getBestPriceCb: (_strategyPosition) => _strategyPosition.getBestOffsetPrice(),
         getReservedMargin
     });
 
-    const totalOffsetGainByOpenMoreOrderPrices = mainTotalOffsetGainCalculator({
+    const totalOffsetGainByOpenMoreOrderPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
         strategyPositions,
         getBestPriceCb: (_strategyPosition) => _strategyPosition.getBestOpenMorePrice(),
         getReservedMargin
     });
 
-    const totalOffsetGainByInsertedPrices = mainTotalOffsetGainCalculator({
+    const totalOffsetGainByInsertedPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
         strategyPositions,
         getBestPriceCb: (_strategyPosition) => _strategyPosition.getInsertedPrice(),
         getReservedMargin
@@ -864,8 +1042,8 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
     );
 }
 
-export let strategyPositions = createPositionObjectArrayByElementRowArray(Array.from(document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => rowEl.querySelector('c-k-input-checkbox input').checked));
-export let unChekcedPositions  = createPositionObjectArrayByElementRowArray(Array.from(document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => !rowEl.querySelector('c-k-input-checkbox input').checked));
+let strategyPositions = createPositionObjectArrayByElementRowArray(Array.from(document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => rowEl.querySelector('c-k-input-checkbox input').checked));
+let unChekcedPositions  = createPositionObjectArrayByElementRowArray(Array.from(document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => !rowEl.querySelector('c-k-input-checkbox input').checked));
 
 
 
@@ -1759,7 +1937,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
 }
 
-export const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositions) => {
+const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositions) => {
     // getStrategyName
 
     const profitCalculator = STRATEGY_NAME_PROFIT_CALCULATOR[_strategyPositions[0].getStrategyType() || 'OTHERS'];
@@ -2020,3 +2198,9 @@ Run();
 
 
 
+
+})();
+
+omexLib = __webpack_exports__;
+/******/ })()
+;
