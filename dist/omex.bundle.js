@@ -812,7 +812,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         let cachedOrderModalPortfolioQuantityElement;
         const getOrderModalPortfolioQuantity = () => {
             cachedOrderModalPortfolioQuantityElement = document.body.contains(cachedOrderModalPortfolioQuantityElement) ? cachedOrderModalPortfolioQuantityElement : ordersModal.querySelector('.o-quantityContainer footer span');
-            return convertStringToInt(cachedOrderModalPortfolioQuantityElement.innerHTML) || 0
+            return convertStringToInt(cachedOrderModalPortfolioQuantityElement?.innerHTML) || 0
 
         }
         let cachedOrderModalQuantityFooterElement
@@ -835,6 +835,44 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
             return cachedOrderModalTradePanelElement
 
+        }
+
+
+        let cachedOrderModalStrategyDropdownElement;
+        const getOrderModalStrategyDropdownElement = ()=>{
+            if (!document.body.contains(cachedOrderModalTradePanelElement)) {
+                cachedOrderModalStrategyDropdownElement = ordersModal.querySelector('client-instrument-favorites-item-trade-panel ng-select.-is-strategyDropdown');
+            }
+
+
+            return cachedOrderModalStrategyDropdownElement
+        }
+
+
+        
+
+
+         let cachedOrderModalQuantityInputElement;
+        const getOrderModalQuantityInputElement = ()=>{
+            if (!document.body.contains(cachedOrderModalQuantityInputElement)) {
+                cachedOrderModalQuantityInputElement =ordersModal.querySelector('#tabKey-optionTradeQuantityInput');
+            }
+
+
+            return cachedOrderModalQuantityInputElement
+        }
+
+
+
+        
+         let cachedOrderModalQuantityInputArrowUpElement;
+        const getOrderModalQuantityInputArrowUpElement = ()=>{
+            if (!document.body.contains(cachedOrderModalQuantityInputArrowUpElement)) {
+                cachedOrderModalQuantityInputArrowUpElement = ordersModal.querySelector('[iconname="arrow-up-filled"]');
+            }
+
+
+            return cachedOrderModalQuantityInputArrowUpElement
         }
 
         const getRequiredMargin = () => {
@@ -1016,6 +1054,9 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             getOrderModalPortfolioQuantity,
             getOrderModalQuantityFooterElement,
             getOrderModalTradePanelElement,
+            getOrderModalStrategyDropdownElement,
+            getOrderModalQuantityInputElement,
+            getOrderModalQuantityInputArrowUpElement,
             getInsertedPrice,
             getInsertedQuantity,
             getRequiredMargin,
@@ -1053,10 +1094,19 @@ const observeInputQuantityOfOrderModal = () => {
     const orderModalInputQuantityUnbalanceInformer = () => {
 
         quantityUnbalanceInformer({
-            orderModalQuantityGetter: (strategyPosition) => convertStringToInt(strategyPosition.ordersModal.querySelector('#tabKey-optionTradeQuantityInput').value),
-            informer: (strategyPosition) => { strategyPosition.ordersModal.querySelector('#tabKey-optionTradeQuantityInput').style.cssText = "border: 5px solid red" },
-            informCleaner: (strategyPosition) => { strategyPosition.ordersModal.querySelector('#tabKey-optionTradeQuantityInput').style.border = '' }
-        })
+            orderModalQuantityGetter: (strategyPosition) => convertStringToInt(strategyPosition.getOrderModalQuantityInputElement()?.value),
+            informer: (strategyPosition) => { 
+                if(!strategyPosition.getOrderModalQuantityInputElement()) return 
+                strategyPosition.getOrderModalQuantityInputElement().style.cssText = "border: 5px solid red" 
+            },
+            informCleaner: (strategyPosition) => { 
+                if(!strategyPosition.getOrderModalQuantityInputElement()) return 
+                strategyPosition.getOrderModalQuantityInputElement().style.border = '' 
+            }
+        });
+
+
+        
 
     }
 
@@ -1064,11 +1114,13 @@ const observeInputQuantityOfOrderModal = () => {
 
         strategyPositionObj.observers.filter(observerInfoObj => ['inputQuantityOfOrderModal'].includes(observerInfoObj.key)).forEach(observerInfoObj => observerInfoObj.observer.disconnect())
 
-        const inputQuantityOfOrderModal = strategyPositionObj.ordersModal.querySelector('client-trade-ui-input-quantity-advance-compact input#tabKey-optionTradeQuantityInput');
+        const inputQuantityOfOrderModal = strategyPositionObj.getOrderModalQuantityInputElement();
         const ordersModal = strategyPositionObj.ordersModal;
 
         const eventNames = ['input', 'change', 'click'];
+        eventNames.forEach(eventName => inputQuantityOfOrderModal.removeEventListener(eventName, orderModalInputQuantityUnbalanceInformer));
         eventNames.forEach(eventName => inputQuantityOfOrderModal.addEventListener(eventName, orderModalInputQuantityUnbalanceInformer));
+        ordersModal.removeEventListener('click', orderModalInputQuantityUnbalanceInformer);
         ordersModal.addEventListener('click', orderModalInputQuantityUnbalanceInformer);
 
         let lastClickTime = 0;
@@ -1082,7 +1134,11 @@ const observeInputQuantityOfOrderModal = () => {
 
         }
 
+        // TODO:FIXME: refactor this name and persist event handler code
+        
+        strategyPositionObj.mouseMoveOnOrderModalEventHandler && ordersModal.addEventListener('mousemove', strategyPositionObj.mouseMoveOnOrderModalEventHandler);
         ordersModal.addEventListener('mousemove', mousemoveEventHandler);
+        strategyPositionObj.mouseMoveOnOrderModalEventHandler = mousemoveEventHandler;
 
         const inputObserver = {
             disconnect() {
@@ -1169,15 +1225,18 @@ const observePortfolioQuantityOfOrderModal = () => {
 
 
     let currentPositionQuantityUnbalanceInformerTimeout;
+    
 
     const currentPositionQuantityUnbalanceInformer = () => {
         const hasIssue = quantityUnbalanceInformer({
             orderModalQuantityGetter: (strategyPosition) => strategyPosition.getOrderModalPortfolioQuantity(),
             informer: (strategyPosition) => {
+                if(!strategyPosition?.getOrderModalQuantityFooterElement()) return  
                 strategyPosition.getOrderModalQuantityFooterElement().style.cssText = "border-bottom: 2px solid red";
 
             },
             informCleaner: (strategyPosition) => {
+                if(!strategyPosition?.getOrderModalQuantityFooterElement()) return  
                 strategyPosition.getOrderModalQuantityFooterElement().style.cssText = ''
             }
         }).hasIssue;
@@ -1189,11 +1248,14 @@ const observePortfolioQuantityOfOrderModal = () => {
                 body: `${strategyPositions[0].instrumentName}`,
                 tag: `${strategyPositions[0].instrumentName}-currentPositionQuantityUnbalance`
             });
+            
             clearTimeout(currentPositionQuantityUnbalanceInformerTimeout);
             currentPositionQuantityUnbalanceInformerTimeout = setTimeout(currentPositionQuantityUnbalanceInformer, 20000);
         } else {
             clearTimeout(currentPositionQuantityUnbalanceInformerTimeout);
         }
+
+        
 
     }
 
@@ -1263,11 +1325,11 @@ const observePortfolioQuantityOfOrderModal = () => {
 
         const PortfolioQuantityObserver = new MutationObserver(PortfolioQuantityCallback);
 
-        strategyPositionObj?.ordersModal && PortfolioQuantityObserver.observe(strategyPositionObj.getOrderModalQuantityFooterElement(), config);
+        strategyPositionObj.getOrderModalQuantityFooterElement() && PortfolioQuantityObserver.observe(strategyPositionObj.getOrderModalQuantityFooterElement(), config);
 
-        strategyPositionObj.ordersModal.querySelectorAll('client-trade-ui-tabs,[iconname="details-outlined"]').forEach(el => {
-            el.addEventListener('click', (e) => {
-                setTimeout(() => {
+
+        const tabClickHandler = ()=>{
+             setTimeout(() => {
 
                     const isTradePanelVisible = document.body.contains(strategyPositionObj.getOrderModalTradePanelElement());
 
@@ -1281,9 +1343,12 @@ const observePortfolioQuantityOfOrderModal = () => {
                 }
                     , 100)
 
-            }
-            )
+        }
+        strategyPositionObj.ordersModal.querySelectorAll('client-trade-ui-tabs,[iconname="details-outlined"]').forEach(el => {
+            strategyPositionObj.tabClickHandler && el.removeEventListener('click',strategyPositionObj.tabClickHandler )
+            el.addEventListener('click',tabClickHandler );
 
+            strategyPositionObj.tabClickHandler = tabClickHandler;
         });
 
 
@@ -1299,8 +1364,11 @@ const observePortfolioQuantityOfOrderModal = () => {
         }
 
 
-
+        strategyPositionObj.orderModalMousemoveEventHandler && strategyPositionObj.ordersModal.removeEventListener('mousemove', strategyPositionObj.orderModalMousemoveEventHandler)
         strategyPositionObj.ordersModal.addEventListener('mousemove', mousemoveEventHandler);
+
+        strategyPositionObj.orderModalMousemoveEventHandler = mousemoveEventHandler
+
         const mouseMoveObserver = {
             // TODO: remove click event listener
             disconnect() {
@@ -1513,10 +1581,15 @@ const observePriceChanges = () => {
         const bestOffsetOrderObserver = new MutationObserver(bestOffsetOrderCallback);
         const bestOpenMoreOrderObserver = new MutationObserver(bestOpenMoreOrderCallback);
 
+        
+
         strategyPositionObj.getOffsetOrderPriceElements()[0] && bestOffsetOrderObserver.observe(strategyPositionObj.getOffsetOrderPriceElements()[0], config);
         strategyPositionObj.getOpenMoreOrderPriceElements()[0] && bestOpenMoreOrderObserver.observe(strategyPositionObj.getOpenMoreOrderPriceElements()[0], config);
 
-        strategyPositionObj.ordersModal.querySelector('[iconname="details-outlined"]').addEventListener('click', (e) => {
+
+        const assetDetailsIconClickHandler = ()=>{
+
+
             setTimeout(() => {
                 const isLimitOrdersVisible = Boolean(strategyPositionObj.ordersModal.querySelector('client-instrument-best-limit'));
 
@@ -1530,7 +1603,11 @@ const observePriceChanges = () => {
                 , 100)
 
         }
-        )
+
+        strategyPositionObj.assetDetailsIconClickHandler && strategyPositionObj.ordersModal.querySelector('[iconname="details-outlined"]').removeEventListener('click',strategyPositionObj.assetDetailsIconClickHandler);
+        strategyPositionObj.ordersModal.querySelector('[iconname="details-outlined"]').addEventListener('click', assetDetailsIconClickHandler );
+        strategyPositionObj.assetDetailsIconClickHandler = assetDetailsIconClickHandler;
+
 
         let observers = strategyPositionObj.observers.filter(observerInfoObj => !['bestOffsetOrder', 'bestOpenMoreOrder'].includes(observerInfoObj.key));
 
@@ -1987,6 +2064,17 @@ const quantityUnbalanceInformer = ({ orderModalQuantityGetter, informer, informC
     }
 }
 
+
+const enterEvent = new KeyboardEvent("keydown", {
+    key: "Enter",
+    code: "Enter",
+    keyCode: 13,
+    // برای مرورگرهای قدیمی
+    bubbles: true,
+    cancelable: true
+});
+
+
 const observeTabClickOfOrderModal = () => {
 
     return strategyPositions.map(strategyPositionObj => {
@@ -1997,25 +2085,17 @@ const observeTabClickOfOrderModal = () => {
 
         const tabClickOfOrderModalHandlerFactory = (ordersModal) => () => {
 
-            const enterEvent = new KeyboardEvent("keydown", {
-                key: "Enter",
-                code: "Enter",
-                keyCode: 13,
-                // برای مرورگرهای قدیمی
-                bubbles: true,
-                cancelable: true
-            });
 
-            const strategyDropdown = ordersModal.querySelector('client-instrument-favorites-item-trade-panel ng-select.-is-strategyDropdown');
+            const strategyDropdown = strategyPositionObj.getOrderModalStrategyDropdownElement();
 
             if (strategyDropdown && !strategyDropdown.querySelector('.ng-value-container .ng-value')) {
                 strategyDropdown.dispatchEvent(enterEvent);
                 strategyDropdown.dispatchEvent(enterEvent);
             }
-
-            if (ordersModal.querySelector('#tabKey-optionTradeQuantityInput').value === '') {
-                ordersModal.querySelector('[iconname="arrow-up-filled"]').click()
+            if (strategyPositionObj.getOrderModalQuantityInputElement().value === '') {
+                strategyPositionObj.getOrderModalQuantityInputArrowUpElement().click()
             }
+            
 
         }
 
@@ -2027,6 +2107,7 @@ const observeTabClickOfOrderModal = () => {
 
         const inputObserver = {
             disconnect() {
+                
                 tabsCntOfOrderModal.removeEventListener('click', clickHandler)
             }
         }
