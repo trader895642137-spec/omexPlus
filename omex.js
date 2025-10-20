@@ -508,7 +508,10 @@ const calcOffsetProfitOfStrategy = (_strategyPositions) => {
 
         
         `;
+
+    let hasProfit=false
     if (profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1)) {
+        hasProfit=true;
 
         informExtremeOrderPrice(_strategyPositions, 'offset');
 
@@ -518,8 +521,11 @@ const calcOffsetProfitOfStrategy = (_strategyPositions) => {
             tag: `${_strategyPositions[0].instrumentName}-expectedProfitForCurrentPositionsPrecent`
         });
     } else {
+        hasProfit=false;
         uninformExtremeOrderPrice(_strategyPositions, 'offset');
     }
+
+    return hasProfit
 
 }
 const informExtremeOrderPrice = (_strategyPositions, type) => {
@@ -1389,6 +1395,31 @@ const observeMyOrderInOrdersModal = () => {
     );
 }
 
+
+let calcOffsetProfitOfStrategyInformUntilNotProfitTimeout;
+
+const calcOffsetProfitOfStrategyInformUntilNotProfit = () => {
+    const isProfit = calcOffsetProfitOfStrategy(strategyPositions);
+    if (isProfit) {
+        clearTimeout(calcOffsetProfitOfStrategyInformUntilNotProfitTimeout);
+        calcOffsetProfitOfStrategyInformUntilNotProfitTimeout = setTimeout(calcOffsetProfitOfStrategyInformUntilNotProfit, 10000);
+    } else {
+        clearTimeout(calcOffsetProfitOfStrategyInformUntilNotProfitTimeout);
+    }
+}
+
+let calcProfitOfStrategyInformUntilNotProfitTimeout;
+
+const calcProfitOfStrategyInformUntilNotProfit =async () => {
+    const isProfit = await calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+    if (isProfit) {
+        clearTimeout(calcProfitOfStrategyInformUntilNotProfitTimeout);
+        calcProfitOfStrategyInformUntilNotProfitTimeout = setTimeout(calcProfitOfStrategyInformUntilNotProfit, 10000);
+    } else {
+        clearTimeout(calcProfitOfStrategyInformUntilNotProfitTimeout);
+    }
+}
+
 const observePriceChanges = () => {
     return strategyPositions.map(strategyPositionObj => {
 
@@ -1400,15 +1431,16 @@ const observePriceChanges = () => {
             subtree: true
         };
 
+        
+
         const bestOffsetOrderCallback = (mutationList) => {
             for (const mutation of mutationList) {
                 if (mutation?.target?.innerHTML) {
-                    calcProfitOfStrategy(strategyPositions, unChekcedPositions);
                     setTimeout(() => {
-                        calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+                        calcProfitOfStrategyInformUntilNotProfit()
                     }
                         , 100);
-                    calcOffsetProfitOfStrategy(strategyPositions);
+                    calcOffsetProfitOfStrategyInformUntilNotProfit();
                 }
 
             }
@@ -1419,12 +1451,11 @@ const observePriceChanges = () => {
             for (const mutation of mutationList) {
                 if (mutation?.target?.innerHTML) {
 
-                    calcProfitOfStrategy(strategyPositions, unChekcedPositions);
                     setTimeout(() => {
-                        calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+                        calcProfitOfStrategyInformUntilNotProfit()
                     }
                         , 100);
-                    calcOffsetProfitOfStrategy(strategyPositions)
+                    calcOffsetProfitOfStrategyInformUntilNotProfit();
 
                 }
 
@@ -1512,8 +1543,11 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
     const percentPerDay = Math.pow((1 + (profitPercentByBestPrices / 100)), 1 / daysLeftToSettlement);
     const percentPerMonth = Math.pow(percentPerDay, 30);
 
+
+    let isProfit=false;
     if (isProfitEnough({ totalProfitPercent: profitPercentByBestPrices, percentPerMonth })) {
 
+        isProfit =true;
         informExtremeOrderPrice(_strategyPositions, 'openMore');
         showNotification({
             title: `سود %${profitPercentByBestPrices.toFixed()}`,
@@ -1521,8 +1555,11 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
             tag: `${_strategyPositions[0].instrumentName}-expectedProfitPrecent`
         });
     } else {
+        isProfit =false;
         uninformExtremeOrderPrice(_strategyPositions);
     }
+
+    return isProfit;
 }
 
 const STRATEGY_NAME_PROFIT_CALCULATOR = {
@@ -1879,7 +1916,7 @@ export const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositio
 
     const { profitPercentByBestPrices, profitPercentByInsertedPrices } = profitCalculator(_strategyPositions, _unChekcedPositions);
 
-    informForExpectedProfitOnStrategy({
+    return informForExpectedProfitOnStrategy({
         _strategyPositions,
         profitPercentByBestPrices,
         profitPercentByInsertedPrices
