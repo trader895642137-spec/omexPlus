@@ -875,6 +875,16 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             return cachedOrderModalQuantityInputArrowUpElement
         }
 
+
+         let cachedOrderModalPriceElement;
+        const getOrderModalPriceInputElement = ()=>{
+            if (!document.body.contains(cachedOrderModalPriceElement)) {
+                 cachedOrderModalPriceElement =ordersModal.querySelector('#tabKey-optionTradePriceInput');
+            }
+
+            return cachedOrderModalPriceElement
+        }
+
         const getRequiredMargin = () => {
 
             const isMarginRequired = optionRowEl.querySelector('input[formcontrolname="requiredMarginIsSelected"]')?.checked;
@@ -1056,6 +1066,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             getOrderModalTradePanelElement,
             getOrderModalStrategyDropdownElement,
             getOrderModalQuantityInputElement,
+            getOrderModalPriceInputElement,
             getOrderModalQuantityInputArrowUpElement,
             getInsertedPrice,
             getInsertedQuantity,
@@ -1089,10 +1100,11 @@ let unChekcedPositions  = createPositionObjectArrayByElementRowArray(Array.from(
 
 
 
-const observeInputQuantityOfOrderModal = () => {
+const orderModalInputQuantityUnbalanceInformer = () => {
 
-    const orderModalInputQuantityUnbalanceInformer = () => {
 
+    setTimeout(() => {
+        
         quantityUnbalanceInformer({
             orderModalQuantityGetter: (strategyPosition) => convertStringToInt(strategyPosition.getOrderModalQuantityInputElement()?.value),
             informer: (strategyPosition) => { 
@@ -1104,11 +1116,24 @@ const observeInputQuantityOfOrderModal = () => {
                 strategyPosition.getOrderModalQuantityInputElement().style.border = '' 
             }
         });
+        highSumValueOfInsertedOrderInformer({
+            orderModalQuantityGetter: (strategyPosition) => convertStringToInt(strategyPosition.getOrderModalQuantityInputElement()?.value),
+            orderModalPriceGetter: (strategyPosition) => convertStringToInt(strategyPosition.getOrderModalPriceInputElement()?.value),
+            informer: (strategyPosition) => { 
+                if(!strategyPosition.ordersModal) return 
+                strategyPosition.ordersModal.querySelector('.o-inModalWrapper').style.border='10px solid red';
+            },
+            informCleaner: (strategyPosition) => { 
+                if(!strategyPosition.ordersModal) return 
+                strategyPosition.ordersModal.querySelector('.o-inModalWrapper').style.border='';
+            }
+        });
+    }, 100);
+    
 
+}
+const observeInputQuantityOfOrderModal = () => {
 
-        
-
-    }
 
     return strategyPositions.map(strategyPositionObj => {
 
@@ -1120,11 +1145,16 @@ const observeInputQuantityOfOrderModal = () => {
         const eventNames = ['input', 'change', 'click'];
         eventNames.forEach(eventName => inputQuantityOfOrderModal.removeEventListener(eventName, orderModalInputQuantityUnbalanceInformer));
         eventNames.forEach(eventName => inputQuantityOfOrderModal.addEventListener(eventName, orderModalInputQuantityUnbalanceInformer));
-        ordersModal.removeEventListener('click', orderModalInputQuantityUnbalanceInformer);
-        ordersModal.addEventListener('click', orderModalInputQuantityUnbalanceInformer);
+
+
+        const eventNamesOnOrderModal =['click','mousedown','mouseup']
+
+        eventNamesOnOrderModal.forEach(eventName => ordersModal.removeEventListener(eventName, orderModalInputQuantityUnbalanceInformer));
+        eventNamesOnOrderModal.forEach(eventName => ordersModal.addEventListener(eventName, orderModalInputQuantityUnbalanceInformer));
+        
 
         let lastClickTime = 0;
-        const minInterval = 1000;
+        const minInterval = 300;
         const mousemoveEventHandler = () => {
             const currentTime = new Date().getTime();
             if ((currentTime - lastClickTime) < minInterval)
@@ -1284,9 +1314,9 @@ const observePortfolioQuantityOfOrderModal = () => {
                 // const oldValue = mutation.oldValue ? convertStringToInt(mutation.oldValue) : 0;
                 const oldValue = previousStoredPortfolioQuantity >= 0 ? previousStoredPortfolioQuantity : 0;
                 // const newValue = mutation.target.nodeValue ? convertStringToInt(mutation.target.nodeValue) : null;
-                const newValue = strategyPositionObj.getOrderModalPortfolioQuantity();
+                const newValue = strategyPositionObj.getOrderModalPortfolioQuantity() || 0;
                 // if(newValue===null) return
-                if (!newValue) return
+               
                 let bgColor
 
 
@@ -1296,10 +1326,12 @@ const observePortfolioQuantityOfOrderModal = () => {
                     bgColor = '#ff00009c'
                 }
 
-                let quantityFooter = strategyPositionObj.getOrderModalQuantityFooterElement();
+                // let quantityFooter = strategyPositionObj.getOrderModalQuantityFooterElement();
+                let tradePanelElement = strategyPositionObj.getOrderModalTradePanelElement();
 
 
-                quantityFooter.style.backgroundColor = bgColor;
+                // quantityFooter.style.backgroundColor = bgColor;
+                tradePanelElement.style.backgroundColor = bgColor;
                 showNotification({
                     title: 'معامله شد',
                     body: `${strategyPositionObj.instrumentName}`,
@@ -1309,7 +1341,7 @@ const observePortfolioQuantityOfOrderModal = () => {
                 previousStoredPortfolioQuantity = newValue
 
                 setTimeout(() => {
-                    quantityFooter.style.backgroundColor = '';
+                    tradePanelElement.style.backgroundColor = '';
 
                     currentPositionQuantityUnbalanceInformer();
                 }
@@ -2032,7 +2064,23 @@ const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositions) => 
     });
 }
 
+const highSumValueOfInsertedOrderInformer = ({ orderModalQuantityGetter,orderModalPriceGetter, informer, informCleaner })=>{
+    if (!strategyPositions[0].ordersModal) return
 
+
+    strategyPositions.forEach(strategyPosition=>{
+        if (!strategyPosition?.ordersModal) return true
+
+        const positionModalQuantity = orderModalQuantityGetter(strategyPosition);
+        const positionModalPrice = orderModalPriceGetter(strategyPosition);
+        if(positionModalQuantity*positionModalPrice*1000 > 500000000){
+            informer(strategyPosition);
+        }else{
+            informCleaner(strategyPosition);
+        }
+
+    });
+}
 
 
 const quantityUnbalanceInformer = ({ orderModalQuantityGetter, informer, informCleaner }) => {
