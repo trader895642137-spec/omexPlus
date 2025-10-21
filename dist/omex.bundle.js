@@ -12,7 +12,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getCommissionFactor: () => (/* binding */ getCommissionFactor),
 /* harmony export */   getNearSettlementPrice: () => (/* binding */ getNearSettlementPrice),
 /* harmony export */   isTaxFree: () => (/* binding */ isTaxFree),
-/* harmony export */   mainTotalOffsetGainCalculator: () => (/* binding */ mainTotalOffsetGainCalculator)
+/* harmony export */   mainTotalOffsetGainCalculator: () => (/* binding */ mainTotalOffsetGainCalculator),
+/* harmony export */   totalCostCalculator: () => (/* binding */ totalCostCalculator)
 /* harmony export */ });
 const COMMISSION_FACTOR = {
   OPTION: {
@@ -63,6 +64,40 @@ const getCommissionFactor = (_strategyPosition) => {
 }
 
 
+
+
+const totalCostCalculator = ({ strategyPositions, getPrice, getQuantity } = {}) => {
+  let totalCost = strategyPositions.reduce((sum, _strategyPosition) => {
+    const price = getPrice(_strategyPosition);
+    if (!price)
+      return NaN
+
+    const isBuy = _strategyPosition.isBuy;
+
+    const priceWithSideSign = price * (isBuy ? -1 : 1);
+
+    const quantity = getQuantity ? getQuantity(_strategyPosition, strategyPositions) : _strategyPosition.getQuantity();
+
+    const commissionFactor = getCommissionFactor(_strategyPosition)[isBuy ? 'BUY' : 'SELL'];
+
+    const requiredMargin = _strategyPosition.getRequiredMargin();
+
+    const reservedMargin = requiredMargin ? (requiredMargin * quantity) : 0;
+
+    const _totalCost = (priceWithSideSign * quantity) - reservedMargin - (price * quantity * commissionFactor);
+    return sum + _totalCost
+  }
+    , 0);
+
+  totalCost = totalCost < 0 ? Math.floor(totalCost) : Math.ceil(totalCost);
+
+  return totalCost
+}
+
+
+
+
+
 const mainTotalOffsetGainCalculator = ({ strategyPositions, getBestPriceCb, getQuantity, getReservedMargin }) => {
   return strategyPositions.reduce((sum, _strategyPosition, index) => {
     const price = getBestPriceCb(_strategyPosition);
@@ -83,7 +118,7 @@ const mainTotalOffsetGainCalculator = ({ strategyPositions, getBestPriceCb, getQ
 }
 
 
-const getNearSettlementPrice = (strategyPosition) => {
+const getNearSettlementPrice = ({strategyPosition,stockPrice}) => {
 
   const tradeFee = strategyPosition.isBuy ? COMMISSION_FACTOR.OPTION.BUY : COMMISSION_FACTOR.OPTION.SELL;
   const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE
@@ -99,9 +134,6 @@ const getNearSettlementPrice = (strategyPosition) => {
     if (stockPrice >= strikePrice) return 0
     return (strikePrice * (1 - tax - exerciseFee) - (stockPrice / configs.stockPriceForPutFactor)) / (1 + tradeFee);
   }
-
-
-  const stockPrice = strategyPosition.getBaseInstrumentPriceOfOption();
 
   const price = strategyPosition.isCall ? calculateCallPrice(stockPrice, strategyPosition.strikePrice) : calculatePutPrice(stockPrice, strategyPosition.strikePrice)
   return price > 0 ? price : 0
@@ -314,42 +346,16 @@ const settlementCommissionFactor = (_strategyPosition) => {
     return commissionFactor
 }
 
-const totalCostCalculator = _strategyPositions => {
+const totalCostCalculatorForPriceTypes = _strategyPositions => {
 
-    const _totalCostCalculator = ({ strategyPositions, getPrice, getQuantity } = {}) => {
-        let totalCost = strategyPositions.reduce((sum, _strategyPosition) => {
-            const price = getPrice(_strategyPosition);
-            if (!price)
-                return NaN
 
-            const isBuy = _strategyPosition.isBuy;
 
-            const priceWithSideSign = price * (isBuy ? -1 : 1);
-
-            const quantity = getQuantity ? getQuantity(_strategyPosition, _strategyPositions) : _strategyPosition.getQuantity();
-
-            const commissionFactor = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getCommissionFactor)(_strategyPosition)[isBuy ? 'BUY' : 'SELL'];
-
-            const requiredMargin = _strategyPosition.getRequiredMargin();
-
-            const reservedMargin = requiredMargin ? (requiredMargin * quantity) : 0;
-
-            const _totalCost = (priceWithSideSign * quantity) - reservedMargin - (price * quantity * commissionFactor);
-            return sum + _totalCost
-        }
-            , 0);
-
-        totalCost = totalCost < 0 ? Math.floor(totalCost) : Math.ceil(totalCost);
-
-        return totalCost
-    }
-
-    let totalCostOfChunkOfEstimationQuantity = _totalCostCalculator({
+    let totalCostOfChunkOfEstimationQuantity = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculator)({
         strategyPositions: _strategyPositions,
         getPrice: (position) => position.getCurrentPositionAvgPrice()
     });
 
-    let totalCostOfCurrentPositions = _totalCostCalculator({
+    let totalCostOfCurrentPositions = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculator)({
         strategyPositions: _strategyPositions,
         getQuantity: (position, __strategyPositions) => {
 
@@ -365,7 +371,7 @@ const totalCostCalculator = _strategyPositions => {
         },
         getPrice: (position) => position.getCurrentPositionAvgPrice()
     });
-    let unreliableTotalCostOfCurrentPositions = _totalCostCalculator({
+    let unreliableTotalCostOfCurrentPositions = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculator)({
         strategyPositions: _strategyPositions,
         getQuantity: (position, __strategyPositions) => {
 
@@ -381,12 +387,12 @@ const totalCostCalculator = _strategyPositions => {
         },
         getPrice: (position) => position.getCurrentPositionAvgPrice() || position.getUnreliableCurrentPositionAvgPrice()
     });
-    let totalCostByBestPrices = _totalCostCalculator({
+    let totalCostByBestPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculator)({
         strategyPositions: _strategyPositions,
         getPrice: (position) => position.getBestOpenMorePrice()
     });
 
-    let totalCostByInsertedPrices = _totalCostCalculator({
+    let totalCostByInsertedPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculator)({
         strategyPositions: _strategyPositions,
         getPrice: (position) => position.getInsertedPrice()
     });
@@ -404,7 +410,7 @@ const totalCostCalculator = _strategyPositions => {
 
 const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions }) => {
 
-    const getBestPriceCb = (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getNearSettlementPrice)(_strategyPosition);
+    const getBestPriceCb = (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getNearSettlementPrice)({strategyPosition: _strategyPosition, stockPrice:_strategyPosition.getBaseInstrumentPriceOfOption()});
 
     const totalOffsetGainNearSettlement = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
         strategyPositions,
@@ -584,11 +590,11 @@ const MARGIN_CALC_TYPE = {
     BY_GIVEN_PRICE: "BY_GIVEN_PRICE"
 }
 const calcOffsetProfitOfStrategy = (_strategyPositions) => {
-    const totalCostInfoObj = totalCostCalculator(_strategyPositions);
+    const totalCostInfoObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
     const totalCurrentPositionCost = totalCostInfoObj.totalCostOfCurrentPositions;
     const unreliableTotalCostOfCurrentPositions = totalCostInfoObj.unreliableTotalCostOfCurrentPositions;
-    const totalCostOfChunkOfEstimationQuantity = totalCostCalculator(_strategyPositions).totalCostOfChunkOfEstimationQuantity;
+    const totalCostOfChunkOfEstimationQuantity = totalCostCalculatorForPriceTypes(_strategyPositions).totalCostOfChunkOfEstimationQuantity;
 
     const totalOffsetGainOfChunkOfEstimation = totalOffsetGainOfChunkOfEstimationQuantityCalculator({
         strategyPositions: _strategyPositions
@@ -1746,7 +1752,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
     BUCS(_strategyPositions, _unChekcedPositions) {
 
-        const totalCostObj = totalCostCalculator(_strategyPositions);
+        const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
         const stocks = _unChekcedPositions.filter(_unChekcedPosition => !_unChekcedPosition.isOption);
         if (stocks.length > 1)
@@ -1777,7 +1783,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
     },
     BUCS_COLLAR(_strategyPositions, _unChekcedPositions) {
 
-        const totalCostObj = totalCostCalculator(_strategyPositions);
+        const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
         const buyOptions = _strategyPositions.filter(_strategyPosition => _strategyPosition.isBuy);
 
@@ -1801,7 +1807,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
     },
     BUPS_COLLAR(_strategyPositions, _unChekcedPositions) {
 
-        const totalCostObj = totalCostCalculator(_strategyPositions);
+        const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
         const puts = _strategyPositions.filter(_strategyPosition => _strategyPosition.isPut);
 
@@ -1825,7 +1831,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
     },
     BEPS_COLLAR(_strategyPositions, _unChekcedPositions) {
 
-        const totalCostObj = totalCostCalculator(_strategyPositions);
+        const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
         const buyOptions = _strategyPositions.filter(_strategyPosition => _strategyPosition.isBuy);
 
@@ -1848,7 +1854,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
         }
     },
     BECS(_strategyPositions) {
-        const totalCostObj = totalCostCalculator(_strategyPositions);
+        const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
         const totalOffsetGainNearSettlement = totalOffsetGainNearSettlementOfEstimationPanel({
             strategyPositions: _strategyPositions
         });
@@ -1869,7 +1875,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
     },
     BUPS(_strategyPositions) {
-        const totalCostObj = totalCostCalculator(_strategyPositions);
+        const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
         const totalOffsetGainNearSettlement = totalOffsetGainNearSettlementOfEstimationPanel({
             strategyPositions: _strategyPositions
         });
@@ -1891,7 +1897,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
     },
     BEPS(_strategyPositions) {
 
-        const totalCostObj = totalCostCalculator(_strategyPositions);
+        const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
         const totalGainObj = totalSettlementGainByEstimationQuantity(_strategyPositions);
 
         const profitPercentByBestPrices = profitPercentCalculator({
@@ -1912,7 +1918,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
         const calOptions = _strategyPositions.filter(_strategyPosition => _strategyPosition.isCall);
 
-        const totalCostObj = totalCostCalculator(_strategyPositions);
+        const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
         const totalGainObj = totalSettlementGainByEstimationQuantity(calOptions);
 
         const profitPercentByBestPrices = profitPercentCalculator({
@@ -1932,7 +1938,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
     },
     BOX_BUPS_BECS(_strategyPositions) {
         const calOptions = _strategyPositions.filter(_strategyPosition => _strategyPosition.isCall);
-        const totalCostObj = totalCostCalculator(_strategyPositions);
+        const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
         const totalGainObj = totalSettlementGainByEstimationQuantity(calOptions);
         const reservedMarginOfOtherSell = _strategyPositions.find(_strategyPosition => !_strategyPosition.isBuy).getReservedMarginOfEstimationQuantity();
@@ -1966,7 +1972,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
             return 0
         const stock = stocks[0];
 
-        const totalCostObj = totalCostCalculator(calOptions.concat(putOptions).concat([stock]));
+        const totalCostObj = totalCostCalculatorForPriceTypes(calOptions.concat(putOptions).concat([stock]));
         const totalGainObj = totalSettlementGainByEstimationQuantity(calOptions, stock, "MIN");
 
         const profitPercentByBestPrices = profitPercentCalculator({
@@ -1987,7 +1993,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
     GUTS(_strategyPositions, _unChekcedPositions) {
 
-        const totalCostObj = totalCostCalculator(_strategyPositions);
+        const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
 
         const totalSettlementGainObj = totalSettlementGainByEstimationQuantity(_strategyPositions);
@@ -2010,7 +2016,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
     // same as GUTS!!!
     LongGUTS_STRANGLE(_strategyPositions, _unChekcedPositions) {
 
-        const totalCostObj = totalCostCalculator(_strategyPositions);
+        const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
 
         const totalSettlementGainObj = totalSettlementGainByEstimationQuantity(_strategyPositions);
@@ -2034,7 +2040,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
     CALL_BUTT_CONDOR(_strategyPositions, _unChekcedPositions) {
 
-        const totalCostObj = totalCostCalculator(_strategyPositions);
+        const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
 
         const totalOffsetGain = totalOffsetGainNearSettlementOfEstimationPanel({
@@ -2057,7 +2063,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
     },
     OTHERS(_strategyPositions) {
 
-        const totalCostObj = totalCostCalculator(_strategyPositions);
+        const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
 
         const totalOffsetGain = totalOffsetGainNearSettlementOfEstimationPanel({

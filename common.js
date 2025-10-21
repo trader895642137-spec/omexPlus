@@ -47,6 +47,40 @@ export const getCommissionFactor = (_strategyPosition) => {
 }
 
 
+
+
+export const totalCostCalculator = ({ strategyPositions, getPrice, getQuantity } = {}) => {
+  let totalCost = strategyPositions.reduce((sum, _strategyPosition) => {
+    const price = getPrice(_strategyPosition);
+    if (!price)
+      return NaN
+
+    const isBuy = _strategyPosition.isBuy;
+
+    const priceWithSideSign = price * (isBuy ? -1 : 1);
+
+    const quantity = getQuantity ? getQuantity(_strategyPosition, strategyPositions) : _strategyPosition.getQuantity();
+
+    const commissionFactor = getCommissionFactor(_strategyPosition)[isBuy ? 'BUY' : 'SELL'];
+
+    const requiredMargin = _strategyPosition.getRequiredMargin();
+
+    const reservedMargin = requiredMargin ? (requiredMargin * quantity) : 0;
+
+    const _totalCost = (priceWithSideSign * quantity) - reservedMargin - (price * quantity * commissionFactor);
+    return sum + _totalCost
+  }
+    , 0);
+
+  totalCost = totalCost < 0 ? Math.floor(totalCost) : Math.ceil(totalCost);
+
+  return totalCost
+}
+
+
+
+
+
 export const mainTotalOffsetGainCalculator = ({ strategyPositions, getBestPriceCb, getQuantity, getReservedMargin }) => {
   return strategyPositions.reduce((sum, _strategyPosition, index) => {
     const price = getBestPriceCb(_strategyPosition);
@@ -67,7 +101,7 @@ export const mainTotalOffsetGainCalculator = ({ strategyPositions, getBestPriceC
 }
 
 
-export const getNearSettlementPrice = (strategyPosition) => {
+export const getNearSettlementPrice = ({strategyPosition,stockPrice}) => {
 
   const tradeFee = strategyPosition.isBuy ? COMMISSION_FACTOR.OPTION.BUY : COMMISSION_FACTOR.OPTION.SELL;
   const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE
@@ -83,9 +117,6 @@ export const getNearSettlementPrice = (strategyPosition) => {
     if (stockPrice >= strikePrice) return 0
     return (strikePrice * (1 - tax - exerciseFee) - (stockPrice / configs.stockPriceForPutFactor)) / (1 + tradeFee);
   }
-
-
-  const stockPrice = strategyPosition.getBaseInstrumentPriceOfOption();
 
   const price = strategyPosition.isCall ? calculateCallPrice(stockPrice, strategyPosition.strikePrice) : calculatePutPrice(stockPrice, strategyPosition.strikePrice)
   return price > 0 ? price : 0

@@ -4,6 +4,7 @@ module.exports = {
     mode: "none", // هیچ فشرده‌سازی یا minify انجام نده
     entry: {
         omex: './omex.js',
+        tseOptionStrategies: './tseOptionStrategies.js',
     },
     output: {
         path: path.resolve(__dirname, 'dist'),
