@@ -1,6 +1,8 @@
 
 import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator } from './common.js';
 
+export   {OMEXApi} from './omexApi.js'
+export   {Api} from './api.js'
 
 export { configs } from './common.js';
 
@@ -22,6 +24,7 @@ export let expectedProfit = {
     minExpectedProfitOfStrategy: 3.9,
     currentPositions: 1
 }
+
 
 
 const createStatusCnt = () => {

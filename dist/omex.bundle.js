@@ -139,6 +139,76 @@ const getNearSettlementPrice = ({strategyPosition,stockPrice}) => {
   return price > 0 ? price : 0
 }
 
+/***/ }),
+/* 2 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   OMEXApi: () => (/* binding */ OMEXApi)
+/* harmony export */ });
+// https://khobregan.tsetab.ir
+const origin = window.location.origin
+const redOrigin = origin.replace('.tsetab','-red.tsetab')
+
+const getOptionPortfolioList = async () => {
+
+    
+
+    const list = await fetch(`${redOrigin}/api/optionOpenPositions/get`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => res.response.data)
+
+    return list
+
+}
+
+
+const OMEXApi = {
+    getOptionPortfolioList
+}
+
+/***/ }),
+/* 3 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Api: () => (/* binding */ Api),
+/* harmony export */   getOptionPortfolioListForFilterListIgnore: () => (/* binding */ getOptionPortfolioListForFilterListIgnore)
+/* harmony export */ });
+/* harmony import */ var _omexApi__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
+
+
+const getOptionPortfolioListForFilterListIgnore = async ()=>{
+   const portfolioList = await _omexApi__WEBPACK_IMPORTED_MODULE_0__.OMEXApi.getOptionPortfolioList();
+
+   console.log(portfolioList.map(instrumentInfo=>`ALL@${instrumentInfo.instrumentName}`).join(' '));
+
+}
+
+
+const Api={
+    getOptionPortfolioListForFilterListIgnore
+}
+
 /***/ })
 /******/ 	]);
 /************************************************************************/
@@ -201,6 +271,8 @@ var __webpack_exports__ = {};
 (() => {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   Api: () => (/* reexport safe */ _api_js__WEBPACK_IMPORTED_MODULE_2__.Api),
+/* harmony export */   OMEXApi: () => (/* reexport safe */ _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi),
 /* harmony export */   calcProfitOfStrategy: () => (/* binding */ calcProfitOfStrategy),
 /* harmony export */   configs: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.configs),
 /* harmony export */   expectedProfit: () => (/* binding */ expectedProfit),
@@ -208,6 +280,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   unChekcedPositions: () => (/* binding */ unChekcedPositions)
 /* harmony export */ });
 /* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
+/* harmony import */ var _omexApi_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
+/* harmony import */ var _api_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
+
+
 
 
 
@@ -232,6 +308,7 @@ let expectedProfit = {
     minExpectedProfitOfStrategy: 3.9,
     currentPositions: 1
 }
+
 
 
 const createStatusCnt = () => {
