@@ -241,16 +241,10 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
 
 
 
+
 const calcSumOfMargins = (options) => {
     return options.reduce( (_sum, option) => {
-
-        return _sum + (calculateOptionMargin({
-            priceSpot: option.optionDetails.stockSymbolDetails.last,
-            strikePrice: option.optionDetails.strikePrice,
-            contractSize: 1000,
-            optionPremium: option.last,
-            optionType: option.isCall ? "call" : "put"
-        })?.required || 0)
+        return _sum + (option.calculatedRequiredMargin || 0)
     }
     , 0)
 
@@ -1031,23 +1025,47 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
 
                 let allPossibleStrategies = putListWithHigherStrike.reduce( (_allPossibleStrategies, _option) => {
 
-                    const totalCostWithSign = totalCostCalculator({
-                        buyOptions: [option, _option],
-                        sellOptions: [],
-                        priceType
+
+
+
+
+
+
+                    const strategyPositions = [
+                        {
+                            ...option,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ..._option,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                    ]
+
+
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
                     });
 
-                    const totalOffsetGainWithSign = totalSettlementGain([{
-                        option,
-                        positionSide: "BUY"
-                    }, {
-                        option: _option,
-                        positionSide: "BUY"
-                    }, ]);
+                    const offsetPrice = (option.strikePrice + _option.strikePrice)/2;
 
-                    const profit = totalCostWithSign + totalOffsetGainWithSign;
 
-                    const profitPercent = profit / Math.abs(totalCostWithSign);
+
+                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+
+
+
+                    const profitPercent = profit / Math.abs(totalCost);
                     const strategyObj = {
                         option: {
                             ...option
@@ -1178,25 +1196,44 @@ const calcShortGUTSStrategies = (list, {priceType, expectedProfitPerMonth, settl
 
                     
 
-                    const totalCostWithSign = totalCostCalculator({
-                        buyOptions: [],
-                        sellOptions: [option, _option],
-                        priceType
+
+
+                    const strategyPositions = [
+                        {
+                            ...option,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin:()=>option.calculatedRequiredMargin/1000
+                        },
+                        {
+                            ..._option,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin:()=>option.calculatedRequiredMargin/1000
+                        },
+                      
+                    ]
+
+
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
                     });
 
-                    const totalOffsetGainWithSign = totalSettlementGain([{
-                        option,
-                        positionSide: "SELL"
-                    }, {
-                        option: _option,
-                        positionSide: "SELL"
-                    }, ]);
 
-                    const sumOfMargins = calcSumOfMargins([option, _option])
+                    const offsetPrice = (option.strikePrice + _option.strikePrice)/2
 
-                    const profit = totalCostWithSign + totalOffsetGainWithSign;
 
-                    const profitPercent = profit / (Math.abs(totalCostWithSign) + sumOfMargins / 1000);
+
+                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+
+
+                    const profitPercent = profit / Math.abs(totalCost) ;
                     const strategyObj = {
                         option: {
                             ...option
@@ -1323,27 +1360,45 @@ const calcShortSTRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, s
 
                 let allPossibleStrategies = putList.reduce( (_allPossibleStrategies, _option) => {
 
-                 
 
-                    const totalCostWithSign = totalCostCalculator({
-                        buyOptions: [],
-                        sellOptions: [option, _option],
-                        priceType
+
+                     const strategyPositions = [
+                        {
+                            ...option,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin:()=>option.calculatedRequiredMargin/1000
+                        },
+                        {
+                            ..._option,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin:()=>option.calculatedRequiredMargin/1000
+                        },
+                      
+                    ]
+
+
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
                     });
 
-                    // const totalOffsetGainWithSign = totalSettlementGain([
-                    //         {option, positionSide:"SELL"},
-                    //         {option:_option, positionSide:"SELL"},
-                    //     ]
-                    // );
 
-                    const totalOffsetGainWithSign = 0;
+                    const offsetPrice = (option.strikePrice + _option.strikePrice)/2
 
-                    const sumOfMargins = calcSumOfMargins([option, _option])
 
-                    const profit = totalCostWithSign + totalOffsetGainWithSign;
 
-                    const profitPercent = profit / (Math.abs(totalCostWithSign) + sumOfMargins / 1000);
+                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+                 
+
+
+                    const profitPercent = profit / Math.abs(totalCost);
                     const strategyObj = {
                         option: {
                             ...option
@@ -1491,24 +1546,43 @@ const calcBUCSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
 
                 let allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (_allPossibleStrategies, _option) => {
 
-                    const totalCostWithSign = totalCostCalculator({
-                        buyOptions: [option],
-                        sellOptions: [_option],
-                        priceType
+                    const strategyPositions = [
+                        {
+                            ...option,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ..._option,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                     
+                    ]
+
+
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
                     });
 
-                    const totalOffsetGainWithSign = totalSettlementGain([{
-                        option,
-                        positionSide: "BUY"
-                    }, {
-                        option: _option,
-                        positionSide: "SELL",
-                        choosePriceType: settlementGainChoosePriceType
-                    }, ]);
 
-                    const profit = totalCostWithSign + totalOffsetGainWithSign;
 
-                    const profitPercent = profit / Math.abs(totalCostWithSign);
+
+                    const settlementOn = settlementGainChoosePriceType === 'MIN' ? (_option.strikePrice < _option.optionDetails.stockSymbolDetails.last ? "OPTION" : "STOCK") : settlementGainChoosePriceType === 'MAX' ? (_option.strikePrice > _option.optionDetails.stockSymbolDetails.last ? "OPTION" : "STOCK") : "OPTION"
+                    const offsetPrice = settlementOn === "OPTION" ? _option.strikePrice*1.2 : _option.optionDetails.stockSymbolDetails.last;
+
+                    const profit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: offsetPrice });
+
+
+                    const profitPercent = profit / Math.abs(totalCost);
                     const strategyObj = {
                         option: {
                             ...option
@@ -1654,17 +1728,53 @@ const calcBUPSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
                     if (stockPriceHigherStrikeRatio < minStockPriceDistanceInPercent || stockPriceHigherStrikeRatio > maxStockPriceDistanceInPercent)
                         return _allPossibleStrategies
 
-                    const totalCostWithSign = totalCostCalculator({
-                        buyOptions: [option],
-                        sellOptions: [_option],
-                        priceType
+
+
+
+
+
+
+
+                    const diffOfBUPS_Strikes = _option.optionDetails.strikePrice - option.optionDetails.strikePrice
+
+
+
+                    const strategyPositions = [
+                        {
+                            ...option,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ..._option,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin: () => diffOfBUPS_Strikes
+                        },
+                       
+                    ]
+
+
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
                     });
 
-                    const margin = _option.optionDetails.strikePrice - option.optionDetails.strikePrice
 
-                    const profit = totalCostWithSign
+                    const offsetPrice = Math.max(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) * 1.2;
 
-                    const profitPercent = profit / Math.abs(margin);
+
+
+                    const profit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: offsetPrice });
+
+
+                    const profitPercent = profit / Math.abs(totalCost);
                     const strategyObj = {
                         option: {
                             ...option
@@ -1815,25 +1925,61 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth, set
 
 
 
-                    const totalCostWithSign = totalCostCalculator({
-                        buyOptions: [option,callOptionWithSameStrike],
-                        sellOptions: [_option],
-                        priceType
+
+
+
+
+
+
+
+
+                    const diffOfBUPS_Strikes = _option.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
+
+
+
+                    const strategyPositions = [
+                        {
+                            ...option,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ..._option,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin: () => diffOfBUPS_Strikes
+                        },
+                        {
+                            ...callOptionWithSameStrike,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                       
+                    ]
+
+
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
                     });
 
-                    const totalOffsetGainWithSign = totalSettlementGain([{
-                        option,
-                        positionSide: "BUY"
-                    }, {
-                        option: _option,
-                        positionSide: "SELL"
-                    }, ]);
 
-                    const margin = _option.optionDetails.strikePrice - option.optionDetails.strikePrice
 
-                    const profit = totalCostWithSign + totalOffsetGainWithSign;
+                    const offsetPrice = Math.min(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))/ 1.2;
 
-                    const profitPercent = profit / Math.abs(margin);
+
+
+                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+
+
+                    const profitPercent = profit / Math.abs(totalCost);
                     const strategyObj = {
                         option: {
                             ...option
@@ -1985,21 +2131,8 @@ const calcCALL_BUTT_CONDORStrategies = (list, {priceType, settlementGainChoosePr
                     });
                     if(option2Price===0) return _allPossibleStrategies
 
-                    const totalBUCS_CostWithSign = totalCostCalculator({
-                        buyOptions: [option],
-                        sellOptions: [option2],
-                        priceType
-                    });
 
-                    const totalBUCS_SettlementGainWithSign = totalSettlementGain([{
-                        option,
-                        positionSide: "BUY"
-                    }, {
-                        option: option2,
-                        positionSide: "SELL"
-                    }, ]);
-
-                    const diffOfBUCS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
+                    
 
                     let __allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (___allPossibleStrategies, option3) => {
 
@@ -2047,17 +2180,8 @@ const calcCALL_BUTT_CONDORStrategies = (list, {priceType, settlementGainChoosePr
                             if (option4.optionDetails?.strikePrice < option2.optionDetails?.strikePrice)
                                 return ___allPossibleStrategies
 
-                            const sellPrice = getPriceOfAsset({
-                                asset: option3,
-                                priceType,
-                                sideType: 'SELL'
-                            });
-                            const buyPrice = getPriceOfAsset({
-                                asset: option4,
-                                priceType,
-                                sideType: 'BUY'
-                            });
 
+                            const diffOfBUCS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
                             const diffOfBECS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
 
                             const BUCS_BECS_diffStrikesRatio = diffOfBUCS_Strikes / diffOfBECS_Strikes;
@@ -2065,26 +2189,66 @@ const calcCALL_BUTT_CONDORStrategies = (list, {priceType, settlementGainChoosePr
                             if (BUCS_BECS_diffStrikesRatio < MIN_BUCS_BECS_diffStrikesRatio || BUCS_BECS_diffStrikesRatio > MAX_BUCS_BECS_diffStrikesRatio)
                                 return ___allPossibleStrategies
 
-                            const MAX_BECS_Gain = sellPrice - buyPrice;
 
-                            const minProfitLossOfButterfly = (BUCS_BECS_diffStrikesRatio * MAX_BECS_Gain) + totalBUCS_CostWithSign;
+                            const strategyPositions = [
+                                {
+                                    ...option,
+                                    isBuy: true,
+                                    getQuantity: () => baseQuantity,
+                                    getRequiredMargin() { }
+                                },
+                                {
+                                    ...option2,
+                                    isSell: true,
+                                    getQuantity: () => baseQuantity,
+                                    getRequiredMargin: () => diffOfBUCS_Strikes
+                                },
+                                {
+                                    ...option3,
+                                    isSell: true,
+                                    getQuantity: () => baseQuantity * BUCS_BECS_diffStrikesRatio,
+                                    getRequiredMargin: () => diffOfBECS_Strikes
+                                },
+                                {
+                                    ...option4,
+                                    isBuy: true,
+                                    getQuantity: () => baseQuantity * BUCS_BECS_diffStrikesRatio,
+                                    getRequiredMargin() { }
+                                }
+                            ]
 
-                            let maxGainOfButterfly;
+
+
+                            const totalCost = totalCostCalculatorCommon({
+                                strategyPositions,
+                                getPrice: (strategyPosition) => getPriceOfAsset({
+                                    asset: strategyPosition,
+                                    priceType,
+                                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                                })
+                            });
+
+
+
+
+                          
+
+                            const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
+
+
+
+                            const minProfitLossOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxLoss});
+
+
+
+                            let priceThatCauseMaxProfit
                             if (BUCS_BECS_diffStrikesRatio > 1) {
-                                let maxGainPrice = option3.optionDetails?.strikePrice;
-                                const BECS_Gain = BUCS_BECS_diffStrikesRatio * MAX_BECS_Gain;
-                                const BUCS_OffsetGain = (Math.min(maxGainPrice, option2.optionDetails?.strikePrice) - option.optionDetails?.strikePrice) + totalBUCS_CostWithSign;
-
-                                maxGainOfButterfly = BUCS_OffsetGain + BECS_Gain;
+                                priceThatCauseMaxProfit = option3.optionDetails?.strikePrice;
 
                             } else {
-                                let maxGainPrice = option2.optionDetails?.strikePrice;
-
-                                const BECS_Gain = BUCS_BECS_diffStrikesRatio * (MAX_BECS_Gain - (maxGainPrice > option3.optionDetails?.strikePrice ? (maxGainPrice - option3.optionDetails?.strikePrice) : 0));
-
-                                maxGainOfButterfly = totalBUCS_SettlementGainWithSign + totalBUCS_CostWithSign + BECS_Gain;
-
+                                priceThatCauseMaxProfit = option2.optionDetails?.strikePrice;
                             }
+                            let maxGainOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
 
                             let profitLossPresent
 
@@ -2265,21 +2429,9 @@ const calcCALL_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePric
                     });
                     if(option2Price===0) return _allPossibleStrategies
 
-                    const totalBUCS_CostWithSign = totalCostCalculator({
-                        buyOptions: [option],
-                        sellOptions: [option2],
-                        priceType
-                    });
+                    
 
-                    const totalBUCS_SettlementGainWithSign = totalSettlementGain([{
-                        option,
-                        positionSide: "BUY"
-                    }, {
-                        option: option2,
-                        positionSide: "SELL"
-                    }, ]);
-
-                    const diffOfBUCS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
+                    
 
                     let option3 = option2;
 
@@ -2321,17 +2473,9 @@ const calcCALL_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePric
                         if (option4.optionDetails?.strikePrice < option2.optionDetails?.strikePrice)
                             return ___allPossibleStrategies
 
-                        const sellPrice = getPriceOfAsset({
-                            asset: option3,
-                            priceType,
-                            sideType: 'SELL'
-                        });
-                        const buyPrice = getPriceOfAsset({
-                            asset: option4,
-                            priceType,
-                            sideType: 'BUY'
-                        });
 
+
+                        const diffOfBUCS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
                         const diffOfBECS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
 
                         const BUCS_BECS_diffStrikesRatio = diffOfBUCS_Strikes / diffOfBECS_Strikes;
@@ -2339,26 +2483,74 @@ const calcCALL_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePric
                         if (BUCS_BECS_diffStrikesRatio < MIN_BUCS_BECS_diffStrikesRatio || BUCS_BECS_diffStrikesRatio > MAX_BUCS_BECS_diffStrikesRatio)
                             return ___allPossibleStrategies
 
-                        const MAX_BECS_Gain = sellPrice - buyPrice;
 
-                        const minProfitLossOfButterfly = (BUCS_BECS_diffStrikesRatio * MAX_BECS_Gain) + totalBUCS_CostWithSign;
+                        const strategyPositions = [
+                            {
+                                ...option,
+                                isBuy: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin() { }
+                            },
+                            {
+                                ...option2,
+                                isSell: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin: () => diffOfBUCS_Strikes
+                            },
+                            {
+                                ...option3,
+                                isSell: true,
+                                getQuantity: () => baseQuantity * BUCS_BECS_diffStrikesRatio,
+                                getRequiredMargin: () => diffOfBECS_Strikes
+                            },
+                            {
+                                ...option4,
+                                isBuy: true,
+                                getQuantity: () => baseQuantity * BUCS_BECS_diffStrikesRatio,
+                                getRequiredMargin() { }
+                            }
+                        ]
 
-                        let maxGainOfButterfly;
+
+
+                        const totalCost = totalCostCalculatorCommon({
+                            strategyPositions,
+                            getPrice: (strategyPosition) => getPriceOfAsset({
+                                asset: strategyPosition,
+                                priceType,
+                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                            })
+                        });
+
+
+
+
+
+
+
+
+
+                       
+                         const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
+
+
+
+                        const minProfitLossOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxLoss});
+
+
+
+                        
+
+
+                        let priceThatCauseMaxProfit
                         if (BUCS_BECS_diffStrikesRatio > 1) {
-                            let maxGainPrice = option3.optionDetails?.strikePrice;
-                            const BECS_Gain = BUCS_BECS_diffStrikesRatio * MAX_BECS_Gain;
-                            const BUCS_OffsetGain = (Math.min(maxGainPrice, option2.optionDetails?.strikePrice) - option.optionDetails?.strikePrice) + totalBUCS_CostWithSign;
-
-                            maxGainOfButterfly = BUCS_OffsetGain + BECS_Gain;
+                            priceThatCauseMaxProfit = option3.optionDetails?.strikePrice;
 
                         } else {
-                            let maxGainPrice = option2.optionDetails?.strikePrice;
-
-                            const BECS_Gain = BUCS_BECS_diffStrikesRatio * (MAX_BECS_Gain - (maxGainPrice > option3.optionDetails?.strikePrice ? (maxGainPrice - option3.optionDetails?.strikePrice) : 0));
-
-                            maxGainOfButterfly = totalBUCS_SettlementGainWithSign + totalBUCS_CostWithSign + BECS_Gain;
+                            priceThatCauseMaxProfit = option2.optionDetails?.strikePrice;
 
                         }
+                        let maxGainOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
 
                         let profitLossPresent
 
@@ -2537,21 +2729,7 @@ const calcCALL_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTy
                     });
                     if(option2Price===0) return _allPossibleStrategies
 
-                    const totalBUCS_CostWithSign = totalCostCalculator({
-                        buyOptions: [option],
-                        sellOptions: [option2],
-                        priceType
-                    });
-
-                    const totalBUCS_SettlementGainWithSign = totalSettlementGain([{
-                        option,
-                        positionSide: "BUY"
-                    }, {
-                        option: option2,
-                        positionSide: "SELL"
-                    }, ]);
-
-                    const diffOfBUCS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
+                    
 
                     let __allPossibleStrategies = callListWithHigherStrikePrice.reduce( (___allPossibleStrategies, option3) => {
 
@@ -2601,17 +2779,11 @@ const calcCALL_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTy
                             if (option4.optionDetails?.strikePrice < option2.optionDetails?.strikePrice)
                                 return ___allPossibleStrategies
 
-                            const sellPrice = getPriceOfAsset({
-                                asset: option3,
-                                priceType,
-                                sideType: 'SELL'
-                            });
-                            const buyPrice = getPriceOfAsset({
-                                asset: option4,
-                                priceType,
-                                sideType: 'BUY'
-                            });
 
+
+                           
+
+                            const diffOfBUCS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
                             const diffOfBECS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
 
                             const BUCS_BECS_diffStrikesRatio = diffOfBUCS_Strikes / diffOfBECS_Strikes;
@@ -2619,26 +2791,64 @@ const calcCALL_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTy
                             if (BUCS_BECS_diffStrikesRatio < MIN_BUCS_BECS_diffStrikesRatio || BUCS_BECS_diffStrikesRatio > MAX_BUCS_BECS_diffStrikesRatio)
                                 return ___allPossibleStrategies
 
-                            const MAX_BECS_Gain = sellPrice - buyPrice;
 
-                            const minProfitLossOfButterfly = (BUCS_BECS_diffStrikesRatio * MAX_BECS_Gain) + totalBUCS_CostWithSign;
 
-                            let maxGainOfButterfly;
+
+                            const strategyPositions = [
+                                {
+                                    ...option,
+                                    isBuy: true,
+                                    getQuantity: () => baseQuantity,
+                                    getRequiredMargin() { }
+                                },
+                                {
+                                    ...option2,
+                                    isSell: true,
+                                    getQuantity: () => baseQuantity,
+                                    getRequiredMargin: () => diffOfBUCS_Strikes
+                                },
+                                {
+                                    ...option3,
+                                    isSell: true,
+                                    getQuantity: () => baseQuantity * BUCS_BECS_diffStrikesRatio,
+                                    getRequiredMargin: () => diffOfBECS_Strikes
+                                },
+                                {
+                                    ...option4,
+                                    isBuy: true,
+                                    getQuantity: () => baseQuantity * BUCS_BECS_diffStrikesRatio,
+                                    getRequiredMargin() { }
+                                }
+                            ]
+
+                            const totalCost = totalCostCalculatorCommon({
+                                strategyPositions,
+                                getPrice: (strategyPosition) => getPriceOfAsset({
+                                    asset: strategyPosition,
+                                    priceType,
+                                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                                })
+                            });
+
+
+
+                            
+                             const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
+
+
+
+                            const minProfitLossOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxLoss});
+
+
+                            let priceThatCauseMaxProfit
                             if (BUCS_BECS_diffStrikesRatio > 1) {
-                                let maxGainPrice = option3.optionDetails?.strikePrice;
-                                const BECS_Gain = BUCS_BECS_diffStrikesRatio * MAX_BECS_Gain;
-                                const BUCS_OffsetGain = (Math.min(maxGainPrice, option2.optionDetails?.strikePrice) - option.optionDetails?.strikePrice) + totalBUCS_CostWithSign;
-
-                                maxGainOfButterfly = BUCS_OffsetGain + BECS_Gain;
+                                priceThatCauseMaxProfit = option3.optionDetails?.strikePrice;
 
                             } else {
-                                let maxGainPrice = option2.optionDetails?.strikePrice;
-
-                                const BECS_Gain = BUCS_BECS_diffStrikesRatio * (MAX_BECS_Gain - (maxGainPrice > option3.optionDetails?.strikePrice ? (maxGainPrice - option3.optionDetails?.strikePrice) : 0));
-
-                                maxGainOfButterfly = totalBUCS_SettlementGainWithSign + totalBUCS_CostWithSign + BECS_Gain;
+                                priceThatCauseMaxProfit = option2.optionDetails?.strikePrice;
 
                             }
+                            let maxGainOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
 
                             let profitLossPresent
 
@@ -2824,7 +3034,7 @@ const calcPUT_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePrice
                     if(option2Price===0) return _allPossibleStrategies
                     
 
-                    const diffOfBUPS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
+                    
 
                     let option3 = option2;
 
@@ -2867,31 +3077,7 @@ const calcPUT_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePrice
 
 
 
-                        const totalBEPS_CostWithSign = totalCostCalculator({
-                            buyOptions: [option4],
-                            sellOptions: [option3],
-                            priceType
-                        });
-
-                        const totalBEPS_SettlementGainWithSign = totalSettlementGain([{
-                            option: option4,
-                            positionSide: "BUY"
-                        }, {
-                            option: option3,
-                            positionSide: "SELL"
-                        }, ]);
-
-                        const buyPricePut1 = getPriceOfAsset({
-                            asset: option,
-                            priceType,
-                            sideType: 'BUY'
-                        });
-                        const sellPricePut2 = getPriceOfAsset({
-                            asset: option2,
-                            priceType,
-                            sideType: 'SELL'
-                        });
-
+                        const diffOfBUPS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
                         const diffOfBEPS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
 
                         const BUPS_BEPS_diffStrikesRatio = diffOfBUPS_Strikes / diffOfBEPS_Strikes;
@@ -2899,30 +3085,64 @@ const calcPUT_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePrice
                         if (BUPS_BEPS_diffStrikesRatio < MIN_BUPS_BEPS_diffStrikesRatio || BUPS_BEPS_diffStrikesRatio > MAX_BUPS_BEPS_diffStrikesRatio)
                             return ___allPossibleStrategies
 
-                        const BUPS_OpenPositionGain =  (sellPricePut2 - buyPricePut1)
-                        const MAX_BEPS_Gain = totalBEPS_SettlementGainWithSign  + totalBEPS_CostWithSign;
-                        const MAX_BUPS_LossWithSign = BUPS_OpenPositionGain - diffOfBUPS_Strikes
 
-                        const minProfitLossOfButterfly = (BUPS_BEPS_diffStrikesRatio * MAX_BEPS_Gain) + MAX_BUPS_LossWithSign;
 
-                        let maxGainOfButterfly;
+                        const strategyPositions = [
+                            {
+                                ...option,
+                                isBuy: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin() { }
+                            },
+                            {
+                                ...option2,
+                                isSell: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin: () => diffOfBUPS_Strikes
+                            },
+                            {
+                                ...option3,
+                                isSell: true,
+                                getQuantity: () => baseQuantity * BUPS_BEPS_diffStrikesRatio,
+                                getRequiredMargin: () => diffOfBEPS_Strikes
+                            },
+                            {
+                                ...option4,
+                                isBuy: true,
+                                getQuantity: () => baseQuantity * BUPS_BEPS_diffStrikesRatio,
+                                getRequiredMargin() { }
+                            }
+                        ]
+
+
+
+                        const totalCost = totalCostCalculatorCommon({
+                            strategyPositions,
+                            getPrice: (strategyPosition) => getPriceOfAsset({
+                                asset: strategyPosition,
+                                priceType,
+                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                            })
+                        });
+
+
+                        const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) * 1.2;
+
+
+                        const minProfitLossOfButterfly = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxLoss });
+
+                        
+
+
+                        let priceThatCauseMaxProfit
                         if (BUPS_BEPS_diffStrikesRatio > 1) {
-                            let maxGainPrice = option3.optionDetails?.strikePrice;
-                            const BEPS_Gain = BUPS_BEPS_diffStrikesRatio * MAX_BEPS_Gain;
-                            const BUPS_Gain =  BUPS_OpenPositionGain;
-
-                            maxGainOfButterfly = BUPS_Gain + BEPS_Gain;
+                            priceThatCauseMaxProfit = option3.optionDetails?.strikePrice;
 
                         } else {
-                            let maxGainPrice = option2.optionDetails?.strikePrice;
-
-                            const BEPS_Gain = BUPS_BEPS_diffStrikesRatio *  MAX_BEPS_Gain
-
-                            const BUPS_Gain =  BUPS_OpenPositionGain;
-
-                            maxGainOfButterfly = BUPS_Gain + BEPS_Gain;
+                            priceThatCauseMaxProfit = option2.optionDetails?.strikePrice;
 
                         }
+                        let maxGainOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
 
                         let profitLossPresent
 
@@ -3103,7 +3323,7 @@ const calcPUT_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTyp
                     if(option2Price===0) return _allPossibleStrategies
                     
 
-                    const diffOfBUPS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
+                    
 
                     let __allPossibleStrategies = putListWithHigherStrikePrice.reduce( (___allPossibleStrategies, option3) => {
 
@@ -3154,32 +3374,9 @@ const calcPUT_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTyp
                                 return ___allPossibleStrategies
 
 
+                            
 
-                            const totalBEPS_CostWithSign = totalCostCalculator({
-                                buyOptions: [option4],
-                                sellOptions: [option3],
-                                priceType
-                            });
-
-                            const totalBEPS_SettlementGainWithSign = totalSettlementGain([{
-                                option: option4,
-                                positionSide: "BUY"
-                            }, {
-                                option: option3,
-                                positionSide: "SELL"
-                            }, ]);
-
-                            const buyPricePut1 = getPriceOfAsset({
-                                asset: option,
-                                priceType,
-                                sideType: 'BUY'
-                            });
-                            const sellPricePut2 = getPriceOfAsset({
-                                asset: option2,
-                                priceType,
-                                sideType: 'SELL'
-                            });
-
+                            const diffOfBUPS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
                             const diffOfBEPS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
 
                             const BUPS_BEPS_diffStrikesRatio = diffOfBUPS_Strikes / diffOfBEPS_Strikes;
@@ -3187,31 +3384,67 @@ const calcPUT_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTyp
                             if (BUPS_BEPS_diffStrikesRatio < MIN_BUPS_BEPS_diffStrikesRatio || BUPS_BEPS_diffStrikesRatio > MAX_BUPS_BEPS_diffStrikesRatio)
                                 return ___allPossibleStrategies
 
-                            const BUPS_OpenPositionGain =  (sellPricePut2 - buyPricePut1)
-                            const MAX_BEPS_Gain = totalBEPS_SettlementGainWithSign  + totalBEPS_CostWithSign;
-                            const MAX_BUPS_LossWithSign = BUPS_OpenPositionGain - diffOfBUPS_Strikes
 
-                            const minProfitLossOfButterfly = (BUPS_BEPS_diffStrikesRatio * MAX_BEPS_Gain) + MAX_BUPS_LossWithSign;
 
-                            let maxGainOfButterfly;
+                            
+                            const strategyPositions = [
+                                {
+                                    ...option,
+                                    isBuy: true,
+                                    getQuantity: () => baseQuantity,
+                                    getRequiredMargin() { }
+                                },
+                                {
+                                    ...option2,
+                                    isSell: true,
+                                    getQuantity: () => baseQuantity,
+                                    getRequiredMargin: () => diffOfBUPS_Strikes
+                                },
+                                {
+                                    ...option3,
+                                    isSell: true,
+                                    getQuantity: () => baseQuantity * BUPS_BEPS_diffStrikesRatio,
+                                    getRequiredMargin: () => diffOfBEPS_Strikes
+                                },
+                                {
+                                    ...option4,
+                                    isBuy: true,
+                                    getQuantity: () => baseQuantity * BUPS_BEPS_diffStrikesRatio,
+                                    getRequiredMargin() { }
+                                }
+                            ]
+
+
+
+                            const totalCost = totalCostCalculatorCommon({
+                                strategyPositions,
+                                getPrice: (strategyPosition) => getPriceOfAsset({
+                                    asset: strategyPosition,
+                                    priceType,
+                                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                                })
+                            });
+
+
+
+                             const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
+
+
+
+                            const minProfitLossOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxLoss});
+
+
+
+                            let priceThatCauseMaxProfit
                             if (BUPS_BEPS_diffStrikesRatio > 1) {
-                                let maxGainPrice = option3.optionDetails?.strikePrice;
-                                const BEPS_Gain = BUPS_BEPS_diffStrikesRatio * MAX_BEPS_Gain;
-                               
-                                const BUPS_Gain = ( maxGainPrice< option2.optionDetails?.strikePrice ?  (maxGainPrice - option2.optionDetails?.strikePrice) : 0) + BUPS_OpenPositionGain;
-
-                                maxGainOfButterfly = BUPS_Gain + BEPS_Gain;
+                                priceThatCauseMaxProfit = option3.optionDetails?.strikePrice;
 
                             } else {
-                                let maxGainPrice = option2.optionDetails?.strikePrice;
-
-                                const BEPS_Gain = BUPS_BEPS_diffStrikesRatio * (MAX_BEPS_Gain - (maxGainPrice > option3.optionDetails?.strikePrice ? (maxGainPrice - option3.optionDetails?.strikePrice) : 0));
-
-                                const BUPS_Gain =  BUPS_OpenPositionGain;
-
-                                maxGainOfButterfly = BUPS_Gain + BEPS_Gain;
+                                priceThatCauseMaxProfit = option2.optionDetails?.strikePrice;
 
                             }
+
+                            let maxGainOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
 
                             let profitLossPresent
 
@@ -3552,43 +3785,7 @@ const IRON_BUTTERFLY_BUCS_strategyObjCreator = (option, option2, option3, option
     if (option4.optionDetails?.strikePrice < option2.optionDetails?.strikePrice)
         return 
 
-    const sellPrice = getPriceOfAsset({
-        asset: option3,
-        priceType,
-        sideType: 'SELL'
-    });
-    const buyPrice = getPriceOfAsset({
-        asset: option4,
-        priceType,
-        sideType: 'BUY'
-    });
-
-    const totalBUCS_CostWithSign = totalCostCalculator({
-        buyOptions: [option],
-        sellOptions: [option2],
-        priceType
-    });
-    const totalBEPS_CostWithSign = totalCostCalculator({
-        buyOptions: [option4],
-        sellOptions: [option3],
-        priceType
-    });
-
-    const totalBUCS_SettlementGainWithSign = totalSettlementGain([{
-        option,
-        positionSide: "BUY"
-    }, {
-        option: option2,
-        positionSide: "SELL"
-    },]);
-
-    const totalBEPS_SettlementGainWithSign = totalSettlementGain([{
-        option: option4,
-        positionSide: "BUY"
-    }, {
-        option: option3,
-        positionSide: "SELL"
-    },]);
+ 
 
     const diffOfBUCS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
     const diffOfBEPS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
@@ -3598,27 +3795,65 @@ const IRON_BUTTERFLY_BUCS_strategyObjCreator = (option, option2, option3, option
     if (BUCS_BEPS_diffStrikesRatio < MIN_BUCS_BEPS_diffStrikesRatio || BUCS_BEPS_diffStrikesRatio > MAX_BUCS_BEPS_diffStrikesRatio)
         return 
 
-    const MAX_BEPS_Gain = totalBEPS_SettlementGainWithSign + totalBEPS_CostWithSign;
 
-    const minProfitLossOfButterfly = (BUCS_BEPS_diffStrikesRatio * MAX_BEPS_Gain) + totalBUCS_CostWithSign;
 
-    let maxGainOfButterfly;
+
+
+    const strategyPositions = [
+        {
+            ...option,
+            isBuy: true,
+            getQuantity: () => baseQuantity,
+            getRequiredMargin() { }
+        },
+        {
+            ...option2,
+            isSell: true,
+            getQuantity: () => baseQuantity,
+            getRequiredMargin: () => diffOfBUCS_Strikes
+        },
+        {
+            ...option3,
+            isSell: true,
+            getQuantity: () => baseQuantity * BUCS_BEPS_diffStrikesRatio,
+            getRequiredMargin: () => diffOfBEPS_Strikes
+        },
+        {
+            ...option4,
+            isBuy: true,
+            getQuantity: () => baseQuantity * BUCS_BEPS_diffStrikesRatio,
+            getRequiredMargin() { }
+        }
+    ]
+
+
+
+    const totalCost = totalCostCalculatorCommon({
+        strategyPositions,
+        getPrice: (strategyPosition) => getPriceOfAsset({
+            asset: strategyPosition,
+            priceType,
+            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+        })
+    });
+
+
+    const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
+
+
+
+    const minProfitLossOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxLoss});
+
+
+    let priceThatCauseMaxProfit
     if (diffOfBUCS_Strikes > diffOfBEPS_Strikes) {
-        let maxGainPrice = option3.optionDetails?.strikePrice;
-        const BEPS_Gain = BUCS_BEPS_diffStrikesRatio * MAX_BEPS_Gain;
-        // TODO: offsetGainByGivenPrice Calculator function
-        const BUCS_OffsetGain = (Math.min(maxGainPrice, option2.optionDetails?.strikePrice) - option.optionDetails?.strikePrice) + totalBUCS_CostWithSign;
-
-        maxGainOfButterfly = BUCS_OffsetGain + BEPS_Gain;
+        priceThatCauseMaxProfit = option3.optionDetails?.strikePrice;
 
     } else {
-        let maxGainPrice = option2.optionDetails?.strikePrice;
-
-        const BEPS_Gain = BUCS_BEPS_diffStrikesRatio * (MAX_BEPS_Gain - (maxGainPrice > option3.optionDetails?.strikePrice ? (maxGainPrice - option3.optionDetails?.strikePrice) : 0));
-
-        maxGainOfButterfly = totalBUCS_SettlementGainWithSign + totalBUCS_CostWithSign + BEPS_Gain;
+        priceThatCauseMaxProfit = option2.optionDetails?.strikePrice;
 
     }
+    let maxGainOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
 
     let profitLossPresent
 
@@ -4084,43 +4319,6 @@ const calcIRON_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainChooseP
                             if (option4.optionDetails?.strikePrice < option2.optionDetails?.strikePrice)
                                 return ___allPossibleStrategies
 
-                            const sellPrice = getPriceOfAsset({
-                                asset: option3,
-                                priceType,
-                                sideType: 'SELL'
-                            });
-                            const buyPrice = getPriceOfAsset({
-                                asset: option4,
-                                priceType,
-                                sideType: 'BUY'
-                            });
-
-                            const totalBUCS_CostWithSign = totalCostCalculator({
-                                buyOptions: [option],
-                                sellOptions: [option2],
-                                priceType
-                            });
-                            const totalBEPS_CostWithSign = totalCostCalculator({
-                                buyOptions: [option4],
-                                sellOptions: [option3],
-                                priceType
-                            });
-
-                            const totalBUCS_SettlementGainWithSign = totalSettlementGain([{
-                                option,
-                                positionSide: "BUY"
-                            }, {
-                                option: option2,
-                                positionSide: "SELL"
-                            }, ]);
-
-                            const totalBEPS_SettlementGainWithSign = totalSettlementGain([{
-                                option: option4,
-                                positionSide: "BUY"
-                            }, {
-                                option: option3,
-                                positionSide: "SELL"
-                            }, ]);
 
                             const diffOfBUCS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
                             const diffOfBEPS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
@@ -4130,27 +4328,66 @@ const calcIRON_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainChooseP
                             if (BUCS_BEPS_diffStrikesRatio < MIN_BUCS_BEPS_diffStrikesRatio || BUCS_BEPS_diffStrikesRatio > MAX_BUCS_BEPS_diffStrikesRatio)
                                 return ___allPossibleStrategies
 
-                            const MAX_BEPS_Gain = totalBEPS_SettlementGainWithSign +  totalBEPS_CostWithSign;
 
-                            const minProfitLossOfButterfly = (BUCS_BEPS_diffStrikesRatio * MAX_BEPS_Gain) + totalBUCS_CostWithSign;
 
-                            let maxGainOfButterfly;
+                            const strategyPositions = [
+                                {
+                                    ...option,
+                                    isBuy: true,
+                                    getQuantity: () => baseQuantity,
+                                    getRequiredMargin() { }
+                                },
+                                {
+                                    ...option2,
+                                    isSell: true,
+                                    getQuantity: () => baseQuantity,
+                                    getRequiredMargin: () => diffOfBUCS_Strikes
+                                },
+                                {
+                                    ...option3,
+                                    isSell: true,
+                                    getQuantity: () => baseQuantity * BUCS_BEPS_diffStrikesRatio,
+                                    getRequiredMargin: () => diffOfBEPS_Strikes
+                                },
+                                {
+                                    ...option4,
+                                    isBuy: true,
+                                    getQuantity: () => baseQuantity * BUCS_BEPS_diffStrikesRatio,
+                                    getRequiredMargin() { }
+                                }
+                            ]
+
+
+
+                            const totalCost = totalCostCalculatorCommon({
+                                strategyPositions,
+                                getPrice: (strategyPosition) => getPriceOfAsset({
+                                    asset: strategyPosition,
+                                    priceType,
+                                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                                })
+                            });
+
+
+
+                            const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
+
+
+
+                            const minProfitLossOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxLoss});
+
+
+
+
+                            let priceThatCauseMaxProfit
                             if (diffOfBUCS_Strikes > diffOfBEPS_Strikes) {
-                                let maxGainPrice = option3.optionDetails?.strikePrice;
-                                const BEPS_Gain = BUCS_BEPS_diffStrikesRatio * MAX_BEPS_Gain;
-                                // TODO: offsetGainByGivenPrice Calculator function
-                                const BUCS_OffsetGain = (Math.min(maxGainPrice, option2.optionDetails?.strikePrice) - option.optionDetails?.strikePrice) + totalBUCS_CostWithSign;
-
-                                maxGainOfButterfly = BUCS_OffsetGain + BEPS_Gain;
+                                priceThatCauseMaxProfit = option3.optionDetails?.strikePrice;
 
                             } else {
-                                let maxGainPrice = option2.optionDetails?.strikePrice;
-
-                                const BEPS_Gain = BUCS_BEPS_diffStrikesRatio * (MAX_BEPS_Gain - (maxGainPrice > option3.optionDetails?.strikePrice ? (maxGainPrice - option3.optionDetails?.strikePrice) : 0));
-
-                                maxGainOfButterfly = totalBUCS_SettlementGainWithSign + totalBUCS_CostWithSign + BEPS_Gain;
+                               priceThatCauseMaxProfit = option2.optionDetails?.strikePrice;
 
                             }
+                            let maxGainOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
 
                             let profitLossPresent
 
@@ -4404,43 +4641,6 @@ const calcIRON_BUTT_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainCh
                             if (option4.optionDetails?.strikePrice < option2.optionDetails?.strikePrice)
                                 return ___allPossibleStrategies
 
-                            const sellPrice = getPriceOfAsset({
-                                asset: option3,
-                                priceType,
-                                sideType: 'SELL'
-                            });
-                            const buyPrice = getPriceOfAsset({
-                                asset: option4,
-                                priceType,
-                                sideType: 'BUY'
-                            });
-
-                            const totalBUCS_CostWithSign = totalCostCalculator({
-                                buyOptions: [option],
-                                sellOptions: [option2],
-                                priceType
-                            });
-                            const totalBEPS_CostWithSign = totalCostCalculator({
-                                buyOptions: [option4],
-                                sellOptions: [option3],
-                                priceType
-                            });
-
-                            const totalBUCS_SettlementGainWithSign = totalSettlementGain([{
-                                option,
-                                positionSide: "BUY"
-                            }, {
-                                option: option2,
-                                positionSide: "SELL"
-                            }, ]);
-
-                            const totalBEPS_SettlementGainWithSign = totalSettlementGain([{
-                                option: option4,
-                                positionSide: "BUY"
-                            }, {
-                                option: option3,
-                                positionSide: "SELL"
-                            }, ]);
 
                             const diffOfBUCS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
                             const diffOfBEPS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
@@ -4450,27 +4650,70 @@ const calcIRON_BUTT_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainCh
                             if (BUCS_BEPS_diffStrikesRatio < MIN_BUCS_BEPS_diffStrikesRatio || BUCS_BEPS_diffStrikesRatio > MAX_BUCS_BEPS_diffStrikesRatio)
                                 return ___allPossibleStrategies
 
-                            const MAX_BEPS_Gain = totalBEPS_SettlementGainWithSign +  totalBEPS_CostWithSign;
 
-                            const minProfitLossOfButterfly = (BUCS_BEPS_diffStrikesRatio * MAX_BEPS_Gain) + totalBUCS_CostWithSign;
 
-                            let maxGainOfButterfly;
+
+
+
+
+
+                            const strategyPositions = [
+                                {
+                                    ...option,
+                                    isBuy: true,
+                                    getQuantity: () => baseQuantity,
+                                    getRequiredMargin() { }
+                                },
+                                {
+                                    ...option2,
+                                    isSell: true,
+                                    getQuantity: () => baseQuantity,
+                                    getRequiredMargin: () => diffOfBUCS_Strikes
+                                },
+                                {
+                                    ...option3,
+                                    isSell: true,
+                                    getQuantity: () => baseQuantity * BUCS_BEPS_diffStrikesRatio,
+                                    getRequiredMargin: () => diffOfBEPS_Strikes
+                                },
+                                {
+                                    ...option4,
+                                    isBuy: true,
+                                    getQuantity: () => baseQuantity * BUCS_BEPS_diffStrikesRatio,
+                                    getRequiredMargin() { }
+                                }
+                            ]
+
+
+
+                            const totalCost = totalCostCalculatorCommon({
+                                strategyPositions,
+                                getPrice: (strategyPosition) => getPriceOfAsset({
+                                    asset: strategyPosition,
+                                    priceType,
+                                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                                })
+                            });
+
+
+                           
+                            const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
+
+
+
+                            const minProfitLossOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxLoss});
+
+
+
+                            let priceThatCauseMaxProfit
                             if (diffOfBUCS_Strikes > diffOfBEPS_Strikes) {
-                                let maxGainPrice = option3.optionDetails?.strikePrice;
-                                const BEPS_Gain = BUCS_BEPS_diffStrikesRatio * MAX_BEPS_Gain;
-                                // TODO: offsetGainByGivenPrice Calculator function
-                                const BUCS_OffsetGain = (Math.min(maxGainPrice, option2.optionDetails?.strikePrice) - option.optionDetails?.strikePrice) + totalBUCS_CostWithSign;
-
-                                maxGainOfButterfly = BUCS_OffsetGain + BEPS_Gain;
+                                priceThatCauseMaxProfit = option3.optionDetails?.strikePrice;
 
                             } else {
-                                let maxGainPrice = option2.optionDetails?.strikePrice;
-
-                                const BEPS_Gain = BUCS_BEPS_diffStrikesRatio * (MAX_BEPS_Gain - (maxGainPrice > option3.optionDetails?.strikePrice ? (maxGainPrice - option3.optionDetails?.strikePrice) : 0));
-
-                                maxGainOfButterfly = totalBUCS_SettlementGainWithSign + totalBUCS_CostWithSign + BEPS_Gain;
+                                priceThatCauseMaxProfit = option2.optionDetails?.strikePrice;
 
                             }
+                            let maxGainOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
 
                             let profitLossPresent
 
@@ -5994,21 +6237,44 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName, maxBUCSCostS
 
                 let allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (_allPossibleStrategies, option2) => {
 
-                    const totalCostWithSign = totalCostCalculator({
-                        buyOptions: [option],
-                        sellOptions: [option2],
-                        priceType
-                    });
-                    // TODO: should be MAX ?
-                    const totalOffsetGainWithSign = totalSettlementGain([{
-                        option,
-                        positionSide: "BUY"
-                    }, {
-                        option: option2,
-                        positionSide: "SELL"
-                    }, ]);
 
-                    const profit = totalCostWithSign + totalOffsetGainWithSign;
+
+                    const strategyPositions = [
+                        {
+                            ...option,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ...option2,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        
+                    ]
+
+
+                   
+
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    })/(baseQuantity*1000);
+
+                    const bucsOffsetPrice = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
+
+
+
+                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:bucsOffsetPrice})/(baseQuantity*1000);
+
+
 
                     let __allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (___allPossibleStrategies, option3) => {
 
@@ -6018,10 +6284,10 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName, maxBUCSCostS
 
                         // if (highSarBeSarCurrentStockPriceRatio < .2) return ___allPossibleStrategies
 
-                        if (totalCostWithSign === Infinity)
+                        if (totalCost === Infinity)
                             return ___allPossibleStrategies
 
-                        const BUCSCostSellOptionRatio = (-totalCostWithSign / option3.last);
+                        const BUCSCostSellOptionRatio = (-totalCost / option3.last);
 
                         if (BUCSCostSellOptionRatio > maxBUCSCostSellOptionRatio)
                             return ___allPossibleStrategies
@@ -6030,7 +6296,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName, maxBUCSCostS
 
                         const highSarBeSarCalculator = () => {
 
-                            return (-totalCostWithSign + option.optionDetails.strikePrice - (option3.last * BUCSCostSellOptionRatio) - (option3.optionDetails.strikePrice * BUCSCostSellOptionRatio)) / (-BUCSCostSellOptionRatio + 1)
+                            return (-totalCost + option.optionDetails.strikePrice - (option3.last * BUCSCostSellOptionRatio) - (option3.optionDetails.strikePrice * BUCSCostSellOptionRatio)) / (-BUCSCostSellOptionRatio + 1)
 
                         }
 
@@ -6170,23 +6436,46 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
                         return _allPossibleStrategies
                     }
 
-                    const totalCostWithSign = totalCostCalculator({
-                        buyOptions: [option, putOptionWithSameStrike],
-                        sellOptions: [_option],
-                        priceType
+
+                    
+                    const strategyPositions = [
+                        {
+                            ...option,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ..._option,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ...putOptionWithSameStrike,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                       
+                    ]
+
+
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
                     });
 
-                    const totalOffsetGainWithSign = totalSettlementGain([{
-                        option,
-                        positionSide: "BUY"
-                    }, {
-                        option: _option,
-                        positionSide: "SELL"
-                    }, ]);
+                    const offsetPrice = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
 
-                    const profit = totalCostWithSign + totalOffsetGainWithSign;
+                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
 
-                    const profitPercent = profit / Math.abs(totalCostWithSign);
+                    const profitPercent = profit / Math.abs(totalCost);
                     const strategyObj = {
                         option: {
                             ...option
@@ -6328,23 +6617,51 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
 
                     if(callWithSameStrikeOfSellingPutPrice===0) return _allPossibleStrategies
 
-                    const totalCostWithSign = totalCostCalculator({
-                        buyOptions: [callWithSameStrikeOfSellingPut, buyingPut],
-                        sellOptions: [option],
-                        priceType
+
+
+                    const strategyPositions = [
+                        {
+                            ...buyingPut,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ...option,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ...callWithSameStrikeOfSellingPut,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                       
+                    ]
+
+
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
                     });
 
-                    const totalOffsetGainWithSign = totalSettlementGain([{
-                        option: callWithSameStrikeOfSellingPut,
-                        positionSide: "BUY"
-                    }, {
-                        option: buyingPut,
-                        positionSide: "BUY"
-                    }, ]);
 
-                    const profit = totalCostWithSign + totalOffsetGainWithSign;
 
-                    const profitPercent = profit / Math.abs(totalCostWithSign);
+                    const offsetPrice = Math.min(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))/ 1.2;
+
+
+
+                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+
+
+                    const profitPercent = profit / Math.abs(totalCost);
                     const strategyObj = {
                         option: {
                             ...option
@@ -6759,26 +7076,45 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth, min_time_t
 
                 let allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (_allPossibleStrategies, _option) => {
 
-                    const totalCostWithSign = totalCostCalculator({
-                        buyOptions: [_option],
-                        sellOptions: [option],
-                        priceType
+
+
+                    const strategyPositions = [
+                        {
+                            ..._option,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ...option,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                       
+                    ]
+
+
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
                     });
 
-                    // TODO: should be MIN BUY ?
-                    const totalOffsetGainWithSign = totalSettlementGain([{
-                        option: _option,
-                        positionSide: "BUY",
-                        choosePriceType: "MAX"
-                    }, {
-                        option: option,
-                        positionSide: "SELL",
-                        choosePriceType: "MAX"
-                    }, ]);
 
-                    const profit = totalCostWithSign + totalOffsetGainWithSign;
 
-                    const profitPercent = profit / Math.abs(totalCostWithSign);
+                    const offsetPrice = Math.min(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))/ 1.2;
+
+
+
+                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+
+
+                    const profitPercent = profit / Math.abs(totalCost);
                     const strategyObj = {
                         option: {
                             ...option
@@ -6891,17 +7227,46 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
 
                 let allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (_allPossibleStrategies, _option) => {
 
-                    const totalCostWithSign = totalCostCalculator({
-                        buyOptions: [_option],
-                        sellOptions: [option],
-                        priceType
+
+                    const diffOfBECS_Strikes = _option.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
+
+                    const strategyPositions = [
+                        {
+                            ..._option,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ...option,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin: () => diffOfBECS_Strikes
+                        },
+                       
+                    ]
+
+
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
                     });
 
-                    const margin = _option.optionDetails.strikePrice - option.optionDetails.strikePrice
 
-                    const profit = totalCostWithSign
+                    const offsetPrice = Math.min(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))/ 1.2;
 
-                    const profitPercent = profit / Math.abs(margin);
+
+
+                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+
+
+
+                    const profitPercent = profit / Math.abs(totalCost);
                     const strategyObj = {
                         option: {
                             ...option
@@ -7079,24 +7444,56 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                         if(sellingCallWithSameStrikeOfBuyingPutPrice===0) return _allPossibleStrategies
 
 
-                     
-                        const totalCostWithSign = totalCostCalculator({
-                            buyOptions: [buyingCall,buyingPut],
-                            sellOptions: [sellingCallWithSameStrikeOfBuyingPut,sellingPut],
-                            priceType
+                        const diffOfBEPS_Strikes = buyingPut.optionDetails?.strikePrice - sellingPut.optionDetails?.strikePrice;
+
+
+                        const strategyPositions = [
+                            {
+                                ...buyingCall,
+                                isBuy: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin() { }
+                            },
+                            {
+                                ...sellingCallWithSameStrikeOfBuyingPut,
+                                isSell: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin() { }
+                            },
+                            {
+                                ...sellingPut,
+                                isSell: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin() { }
+                            },
+                            {
+                                ...buyingPut,
+                                isBuy: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin() { }
+                            }
+                        ]
+
+
+
+                        const totalCost = totalCostCalculatorCommon({
+                            strategyPositions,
+                            getPrice: (strategyPosition) => getPriceOfAsset({
+                                asset: strategyPosition,
+                                priceType,
+                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                            })
                         });
 
-                        const totalOffsetGainWithSign = totalSettlementGain([{
-                            option:buyingCall,
-                            positionSide: "BUY"
-                        }, {
-                            option: buyingPut,
-                            positionSide: "BUY",
-                        }, ]);
 
-                        const profit = totalCostWithSign + totalOffsetGainWithSign;
+                        const offsetPrice = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
 
-                        const profitPercent = profit / Math.abs(totalCostWithSign);
+
+
+                        const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+
+
+                        const profitPercent = profit / Math.abs(totalCost);
                         const strategyObj = {
                             option: {
                                 ...buyingCall
@@ -7285,31 +7682,57 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                         if(sellingPutWithSameStrikeOfBuyingCallPrice===0) return _allPossibleStrategies
 
 
-                     
-                        const totalCostWithSign = totalCostCalculator({
-                            buyOptions: [buyingCall,buyingPut],
-                            sellOptions: [sellingPutWithSameStrikeOfBuyingCall,sellingCall],
-                            priceType
+                        const diffOfBUPS_Strikes = sellingPutWithSameStrikeOfBuyingCall.optionDetails?.strikePrice - buyingPut.optionDetails?.strikePrice;
+                        const diffOfBECS_Strikes = buyingCall.optionDetails?.strikePrice - sellingCall.optionDetails?.strikePrice;
+
+                        const strategyPositions = [
+                            {
+                                ...buyingPut,
+                                isBuy: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin() { }
+                            },
+                            {
+                                ...sellingPutWithSameStrikeOfBuyingCall,
+                                isSell: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin: () => diffOfBUPS_Strikes
+                            },
+                            {
+                                ...sellingCall,
+                                isSell: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin: () => diffOfBECS_Strikes
+                            },
+                            {
+                                ...buyingCall,
+                                isBuy: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin() { }
+                            }
+                        ]
+
+
+
+                        const totalCost = totalCostCalculatorCommon({
+                            strategyPositions,
+                            getPrice: (strategyPosition) => getPriceOfAsset({
+                                asset: strategyPosition,
+                                priceType,
+                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                            })
                         });
 
-                        const totalOffsetGainWithSign = totalSettlementGain([{
-                            option:buyingCall,
-                            positionSide: "BUY"
-                        }, {
-                            option: sellingCall,
-                            positionSide: "SELL",
-                        }, ]);
-
+                     
                         
-                        
+                        const offsetPrice = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
 
-                        const BUPS_Margin = (sellingPutWithSameStrikeOfBuyingCall.optionDetails?.strikePrice - buyingPut.optionDetails?.strikePrice);
-                        const BECS_Margin = (buyingCall.optionDetails?.strikePrice - sellingCall.optionDetails?.strikePrice);
-                        const totalMargin = BUPS_Margin + BECS_Margin;
 
-                        const profit =  totalCostWithSign + totalOffsetGainWithSign;
 
-                        const profitPercent = profit  / Math.abs(totalMargin - totalCostWithSign);
+                        const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+
+
+                        const profitPercent = profit  / Math.abs(totalCost);
                         const strategyObj = {
                             option: {
                                 ...buyingCall
@@ -7498,24 +7921,55 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
                         if(sellingCallWithSameStrikeOfBuyingPutPrice===0) return _allPossibleStrategies
 
-                        
-                        const totalCostWithSign = totalCostCalculator({
-                            buyOptions: [buyingCall,buyingPut],
-                            sellOptions: [sellingCallWithSameStrikeOfBuyingPut,sellingPut],
-                            priceType
+                        const diffOfBEPS_Strikes = buyingPut.optionDetails?.strikePrice - sellingPut.optionDetails?.strikePrice;
+
+                        const strategyPositions = [
+                            {
+                                ...buyingCall,
+                                isBuy: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin() { }
+                            },
+                            {
+                                ...sellingCallWithSameStrikeOfBuyingPut,
+                                isSell: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin() { }
+                            },
+                            {
+                                ...sellingPut,
+                                isSell: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin: () => diffOfBEPS_Strikes
+                            },
+                            {
+                                ...buyingPut,
+                                isBuy: true,
+                                getQuantity: () => baseQuantity,
+                                getRequiredMargin() { }
+                            }
+                        ]
+
+
+
+                        const totalCost = totalCostCalculatorCommon({
+                            strategyPositions,
+                            getPrice: (strategyPosition) => getPriceOfAsset({
+                                asset: strategyPosition,
+                                priceType,
+                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                            })
                         });
 
-                        const totalOffsetGainWithSign = totalSettlementGain([{
-                            option:sellingPut,
-                            positionSide: "SELL"
-                        }, {
-                            option: buyingPut,
-                            positionSide: "BUY",
-                        }, ]);
+                        
+                        const offsetPrice = Math.min(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))/ 1.2;
 
-                        const profit = totalCostWithSign + totalOffsetGainWithSign;
 
-                        const profitPercent = profit / Math.abs(totalCostWithSign);
+
+                        const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+
+
+                        const profitPercent = profit / Math.abs(totalCost);
                         const strategyObj = {
                             option: {
                                 ...buyingCall
@@ -8564,7 +9018,10 @@ const createList = ()=>{
             lastTrackedChangeTime
         }
 
-        return {
+
+        
+
+        const assetInfo ={
             symbol,
             name,
             instrumentName:symbol,
@@ -8583,6 +9040,7 @@ const createList = ()=>{
             bestSell: convertStringToInt(cells[20].innerHTML),
             bestSellQ: convertStringToInt(cells[21].querySelector('div').innerHTML)
         }
+        return assetInfo
     }
     );
 
@@ -8593,6 +9051,22 @@ const createList = ()=>{
         allStockSymbolDetailsMap[listItem.optionDetails.stockSymbol] = allStockSymbolDetailsMap[listItem.optionDetails.stockSymbol] || list.find(_item => _item.symbol === listItem.optionDetails.stockSymbol);
         const stockSymbolDetails = allStockSymbolDetailsMap[listItem.optionDetails.stockSymbol]
         listItem.optionDetails.stockSymbolDetails = stockSymbolDetails
+
+
+        if(listItem.optionDetails.stockSymbolDetails){
+
+            const calculatedRequiredMargin = calculateOptionMargin({
+                priceSpot: listItem.optionDetails.stockSymbolDetails.last,
+                strikePrice: listItem.optionDetails.strikePrice,
+                contractSize: 1000,
+                optionPremium: listItem.last,
+                optionType: listItem.isCall ? "call" : "put"
+            })?.required || 0;
+    
+            listItem.calculatedRequiredMargin = calculatedRequiredMargin
+        }
+
+
         return listItem
     }
     );
