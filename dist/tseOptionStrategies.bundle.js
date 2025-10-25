@@ -18653,7 +18653,7 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType, settlementGainChoosePri
 
 }
 
-const calcBUCSRatioStrategies = (list, {priceType, strategySubName, maxBUCSCostSellOptionRatio=2, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFactorOfBUCS=0.6, maxBUCSCostSellOptionRatio=2, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -18671,125 +18671,128 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName, maxBUCSCostS
 
         let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
 
-            const _enrichedList = optionListOfSameDate.map(option => {
+            const _enrichedList = optionListOfSameDate.map(buyingCall => {
 
                 if (BUCSSOptionListIgnorer({
-                    option,
+                    option:buyingCall,
                     minVol
                 }))
-                    return option
+                    return buyingCall
+
+
+                const buyingCallPrice = getPriceOfAsset({
+                    asset: buyingCall,
+                    priceType,
+                    sideType: 'BUY'
+                });
+                if(buyingCallPrice===0) return buyingCall
 
                 const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') || _option.vol < minVol)
-                        return
-                    if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
-                        return
+                    if (_option.symbol === buyingCall.symbol || !_option.isCall || _option.vol < minVol)
+                        return false
+                    if (_option.optionDetails?.strikePrice <= buyingCall.optionDetails?.strikePrice)
+                        return false
 
 
                     if (!_option.optionDetails?.stockSymbolDetails?.last)
                         return false
 
-                    const stockPriceHigherStrikeRatio = (_option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
 
-                    return stockPriceHigherStrikeRatio > minStockPriceDistanceInPercent && stockPriceHigherStrikeRatio < maxStockPriceDistanceInPercent
+                    return true
+                    
 
                 }
                 );
 
-                let allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (_allPossibleStrategies, option2) => {
+                let allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (_allPossibleStrategies, sellingCall) => {
 
 
 
-                    const strategyPositions = [
-                        {
-                            ...option,
-                            isBuy: true,
-                            getQuantity: () => baseQuantity,
-                            getRequiredMargin() { }
-                        },
-                        {
-                            ...option2,
-                            isSell: true,
-                            getQuantity: () => baseQuantity,
-                            getRequiredMargin() { }
-                        },
-                        
-                    ]
+                    const stockPriceHigherStrikeRatio = (sellingCall.optionDetails.stockSymbolDetails.last / sellingCall.optionDetails?.strikePrice) - 1;
+
+                    if(stockPriceHigherStrikeRatio < minStockPriceDistanceInPercent || stockPriceHigherStrikeRatio > maxStockPriceDistanceInPercent){
+                        return _allPossibleStrategies
+                    }
+                    
+                    const sellingCallPrice = getPriceOfAsset({
+                        asset: sellingCall,
+                        priceType,
+                        sideType: 'SELL'
+                    });
+                    if(sellingCallPrice===0) return _allPossibleStrategies
 
 
-                   
+
+                    let __allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (___allPossibleStrategies, anotherSellingCall) => {
 
 
-                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
-                        strategyPositions,
-                        getPrice: (strategyPosition) => getPriceOfAsset({
-                            asset: strategyPosition,
+                        const anotherSellingCallPrice = getPriceOfAsset({
+                            asset: anotherSellingCall,
                             priceType,
-                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                        })
-                    })/(baseQuantity*1000);
-
-                    const bucsOffsetPrice = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
+                            sideType: 'SELL'
+                        });
+                        if(anotherSellingCallPrice===0) return ___allPossibleStrategies
 
 
 
-                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:bucsOffsetPrice})/(baseQuantity*1000);
+                        const maxProfitOfSellingCall = anotherSellingCallPrice;
+
+                        const strategyPositionsOfBUCS = [
+                            {
+                                ...buyingCall,
+                                isBuy: true,
+                                getQuantity: () => 1,
+                                getRequiredMargin() { }
+                            },
+                            {
+                                ...sellingCall,
+                                isSell: true,
+                                getQuantity: () => 1,
+                                getRequiredMargin() { }
+                            },
+                        ]
+                        const totalCostOfBUCS = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                            strategyPositions: strategyPositionsOfBUCS,
+                            getPrice: (strategyPosition) => getPriceOfAsset({
+                                asset: strategyPosition,
+                                priceType,
+                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                            })
+                        });
+
+                        const priceThatCauseMaxLossOfBUCS = Math.min(...strategyPositionsOfBUCS.map(strategyPosition=>strategyPosition.strikePrice))/ 1.2;
+                        const priceThatCauseMaxPofitOfBUCS = Math.max(...strategyPositionsOfBUCS.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
 
 
 
-                    let __allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (___allPossibleStrategies, option3) => {
+                        const maxLossOfBUCS = totalCostOfBUCS + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUCS, stockPrice:priceThatCauseMaxLossOfBUCS});
+                        const maxProfitOfBUCS = totalCostOfBUCS + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUCS, stockPrice:priceThatCauseMaxPofitOfBUCS});
 
-                        // const highSarBeSar = option3.optionDetails.strikePrice + option3.last + profit;
 
-                        // const highSarBeSarCurrentStockPriceRatio = (highSarBeSar / option.optionDetails.stockSymbolDetails.last) - 1;
 
-                        // if (highSarBeSarCurrentStockPriceRatio < .2) return ___allPossibleStrategies
+                        const quantityFactorOfBUCS = Math.abs(maxProfitOfSellingCall/maxLossOfBUCS);
 
-                        if (totalCost === Infinity)
+
+                        if (quantityFactorOfBUCS < minQuantityFactorOfBUCS)
                             return ___allPossibleStrategies
 
-                        const BUCSCostSellOptionRatio = (-totalCost / option3.last);
 
-                        if (BUCSCostSellOptionRatio > maxBUCSCostSellOptionRatio)
-                            return ___allPossibleStrategies
+                        const sarBeSar =  anotherSellingCall.optionDetails?.strikePrice +  anotherSellingCallPrice + maxProfitOfBUCS * quantityFactorOfBUCS;
 
-                        const sarBeSarSell = (profit / BUCSCostSellOptionRatio) + option3.optionDetails.strikePrice + option3.last;
 
-                        const highSarBeSarCalculator = () => {
+                        const stockPriceToSarBeSarPercent = (sarBeSar/ anotherSellingCall.optionDetails.stockSymbolDetails.last) -1
 
-                            return (-totalCost + option.optionDetails.strikePrice - (option3.last * BUCSCostSellOptionRatio) - (option3.optionDetails.strikePrice * BUCSCostSellOptionRatio)) / (-BUCSCostSellOptionRatio + 1)
 
-                        }
-
-                        let highSarBeSarCurrentStockPriceRatio;
-
-                        if (sarBeSarSell >= option2.optionDetails.strikePrice) {
-                            highSarBeSarCurrentStockPriceRatio = (sarBeSarSell / option.optionDetails.stockSymbolDetails.last) - 1;
-                            if (highSarBeSarCurrentStockPriceRatio < .2)
-                                return ___allPossibleStrategies
-
-                        } else {
-
-                            const highSarBeSarPrice = highSarBeSarCalculator();
-                            highSarBeSarCurrentStockPriceRatio = (highSarBeSarPrice / option.optionDetails.stockSymbolDetails.last) - 1;
-
-                            if (highSarBeSarCurrentStockPriceRatio < .2)
-                                return ___allPossibleStrategies
-                        }
-
-                      
-
-                        // if (totalCostWithSign < 0 && BUCSCostSellOptionRatio > 5) return ___allPossibleStrategies
 
                         return ___allPossibleStrategies.concat([{
                             option: {
-                                ...option
+                                ...buyingCall
                             },
-                            positions:[option, option2, option3],
-                            strategyTypeTitle: "BUCS Ratio",
+                            positions:[buyingCall, sellingCall, anotherSellingCall],
+                            strategyTypeTitle: "BUCS_RATIO",
                             expectedProfitNotif,
-                            name: createStrategyName([option, option2, option3]),
-                            profitPercent: highSarBeSarCurrentStockPriceRatio //0.8
+                            name: createStrategyName([buyingCall, sellingCall, anotherSellingCall]),
+                            profitPercent: stockPriceToSarBeSarPercent 
                         }])
                     }
                     , []);
@@ -18800,7 +18803,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName, maxBUCSCostS
                 , []);
 
                 return {
-                    ...option,
+                    ...buyingCall,
                     allPossibleStrategies
                 }
 
@@ -18821,7 +18824,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName, maxBUCSCostS
     return {
         enrichedList,
         allStrategiesSorted: sortedStrategies,
-        strategyName: "BUCS Ratio",
+        strategyName: "BUCS_RATIO",
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
@@ -18831,7 +18834,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName, maxBUCSCostS
         expectedProfitNotif,
         ...restConfig,
         htmlTitle: configsToHtmlTitle({
-            strategyName: "BUCS Ratio",
+            strategyName: "BUCS_RATIO",
             strategySubName,
             priceType,
             min_time_to_settlement,
@@ -18843,6 +18846,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName, maxBUCSCostS
     }
 
 }
+
 
 
 
@@ -21363,7 +21367,7 @@ const createListFilterContetnByList=(list)=>{
     
     , calcBUCSRatioStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        maxBUCSCostSellOptionRatio: 1.1,
+        // maxBUCSCostSellOptionRatio: 1.1,
         BUCSSOptionListIgnorer: ({option, minVol}) => {
             if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
                 return true
@@ -21374,12 +21378,12 @@ const createListFilterContetnByList=(list)=>{
         }
         ,
         // minStockPriceDistanceInPercent: -.2,
-        maxStockPriceDistanceInPercent: .2,
+        // maxStockPriceDistanceInPercent: .2,
         min_time_to_settlement: 39 * 24 * 3600000,
         max_time_to_settlement: 60 * 24 * 3600000,
     }), calcBUCSRatioStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        maxBUCSCostSellOptionRatio: 1.1,
+        // maxBUCSCostSellOptionRatio: 1.1,
         BUCSSOptionListIgnorer: ({option, minVol}) => {
             if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
                 return true
@@ -21390,7 +21394,7 @@ const createListFilterContetnByList=(list)=>{
         }
         ,
         // minStockPriceDistanceInPercent: -.2,
-        maxStockPriceDistanceInPercent: .2,
+        // maxStockPriceDistanceInPercent: .2,
         // min_time_to_settlement: 15 * 24 * 3600000,
         max_time_to_settlement: 39 * 24 * 3600000,
     })
