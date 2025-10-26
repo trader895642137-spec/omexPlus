@@ -1,5 +1,6 @@
 
 import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator } from './common.js';
+import { OMEXApi } from './omexApi.js';
 
 export   {OMEXApi} from './omexApi.js'
 export   {Api} from './api.js'
@@ -20,9 +21,9 @@ try {
 
 // FIXME:expectedProfitPerMonth is factor but minExpectedProfitOfStrategy is percent
 export let expectedProfit = {
-    expectedProfitPerMonth: 1.05,
+    expectedProfitPerMonth: 1.04,
     minExpectedProfitOfStrategy: 3.9,
-    currentPositions: 1
+    currentPositions: 1.4
 }
 
 
@@ -48,6 +49,32 @@ const getStatusCnt = () => {
 
     return statusCnt
 
+}
+
+const createDeleteAllOrdersButton = () => {
+    let removeAllOrderButton = document.createElement('button');
+    removeAllOrderButton.classList.add('remove-all-order-button');
+    removeAllOrderButton.textContent = 'حذف همه سفارشات';
+    // removeAllOrderButton.style.cssText += `
+    //         position:absolute;
+    //         width: 169px;
+    //         padding: 0 10px;
+    //         background: #FFF;
+    //         display: flex;
+    //         flex-direction: column;
+    //         column-gap: 21px;
+    //         font-size: 20px;
+    //         left: 50%;
+    //         z-index: 500;
+    //         top: -8px;
+    //         transform: translateX(-50%);
+    //     `;
+    removeAllOrderButton.addEventListener('click', function(event) {
+        OMEXApi.deleteAllOpenOrders();
+    });
+    
+    document.querySelector('client-option-reports-actions').append(removeAllOrderButton)
+    return removeAllOrderButton
 }
 
 const createStrategyExpectedProfitCnt = () => {
@@ -834,7 +861,8 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
                 return
 
             const strategyType = strategyName.split('@')[0];
-            return ['BUCS_COLLAR', 'BUPS_COLLAR', 'BEPS_COLLAR', 'BUCS', 'BECS', 'BUPS', 'BEPS', 'BOX_BUPS_BECS', 'BOX', 'COVERED', 'GUTS', 'LongGUTS_STRANGLE', 'CALL_BUTT_CONDOR'].find(type => strategyType === type);
+            return ['COVERED'].find(type => strategyType === type);
+            // return ['BUCS_COLLAR', 'BUPS_COLLAR', 'BEPS_COLLAR', 'BUCS', 'BECS', 'BUPS', 'BEPS', 'BOX_BUPS_BECS', 'BOX', 'COVERED', 'GUTS', 'LongGUTS_STRANGLE', 'CALL_BUTT_CONDOR'].find(type => strategyType === type);
         }
 
 
@@ -2150,7 +2178,7 @@ const Run = () => {
 
 
     getStrategyExpectedProfitCnt();
-
+    createDeleteAllOrdersButton();
 
 }
 

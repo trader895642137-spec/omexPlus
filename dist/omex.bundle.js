@@ -181,8 +181,77 @@ const getOptionPortfolioList = async () => {
 }
 
 
+function formatDateToYyyymmdd(date) {
+    return date.toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+const getTodayOpenOrders = () => {
+    // ?historyDate=20251026
+    return fetch(`${redOrigin}/api/Orders/GetOrders?historyDate=${formatDateToYyyymmdd(new Date())}`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const orders = res.response.data;
+        return orders.filter(order=>order.orderStatus==="InQueue")
+
+    });
+
+
+}
+
+const deleteOrder = ({orderId,id}) => {
+    
+    return fetch( `${redOrigin}/api/Orders/OrderCancellation?orderId=${orderId}&Id=${id}`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "access-control-max-age": "3600",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "cache-control": "max-age=21600, public",
+            "content-type": "application/json; charset=UTF-8",
+            "ngsw-bypass": ""
+        },
+        //   "referrer": "https://khobregan.tsetab.ir/order-terminal-worker.6b5091bdcec9e3f3.js",
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "POST",
+        "mode": "cors",
+        "credentials": "include"
+    });
+}
+
+
+const deleteAllOpenOrders =async ()=>{
+
+
+    const openOrderList = await getTodayOpenOrders();
+
+    for (let i = 0; i < openOrderList.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 450));
+        const {orderId,id}=openOrderList[i];
+        deleteOrder({orderId,id});
+    }
+
+}
+
 const OMEXApi = {
-    getOptionPortfolioList
+    getOptionPortfolioList,
+    deleteAllOpenOrders
 }
 
 /***/ }),
@@ -292,6 +361,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
 try {
     if (typeof strategyPositions !== 'undefined') {
         strategyPositions.forEach(strategyPosition => {
@@ -304,9 +374,9 @@ try {
 
 // FIXME:expectedProfitPerMonth is factor but minExpectedProfitOfStrategy is percent
 let expectedProfit = {
-    expectedProfitPerMonth: 1.05,
+    expectedProfitPerMonth: 1.04,
     minExpectedProfitOfStrategy: 3.9,
-    currentPositions: 1
+    currentPositions: 1.4
 }
 
 
@@ -332,6 +402,32 @@ const getStatusCnt = () => {
 
     return statusCnt
 
+}
+
+const createDeleteAllOrdersButton = () => {
+    let removeAllOrderButton = document.createElement('button');
+    removeAllOrderButton.classList.add('remove-all-order-button');
+    removeAllOrderButton.textContent = 'حذف همه سفارشات';
+    // removeAllOrderButton.style.cssText += `
+    //         position:absolute;
+    //         width: 169px;
+    //         padding: 0 10px;
+    //         background: #FFF;
+    //         display: flex;
+    //         flex-direction: column;
+    //         column-gap: 21px;
+    //         font-size: 20px;
+    //         left: 50%;
+    //         z-index: 500;
+    //         top: -8px;
+    //         transform: translateX(-50%);
+    //     `;
+    removeAllOrderButton.addEventListener('click', function(event) {
+        _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.deleteAllOpenOrders();
+    });
+    
+    document.querySelector('client-option-reports-actions').append(removeAllOrderButton)
+    return removeAllOrderButton
 }
 
 const createStrategyExpectedProfitCnt = () => {
@@ -1118,7 +1214,8 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
                 return
 
             const strategyType = strategyName.split('@')[0];
-            return ['BUCS_COLLAR', 'BUPS_COLLAR', 'BEPS_COLLAR', 'BUCS', 'BECS', 'BUPS', 'BEPS', 'BOX_BUPS_BECS', 'BOX', 'COVERED', 'GUTS', 'LongGUTS_STRANGLE', 'CALL_BUTT_CONDOR'].find(type => strategyType === type);
+            return ['COVERED'].find(type => strategyType === type);
+            // return ['BUCS_COLLAR', 'BUPS_COLLAR', 'BEPS_COLLAR', 'BUCS', 'BECS', 'BUPS', 'BEPS', 'BOX_BUPS_BECS', 'BOX', 'COVERED', 'GUTS', 'LongGUTS_STRANGLE', 'CALL_BUTT_CONDOR'].find(type => strategyType === type);
         }
 
 
@@ -2434,7 +2531,7 @@ const Run = () => {
 
 
     getStrategyExpectedProfitCnt();
-
+    createDeleteAllOrdersButton();
 
 }
 
