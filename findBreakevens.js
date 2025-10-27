@@ -1,7 +1,7 @@
 function intrinsic(option, S) {
-  const { isCall, strike } = option;
-  if (isCall) return Math.max(0, S - strike);
-  return Math.max(0, strike - S); // put
+  const { isCall, strikePrice } = option;
+  if (isCall) return Math.max(0, S - strikePrice);
+  return Math.max(0, strikePrice - S); // put
 }
 
 function optionPL(option, S, multiplier = 1,getPrice) {
@@ -23,18 +23,18 @@ function totalPL(positions, S, multiplier = 1,getPrice) {
  * - opts: { multiplier, sMin, sMax, tol, maxIter }
  *
  * Strategy:
- * - جمع همه strike ها -> نقاط شکست (breakpoints)
+ * - جمع همه strikePrice ها -> نقاط شکست (breakpoints)
  * - اضافه کردن یک حد پایین (sMin) و بالا (sMax)
  * - در هر بازه بین دو breakpoint، تابع P/L خطی است؛ اگر علامت مقادیر سرِ دو سر متفاوت باشه،
  *   از بای‌سکشن برای پیدا کردن ریشه استفاده می‌کنیم.
  *
  * Returns: array of numeric breakeven prices (sorted, ممکنه خالی باشه)
  */
-function findBreakevenList({positions,getPrice, opts = {}}) {
+export function findBreakevenList({positions,getPrice, opts = {}}) {
   const multiplier = opts.multiplier ?? 1;
   const tol = opts.tol ?? 1e-6;
   const maxIter = opts.maxIter ?? 100;
-  const Ks = positions.map(p => p.strike).filter(k => Number.isFinite(k));
+  const Ks = positions.map(p => p.strikePrice).filter(k => Number.isFinite(k));
   const minK = Ks.length ? Math.min(...Ks) : 0;
   const maxK = Ks.length ? Math.max(...Ks) : 1000;
 
@@ -48,7 +48,7 @@ function findBreakevenList({positions,getPrice, opts = {}}) {
 
   const roots = new Set();
 
-  // Check exact zeros at breakpoints (useful if exactly zero at strike)
+  // Check exact zeros at breakpoints (useful if exactly zero at strikePrice)
   for (const s of uniq) {
     const v = values(s);
     if (Math.abs(v) <= tol) roots.add(Number(s.toFixed(8)));
@@ -100,14 +100,14 @@ function findBreakevenList({positions,getPrice, opts = {}}) {
 }
 
 /* ------------------ مثال استفاده ------------------ */
-const examplePositions = [
-  {isCall:true, isBuy: true, strike: 34000, getPrice:()=> 844 , getQuantity:()=> 0.97 },
-  {isCall:true, isBuy: false, strike: 13000, getPrice:()=> 14910 , getQuantity:()=> 0.97  },
-  { isPut:true,  isBuy: false, strike: 34000, getPrice:()=> 6760, getQuantity:()=> 1 }
-];
+// const examplePositions = [
+//   {isCall:true, isBuy: true, strikePrice: 34000, getPrice:()=> 844 , getQuantity:()=> 0.97 },
+//   {isCall:true, isBuy: false, strikePrice: 13000, getPrice:()=> 14910 , getQuantity:()=> 0.97  },
+//   { isPut:true,  isBuy: false, strikePrice: 34000, getPrice:()=> 6760, getQuantity:()=> 1 }
+// ];
 
 
-findBreakevenList({positions:examplePositions, opts:{ multiplier: 1 } , getPrice:(position)=>position.getPrice()})
+// findBreakevenList({positions:examplePositions, opts:{ multiplier: 1 } , getPrice:(position)=>position.getPrice()})
 
 // console.log('P/L at S=1900:', totalPL(examplePositions, 1900));
 // console.log('P/L at S=2100:', totalPL(examplePositions, 2100));
