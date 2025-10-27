@@ -3,6 +3,7 @@ import {moment} from './jalali-moment.browser.js'
 
 
 import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon } from './common.js';
+import { findBreakevenList } from './findBreakevens.js';
 
 
 
@@ -6742,15 +6743,51 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                         const quantityFactorOfBECS = Math.abs(maxProfitOfSellingPut/maxLossOfBECS);
 
 
+                        const strategyPositionsOfBECS_RATIO = [
+                            {
+                                ...buyingCall,
+                                isBuy: true,
+                                getQuantity: () => 1*quantityFactorOfBECS,
+                                getRequiredMargin() { }
+                            },
+                            {
+                                ...sellingCall,
+                                isSell: true,
+                                getQuantity: () => 1*quantityFactorOfBECS,
+                                getRequiredMargin: () => diffOfBECS_Strikes
+                            },
+                            {
+                                ...sellingPut,
+                                isSell: true,
+                                getQuantity: () => 1,
+                                getRequiredMargin: () => 0
+                            },
+                        ]
+
+
+                        // if(buyingCall.symbol==='ضفزر1010' &&  sellingCall.symbol==='ضفزر1008' && sellingPut.symbol==='طفزر1010' ){
+                        //     console.log(34324)
+                        // }
+
+
                         if (quantityFactorOfBECS < minQuantityFactorOfBECS)
                             return ___allPossibleStrategies
 
 
 
-                        const sarBeSar =  sellingPut.optionDetails?.strikePrice -  sellingPutPrice - (maxProfitOfBECS * quantityFactorOfBECS);
+                        const breakevenList = findBreakevenList({
+                            positions:strategyPositionsOfBECS_RATIO, 
+                            getPrice: (strategyPosition) => getPriceOfAsset({
+                                asset: strategyPosition,
+                                priceType,
+                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                            })
+                        });
+
+                        const breakeven = breakevenList[0];
 
 
-                        const stockPriceToSarBeSarPercent = -((sarBeSar/ sellingCall.optionDetails.stockSymbolDetails.last) -1);
+                        const stockPriceToSarBeSarPercent = -((breakeven/ sellingCall.optionDetails.stockSymbolDetails.last) -1);
 
 
 
@@ -9166,7 +9203,7 @@ const createListFilterContetnByList=(list)=>{
         // maxBUCSCostSellOptionRatio: 1.1,
         // maxStockPriceDistanceInPercent: .2,
         // min_time_to_settlement: 15 * 24 * 3600000,
-        // max_time_to_settlement: 39 * 24 * 3600000,
+        max_time_to_settlement: 39 * 24 * 3600000,
     })
     
     

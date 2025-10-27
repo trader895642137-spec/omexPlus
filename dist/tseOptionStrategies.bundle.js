@@ -1,8 +1,8 @@
 var tseOptionStrategiesLib;
 /******/ (() => { // webpackBootstrap
-/******/ 	var __webpack_modules__ = ({
-
-/***/ 1:
+/******/ 	var __webpack_modules__ = ([
+/* 0 */,
+/* 1 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -140,8 +140,10 @@ const getNearSettlementPrice = ({strategyPosition,stockPrice}) => {
 }
 
 /***/ }),
-
-/***/ 5:
+/* 2 */,
+/* 3 */,
+/* 4 */,
+/* 5 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -12395,9 +12397,131 @@ const  moment = function(e) {
 
 
 
-/***/ })
+/***/ }),
+/* 6 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-/******/ 	});
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   findBreakevenList: () => (/* binding */ findBreakevenList)
+/* harmony export */ });
+function intrinsic(option, S) {
+  const { isCall, strikePrice } = option;
+  if (isCall) return Math.max(0, S - strikePrice);
+  return Math.max(0, strikePrice - S); // put
+}
+
+function optionPL(option, S, multiplier = 1,getPrice) {
+  const q = option.getQuantity() ?? 1;
+  const intr = intrinsic(option, S);
+  // For long: payoff = intrinsic - premium
+  // For short: payoff = premium - intrinsic
+  const base = option.isBuy  ? (intr - getPrice(option) ) : (getPrice(option)  - intr);
+  return base * q * multiplier;
+}
+
+function totalPL(positions, S, multiplier = 1,getPrice) {
+  return positions.reduce((sum, pos) => sum + optionPL(pos, S, multiplier,getPrice), 0);
+}
+
+/**
+ * findBreakevenList:
+ * - positions: array of positions
+ * - opts: { multiplier, sMin, sMax, tol, maxIter }
+ *
+ * Strategy:
+ * - جمع همه strikePrice ها -> نقاط شکست (breakpoints)
+ * - اضافه کردن یک حد پایین (sMin) و بالا (sMax)
+ * - در هر بازه بین دو breakpoint، تابع P/L خطی است؛ اگر علامت مقادیر سرِ دو سر متفاوت باشه،
+ *   از بای‌سکشن برای پیدا کردن ریشه استفاده می‌کنیم.
+ *
+ * Returns: array of numeric breakeven prices (sorted, ممکنه خالی باشه)
+ */
+function findBreakevenList({positions,getPrice, opts = {}}) {
+  const multiplier = opts.multiplier ?? 1;
+  const tol = opts.tol ?? 1e-6;
+  const maxIter = opts.maxIter ?? 100;
+  const Ks = positions.map(p => p.strikePrice).filter(k => Number.isFinite(k));
+  const minK = Ks.length ? Math.min(...Ks) : 0;
+  const maxK = Ks.length ? Math.max(...Ks) : 1000;
+
+  const sMin = (opts.sMin !== undefined) ? opts.sMin : Math.max(0, minK - (maxK - minK) * 2 - 1000);
+  const sMax = (opts.sMax !== undefined) ? opts.sMax : maxK + (maxK - minK) * 2 + 1000;
+
+  // breakpoints: sorted unique [sMin, ...Ks..., sMax]
+  const uniq = Array.from(new Set([sMin, ...Ks, sMax])).sort((a, b) => a - b);
+
+  const values = (s) => totalPL(positions, s, multiplier,getPrice);
+
+  const roots = new Set();
+
+  // Check exact zeros at breakpoints (useful if exactly zero at strikePrice)
+  for (const s of uniq) {
+    const v = values(s);
+    if (Math.abs(v) <= tol) roots.add(Number(s.toFixed(8)));
+  }
+
+  // For each interval between successive breakpoints, look for sign changes
+  for (let i = 0; i < uniq.length - 1; i++) {
+    let a = uniq[i], b = uniq[i + 1];
+    let fa = values(a), fb = values(b);
+
+    // if either endpoint is exactly zero we've already added it
+    if (Math.abs(fa) <= tol || Math.abs(fb) <= tol) continue;
+
+    if (fa * fb > 0) {
+      // no sign change -> skip (no root inside by continuity & piecewise-linearity)
+      continue;
+    }
+
+    // Bisection (fa and fb have opposite signs)
+    let left = a, right = b;
+    let fl = fa, fr = fb;
+    let mid, fm;
+    let iter = 0;
+    while (iter < maxIter && (right - left) > tol) {
+      mid = (left + right) / 2;
+      fm = values(mid);
+      if (Math.abs(fm) <= tol) {
+        roots.add(Number(mid.toFixed(8)));
+        break;
+      }
+      // decide side
+      if (fl * fm < 0) {
+        right = mid; fr = fm;
+      } else {
+        left = mid; fl = fm;
+      }
+      iter++;
+    }
+    if (iter >= maxIter) {
+      // if we didn't converge but last mid exists, add approx
+      if (mid !== undefined) roots.add(Number(((left + right) / 2).toFixed(8)));
+    } else if (mid !== undefined) {
+      roots.add(Number(mid.toFixed(8)));
+    }
+  }
+
+  // return sorted array
+  return Array.from(roots).sort((a, b) => a - b);
+}
+
+/* ------------------ مثال استفاده ------------------ */
+// const examplePositions = [
+//   {isCall:true, isBuy: true, strikePrice: 34000, getPrice:()=> 844 , getQuantity:()=> 0.97 },
+//   {isCall:true, isBuy: false, strikePrice: 13000, getPrice:()=> 14910 , getQuantity:()=> 0.97  },
+//   { isPut:true,  isBuy: false, strikePrice: 34000, getPrice:()=> 6760, getQuantity:()=> 1 }
+// ];
+
+
+// findBreakevenList({positions:examplePositions, opts:{ multiplier: 1 } , getPrice:(position)=>position.getPrice()})
+
+// console.log('P/L at S=1900:', totalPL(examplePositions, 1900));
+// console.log('P/L at S=2100:', totalPL(examplePositions, 2100));
+// console.log('Breakevens:', findBreakevenList(examplePositions, { multiplier: 1 }));
+
+/***/ })
+/******/ 	]);
 /************************************************************************/
 /******/ 	// The module cache
 /******/ 	var __webpack_module_cache__ = {};
@@ -12459,6 +12583,8 @@ var __webpack_exports__ = {};
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5);
 /* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(1);
+/* harmony import */ var _findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(6);
+
 
 
 
@@ -19203,15 +19329,51 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                         const quantityFactorOfBECS = Math.abs(maxProfitOfSellingPut/maxLossOfBECS);
 
 
+                        const strategyPositionsOfBECS_RATIO = [
+                            {
+                                ...buyingCall,
+                                isBuy: true,
+                                getQuantity: () => 1*quantityFactorOfBECS,
+                                getRequiredMargin() { }
+                            },
+                            {
+                                ...sellingCall,
+                                isSell: true,
+                                getQuantity: () => 1*quantityFactorOfBECS,
+                                getRequiredMargin: () => diffOfBECS_Strikes
+                            },
+                            {
+                                ...sellingPut,
+                                isSell: true,
+                                getQuantity: () => 1,
+                                getRequiredMargin: () => 0
+                            },
+                        ]
+
+
+                        // if(buyingCall.symbol==='ضفزر1010' &&  sellingCall.symbol==='ضفزر1008' && sellingPut.symbol==='طفزر1010' ){
+                        //     console.log(34324)
+                        // }
+
+
                         if (quantityFactorOfBECS < minQuantityFactorOfBECS)
                             return ___allPossibleStrategies
 
 
 
-                        const sarBeSar =  sellingPut.optionDetails?.strikePrice -  sellingPutPrice - (maxProfitOfBECS * quantityFactorOfBECS);
+                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                            positions:strategyPositionsOfBECS_RATIO, 
+                            getPrice: (strategyPosition) => getPriceOfAsset({
+                                asset: strategyPosition,
+                                priceType,
+                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                            })
+                        });
+
+                        const breakeven = breakevenList[0];
 
 
-                        const stockPriceToSarBeSarPercent = -((sarBeSar/ sellingCall.optionDetails.stockSymbolDetails.last) -1);
+                        const stockPriceToSarBeSarPercent = -((breakeven/ sellingCall.optionDetails.stockSymbolDetails.last) -1);
 
 
 
@@ -21627,7 +21789,7 @@ const createListFilterContetnByList=(list)=>{
         // maxBUCSCostSellOptionRatio: 1.1,
         // maxStockPriceDistanceInPercent: .2,
         // min_time_to_settlement: 15 * 24 * 3600000,
-        // max_time_to_settlement: 39 * 24 * 3600000,
+        max_time_to_settlement: 39 * 24 * 3600000,
     })
     
     
