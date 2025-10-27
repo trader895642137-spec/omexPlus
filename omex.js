@@ -2160,6 +2160,20 @@ const injectStyles = () => {
     document.head.appendChild(style);
 }
 
+const fillCurrentStockPriceByStrikes = (strategyPositions)=>{
+
+    const greaterThanStrikes = Math.max(...strategyPositions.map(sp=>sp.strikePrice)) * 1.2;
+
+
+    const baseInstrumentPriceInputEl = document.querySelector('.current-stock-price');
+
+
+    baseInstrumentPriceInputEl.value = greaterThanStrikes
+
+
+
+}
+
 const Run = () => {
 
     injectStyles()
@@ -2179,6 +2193,8 @@ const Run = () => {
 
     getStrategyExpectedProfitCnt();
     createDeleteAllOrdersButton();
+
+    fillCurrentStockPriceByStrikes(strategyPositions)
 
 }
 
