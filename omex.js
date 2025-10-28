@@ -1113,7 +1113,7 @@ const observePortfolioQuantityOfOrderModal = () => {
             });
             
             clearTimeout(currentPositionQuantityUnbalanceInformerTimeout);
-            currentPositionQuantityUnbalanceInformerTimeout = setTimeout(currentPositionQuantityUnbalanceInformer, 20000);
+            currentPositionQuantityUnbalanceInformerTimeout = setTimeout(currentPositionQuantityUnbalanceInformer, 40000);
         } else {
             clearTimeout(currentPositionQuantityUnbalanceInformerTimeout);
         }
