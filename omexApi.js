@@ -59,7 +59,7 @@ const getTodayOpenOrders = () => {
         "credentials": "include"
     }).then(response => response.json()).then(res => {
         const orders = res.response.data;
-        return orders.filter(order=>order.orderStatus==="InQueue")
+        return orders.filter(order=>order.orderStatus==="InQueue" || order.orderStatus==="PartlySettled")
 
     });
 

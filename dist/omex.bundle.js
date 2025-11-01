@@ -11,6 +11,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   configs: () => (/* binding */ configs),
 /* harmony export */   getCommissionFactor: () => (/* binding */ getCommissionFactor),
 /* harmony export */   getNearSettlementPrice: () => (/* binding */ getNearSettlementPrice),
+/* harmony export */   hasGivenRatio: () => (/* binding */ hasGivenRatio),
 /* harmony export */   isTaxFree: () => (/* binding */ isTaxFree),
 /* harmony export */   mainTotalOffsetGainCalculator: () => (/* binding */ mainTotalOffsetGainCalculator),
 /* harmony export */   totalCostCalculator: () => (/* binding */ totalCostCalculator)
@@ -139,6 +140,29 @@ const getNearSettlementPrice = ({strategyPosition,stockPrice}) => {
   return price > 0 ? price : 0
 }
 
+
+
+
+const hasGivenRatio=({num1,num2,properRatio=100})=> {
+    if (num2 === 0) {
+        return true
+    }
+    
+    const ratio = num1 / num2;
+    const tolerance = 0.0001;
+    
+    if (Math.abs(ratio - properRatio) < tolerance) {
+        // `عدد اول ${ratio.toFixed(2)} برابر عدد دوم است (تقریباً 100 برابر)`;
+        return true
+    } else if (Math.abs(ratio - (1/properRatio)) < tolerance) {
+        // `عدد دوم ${(1/ratio).toFixed(2)} برابر عدد اول است (تقریباً 100 برابر)`;
+        return true
+    } else {
+        // `نسبت: ${ratio.toFixed(4)}`;
+        return false
+    }
+}
+
 /***/ }),
 /* 2 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -208,7 +232,7 @@ const getTodayOpenOrders = () => {
         "credentials": "include"
     }).then(response => response.json()).then(res => {
         const orders = res.response.data;
-        return orders.filter(order=>order.orderStatus==="InQueue")
+        return orders.filter(order=>order.orderStatus==="InQueue" || order.orderStatus==="PartlySettled")
 
     });
 

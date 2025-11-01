@@ -2,7 +2,7 @@ import {moment} from './jalali-moment.browser.js'
 
 
 
-import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon } from './common.js';
+import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGivenRatio } from './common.js';
 import { findBreakevenList } from './findBreakevens.js';
 
 
@@ -157,7 +157,7 @@ let prevListSymbolMap = {};
 
 let generalConfig = {
     expectedProfitPerMonth: 1.04,
-    minProfitToFilter: 0.04,
+    minProfitToFilter: 0.035,
     BUCSSOptionListIgnorer: ({option, minVol}) => {
         return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol || option.optionDetails.stockSymbolDetails.last < option.optionDetails.strikePrice)
     }
@@ -354,7 +354,7 @@ const configsToHtmlTitle = ({strategyName, strategySubName, priceType, min_time_
 
 const htmlStrategyListCreator = ({strategyList, title, expectedProfitNotif}) => {
 
-    return `<div class="strategy-filter-list-cnt" data-base-strategy-type="${strategyList[0]?.strategyTypeTitle}" style="    height: 32vh;min-width:200px;    display: flex;    flex-direction: column;">
+    return `<div class="strategy-filter-list-cnt" data-base-strategy-type="${strategyList[0]?.strategyTypeTitle}" >
                 <div style="padding:5px;padding-right:10px;padding-left:10px; height: 50px;flex-shrink: 0;${expectedProfitNotif ? 'color:green' : ''}">
                     ${title}
                 </div>
@@ -3762,7 +3762,7 @@ const calcREVERSE_IRON_BUTTERFLYStrategies = (list, {priceType, settlementGainCh
 const IRON_BUTTERFLY_BUCS_strategyObjCreator = (option, option2, option3, option4,
     { minStockMiddleDistanceInPercent, maxStockMiddleDistanceInPercent,
         minStockPriceDistanceFromOption4StrikeInPercent, maxStockPriceDistanceFromOption4StrikeInPercent,
-        MIN_BUCS_BEPS_diffStrikesRatio, MAX_BUCS_BEPS_diffStrikesRatio, expectedProfitNotif, priceType, minProfitLossRatio
+        MIN_BUCS_BEPS_diffStrikesRatio, MAX_BUCS_BEPS_diffStrikesRatio, expectedProfitNotif, priceType, minProfitLossRatio,BUCS_BEPS_COST_properRatio=80
     }) => {
 
     if (!option?.optionDetails || !option2?.optionDetails || !option3?.optionDetails || !option4?.optionDetails) {
@@ -3798,9 +3798,7 @@ const IRON_BUTTERFLY_BUCS_strategyObjCreator = (option, option2, option3, option
 
 
 
-
-
-    const strategyPositions = [
+    const strategyPositionsBUCS = [
         {
             ...option,
             isBuy: true,
@@ -3811,13 +3809,18 @@ const IRON_BUTTERFLY_BUCS_strategyObjCreator = (option, option2, option3, option
             ...option2,
             isSell: true,
             getQuantity: () => baseQuantity,
-            getRequiredMargin: () => diffOfBUCS_Strikes
+            getRequiredMargin() { }
         },
+        
+    ]
+
+
+    const strategyPositionsBEPS = [
         {
             ...option3,
             isSell: true,
             getQuantity: () => baseQuantity * BUCS_BEPS_diffStrikesRatio,
-            getRequiredMargin: () => diffOfBEPS_Strikes
+            getRequiredMargin() { }
         },
         {
             ...option4,
@@ -3825,7 +3828,37 @@ const IRON_BUTTERFLY_BUCS_strategyObjCreator = (option, option2, option3, option
             getQuantity: () => baseQuantity * BUCS_BEPS_diffStrikesRatio,
             getRequiredMargin() { }
         }
+        
     ]
+
+
+
+    const strategyPositions = [
+        ...strategyPositionsBUCS,
+        ...strategyPositionsBEPS
+    ]
+
+
+    const totalCostBUCS = totalCostCalculatorCommon({
+        strategyPositions:strategyPositionsBUCS,
+        getPrice: (strategyPosition) => getPriceOfAsset({
+            asset: strategyPosition,
+            priceType,
+            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+        })
+    });
+    const totalCostBEPS = totalCostCalculatorCommon({
+        strategyPositions:strategyPositionsBEPS,
+        getPrice: (strategyPosition) => getPriceOfAsset({
+            asset: strategyPosition,
+            priceType,
+            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+        })
+    });
+
+    if(hasGivenRatio({num1:totalCostBUCS,num2:totalCostBEPS,properRatio:BUCS_BEPS_COST_properRatio})){
+        return 
+    }
 
 
 
@@ -3897,6 +3930,7 @@ const calcIRON_BUTTERFLY_BUCS_Strategies = (list, {priceType, settlementGainChoo
      minStockPriceDistanceFromOption4StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption4StrikeInPercent=Infinity, 
      minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, 
      MIN_BUCS_BEPS_diffStrikesRatio=0, MAX_BUCS_BEPS_diffStrikesRatio=Infinity, minProfitLossRatio=.7, 
+     BUCS_BEPS_COST_properRatio=80,
      minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
@@ -4027,7 +4061,7 @@ const calcIRON_BUTTERFLY_BUCS_Strategies = (list, {priceType, settlementGainChoo
                             const strategyObj = IRON_BUTTERFLY_BUCS_strategyObjCreator(option, option2, option3, option4, {
                                 minStockMiddleDistanceInPercent, maxStockMiddleDistanceInPercent,
                                 minStockPriceDistanceFromOption4StrikeInPercent, maxStockPriceDistanceFromOption4StrikeInPercent,
-                                MIN_BUCS_BEPS_diffStrikesRatio, MAX_BUCS_BEPS_diffStrikesRatio, expectedProfitNotif, priceType, minProfitLossRatio
+                                MIN_BUCS_BEPS_diffStrikesRatio, MAX_BUCS_BEPS_diffStrikesRatio, expectedProfitNotif, priceType, minProfitLossRatio,BUCS_BEPS_COST_properRatio
                             });
 
                             if (strategyObj) {
@@ -4070,7 +4104,7 @@ const calcIRON_BUTTERFLY_BUCS_Strategies = (list, {priceType, settlementGainChoo
                                 const strategyObj = IRON_BUTTERFLY_BUCS_strategyObjCreator(option, option2, option3, option4, {
                                     minStockMiddleDistanceInPercent, maxStockMiddleDistanceInPercent,
                                     minStockPriceDistanceFromOption4StrikeInPercent, maxStockPriceDistanceFromOption4StrikeInPercent,
-                                    MIN_BUCS_BEPS_diffStrikesRatio, MAX_BUCS_BEPS_diffStrikesRatio, expectedProfitNotif, priceType, minProfitLossRatio
+                                    MIN_BUCS_BEPS_diffStrikesRatio, MAX_BUCS_BEPS_diffStrikesRatio, expectedProfitNotif, priceType, minProfitLossRatio,BUCS_BEPS_COST_properRatio
                                 });
                                 if (strategyObj) {
 
@@ -6605,6 +6639,8 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 }
 
 
+
+// Jade Lizard
 const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBECS=0.6, 
     minStockPriceToSarBeSarPercent=0.25,
     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
@@ -9085,6 +9121,7 @@ const createListFilterContetnByList=(list)=>{
         }
         ,
         minProfitLossRatio: .7,
+        BUCS_BEPS_COST_properRatio:80,
         // expectedProfitNotif: true
         // minVol: 1000 * 1000 * 1000,
         // minStockPriceDistanceFromHigherStrikeInPercent: .22,
@@ -9110,6 +9147,7 @@ const createListFilterContetnByList=(list)=>{
         }
         ,
         minProfitLossRatio: .7,
+        BUCS_BEPS_COST_properRatio:80,
         // expectedProfitNotif: true
         // minVol: 1000 * 1000 * 1000,
         // minStockPriceDistanceFromHigherStrikeInPercent: .22,
@@ -10089,6 +10127,13 @@ const injectStyles = ()=>{
             .kateb-scroll-gray::-webkit-scrollbar-thumb{
                 background-color:#939191
             }
+        }
+
+        .strategy-filter-list-cnt{
+            height: 38vh;
+            min-width: 200px;
+            display: flex;
+            flex-direction: column;
         }
     `;
 
