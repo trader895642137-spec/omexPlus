@@ -16375,10 +16375,6 @@ const IRON_BUTTERFLY_CONDOR_BUCS_strategyObjCreator = (option, option2, option3,
 
 
 
-    if(option.symbol==='ضهرم8014' && option2.symbol==='ضهرم8020' && option3.symbol==='طهرم8015' && option4.symbol==='طهرم8020') {
-        console.log(234234234);
-        
-    }
 
 
 
@@ -16509,10 +16505,6 @@ const IRON_BUTTERFLY_CONDOR_BUCS_strategyObjCreator = (option, option2, option3,
 
 
 
-     if(option.symbol==='ضهرم8014' && option2.symbol==='ضهرم8020' && option3.symbol==='طهرم8015' && option4.symbol==='طهرم8020') {
-        console.log(234234234);
-        
-    }
 
 
 
@@ -18590,10 +18582,7 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType, settlementGainChoosePri
 
                             const minProfitPercent = (minProfitLossOfButterfly/Math.abs(totalCost))*100;
 
-                            if (option.symbol === 'طهرم8015' && option2.symbol === 'طهرم8017' && option3.symbol === 'طهرم8017' && option4.symbol === 'طهرم8018') {
-                                console.log(111111111);
-
-                            }
+                            
 
                             if(option2.symbol!==option3.symbol  && minProfitPercent <2){
                                 return ___allPossibleStrategies
