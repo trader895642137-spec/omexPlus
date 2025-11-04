@@ -36,7 +36,7 @@ function formatDateToYyyymmdd(date) {
     return date.toISOString().slice(0, 10).replace(/-/g, '');
 }
 
-const getTodayOpenOrders = () => {
+const getTodayOpenOrders = async () => {
     // ?historyDate=20251026
     return fetch(`${redOrigin}/api/Orders/GetOrders?historyDate=${formatDateToYyyymmdd(new Date())}`, {
         "headers": {
@@ -93,7 +93,7 @@ const deleteAllOpenOrders =async ()=>{
     const openOrderList = await getTodayOpenOrders();
 
     for (let i = 0; i < openOrderList.length; i++) {
-        await new Promise(resolve => setTimeout(resolve, 450));
+        await new Promise(resolve => setTimeout(resolve, 150));
         const {orderId,id}=openOrderList[i];
         deleteOrder({orderId,id});
     }

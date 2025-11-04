@@ -166,47 +166,45 @@ const settlementCommissionFactor = (_strategyPosition) => {
     return commissionFactor
 }
 
-const totalCostCalculatorForPriceTypes = _strategyPositions => {
+const totalCostCalculatorForPriceTypes = (_strategyPositions,getAvgPrice) => {
 
+
+
+    const quantityCalculatorOfCurrentPosition = (position,__strategyPositions)=>{
+            const sumOfQuantityInEstimationPanel = __strategyPositions.filter(_position => _position.instrumentName === position.instrumentName).reduce((_sumOfQuantityInEstimationPanel, position) => _sumOfQuantityInEstimationPanel + position.getQuantity(), 0);
+
+
+            const quantityInEstimationPanel = position.getQuantity();
+
+            const quantityFactor = quantityInEstimationPanel / sumOfQuantityInEstimationPanel;
+
+
+            return position.getCurrentPositionQuantity() * quantityFactor
+    }
 
 
     let totalCostOfChunkOfEstimationQuantity = totalCostCalculator({
         strategyPositions: _strategyPositions,
-        getPrice: (position) => position.getCurrentPositionAvgPrice()
+        getPrice: (position) => getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice()
     });
 
     let totalCostOfCurrentPositions = totalCostCalculator({
         strategyPositions: _strategyPositions,
         getQuantity: (position, __strategyPositions) => {
-
-            const sumOfQuantityInEstimationPanel = __strategyPositions.filter(_position => _position.instrumentName === position.instrumentName).reduce((_sumOfQuantityInEstimationPanel, position) => _sumOfQuantityInEstimationPanel + position.getQuantity(), 0);
-
-
-            const quantityInEstimationPanel = position.getQuantity();
-
-            const quantityFactor = quantityInEstimationPanel / sumOfQuantityInEstimationPanel;
-
-
-            return position.getCurrentPositionQuantity() * quantityFactor
+            return quantityCalculatorOfCurrentPosition(position, __strategyPositions);
         },
-        getPrice: (position) => position.getCurrentPositionAvgPrice()
+        getPrice: (position) => getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice()
     });
     let unreliableTotalCostOfCurrentPositions = totalCostCalculator({
         strategyPositions: _strategyPositions,
         getQuantity: (position, __strategyPositions) => {
-
-            const sumOfQuantityInEstimationPanel = __strategyPositions.filter(_position => _position.instrumentName === position.instrumentName).reduce((_sumOfQuantityInEstimationPanel, position) => _sumOfQuantityInEstimationPanel + position.getQuantity(), 0);
-
-
-            const quantityInEstimationPanel = position.getQuantity();
-
-            const quantityFactor = quantityInEstimationPanel / sumOfQuantityInEstimationPanel;
-
-
-            return position.getCurrentPositionQuantity() * quantityFactor
+            return quantityCalculatorOfCurrentPosition(position, __strategyPositions);
         },
-        getPrice: (position) => position.getCurrentPositionAvgPrice() || position.getUnreliableCurrentPositionAvgPrice()
+        getPrice: (position) => getAvgPrice? getAvgPrice(position): (position.getCurrentPositionAvgPrice() || position.getUnreliableCurrentPositionAvgPrice())
     });
+
+
+
     let totalCostByBestPrices = totalCostCalculator({
         strategyPositions: _strategyPositions,
         getPrice: (position) => position.getBestOpenMorePrice()
@@ -409,7 +407,51 @@ const MARGIN_CALC_TYPE = {
     BY_CURRENT_POSITION: "BY_CURRENT_POSITION",
     BY_GIVEN_PRICE: "BY_GIVEN_PRICE"
 }
-const calcOffsetProfitOfStrategy = (_strategyPositions) => {
+
+
+let lastDoubleCheckProfitByExactDecimalPricesOfPortFolioCheck={
+};
+const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositions)=>{
+    if(lastDoubleCheckProfitByExactDecimalPricesOfPortFolioCheck.time && (Date.now() - lastDoubleCheckProfitByExactDecimalPricesOfPortFolioCheck.time)<60000 ) return lastDoubleCheckProfitByExactDecimalPricesOfPortFolioCheck.isGood
+    lastDoubleCheckProfitByExactDecimalPricesOfPortFolioCheck.time = Date.now();
+    const portfolioList = await OMEXApi.getOptionPortfolioList();
+    const getAvgPrice =(position)=>{
+
+        const currentPortfolioPosition= portfolioList.find(currentPortfolioPosition=>currentPortfolioPosition.instrumentName===position.instrumentName)
+
+        if(!currentPortfolioPosition) return null
+
+        return currentPortfolioPosition.executedPrice
+        
+    }
+
+
+
+    const totalCostOfChunkOfEstimationQuantity = totalCostCalculatorForPriceTypes(_strategyPositions,getAvgPrice).totalCostOfChunkOfEstimationQuantity;
+
+    const totalOffsetGainOfChunkOfEstimation = totalOffsetGainOfChunkOfEstimationQuantityCalculator({
+        strategyPositions: _strategyPositions
+    });
+    let profitLossByOffsetOrdersPercent = profitPercentCalculator({
+        costWithSign: totalCostOfChunkOfEstimationQuantity,
+        gainWithSign: totalOffsetGainOfChunkOfEstimation.byOffsetOrderPrices
+    });
+
+    const isGood = profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1);
+
+
+    lastDoubleCheckProfitByExactDecimalPricesOfPortFolioCheck.isGood =isGood;
+
+    showNotification({
+            title: 'مشکل با محاسبه قیمت میانگین',
+            body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
+            tag: `${strategyPositions[0].instrumentName}-doubleCheckProfitByExactDecimalPricesOfPortFolio`
+    });
+
+    return isGood
+
+}
+const calcOffsetProfitOfStrategy = async (_strategyPositions) => {
     const totalCostInfoObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
     const totalCurrentPositionCost = totalCostInfoObj.totalCostOfCurrentPositions;
@@ -513,20 +555,36 @@ const calcOffsetProfitOfStrategy = (_strategyPositions) => {
         
         `;
 
+    let hasProfit = await checkProfitPercentAndInform({strategyPositions:_strategyPositions,profitLossByOffsetOrdersPercent});
+    
+
+    return hasProfit
+
+}
+
+const checkProfitPercentAndInform =async ({strategyPositions,profitLossByOffsetOrdersPercent})=>{
+
     let hasProfit=false
     if (profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1)) {
+        const isDoubleCheckOk = await doubleCheckProfitByExactDecimalPricesOfPortFolio(strategyPositions)
+        if(!isDoubleCheckOk){
+            hasProfit=false;
+            uninformExtremeOrderPrice(strategyPositions, 'offset');
+            return hasProfit
+        } 
+
         hasProfit=true;
 
-        informExtremeOrderPrice(_strategyPositions, 'offset');
+        informExtremeOrderPrice(strategyPositions, 'offset');
 
         showNotification({
             title: 'به سود رسید',
-            body: `${_strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
-            tag: `${_strategyPositions[0].instrumentName}-expectedProfitForCurrentPositionsPrecent`
+            body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
+            tag: `${strategyPositions[0].instrumentName}-expectedProfitForCurrentPositionsPrecent`
         });
     } else {
         hasProfit=false;
-        uninformExtremeOrderPrice(_strategyPositions, 'offset');
+        uninformExtremeOrderPrice(strategyPositions, 'offset');
     }
 
     return hasProfit
@@ -1403,8 +1461,8 @@ const observeMyOrderInOrdersModal = () => {
 
 let calcOffsetProfitOfStrategyInformUntilNotProfitTimeout;
 
-const calcOffsetProfitOfStrategyInformUntilNotProfit = () => {
-    const isProfit = calcOffsetProfitOfStrategy(strategyPositions);
+const calcOffsetProfitOfStrategyInformUntilNotProfit = async () => {
+    const isProfit = await calcOffsetProfitOfStrategy(strategyPositions);
     if (isProfit) {
         clearTimeout(calcOffsetProfitOfStrategyInformUntilNotProfitTimeout);
         calcOffsetProfitOfStrategyInformUntilNotProfitTimeout = setTimeout(calcOffsetProfitOfStrategyInformUntilNotProfit, 10000);
