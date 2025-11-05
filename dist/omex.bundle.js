@@ -842,6 +842,8 @@ const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositio
         });
     }
 
+    calcOffsetProfitOfStrategy(_strategyPositions)
+
     return isGood
 
 }
