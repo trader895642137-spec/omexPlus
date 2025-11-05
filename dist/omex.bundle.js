@@ -400,13 +400,17 @@ const createStatusCnt = () => {
     let statusCnt = document.createElement('div');
     statusCnt.classList.add('status-cnt');
     statusCnt.style.cssText += `
-    padding: 0 10px;
-    width: 100%;
-    background: #FFF;
-    display: flex;
-    column-gap: 21px;
-    font-size: 20px;
-`;
+        padding: 0 10px;
+        width: 100%;
+        background: #FFF;
+        display: flex;
+        column-gap: 21px;
+        font-size: 20px;
+    `;
+
+    statusCnt.addEventListener('click', function(event) {
+        doubleCheckProfitByExactDecimalPricesOfPortFolio(strategyPositions,true)
+    });
     document.querySelector('client-option-layout-action-bar').append(statusCnt)
     return statusCnt
 }
@@ -776,13 +780,14 @@ const MARGIN_CALC_TYPE = {
     BY_GIVEN_PRICE: "BY_GIVEN_PRICE"
 }
 
-
-let lastDoubleCheckProfitByExactDecimalPricesOfPortFolioCheck={
+let lastCheckProfitByExactDecimalPricesOfPortFolio={
 };
-const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositions)=>{
-    if(lastDoubleCheckProfitByExactDecimalPricesOfPortFolioCheck.time && (Date.now() - lastDoubleCheckProfitByExactDecimalPricesOfPortFolioCheck.time)<60000 ) return lastDoubleCheckProfitByExactDecimalPricesOfPortFolioCheck.isGood
-    lastDoubleCheckProfitByExactDecimalPricesOfPortFolioCheck.time = Date.now();
+
+
+const calcProfitLossByExactDecimalPricesOfPortFolio = async (_strategyPositions)=>{
+
     const portfolioList = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionPortfolioList();
+    lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList = portfolioList;
     const getAvgPrice =(position)=>{
 
         const currentPortfolioPosition= portfolioList.find(currentPortfolioPosition=>currentPortfolioPosition.instrumentName===position.instrumentName)
@@ -805,48 +810,47 @@ const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositio
         gainWithSign: totalOffsetGainOfChunkOfEstimation.byOffsetOrderPrices
     });
 
+    return {
+        totalOffsetGainOfChunkOfEstimation,
+        profitLossByOffsetOrdersPercent,
+        totalCostOfChunkOfEstimationQuantity
+    }
+
+}
+
+
+const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositions,isForce)=>{
+    if(!isForce  && lastCheckProfitByExactDecimalPricesOfPortFolio.time && (Date.now() - lastCheckProfitByExactDecimalPricesOfPortFolio.time)<60000 ) return lastCheckProfitByExactDecimalPricesOfPortFolio.isGood
+    lastCheckProfitByExactDecimalPricesOfPortFolio.time = Date.now();
+    
+
+    const {totalOffsetGainOfChunkOfEstimation,
+        profitLossByOffsetOrdersPercent,
+        totalCostOfChunkOfEstimationQuantity} = await calcProfitLossByExactDecimalPricesOfPortFolio(_strategyPositions)
+
     const isGood = profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1);
 
 
-    lastDoubleCheckProfitByExactDecimalPricesOfPortFolioCheck.isGood =isGood;
+    lastCheckProfitByExactDecimalPricesOfPortFolio.isGood =isGood;
 
-    showNotification({
-            title: 'مشکل با محاسبه قیمت میانگین',
-            body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
-            tag: `${strategyPositions[0].instrumentName}-doubleCheckProfitByExactDecimalPricesOfPortFolio`
-    });
+    if(!isGood){
+
+        showNotification({
+                title: 'مشکل با محاسبه قیمت میانگین',
+                body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
+                tag: `${strategyPositions[0].instrumentName}-doubleCheckProfitByExactDecimalPricesOfPortFolio`
+        });
+    }
 
     return isGood
 
 }
-const calcOffsetProfitOfStrategy = async (_strategyPositions) => {
-    const totalCostInfoObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
-    const totalCurrentPositionCost = totalCostInfoObj.totalCostOfCurrentPositions;
-    const unreliableTotalCostOfCurrentPositions = totalCostInfoObj.unreliableTotalCostOfCurrentPositions;
-    const totalCostOfChunkOfEstimationQuantity = totalCostCalculatorForPriceTypes(_strategyPositions).totalCostOfChunkOfEstimationQuantity;
-
-    const totalOffsetGainOfChunkOfEstimation = totalOffsetGainOfChunkOfEstimationQuantityCalculator({
-        strategyPositions: _strategyPositions
-    });
-
-    const totalOffsetGainOfCurrentPositionObj = totalOffsetGainOfCurrentPositionsCalculator({
-        strategyPositions: _strategyPositions
-    });
-
+const showCurrentStrategyPositionState = ({totalCurrentPositionCost,totalOffsetGainOfCurrentPositionObj,
+    profitLossByOffsetOrdersPercent,profitLossByInsertedPricesPercent,unreliableTotalCostOfCurrentPositions})=>{
 
 
     let statusCnt = getStatusCnt();
-
-    let profitLossByOffsetOrdersPercent = profitPercentCalculator({
-        costWithSign: totalCostOfChunkOfEstimationQuantity,
-        gainWithSign: totalOffsetGainOfChunkOfEstimation.byOffsetOrderPrices
-    });
-
-    let profitLossByInsertedPricesPercent = profitPercentCalculator({
-        costWithSign: totalCostOfChunkOfEstimationQuantity,
-        gainWithSign: totalOffsetGainOfChunkOfEstimation.byInsertedPrices
-    });
 
     statusCnt.innerHTML = `
             <span style="
@@ -922,6 +926,59 @@ const calcOffsetProfitOfStrategy = async (_strategyPositions) => {
 
         
         `;
+
+}
+const calcOffsetProfitOfStrategy = async (_strategyPositions) => {
+
+
+    let getAvgPrice;
+    if(lastCheckProfitByExactDecimalPricesOfPortFolio?.portfolioList?.length &&   lastCheckProfitByExactDecimalPricesOfPortFolio.time && (Date.now() - lastCheckProfitByExactDecimalPricesOfPortFolio.time)<60000 ){
+        getAvgPrice =(position)=>{
+
+            const currentPortfolioPosition= lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList.find(currentPortfolioPosition=>currentPortfolioPosition.instrumentName===position.instrumentName)
+
+            if(!currentPortfolioPosition) return null
+
+            return currentPortfolioPosition.executedPrice
+        
+        }
+    }
+
+    const totalCostInfoObj = totalCostCalculatorForPriceTypes(_strategyPositions,getAvgPrice);
+
+    const totalCurrentPositionCost = totalCostInfoObj.totalCostOfCurrentPositions;
+    const unreliableTotalCostOfCurrentPositions = totalCostInfoObj.unreliableTotalCostOfCurrentPositions;
+    const totalCostOfChunkOfEstimationQuantity = totalCostInfoObj.totalCostOfChunkOfEstimationQuantity;
+
+    const totalOffsetGainOfChunkOfEstimation = totalOffsetGainOfChunkOfEstimationQuantityCalculator({
+        strategyPositions: _strategyPositions
+    });
+
+    const totalOffsetGainOfCurrentPositionObj = totalOffsetGainOfCurrentPositionsCalculator({
+        strategyPositions: _strategyPositions
+    });
+
+
+
+    
+
+    let profitLossByOffsetOrdersPercent = profitPercentCalculator({
+        costWithSign: totalCostOfChunkOfEstimationQuantity,
+        gainWithSign: totalOffsetGainOfChunkOfEstimation.byOffsetOrderPrices
+    });
+
+    let profitLossByInsertedPricesPercent = profitPercentCalculator({
+        costWithSign: totalCostOfChunkOfEstimationQuantity,
+        gainWithSign: totalOffsetGainOfChunkOfEstimation.byInsertedPrices
+    });
+
+
+
+    showCurrentStrategyPositionState({
+        totalCurrentPositionCost,totalOffsetGainOfCurrentPositionObj,
+        profitLossByOffsetOrdersPercent,profitLossByInsertedPricesPercent,
+        unreliableTotalCostOfCurrentPositions});
+    
 
     let hasProfit = await checkProfitPercentAndInform({strategyPositions:_strategyPositions,profitLossByOffsetOrdersPercent});
     
