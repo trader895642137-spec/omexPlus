@@ -2404,7 +2404,7 @@ const calcCALL_BUTT_CONDORStrategies = (list, {priceType, settlementGainChoosePr
                                     ...option2,
                                     isSell: true,
                                     getQuantity: () => baseQuantity,
-                                    getRequiredMargin: () => diffOfBUCS_Strikes
+                                    getRequiredMargin() { }
                                 },
                                 {
                                     ...option3,
@@ -2698,7 +2698,7 @@ const calcCALL_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePric
                                 ...option2,
                                 isSell: true,
                                 getQuantity: () => baseQuantity,
-                                getRequiredMargin: () => diffOfBUCS_Strikes
+                                getRequiredMargin() { }
                             },
                             {
                                 ...option3,
@@ -2766,6 +2766,10 @@ const calcCALL_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePric
 
                         if (profitLossPresent < minProfitLossRatio)
                             return ___allPossibleStrategies
+
+
+
+                        
 
                         const strategyObj = {
                             option: {
@@ -3008,7 +3012,7 @@ const calcCALL_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTy
                                     ...option2,
                                     isSell: true,
                                     getQuantity: () => baseQuantity,
-                                    getRequiredMargin: () => diffOfBUCS_Strikes
+                                    getRequiredMargin() { }
                                 },
                                 {
                                     ...option3,
