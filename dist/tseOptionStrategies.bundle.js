@@ -8,6 +8,7 @@ var tseOptionStrategiesLib;
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   COMMISSION_FACTOR: () => (/* binding */ COMMISSION_FACTOR),
+/* harmony export */   calculateOptionMargin: () => (/* binding */ calculateOptionMargin),
 /* harmony export */   configs: () => (/* binding */ configs),
 /* harmony export */   getCommissionFactor: () => (/* binding */ getCommissionFactor),
 /* harmony export */   getNearSettlementPrice: () => (/* binding */ getNearSettlementPrice),
@@ -152,6 +153,51 @@ const hasGreaterRatio=({num1,num2,properRatio=100})=> {
     const ratio = absNum1>absNum2 ? (absNum1 / absNum2) : (absNum2 / absNum1);
 
     return ratio>=properRatio
+}
+
+
+const calculateOptionMargin=({ priceSpot, // قیمت پایانی دارایی پایه (ریال)
+    strikePrice, // قیمت اعمال (ریال)
+    contractSize, // اندازه قرارداد
+    optionPremium, // قیمت فروش اختیار (ریال)
+    A = 0.2, // ضریب A
+    B = 0.1, // ضریب B
+    optionType = "call"// "call" یا "put"
+})=> {
+
+    function roundUpTo({ margin, multiplier }) {
+        return Math.ceil(margin / multiplier) * multiplier
+
+    }
+    // محاسبه مقدار در زیان بودن
+    let intrinsicLoss = 0;
+    if (optionType === "call") {
+        intrinsicLoss = Math.max(0, strikePrice - priceSpot) * contractSize;
+    } else if (optionType === "put") {
+        intrinsicLoss = Math.max(0, priceSpot - strikePrice) * contractSize;
+    }
+
+    // مرحله ۱
+    const marginStep1 = (priceSpot * A * contractSize) - intrinsicLoss;
+
+    // مرحله ۲
+    const marginStep2 = strikePrice * B * contractSize;
+
+    // مرحله ۳: بیشینه مرحله ۱ و ۲ و گرد کردن
+    const maxBaseMargin = Math.max(marginStep1, marginStep2);
+    const roundedMargin = roundUpTo({
+        margin: maxBaseMargin,
+        multiplier: 10000
+    });
+
+    // مرحله ۴: افزودن قیمت فروش اختیار × اندازه قرارداد
+    const finalMargin = roundedMargin + (optionPremium * contractSize);
+
+    return {
+        initila: roundedMargin,
+        required: finalMargin
+    }
+
 }
 
 /***/ }),
@@ -12771,49 +12817,6 @@ let generalConfig = {
     }
 }
 
-function calculateOptionMargin({ priceSpot, // قیمت پایانی دارایی پایه (ریال)
-    strikePrice, // قیمت اعمال (ریال)
-    contractSize, // اندازه قرارداد
-    optionPremium, // قیمت فروش اختیار (ریال)
-    A = 0.2, // ضریب A
-    B = 0.1, // ضریب B
-    optionType = "call"// "call" یا "put"
-}) {
-
-    function roundUpTo({ margin, multiplier }) {
-        return Math.ceil(margin / multiplier) * multiplier
-
-    }
-    // محاسبه مقدار در زیان بودن
-    let intrinsicLoss = 0;
-    if (optionType === "call") {
-        intrinsicLoss = Math.max(0, strikePrice - priceSpot) * contractSize;
-    } else if (optionType === "put") {
-        intrinsicLoss = Math.max(0, priceSpot - strikePrice) * contractSize;
-    }
-
-    // مرحله ۱
-    const marginStep1 = (priceSpot * A * contractSize) - intrinsicLoss;
-
-    // مرحله ۲
-    const marginStep2 = strikePrice * B * contractSize;
-
-    // مرحله ۳: بیشینه مرحله ۱ و ۲ و گرد کردن
-    const maxBaseMargin = Math.max(marginStep1, marginStep2);
-    const roundedMargin = roundUpTo({
-        margin: maxBaseMargin,
-        multiplier: 10000
-    });
-
-    // مرحله ۴: افزودن قیمت فروش اختیار × اندازه قرارداد
-    const finalMargin = roundedMargin + (optionPremium * contractSize);
-
-    return {
-        initila: roundedMargin,
-        required: finalMargin
-    }
-
-}
 
 
 
@@ -12844,13 +12847,30 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
 
 
 
-const calcSumOfMargins = (options) => {
-    return options.reduce( (_sum, option) => {
-        return _sum + (option.calculatedRequiredMargin || 0)
-    }
-    , 0)
+const isProfitEnough = ({strategy,profitPercent})=>{
+
+    if (profitPercent < 0)
+        return false
+
+    if (profitPercent < generalConfig.minProfitToFilter)
+        return false
+
+    // const minDiffTimeOflastTrade = 6 * 60 * 1000;
+    // if ((Date.now() - strategy.option.lastTradedTime) > minDiffTimeOflastTrade) {
+    //     return false
+    // }
+
+    const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(strategy.option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+    const daysToSettlement = Math.floor(settlementTimeDiff / (24 * 3600000));
+    const percentPerDay = Math.pow((1 + profitPercent), 1 / daysToSettlement);
+    const percentPerMonth = Math.pow(percentPerDay, 30);
+
+    return percentPerMonth > ((strategy.expectedProfitPerMonth !== undefined && strategy.expectedProfitPerMonth !== null) ? strategy.expectedProfitPerMonth : generalConfig.expectedProfitPerMonth)
 
 }
+
+
+
 
 
 const calcOffsetGainOfPositions = ({ strategyPositions, stockPrice }) => {
@@ -14443,6 +14463,234 @@ const calcBUPSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
 
 }
 
+
+
+const calcSyntheticCoveredCallStrategies = (list, 
+    {priceType, strategySubName,minQuantityFactorOfBUCS=0.6, 
+        minStockPriceToSarBeSarPercent=-Infinity,
+        BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=0, 
+        max_time_to_settlement=Infinity, 
+        minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+
+    const filteredList = list.filter(item => {
+        if (!item.isOption)
+            return
+        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
+    }
+    )
+
+    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+
+    let enrichedList = [];
+    for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
+        const optionsGroupedByDate = Object.groupBy(optionList, ({optionDetails}) => optionDetails.date);
+
+        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
+
+            const _enrichedList = optionListOfSameDate.map(buyingCall => {
+
+                if (!buyingCall.optionDetails?.stockSymbolDetails || !buyingCall.isCall || buyingCall.vol < minVol)
+                return buyingCall
+
+               
+
+
+                const buyingCallPrice = getPriceOfAsset({
+                    asset: buyingCall,
+                    priceType,
+                    sideType: 'BUY'
+                });
+                if(buyingCallPrice===0) return buyingCall
+
+
+                const sameStrikePut = optionListOfSameDate.find(__option => __option.symbol === buyingCall.symbol.replace('ض', 'ط') && (__option.last > 10 ? __option.vol > minVol : true));
+                if(!sameStrikePut) return buyingCall
+                const sameStrikePutPrice = getPriceOfAsset({
+                    asset: sameStrikePut,
+                    priceType,
+                    sideType: 'SELL'
+                });
+                if(sameStrikePutPrice===0) return buyingCall
+
+
+                const sellingCallList = optionListOfSameDate.filter(_option => {
+                    if (_option.symbol === buyingCall.symbol || !_option.isCall || _option.vol < minVol)
+                        return false
+
+                    if (!_option.optionDetails?.stockSymbolDetails?.last)
+                        return false
+
+                    return true
+
+                }
+                );
+
+                let allPossibleStrategies = sellingCallList.reduce( (_allPossibleStrategies, sellingCall) => {
+
+                    
+                    const sellingCallPrice = getPriceOfAsset({
+                        asset: sellingCall,
+                        priceType,
+                        sideType: 'SELL'
+                    });
+                    if(sellingCallPrice===0) return _allPossibleStrategies
+
+
+
+                    const strategyPositions = [
+                        {
+                            ...buyingCall,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin: () => 0
+                        },
+                        {
+                            ...sameStrikePut,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin: () => {
+                                return ((0,_common_js__WEBPACK_IMPORTED_MODULE_1__.calculateOptionMargin)({
+                                    priceSpot: sameStrikePut.optionDetails.stockSymbolDetails.last,
+                                    strikePrice: sameStrikePut.optionDetails.strikePrice,
+                                    contractSize: 1000,
+                                    optionPremium: sameStrikePut.last,
+                                    optionType: sameStrikePut.isCall ? "call" : "put"
+                                })?.required || 0) / 1000;
+                            }
+                        },
+                        {
+                            ...sellingCall,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin: () => {
+
+                                if(sellingCall.optionDetails.strikePrice > buyingCall.optionDetails.strikePrice) return 0
+
+                                return (buyingCall.optionDetails.strikePrice - sellingCall.optionDetails.strikePrice);
+                               
+                            }
+                        },
+                    ]
+
+
+
+                    const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                        positions: strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    });
+
+                    const breakeven = breakevenList[0];
+
+
+                    const stockPriceToSarBeSarPercent = -((breakeven / sellingCall.optionDetails.stockSymbolDetails.last) - 1);
+
+
+
+                    if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent)
+                        return _allPossibleStrategies
+
+
+
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    });
+
+
+
+
+
+
+                    const priceThatCauseMaxProfit = Math.max(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) * 1.3;
+
+
+
+                    const maxProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxProfit });
+
+
+
+                    const profitPercent = maxProfit / Math.abs(totalCost);
+
+
+                    const strategyObj ={
+                        option: {
+                            ...buyingCall
+                        },
+                        positions: [buyingCall, sameStrikePut, sellingCall],
+                        strategyTypeTitle: "SYNTHETIC_COVERED_CALL",
+                        expectedProfitNotif,
+                        name: createStrategyName([buyingCall, sameStrikePut, sellingCall]),
+                        profitPercent: stockPriceToSarBeSarPercent,
+                        // percentToShow: stockPriceToSarBeSarPercent
+                    }
+
+                    
+
+                    if(!isProfitEnough({strategy:strategyObj,profitPercent:profitPercent})) return _allPossibleStrategies
+
+                    return _allPossibleStrategies.concat([strategyObj])
+
+
+                }
+                , []);
+
+                return {
+                    ...buyingCall,
+                    allPossibleStrategies
+                }
+
+            }
+            );
+
+            return _enrichedList
+
+        }
+        )
+
+        enrichedList = enrichedList.concat(enrichedListOfStock)
+
+    }
+
+    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+
+    return {
+        enrichedList,
+        allStrategiesSorted: sortedStrategies,
+        strategyName: "SYNTHETIC_COVERED_CALL",
+        priceType,
+        min_time_to_settlement,
+        max_time_to_settlement,
+        minStockPriceToSarBeSarPercent,
+        minVol,
+        expectedProfitNotif,
+        ...restConfig,
+        
+        htmlTitle: configsToHtmlTitle({
+            strategyName: "SYNTHETIC_COVERED_CALL",
+            strategySubName,
+            priceType,
+            min_time_to_settlement,
+            max_time_to_settlement,
+            minStockPriceToSarBeSarPercent,
+            minVol,
+            customLabels: [
+            typeof minStockPriceToSarBeSarPercent !== 'undefined' && minStockPriceToSarBeSarPercent !== null && minStockPriceToSarBeSarPercent !== 0 && {
+                label: "minToSar",
+                value: `${((minStockPriceToSarBeSarPercent) * 100).toFixed(0)}%`
+            }].filter(Boolean),
+        })
+    }
+
+}
 
 const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", strategySubName, BUPSOptionListIgnorer=generalConfig.BUPSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -21297,7 +21545,7 @@ const createListFilterContetnByList=(list)=>{
         }
         ,
         // min_time_to_settlement: 15 * 24 * 3600000,
-        // max_time_to_settlement: 40 * 24 * 3600000,
+        max_time_to_settlement: 35 * 24 * 3600000,
         // minVol: 1000 * 1000 * 1000,
         maxStockPriceDistanceFromOption2StrikeInPercent: -.15,
         // expectedProfitNotif: true
@@ -21314,7 +21562,7 @@ const createListFilterContetnByList=(list)=>{
         }
         ,
         // min_time_to_settlement: 15 * 24 * 3600000,
-        // max_time_to_settlement: 40 * 24 * 3600000,
+        max_time_to_settlement: 35 * 24 * 3600000,
         // minVol: 1000 * 1000 * 1000,
         minStockPriceDistanceFromPutStrikeInPercent: .15,
         // expectedProfitNotif: true
@@ -21976,7 +22224,7 @@ const createListFilterContetnByList=(list)=>{
     // }), 
     calcBOXStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 2 * 24 * 3600000,
+        min_time_to_settlement: 1 * 24 * 3600000,
         expectedProfitPerMonth: 1.02,
         expectedProfitNotif: true,
     }), 
@@ -21984,7 +22232,7 @@ const createListFilterContetnByList=(list)=>{
     calcBOXStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         min_time_to_settlement: 0,
-        max_time_to_settlement: 2 * 24 * 3600000,
+        max_time_to_settlement: 1 * 24 * 3600000,
         expectedProfitPerMonth: 1.02,
         expectedProfitNotif: true,
     }),
@@ -21992,14 +22240,14 @@ const createListFilterContetnByList=(list)=>{
     
     calcBOX_BUPS_BECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 2 * 24 * 3600000,
+        min_time_to_settlement: 1 * 24 * 3600000,
         expectedProfitPerMonth: 1.02,
         expectedProfitNotif: true,
     }), 
     calcBOX_BUPS_BECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         min_time_to_settlement: 0,
-        max_time_to_settlement: 2 * 24 * 3600000,
+        max_time_to_settlement: 1 * 24 * 3600000,
         expectedProfitPerMonth: 1.02,
         expectedProfitNotif: true,
     }), calcBECSStrategies(list, {
@@ -22009,11 +22257,23 @@ const createListFilterContetnByList=(list)=>{
         maxStockPriceDistanceInPercent: -.22
     }), calcBECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 2 * 24 * 3600000,
+        min_time_to_settlement: 1 * 24 * 3600000,
         max_time_to_settlement: 38 * 24 * 3600000,
         maxStockPriceDistanceInPercent: -.15,
         expectedProfitNotif: true
-    }), calcCOVEREDStrategies(list, {
+    })
+    
+    , calcSyntheticCoveredCallStrategies(list, {
+        priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        // expectedProfitNotif: true,
+        minStockPriceToSarBeSarPercent: .2,
+        // min_time_to_settlement: 1 * 24 * 3600000,
+        max_time_to_settlement: 38 * 24 * 3600000,
+        // expectedProfitPerMonth: 1.04,
+        expectedProfitNotif: true
+    })
+    
+    , calcCOVEREDStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         // expectedProfitNotif: true,
         minStockPriceDistanceInPercent: .08,
@@ -22066,7 +22326,7 @@ const createListFilterContetnByList=(list)=>{
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
     }), calcBEPSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 2 * 24 * 3600000,
+        min_time_to_settlement: 1 * 24 * 3600000,
         maxStockPriceDistanceInPercent: -.12,
         expectedProfitNotif: true
     }), calcBUCSStrategies(list, {
@@ -22150,27 +22410,7 @@ const createListFilterContetnByList=(list)=>{
     
 
     let allStrategyListObject  = strategyMapList.map( ({allStrategiesSorted, htmlTitle, expectedProfitNotif}) => {
-        let filteredStrategies = allStrategiesSorted.filter(strategy => {
-            if (strategy.profitPercent < 0)
-                return false
-        
-
-            if (strategy.profitPercent <  generalConfig.minProfitToFilter)
-                return false
-            
-            const minDiffTimeOflastTrade = 6 * 60 * 1000;
-            if ((Date.now() - strategy.option.lastTrackedChangeTime) > minDiffTimeOflastTrade) {
-                return false
-            }
-
-            const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(strategy.option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-            const daysToSettlement = Math.floor(settlementTimeDiff / (24 * 3600000));
-            const percentPerDay = Math.pow((1 + strategy.profitPercent), 1 / daysToSettlement);
-            const percentPerMonth = Math.pow(percentPerDay, 30);
-   
-            return percentPerMonth > ((strategy.expectedProfitPerMonth !== undefined && strategy.expectedProfitPerMonth !== null) ? strategy.expectedProfitPerMonth : generalConfig.expectedProfitPerMonth)
-        }
-        );
+        let filteredStrategies = allStrategiesSorted.filter(strategy => isProfitEnough({strategy,profitPercent:strategy.profitPercent}));
 
         
         const filterSymbolList = getFilterSymbols();
@@ -22243,11 +22483,11 @@ const createList = ()=>{
         const prevRecordObj = prevListSymbolMap[symbol];
 
 
-        const lastTrackedChangeTime = ( () => {
+        const lastTradedTime = ( () => {
             if (!prevRecordObj || !prevRecordObj.quantityOfTrades || (quantityOfTrades > prevRecordObj.quantityOfTrades)) {
                 return Date.now();
             }
-            return prevRecordObj.lastTrackedChangeTime
+            return prevRecordObj.lastTradedTime
 
         }
         )();
@@ -22268,7 +22508,7 @@ const createList = ()=>{
 
         prevListSymbolMap[symbol] = {
             quantityOfTrades,
-            lastTrackedChangeTime
+            lastTradedTime
         }
 
 
@@ -22281,7 +22521,7 @@ const createList = ()=>{
             isOption,
             isCall,
             quantityOfTrades,
-            lastTrackedChangeTime,
+            lastTradedTime,
             isPut,
             isETF: isETF(symbol),
             strikePrice,
@@ -22308,7 +22548,7 @@ const createList = ()=>{
 
         if(listItem.optionDetails.stockSymbolDetails){
 
-            const calculatedRequiredMargin = calculateOptionMargin({
+            const calculatedRequiredMargin = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.calculateOptionMargin)({
                 priceSpot: listItem.optionDetails.stockSymbolDetails.last,
                 strikePrice: listItem.optionDetails.strikePrice,
                 contractSize: 1000,

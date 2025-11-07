@@ -8,6 +8,7 @@ var omexLib;
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   COMMISSION_FACTOR: () => (/* binding */ COMMISSION_FACTOR),
+/* harmony export */   calculateOptionMargin: () => (/* binding */ calculateOptionMargin),
 /* harmony export */   configs: () => (/* binding */ configs),
 /* harmony export */   getCommissionFactor: () => (/* binding */ getCommissionFactor),
 /* harmony export */   getNearSettlementPrice: () => (/* binding */ getNearSettlementPrice),
@@ -152,6 +153,51 @@ const hasGreaterRatio=({num1,num2,properRatio=100})=> {
     const ratio = absNum1>absNum2 ? (absNum1 / absNum2) : (absNum2 / absNum1);
 
     return ratio>=properRatio
+}
+
+
+const calculateOptionMargin=({ priceSpot, // قیمت پایانی دارایی پایه (ریال)
+    strikePrice, // قیمت اعمال (ریال)
+    contractSize, // اندازه قرارداد
+    optionPremium, // قیمت فروش اختیار (ریال)
+    A = 0.2, // ضریب A
+    B = 0.1, // ضریب B
+    optionType = "call"// "call" یا "put"
+})=> {
+
+    function roundUpTo({ margin, multiplier }) {
+        return Math.ceil(margin / multiplier) * multiplier
+
+    }
+    // محاسبه مقدار در زیان بودن
+    let intrinsicLoss = 0;
+    if (optionType === "call") {
+        intrinsicLoss = Math.max(0, strikePrice - priceSpot) * contractSize;
+    } else if (optionType === "put") {
+        intrinsicLoss = Math.max(0, priceSpot - strikePrice) * contractSize;
+    }
+
+    // مرحله ۱
+    const marginStep1 = (priceSpot * A * contractSize) - intrinsicLoss;
+
+    // مرحله ۲
+    const marginStep2 = strikePrice * B * contractSize;
+
+    // مرحله ۳: بیشینه مرحله ۱ و ۲ و گرد کردن
+    const maxBaseMargin = Math.max(marginStep1, marginStep2);
+    const roundedMargin = roundUpTo({
+        margin: maxBaseMargin,
+        multiplier: 10000
+    });
+
+    // مرحله ۴: افزودن قیمت فروش اختیار × اندازه قرارداد
+    const finalMargin = roundedMargin + (optionPremium * contractSize);
+
+    return {
+        initila: roundedMargin,
+        required: finalMargin
+    }
+
 }
 
 /***/ }),
