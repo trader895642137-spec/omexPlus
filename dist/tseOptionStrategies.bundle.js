@@ -19148,7 +19148,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
 
 
 const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBUPS=0.6, 
-    minStockPriceToSarBeSarPercent=0.25,
+    minStockPriceToSarBeSarPercent=0.2,
     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
@@ -19365,7 +19365,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
 // Jade Lizard
 const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBECS=0.6, 
-    minStockPriceToSarBeSarPercent=0.25,
+    minStockPriceToSarBeSarPercent=0.2,
     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
@@ -19618,7 +19618,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
 
 const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBEPS=0.6, 
-    minStockPriceToSarBeSarPercent=0.25,
+    minStockPriceToSarBeSarPercent=0.2,
     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
