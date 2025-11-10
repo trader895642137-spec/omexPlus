@@ -22068,13 +22068,13 @@ const createListFilterContetnByList=(list)=>{
 
     calcBUS_With_BUCS_BEPSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 3 * 24 * 3600000,
+        min_time_to_settlement: 1 * 24 * 3600000,
         minStockPriceDistanceFromHigherStrikeInPercent: .01,
     }),
 
     calcBUS_With_BUCS_BEPSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 3 * 24 * 3600000,
+        min_time_to_settlement: 1 * 24 * 3600000,
         minStockPriceDistanceFromHigherStrikeInPercent: .12,
         // expectedProfitNotif: true,
     }),
@@ -22082,13 +22082,13 @@ const createListFilterContetnByList=(list)=>{
 
     calcBUS_With_BUPS_BECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 3 * 24 * 3600000,
+        min_time_to_settlement: 1 * 24 * 3600000,
         minStockPriceDistanceFromHigherStrikeInPercent: .01,
     }),
 
     calcBUS_With_BUPS_BECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 3 * 24 * 3600000,
+        min_time_to_settlement: 1 * 24 * 3600000,
         minStockPriceDistanceFromHigherStrikeInPercent: .12,
         // expectedProfitNotif: true,
     }),
@@ -22099,12 +22099,12 @@ const createListFilterContetnByList=(list)=>{
 
      calcBES_With_BUCS_BEPSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 3 * 24 * 3600000,
+        min_time_to_settlement: 1 * 24 * 3600000,
         maxStockPriceDistanceFromLowerStrikeInPercent: -.01,
     }),
     calcBES_With_BUCS_BEPSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 3 * 24 * 3600000,
+        min_time_to_settlement: 1 * 24 * 3600000,
         maxStockPriceDistanceFromLowerStrikeInPercent: -.12,
         expectedProfitNotif: true,
     }),

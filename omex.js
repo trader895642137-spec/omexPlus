@@ -706,7 +706,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
     return assetRowLementList.map(optionRowEl => {
 
         const instrumentName = optionRowEl.querySelector('.instrument-title span').innerHTML;
-        const optionID = Array.from(document.querySelectorAll('client-option-positions-main .ag-pinned-right-cols-container .ag-row'))?.find(optionNameCellEl => Array.from(optionNameCellEl.querySelectorAll('span'))?.find(span => span.innerHTML === instrumentName))?.getAttribute('row-id');
+        let optionID = Array.from(document.querySelectorAll('client-option-positions-main .ag-pinned-right-cols-container .ag-row'))?.find(optionNameCellEl => Array.from(optionNameCellEl.querySelectorAll('span'))?.find(span => span.innerHTML === instrumentName))?.getAttribute('row-id');
         const isBuy = optionRowEl.querySelector('client-option-strategy-estimation-main-ui-order-side .-isActive')?.classList?.contains('buy');
 
         const isOption = ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
@@ -714,6 +714,15 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         const isPut = isOption && instrumentName && instrumentName.charAt(0) === 'ط';
 
         const isCall = isOption && instrumentName && instrumentName.charAt(0) === 'ض';
+        let cSize = 1000;
+        const optionContractInfo = (async ()=>{
+
+            const optionContractInfo = await OMEXApi.getOptionContractInfoBySymbol(instrumentName);
+            optionID = optionContractInfo.instrumentId;
+            cSize = optionContractInfo.cSize
+            return optionContractInfo
+
+        })()
 
         const ordersModal = Array.from(document.querySelectorAll('client-option-instrument-favorites-item-layout-modal')).find(modal => {
             return Array.from(modal.querySelectorAll('label')).find(label => label.innerHTML === instrumentName)
@@ -738,7 +747,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
         const getQuantity = () => {
             const quantity = convertStringToInt(optionRowEl.querySelector('[formcontrolname="quantity"] input').value);
-            const quantityMultiplier = isOption ? 1000 : 1;
+            const quantityMultiplier = isOption ? cSize : 1;
             return quantity * quantityMultiplier;
         }
 
@@ -752,7 +761,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
                 currentPositionQuantity = getOrderModalPortfolioQuantity();
             }
 
-            const quantityMultiplier = isOption ? 1000 : 1;
+            const quantityMultiplier = isOption ? cSize : 1;
             return currentPositionQuantity * quantityMultiplier;
 
         }
@@ -841,7 +850,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             if (!isMarginRequired)
                 0
 
-            const requiredMargin = convertStringToInt(optionRowEl.querySelector('[formcontrolname="requiredMargin"] input').value) / 1000;
+            const requiredMargin = convertStringToInt(optionRowEl.querySelector('[formcontrolname="requiredMargin"] input').value) / cSize;
 
             return requiredMargin
         }
@@ -1008,6 +1017,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             isOption,
             isCall,
             isPut,
+            cSize,
             getBaseInstrumentPriceOfOption,
             getQuantity,
             getCurrentPositionQuantity,
@@ -2054,7 +2064,7 @@ const highSumValueOfInsertedOrderInformer = ({ orderModalQuantityGetter,orderMod
 
         const positionModalQuantity = orderModalQuantityGetter(strategyPosition);
         const positionModalPrice = orderModalPriceGetter(strategyPosition);
-        if(positionModalQuantity*positionModalPrice*1000 > 500000000){
+        if(positionModalQuantity*positionModalPrice*strategyPosition.cSize > 500000000){
             informer(strategyPosition);
         }else{
             informCleaner(strategyPosition);

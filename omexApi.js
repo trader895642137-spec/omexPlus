@@ -86,6 +86,88 @@ const deleteOrder = ({orderId,id}) => {
     });
 }
 
+const getOptionContractInfos = async (instrumentIds) => {
+
+    return fetch(`${redOrigin}/api/PublicMessages/GetOptionContractInfos`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "content-type": "application/json",
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": JSON.stringify({
+            instrumentIds
+        }),
+        "method": "POST",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const optionContractInfos = res.response.data;
+        return optionContractInfos
+    });
+
+
+
+}
+const searchOptionContractInfos = async (symbol) => {
+    // ?historyDate=20251026
+    return fetch(`${redOrigin}/api/PublicMessages/SearchInstruments?filter=${symbol}&marketType=Stock&marketType=Option&marketType=OptionEnergy&marketType=Other`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const optionNamesObj = res.response.data;
+        if(!optionNamesObj?.length) return null
+        return optionNamesObj[0]
+    });
+
+
+}
+
+const getOptionContractInfoBySymbol = async (symbol)=>{
+
+     const optionNameObj = await searchOptionContractInfos(symbol);
+
+     if(!optionNameObj) return null
+
+     const instrumentId = optionNameObj.instrumentId;
+
+
+
+     const optionContractInfos = await getOptionContractInfos([instrumentId]);
+
+     if(!optionContractInfos?.length) return null
+
+
+
+     return optionContractInfos[0]
+
+}
+
 
 const deleteAllOpenOrders =async ()=>{
 
@@ -102,5 +184,7 @@ const deleteAllOpenOrders =async ()=>{
 
 export const OMEXApi = {
     getOptionPortfolioList,
+    getOptionContractInfos,
+    getOptionContractInfoBySymbol,
     deleteAllOpenOrders
 }
