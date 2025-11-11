@@ -560,20 +560,9 @@ const createDeleteAllOrdersButton = () => {
     let removeAllOrderButton = document.createElement('button');
     removeAllOrderButton.classList.add('remove-all-order-button');
     removeAllOrderButton.textContent = 'حذف همه سفارشات';
-    // removeAllOrderButton.style.cssText += `
-    //         position:absolute;
-    //         width: 169px;
-    //         padding: 0 10px;
-    //         background: #FFF;
-    //         display: flex;
-    //         flex-direction: column;
-    //         column-gap: 21px;
-    //         font-size: 20px;
-    //         left: 50%;
-    //         z-index: 500;
-    //         top: -8px;
-    //         transform: translateX(-50%);
-    //     `;
+    removeAllOrderButton.style.cssText += `
+        margin-right: auto;
+        `;
     removeAllOrderButton.addEventListener('click', function(event) {
         _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.deleteAllOpenOrders();
     });
