@@ -1315,12 +1315,15 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             return quantity * quantityMultiplier;
         }
 
+
+        let cachedCurrentPositionQuantityElement;
         const getCurrentPositionQuantity = () => {
 
+            cachedCurrentPositionQuantityElement = document.body.contains(cachedCurrentPositionQuantityElement) ? cachedCurrentPositionQuantityElement : document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy ? 'buyCount' : 'sellCount'}"]`);
+
             let currentPositionQuantity
-            if (optionID) {
-                const currentPositionQuantityEml = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy ? 'buyCount' : 'sellCount'}"]`;
-                currentPositionQuantity = convertStringToInt(document.querySelector(currentPositionQuantityEml)?.innerHTML);
+            if (cachedCurrentPositionQuantityElement) {
+                currentPositionQuantity = convertStringToInt(cachedCurrentPositionQuantityElement?.innerHTML);
             } else {
                 currentPositionQuantity = getOrderModalPortfolioQuantity();
             }
