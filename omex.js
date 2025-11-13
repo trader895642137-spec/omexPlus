@@ -1,5 +1,7 @@
 
-import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator } from './common.js';
+import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator ,
+    profitPercentCalculator,totalCostCalculatorForPriceTypes,
+    settlementProfitCalculator} from './common.js';
 import { OMEXApi } from './omexApi.js';
 
 export   {OMEXApi} from './omexApi.js'
@@ -76,7 +78,7 @@ const createStrategyExpectedProfitCnt = () => {
     cnt.classList.add('status-cnt');
     parent.style.cssText += `
             position:absolute;
-            width: 169px;
+            width: 190px;
             padding: 0 10px;
             background: #FFF;
             display: flex;
@@ -159,63 +161,7 @@ const settlementCommissionFactor = (_strategyPosition) => {
     return commissionFactor
 }
 
-const totalCostCalculatorForPriceTypes = (_strategyPositions,getAvgPrice) => {
 
-
-
-    const quantityCalculatorOfCurrentPosition = (position,__strategyPositions)=>{
-            const sumOfQuantityInEstimationPanel = __strategyPositions.filter(_position => _position.instrumentName === position.instrumentName).reduce((_sumOfQuantityInEstimationPanel, position) => _sumOfQuantityInEstimationPanel + position.getQuantity(), 0);
-
-
-            const quantityInEstimationPanel = position.getQuantity();
-
-            const quantityFactor = quantityInEstimationPanel / sumOfQuantityInEstimationPanel;
-
-
-            return position.getCurrentPositionQuantity() * quantityFactor
-    }
-
-
-    let totalCostOfChunkOfEstimationQuantity = totalCostCalculator({
-        strategyPositions: _strategyPositions,
-        getPrice: (position) => getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice()
-    });
-
-    let totalCostOfCurrentPositions = totalCostCalculator({
-        strategyPositions: _strategyPositions,
-        getQuantity: (position, __strategyPositions) => {
-            return quantityCalculatorOfCurrentPosition(position, __strategyPositions);
-        },
-        getPrice: (position) => getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice()
-    });
-    let unreliableTotalCostOfCurrentPositions = totalCostCalculator({
-        strategyPositions: _strategyPositions,
-        getQuantity: (position, __strategyPositions) => {
-            return quantityCalculatorOfCurrentPosition(position, __strategyPositions);
-        },
-        getPrice: (position) => getAvgPrice? getAvgPrice(position): (position.getCurrentPositionAvgPrice() || position.getUnreliableCurrentPositionAvgPrice())
-    });
-
-
-
-    let totalCostByBestPrices = totalCostCalculator({
-        strategyPositions: _strategyPositions,
-        getPrice: (position) => position.getBestOpenMorePrice()
-    });
-
-    let totalCostByInsertedPrices = totalCostCalculator({
-        strategyPositions: _strategyPositions,
-        getPrice: (position) => position.getInsertedPrice()
-    });
-
-    return {
-        totalCostOfCurrentPositions,
-        unreliableTotalCostOfCurrentPositions,
-        totalCostOfChunkOfEstimationQuantity,
-        totalCostByBestPrices,
-        totalCostByInsertedPrices
-    }
-}
 
 
 
@@ -380,21 +326,7 @@ const totalSettlementGainByEstimationQuantity = (_strategyPositions, stock, sell
 
 }
 
-const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
 
-
-
-    if (costWithSign === Infinity) return NaN
-    const totalProfit = gainWithSign + costWithSign;
-    if (costWithSign > 0 && totalProfit > 0) {
-        return 100 + (totalProfit / costWithSign) * 100
-    }
-    if (costWithSign > 0 && totalProfit < 0) {
-        return -Infinity
-    }
-
-    return (totalProfit / Math.abs(costWithSign)) * 100
-}
 
 const MARGIN_CALC_TYPE = {
     BY_CURRENT_POSITION: "BY_CURRENT_POSITION",
@@ -1641,20 +1573,42 @@ const isProfitEnough = ({ totalProfitPercent, percentPerMonth }) => {
     return percentPerMonth >= expectedProfit.expectedProfitPerMonth
 }
 
-const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentByBestPrices, profitPercentByInsertedPrices }) => {
+
+const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentByBestPrices, profitPercentByInsertedPrices,settlementProfitByBestPrices,settlementProfitByInsertedPrices }) => {
 
     let statusCnt = getStrategyExpectedProfitCnt();
 
     statusCnt.innerHTML = `
         <div style="display:flex;flex-direction: column;row-gap: 13px;">
-            <div style="background: #f6faf3;border:1px solid ; padding: 3px;color:${profitPercentByBestPrices >= 0 ? 'green' : 'red'}"> با سرخط ${profitPercentByBestPrices.toLocaleString('en-US', {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1
-    })} </div>
-            <div style="font-size: 85%;color:${profitPercentByInsertedPrices >= 0 ? 'green' : 'red'}"> با کادر قیمت ${profitPercentByInsertedPrices.toLocaleString('en-US', {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1
-    })} </div>
+            <div style="display:flex;background: #f6faf3;border:1px solid ; padding: 3px;color:${profitPercentByBestPrices >= 0 ? 'green' : 'red'}">
+                <div>
+                            سرخط ${profitPercentByBestPrices.toLocaleString('en-US', {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1
+                        })}
+                </div>
+                ${settlementProfitByBestPrices ? `<div style="margin-right:auto;font-size: small;">
+                        اعمال ${settlementProfitByBestPrices.toLocaleString('en-US', {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 1
+                    })}
+                </div>`:''}
+             </div>
+            <div style="display:flex; font-size: 85%;color:${profitPercentByInsertedPrices >= 0 ? 'green' : 'red'}">
+
+                <div>
+                        اینپوت ${profitPercentByInsertedPrices.toLocaleString('en-US', {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 1
+                    })}
+                </div>
+                ${settlementProfitByInsertedPrices ? `<div style="margin-right:auto;font-size: small;">
+                        اعمال ${settlementProfitByInsertedPrices.toLocaleString('en-US', {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 1
+                    })}
+                </div>`:''}
+             </div>
         </div>
     `;
 
@@ -2016,9 +1970,17 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
             gainWithSign: totalOffsetGain
         });
 
+
+
+        const stockPrice =   _strategyPositions[0].getBaseInstrumentPriceOfOption()
+        const {settlementProfitByBestPrices,settlementProfitByInsertedPrices} = settlementProfitCalculator({strategyPositions:_strategyPositions,stockPrice});
+
         return {
             profitPercentByBestPrices,
-            profitPercentByInsertedPrices
+            profitPercentByInsertedPrices,
+            settlementProfitByBestPrices,
+            settlementProfitByInsertedPrices
+            
         }
 
     }
@@ -2035,12 +1997,14 @@ export const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositio
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const { profitPercentByBestPrices, profitPercentByInsertedPrices } = profitCalculator(_strategyPositions, _unChekcedPositions);
+    const { profitPercentByBestPrices, profitPercentByInsertedPrices,settlementProfitByBestPrices,settlementProfitByInsertedPrices } = profitCalculator(_strategyPositions, _unChekcedPositions);
 
     return informForExpectedProfitOnStrategy({
         _strategyPositions,
         profitPercentByBestPrices,
-        profitPercentByInsertedPrices
+        profitPercentByInsertedPrices,
+        settlementProfitByBestPrices,
+        settlementProfitByInsertedPrices
     });
 }
 

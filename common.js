@@ -15,8 +15,8 @@ export const COMMISSION_FACTOR = {
     SELL: 0.0088
   },
   ETF: {
-    BUY: 0.00116,
-    SELL: 0.001875
+    BUY: 0.00116 * 2,
+    SELL: 0.001875 * 2
   }
 }
 
@@ -25,6 +25,13 @@ export const configs = {
 }
 
 
+
+const isBaseInstrumentETF = (strategyPosition)=>{
+ const ETF_SYMBOLS = ['ضهرم', 'طهرم', 'ضتوان', 'طتوان', 'ضموج', 'طموج'];
+
+ return ETF_SYMBOLS.some(etfSymbol => strategyPosition.instrumentName.includes(etfSymbol))
+
+}
 
 
 export const isTaxFree = (_strategyPosition) => {
@@ -76,6 +83,140 @@ export const totalCostCalculator = ({ strategyPositions, getPrice, getQuantity }
   return totalCost
 }
 
+export const totalCostCalculatorForPriceTypes = (_strategyPositions,getAvgPrice) => {
+
+
+
+    const quantityCalculatorOfCurrentPosition = (position,__strategyPositions)=>{
+            const sumOfQuantityInEstimationPanel = __strategyPositions.filter(_position => _position.instrumentName === position.instrumentName).reduce((_sumOfQuantityInEstimationPanel, position) => _sumOfQuantityInEstimationPanel + position.getQuantity(), 0);
+
+
+            const quantityInEstimationPanel = position.getQuantity();
+
+            const quantityFactor = quantityInEstimationPanel / sumOfQuantityInEstimationPanel;
+
+
+            return position.getCurrentPositionQuantity() * quantityFactor
+    }
+
+
+    let totalCostOfChunkOfEstimationQuantity = totalCostCalculator({
+        strategyPositions: _strategyPositions,
+        getPrice: (position) => getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice()
+    });
+
+    let totalCostOfCurrentPositions = totalCostCalculator({
+        strategyPositions: _strategyPositions,
+        getQuantity: (position, __strategyPositions) => {
+            return quantityCalculatorOfCurrentPosition(position, __strategyPositions);
+        },
+        getPrice: (position) => getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice()
+    });
+    let unreliableTotalCostOfCurrentPositions = totalCostCalculator({
+        strategyPositions: _strategyPositions,
+        getQuantity: (position, __strategyPositions) => {
+            return quantityCalculatorOfCurrentPosition(position, __strategyPositions);
+        },
+        getPrice: (position) => getAvgPrice? getAvgPrice(position): (position.getCurrentPositionAvgPrice() || position.getUnreliableCurrentPositionAvgPrice())
+    });
+
+
+
+    let totalCostByBestPrices = totalCostCalculator({
+        strategyPositions: _strategyPositions,
+        getPrice: (position) => position.getBestOpenMorePrice()
+    });
+
+    let totalCostByInsertedPrices = totalCostCalculator({
+        strategyPositions: _strategyPositions,
+        getPrice: (position) => position.getInsertedPrice()
+    });
+
+    return {
+        totalCostOfCurrentPositions,
+        unreliableTotalCostOfCurrentPositions,
+        totalCostOfChunkOfEstimationQuantity,
+        totalCostByBestPrices,
+        totalCostByInsertedPrices
+    }
+}
+
+
+export const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
+
+
+
+    if (costWithSign === Infinity) return NaN
+    const totalProfit = gainWithSign + costWithSign;
+    if (costWithSign > 0 && totalProfit > 0) {
+        return 100 + (totalProfit / costWithSign) * 100
+    }
+    if (costWithSign > 0 && totalProfit < 0) {
+        return -Infinity
+    }
+
+    return (totalProfit / Math.abs(costWithSign)) * 100
+}
+
+
+export const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
+
+  const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE
+
+  const valuablePositions = strategyPositions.filter(strategyPosition => getNearSettlementPrice({ strategyPosition, stockPrice }) > 0);
+
+
+  const sumSettlementGains = valuablePositions.reduce((sumSettlementGains, valuablePosition) => {
+
+    const tax = isTaxFree(valuablePosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
+    const quantity = valuablePosition.getQuantity();
+    const reservedMargin = valuablePosition.getReservedMarginOfEstimationQuantity();
+
+    const isBuyStock = (valuablePosition.isCall && valuablePosition.isBuy) || (valuablePosition.isPut && !valuablePosition.isBuy);
+
+    if (isBuyStock) {
+
+      sumSettlementGains -= (quantity * (valuablePosition.strikePrice + (valuablePosition.strikePrice * exerciseFee)))
+    } else {
+
+      // is sell stock
+      sumSettlementGains += (quantity * (valuablePosition.strikePrice - (valuablePosition.strikePrice * exerciseFee) - (valuablePosition.strikePrice * tax)))
+
+    }
+
+    sumSettlementGains += reservedMargin;
+
+
+
+
+    return sumSettlementGains;
+
+  }, 0)
+
+
+  const totalCostObj = totalCostCalculatorForPriceTypes(strategyPositions);
+
+
+  const settlementProfitByBestPrices = profitPercentCalculator({
+    costWithSign: totalCostObj.totalCostByBestPrices,
+    gainWithSign: sumSettlementGains
+  });
+  const settlementProfitByInsertedPrices = profitPercentCalculator({
+    costWithSign: totalCostObj.totalCostByInsertedPrices,
+    gainWithSign: sumSettlementGains
+  });
+
+
+  return {
+    settlementProfitByBestPrices,
+    settlementProfitByInsertedPrices
+  }
+
+
+
+
+}
+
 
 
 
@@ -111,14 +252,14 @@ export const getNearSettlementPrice = ({strategyPosition,stockPrice,stockPriceAd
   function calculateCallPrice(stockPrice, strikePrice) {
     if (stockPrice <= strikePrice) return 0
 
-    const adjustedStockPrice = strategyPosition.isBuy ? (stockPrice/stockPriceAdjustFactor) : (stockPrice*stockPriceAdjustFactor);
-    return (adjustedStockPrice - (stockPrice * tax) - (strikePrice * (1 + exerciseFee))) / (1 + tradeFee);
+    const adjustedStockPrice = stockPrice/stockPriceAdjustFactor;
+    return (adjustedStockPrice -  (strikePrice * (1 + exerciseFee))) / (1 + tradeFee);
   }
 
   function calculatePutPrice(stockPrice, strikePrice) {
     if (stockPrice >= strikePrice) return 0
-    const adjustedStockPrice = strategyPosition.isBuy ? (stockPrice*stockPriceAdjustFactor) : (stockPrice/stockPriceAdjustFactor);
-    return (strikePrice * (1 - tax - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
+    const adjustedStockPrice = stockPrice*stockPriceAdjustFactor;
+     return (strikePrice * (1 - tax - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
   }
 
   const price = strategyPosition.isCall ? calculateCallPrice(stockPrice, strategyPosition.strikePrice) : calculatePutPrice(stockPrice, strategyPosition.strikePrice)
