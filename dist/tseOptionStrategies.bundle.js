@@ -14297,6 +14297,7 @@ const calcBUCSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
                         priceType,
                         sideType: 'SELL'
                     });
+                    // TODO: use breakeven function 
                     const sarBeSar = option.optionDetails?.strikePrice + (lowStrikePrice - highStrikePrice);
 
                     if (!_option.optionDetails?.stockSymbolDetails?.last)
@@ -14615,6 +14616,7 @@ const calcBUPSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
 const calcSyntheticCoveredCallStrategies = (list, 
     {priceType, strategySubName,minQuantityFactorOfBUCS=0.6, 
         minStockPriceToSarBeSarPercent=-Infinity,
+        maxStockPriceToSarBeSarPercent=Infinity,
         BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=0, 
         max_time_to_settlement=Infinity, 
         minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -14734,11 +14736,11 @@ const calcSyntheticCoveredCallStrategies = (list,
                     const breakeven = breakevenList[0];
 
 
-                    const stockPriceToSarBeSarPercent = -((breakeven / sellingCall.optionDetails.stockSymbolDetails.last) - 1);
+                    const stockPriceToSarBeSarPercent = (sellingCall.optionDetails.stockSymbolDetails.last/breakeven) - 1;
 
 
 
-                    if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent)
+                    if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent)
                         return _allPossibleStrategies
 
 
@@ -15103,6 +15105,8 @@ const calcCALL_BUTT_CONDORStrategies = (list, {priceType, settlementGainChoosePr
                     });
                     
 
+                     // TODO: use breakeven function 
+
                     const sarBeSar = option.optionDetails?.strikePrice + (priceOfOptionWithLowStrike - highStrikePrice);
 
                     
@@ -15400,6 +15404,8 @@ const calcCALL_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePric
                         sideType: 'SELL'
                     });
                     
+
+                     // TODO: use breakeven function 
 
                     const sarBeSar = option.optionDetails?.strikePrice + (priceOfOptionWithLowStrike - highStrikePrice);
 
@@ -15705,6 +15711,7 @@ const calcCALL_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTy
                     });
                     
 
+                     // TODO: use breakeven function 
                     const sarBeSar = option.optionDetails?.strikePrice + (priceOfOptionWithLowStrike - highStrikePrice);
 
                     
@@ -16007,6 +16014,8 @@ const calcPUT_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePrice
                         priceType,
                         sideType: 'SELL'
                     });
+
+                     // TODO: use breakeven function 
                     const sarBeSar = option.optionDetails?.strikePrice + (lowStrikePrice - highStrikePrice);
 
                     if (!_option.optionDetails?.stockSymbolDetails?.last)
@@ -16296,6 +16305,8 @@ const calcPUT_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTyp
                         priceType,
                         sideType: 'SELL'
                     });
+
+                     // TODO: use breakeven function 
                     const sarBeSar = option.optionDetails?.strikePrice + (lowStrikePrice - highStrikePrice);
 
                     if (!_option.optionDetails?.stockSymbolDetails?.last)
@@ -18838,6 +18849,8 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType, settlementGainChoosePri
                         priceType,
                         sideType: 'SELL'
                     });
+
+                     // TODO: use breakeven function 
                     const sarBeSar = option.optionDetails?.strikePrice + (lowStrikePrice - highStrikePrice);
 
                     if (!_option.optionDetails?.stockSymbolDetails?.last)
@@ -19094,7 +19107,11 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType, settlementGainChoosePri
 
 }
 
-const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFactorOfBUCS=0.6, maxBUCSCostSellOptionRatio=2, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFactorOfBUCS=0.6, 
+    maxBUCSCostSellOptionRatio=2, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
+    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    minStockPriceToSarBeSarPercent=-Infinity,maxStockPriceToSarBeSarPercent=-.2,
+    minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -19149,11 +19166,6 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
 
 
 
-                    const stockPriceHigherStrikeRatio = (sellingCall.optionDetails.stockSymbolDetails.last / sellingCall.optionDetails?.strikePrice) - 1;
-
-                    if(stockPriceHigherStrikeRatio < minStockPriceDistanceInPercent || stockPriceHigherStrikeRatio > maxStockPriceDistanceInPercent){
-                        return _allPossibleStrategies
-                    }
                     
                     const sellingCallPrice = getPriceOfAsset({
                         asset: sellingCall,
@@ -19218,12 +19230,71 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
                             return ___allPossibleStrategies
 
 
-                        const sarBeSar =  anotherSellingCall.optionDetails?.strikePrice +  anotherSellingCallPrice + maxProfitOfBUCS * quantityFactorOfBUCS;
+
+                        const strategyPositionsOfBUCS_RATIO = [
+                            {
+                                ...buyingCall,
+                                isBuy: true,
+                                getQuantity: () => 1*quantityFactorOfBUCS,
+                                getRequiredMargin() { }
+                            },
+                            {
+                                ...sellingCall,
+                                isSell: true,
+                                getQuantity: () => 1*quantityFactorOfBUCS,
+                                getRequiredMargin() { }
+                            },
+                            {
+                                ...anotherSellingCall,
+                                isSell: true,
+                                getQuantity: () => 1,
+                                getRequiredMargin() { }
+                            },
+                        ]
+
+                        const totalCostOfBUCS_RATIO = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                            strategyPositions: strategyPositionsOfBUCS_RATIO,
+                            getPrice: (strategyPosition) => getPriceOfAsset({
+                                asset: strategyPosition,
+                                priceType,
+                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                            })
+                        });
+
+                        const priceThatCauseMaxLossOfBUCS_RATIO = Math.max(...strategyPositionsOfBUCS_RATIO.map(strategyPosition=>strategyPosition.strikePrice)) * 1.3;
 
 
-                        const stockPriceToSarBeSarPercent = (sarBeSar/ anotherSellingCall.optionDetails.stockSymbolDetails.last) -1
+
+                        const maxLossOfBUCS_RATIO = totalCostOfBUCS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUCS_RATIO, stockPrice:priceThatCauseMaxLossOfBUCS_RATIO});
 
 
+                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                            positions:strategyPositionsOfBUCS_RATIO, 
+                            getPrice: (strategyPosition) => getPriceOfAsset({
+                                asset: strategyPosition,
+                                priceType,
+                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                            })
+                        });
+
+                        const breakeven = breakevenList[0];
+
+
+                        let isFullBodyProfitable,stockPriceToSarBeSarPercent;
+                        if(!breakeven && maxLossOfBUCS_RATIO>0){
+                            isFullBodyProfitable = true;
+                        }else if(!breakeven){
+                            return _allPossibleStrategies
+                        }else{
+
+                            stockPriceToSarBeSarPercent = (anotherSellingCall.optionDetails.stockSymbolDetails.last/breakeven) -1
+
+                        
+                            if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent)
+                                return _allPossibleStrategies
+                        }
+
+                        
 
                         return ___allPossibleStrategies.concat([{
                             option: {
@@ -19233,7 +19304,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
                             strategyTypeTitle: "BUCS_RATIO",
                             expectedProfitNotif,
                             name: createStrategyName([buyingCall, sellingCall, anotherSellingCall]),
-                            profitPercent: stockPriceToSarBeSarPercent 
+                            profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
                         }])
                     }
                     , []);
@@ -19269,8 +19340,8 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
-        minStockPriceDistanceInPercent,
-        maxStockPriceDistanceInPercent,
+        minStockPriceToSarBeSarPercent,
+        maxStockPriceToSarBeSarPercent,
         minVol,
         expectedProfitNotif,
         ...restConfig,
@@ -19280,8 +19351,8 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
             priceType,
             min_time_to_settlement,
             max_time_to_settlement,
-            minStockPriceDistanceInPercent,
-            maxStockPriceDistanceInPercent,
+            minStockPriceToSarBeSarPercent,
+            maxStockPriceToSarBeSarPercent,
             minVol
         })
     }
@@ -19292,7 +19363,8 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
 
 
 const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBUPS=0.6, 
-    minStockPriceToSarBeSarPercent=0.2,
+    minStockPriceToSarBeSarPercent=-Infinity,
+    maxStockPriceToSarBeSarPercent=-.2,
     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
@@ -19431,16 +19503,70 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             return ___allPossibleStrategies
 
 
+                        // TODO: sellingCall margin
+                        const strategyPositionsOfBUPS_RATIO = [
+                            {
+                                ...buyingPut,
+                                isBuy: true,
+                                getQuantity: () => 1*quantityFactorOfBUPS,
+                                getRequiredMargin() { }
+                            },
+                            {
+                                ...sellingPut,
+                                isSell: true,
+                                getQuantity: () => 1*quantityFactorOfBUPS,
+                                getRequiredMargin: () => diffOfBUPS_Strikes
+                            },
+                            {
+                                ...sellingCall,
+                                isSell: true,
+                                getQuantity: () => 1,
+                                getRequiredMargin() { }
+                            },
+                        ]
 
-                        const sarBeSar =  sellingCall.optionDetails?.strikePrice +  sellingCallPrice + (sellingPutPrice -  buyingPutPrice) * quantityFactorOfBUPS;
+                        const totalCostOfBUPS_RATIO = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                            strategyPositions: strategyPositionsOfBUPS_RATIO,
+                            getPrice: (strategyPosition) => getPriceOfAsset({
+                                asset: strategyPosition,
+                                priceType,
+                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                            })
+                        });
+
+                        const priceThatCauseMaxLossOfBUPS_RATIO = Math.max(...strategyPositionsOfBUPS_RATIO.map(strategyPosition=>strategyPosition.strikePrice)) * 1.3;
 
 
-                        const stockPriceToSarBeSarPercent = (sarBeSar/ sellingCall.optionDetails.stockSymbolDetails.last) -1
+
+                        const maxLossOfBUPS_RATIO = totalCostOfBUPS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUPS_RATIO, stockPrice:priceThatCauseMaxLossOfBUPS_RATIO});
 
 
+                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                            positions:strategyPositionsOfBUPS_RATIO, 
+                            getPrice: (strategyPosition) => getPriceOfAsset({
+                                asset: strategyPosition,
+                                priceType,
+                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                            })
+                        });
 
-                        if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent)
-                                return ___allPossibleStrategies
+                        const breakeven = breakevenList[0];
+
+
+                        let isFullBodyProfitable,stockPriceToSarBeSarPercent;
+                        if(!breakeven && maxLossOfBUPS_RATIO>0){
+                            isFullBodyProfitable = true;
+                        }else if(!breakeven){
+                            return _allPossibleStrategies
+                        }else{
+
+                            stockPriceToSarBeSarPercent = (sellingCall.optionDetails.stockSymbolDetails.last/breakeven) -1
+
+                        
+                            if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent)
+                                return _allPossibleStrategies
+                        }
+
 
                         return ___allPossibleStrategies.concat([{
                             option: {
@@ -19450,7 +19576,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             strategyTypeTitle: "BUPS_Ratio",
                             expectedProfitNotif,
                             name: createStrategyName([buyingPut, sellingPut, sellingCall]),
-                            profitPercent: stockPriceToSarBeSarPercent
+                            profitPercent: isFullBodyProfitable ? 1 : -stockPriceToSarBeSarPercent
                         }])
                     }
                     , []);
@@ -19510,6 +19636,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 // Jade Lizard
 const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBECS=0.6, 
     minStockPriceToSarBeSarPercent=0.2,
+    maxStockPriceToSarBeSarPercent=Infinity,
     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
@@ -19646,6 +19773,12 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                         const quantityFactorOfBECS = Math.abs(maxProfitOfSellingPut/maxLossOfBECS);
 
 
+                        if (quantityFactorOfBECS < minQuantityFactorOfBECS)
+                            return ___allPossibleStrategies
+
+
+
+                        // TODO: selling put margin
                         const strategyPositionsOfBECS_RATIO = [
                             {
                                 ...buyingCall,
@@ -19666,14 +19799,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                                 getRequiredMargin: () => 0
                             },
                         ]
-
-
-                     
-
-
-                        if (quantityFactorOfBECS < minQuantityFactorOfBECS)
-                            return ___allPossibleStrategies
-
+                        
 
 
                         const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
@@ -19685,15 +19811,37 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             })
                         });
 
+                         const totalCostOfBECS_RATIO = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                            strategyPositions: strategyPositionsOfBECS_RATIO,
+                            getPrice: (strategyPosition) => getPriceOfAsset({
+                                asset: strategyPosition,
+                                priceType,
+                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                            })
+                        });
+
+                        const priceThatCauseMaxLossOfBECS_RATIO = Math.min(...strategyPositionsOfBECS_RATIO.map(strategyPosition=>strategyPosition.strikePrice)) / 1.2;
+
+
+
+                        const maxLossOfBECS_RATIO = totalCostOfBECS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBECS_RATIO, stockPrice:priceThatCauseMaxLossOfBECS_RATIO});
+
+
                         const breakeven = breakevenList[0];
 
+                        let isFullBodyProfitable,stockPriceToSarBeSarPercent;
+                        if(!breakeven && maxLossOfBECS_RATIO>0){
+                            isFullBodyProfitable = true;
+                        }else if(!breakeven){
+                            return _allPossibleStrategies
+                        }else{
 
-                        const stockPriceToSarBeSarPercent = -((breakeven/ sellingCall.optionDetails.stockSymbolDetails.last) -1);
+                            stockPriceToSarBeSarPercent = (sellingPut.optionDetails.stockSymbolDetails.last/breakeven) -1
+                        
+                            if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent)
+                                return _allPossibleStrategies
+                        }
 
-
-
-                        if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent)
-                                return ___allPossibleStrategies
 
                         return ___allPossibleStrategies.concat([{
                             option: {
@@ -19703,7 +19851,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             strategyTypeTitle: "BECS_Ratio",
                             expectedProfitNotif,
                             name: createStrategyName([buyingCall, sellingCall, sellingPut]),
-                            profitPercent: stockPriceToSarBeSarPercent
+                            profitPercent: isFullBodyProfitable? 1: stockPriceToSarBeSarPercent
                         }])
                     }
                     , []);
@@ -19761,6 +19909,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
 const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBEPS=0.6, 
     minStockPriceToSarBeSarPercent=0.2,
+    maxStockPriceToSarBeSarPercent=Infinity,
     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
@@ -19886,6 +20035,10 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
                         const quantityFactorOfBEPS = Math.abs(maxProfitOfSellingPut/maxLossOfBEPS);
 
+                         if (quantityFactorOfBEPS < minQuantityFactorOfBEPS)
+                            return ___allPossibleStrategies
+
+
 
                         const strategyPositionsOfBEPS_RATIO = [
                             {
@@ -19911,10 +20064,23 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
                        
 
+                       
 
-                        if (quantityFactorOfBEPS < minQuantityFactorOfBEPS)
-                            return ___allPossibleStrategies
 
+                         const totalCostOfBEPS_RATIO = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                            strategyPositions: strategyPositionsOfBEPS_RATIO,
+                            getPrice: (strategyPosition) => getPriceOfAsset({
+                                asset: strategyPosition,
+                                priceType,
+                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                            })
+                        });
+
+                        const priceThatCauseMaxLossOfBEPS_RATIO = Math.min(...strategyPositionsOfBEPS_RATIO.map(strategyPosition=>strategyPosition.strikePrice)) / 1.2;
+
+
+
+                        const maxLossOfBEPS_RATIO = totalCostOfBEPS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBEPS_RATIO, stockPrice:priceThatCauseMaxLossOfBEPS_RATIO});
 
 
                         const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
@@ -19929,12 +20095,25 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                         const breakeven = breakevenList[0];
 
 
-                        const stockPriceToSarBeSarPercent = -((breakeven/ sellingPut.optionDetails.stockSymbolDetails.last) -1);
+                        let isFullBodyProfitable,stockPriceToSarBeSarPercent;
+                        if(!breakeven && maxLossOfBEPS_RATIO>0){
+                            isFullBodyProfitable = true;
+                        }else if(!breakeven){
+                            return _allPossibleStrategies
+                        }else{
+
+                            stockPriceToSarBeSarPercent = (anotherSellingPut.optionDetails.stockSymbolDetails.last/breakeven) -1
+
+                        
+                            if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent)
+                                return _allPossibleStrategies
+                        }
 
 
 
-                        if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent)
-                                return ___allPossibleStrategies
+
+
+
 
                         return ___allPossibleStrategies.concat([{
                             option: {
@@ -19944,7 +20123,7 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             strategyTypeTitle: "BEPS_Ratio",
                             expectedProfitNotif,
                             name: createStrategyName([buyingPut, sellingPut, anotherSellingPut]),
-                            profitPercent: stockPriceToSarBeSarPercent
+                            profitPercent: isFullBodyProfitable ? 1 : stockPriceToSarBeSarPercent
                         }])
                     }
                     , []);
@@ -21596,7 +21775,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
                         if(breakeven){
 
-                            const stockPriceToSarBeSarPercent = -((breakeven / sellingCall.optionDetails.stockSymbolDetails.last) - 1);
+                            const stockPriceToSarBeSarPercent = (sellingCall.optionDetails.stockSymbolDetails.last/breakeven) - 1;
     
                             if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent)
                                 return _allPossibleStrategies
@@ -21857,11 +22036,13 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                         const priceThatCauseMaxProfit = Math.min(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) / 1.3;
                         const maxProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxProfit });
 
+
+                        
                         if(breakeven){
 
-                            const stockPriceToSarBeSarPercent = -((breakeven / sellingCall.optionDetails.stockSymbolDetails.last) - 1);
+                            const stockPriceToSarBeSarPercent = (sellingCall.optionDetails.stockSymbolDetails.last/breakeven) - 1;
     
-                            if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent || stockPriceToSarBeSarPercent < maxStockPriceToSarBeSarPercent)
+                            if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent)
                                 return _allPossibleStrategies
                         }else if(maxProfit<=0){
                              return _allPossibleStrategies
@@ -22630,9 +22811,6 @@ const createListFilterContetnByList=(list)=>{
         BUCSSOptionListIgnorer: ({option, minVol}) => {
             if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
                 return true
-            const stockStrikeDistanceInPercent = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
-            if (stockStrikeDistanceInPercent < -.09)
-                return true
             return false
         }
         ,
@@ -22645,9 +22823,6 @@ const createListFilterContetnByList=(list)=>{
         // maxBUCSCostSellOptionRatio: 1.1,
         BUCSSOptionListIgnorer: ({option, minVol}) => {
             if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
-                return true
-            const stockStrikeDistanceInPercent = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
-            if (stockStrikeDistanceInPercent < -.09)
                 return true
             return false
         }
