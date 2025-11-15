@@ -534,55 +534,119 @@ const deleteAllOpenOrders =async ()=>{
     for (let i = 0; i < openOrderList.length; i++) {
         await new Promise(resolve => setTimeout(resolve, 150));
         const {orderId,id}=openOrderList[i];
-        deleteOrder({orderId,id});
+        await deleteOrder({orderId,id});
     }
 
+
+    return
+
 }
 
 
-const getGroups =()=>{
-    fetch("https://khobregan-red.tsetab.ir/api/AssetGrouping/GetGroups", {
-  "headers": {
-    "accept": "application/json, text/plain, */*",
-    "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
-    "authorization": "eyJhbGciOiJBMjU2R0NNS1ciLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwiaXYiOiJScnVmUTJTTEhqOVZIRFJ4IiwidGFnIjoiRGlNN1kyaWIyemNSNWVTWTRNRTI5ZyJ9.eyXfIOIsUjhhBbrTRjQQ0YEq5QdcPG7LcbV2rAhMPllFRGqMW4QC8CP4AVdx7F_B9Vdmb5bbLCyLTL11acrdOw.KnI6975o9PtvycPft0VvOw.1sDrKoSakhJUfk6ynMPsJ819yLV6jYd9oTT0PH241LEo1Y9nNYlBwAIQ7D9qi-Q043w-jLVOddN5M9sDFtTFlbWV5NbvBTfjPfjVMnhUzle_19vmSJkP9QmsE643gCrQEVKfsMDTLpntKNrj0q7uI28NgkyiNgQSdgCLFIEQahreHpV7W_jALpPnIVwHgfJQqXnKZ34hhgeqy9ChOK6Of6X--FpN1CF-RDtti6qgcAPGGygCsFaKYWpUNU7s63khSTyesiLvMNbU0qulYAwDZIsAEK6kmDxrScVQJWTWIJ-Qjxc38TFctfeZLzl_va2jRJ8TjsbcbxxeWzrdGk7klXTzklkheCe5utfRN7fFHm9l1zJIHAnc8jiMdQ10Gjefnv65pLB5XvaeY-qsrIxw19o_au0Rj7dtVN16K_NqhomPUQU7or7MgSjIX6gFtlCHBnXgKt-4M0liz4rKaUvg3eMFQ870AajB-bS_0CpkN_e5v9eZtSQtNYupvgnEmg25yugB1jmm5Z9vocuTJN5xjBdpqua_njsmNWxCGgqvQVPzj8z6Y6HfeObH4u9FPAuLImfsUeaLD8sc9BvrcZAaXo_icAKpIkCU3UF_FW3f5dTR_CfGC36tb6Jgc_-qq-8_GIvh6RCHwtXAuzFougqiOCpX_SNnqxT4efnV4DoWuYwY8mpgnYeeCun-O7klIymXx0k1E1BvxeIluYbgOM6c9g.g2krWnWGz7gp47pkO_0zs8zBjKoLfKyepgXqPopoiJs",
-    "ngsw-bypass": "",
-    "priority": "u=1, i",
-    "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": "\"Windows\"",
-    "sec-fetch-dest": "empty",
-    "sec-fetch-mode": "cors",
-    "sec-fetch-site": "same-site"
-  },
-  "referrer": "https://khobregan.tsetab.ir/",
-  "body": null,
-  "method": "GET",
-  "mode": "cors",
-  "credentials": "include"
-});
+const getGroups =async () => {
+    return fetch("https://khobregan-red.tsetab.ir/api/AssetGrouping/GetGroups", {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": "https://khobregan.tsetab.ir/",
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const groups = res.response.data;
+        return groups
+    });
 }
-const getCustomerOptionStrategyEstimationWithItems =()=>{
-    fetch("https://khobregan-red.tsetab.ir/api/OptionStrategyEstimations/GetCustomerOptionStrategyEstimationWithItems", {
-  "headers": {
-    "accept": "application/json, text/plain, */*",
-    "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
-    "authorization": "eyJhbGciOiJBMjU2R0NNS1ciLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwiaXYiOiJScnVmUTJTTEhqOVZIRFJ4IiwidGFnIjoiRGlNN1kyaWIyemNSNWVTWTRNRTI5ZyJ9.eyXfIOIsUjhhBbrTRjQQ0YEq5QdcPG7LcbV2rAhMPllFRGqMW4QC8CP4AVdx7F_B9Vdmb5bbLCyLTL11acrdOw.KnI6975o9PtvycPft0VvOw.1sDrKoSakhJUfk6ynMPsJ819yLV6jYd9oTT0PH241LEo1Y9nNYlBwAIQ7D9qi-Q043w-jLVOddN5M9sDFtTFlbWV5NbvBTfjPfjVMnhUzle_19vmSJkP9QmsE643gCrQEVKfsMDTLpntKNrj0q7uI28NgkyiNgQSdgCLFIEQahreHpV7W_jALpPnIVwHgfJQqXnKZ34hhgeqy9ChOK6Of6X--FpN1CF-RDtti6qgcAPGGygCsFaKYWpUNU7s63khSTyesiLvMNbU0qulYAwDZIsAEK6kmDxrScVQJWTWIJ-Qjxc38TFctfeZLzl_va2jRJ8TjsbcbxxeWzrdGk7klXTzklkheCe5utfRN7fFHm9l1zJIHAnc8jiMdQ10Gjefnv65pLB5XvaeY-qsrIxw19o_au0Rj7dtVN16K_NqhomPUQU7or7MgSjIX6gFtlCHBnXgKt-4M0liz4rKaUvg3eMFQ870AajB-bS_0CpkN_e5v9eZtSQtNYupvgnEmg25yugB1jmm5Z9vocuTJN5xjBdpqua_njsmNWxCGgqvQVPzj8z6Y6HfeObH4u9FPAuLImfsUeaLD8sc9BvrcZAaXo_icAKpIkCU3UF_FW3f5dTR_CfGC36tb6Jgc_-qq-8_GIvh6RCHwtXAuzFougqiOCpX_SNnqxT4efnV4DoWuYwY8mpgnYeeCun-O7klIymXx0k1E1BvxeIluYbgOM6c9g.g2krWnWGz7gp47pkO_0zs8zBjKoLfKyepgXqPopoiJs",
-    "ngsw-bypass": "",
-    "priority": "u=1, i",
-    "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
-    "sec-ch-ua-mobile": "?0",
-    "sec-ch-ua-platform": "\"Windows\"",
-    "sec-fetch-dest": "empty",
-    "sec-fetch-mode": "cors",
-    "sec-fetch-site": "same-site"
-  },
-  "referrer": "https://khobregan.tsetab.ir/",
-  "body": null,
-  "method": "GET",
-  "mode": "cors",
-  "credentials": "include"
-});
+const getCustomerOptionStrategyEstimationWithItems = async () => {
+    return fetch("https://khobregan-red.tsetab.ir/api/OptionStrategyEstimations/GetCustomerOptionStrategyEstimationWithItems", {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": "https://khobregan.tsetab.ir/",
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const strategyEstimationList = res.response.data;
+        return strategyEstimationList
+    });
+}
+
+
+
+const selectStrategy =async ()=>{
+    const selectedGroupTitle = document.querySelector('client-option-positions-filter-bar .-is-group ng-select .u-ff-number').innerHTML;
+
+    const groups = await getGroups();
+
+    let selectedGroup = groups.find(group=>selectedGroupTitle.includes(group.name));
+
+    const portfolioList = await getOptionPortfolioList();
+
+    selectedGroup.positions = selectedGroup.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId))
+
+
+
+    const strategies = await getCustomerOptionStrategyEstimationWithItems();
+
+    const foundStrategies = strategies.filter(strategy=> {
+
+
+        strategy.items = Array.from(new Map(strategy.items.map(sItem => [sItem.instrumentId, sItem])).values());
+
+        const hasAllInstrumentId =  selectedGroup.positions.every(groupPosition=> strategy.items.find(sItem=>groupPosition.instrumentId===sItem.instrumentId && groupPosition.orderSide===sItem.side));
+
+        return hasAllInstrumentId && strategy.items.length===selectedGroup.instrumentIds.length
+
+    });
+
+
+
+    const  estimationListButton = document.querySelector('client-option-strategy-estimation-header button[label="لیست برآوردها"]');
+
+
+    estimationListButton.click();
+    await new Promise(r => setTimeout(r, 200));
+
+    const estimationListSearchInput = document.querySelector('client-option-strategy-estimation-list c-k-input-search input');
+    estimationListSearchInput.value=  foundStrategies[0].title;
+    estimationListSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+
+
+
+    const searchResultElement = document.querySelector('client-option-strategy-estimation-list .o-items-container .o-item');
+
+    await new Promise(r => setTimeout(r, 200));
+
+
+    searchResultElement.click()
+
+    console.log(foundStrategies);
+    
+
 }
 
 const OMEXApi = {
@@ -753,7 +817,9 @@ const createDeleteAllOrdersButton = () => {
     removeAllOrderButton.style.cssText += `
         margin-right: auto;
         `;
-    removeAllOrderButton.addEventListener('click', function(event) {
+    removeAllOrderButton.addEventListener('click', async function(event) {
+        _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.deleteAllOpenOrders();
+        await new Promise(resolve => setTimeout(resolve, 500));
         _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.deleteAllOpenOrders();
     });
     

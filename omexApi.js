@@ -177,8 +177,11 @@ const deleteAllOpenOrders =async ()=>{
     for (let i = 0; i < openOrderList.length; i++) {
         await new Promise(resolve => setTimeout(resolve, 150));
         const {orderId,id}=openOrderList[i];
-        deleteOrder({orderId,id});
+        await deleteOrder({orderId,id});
     }
+
+
+    return
 
 }
 
@@ -241,7 +244,11 @@ const selectStrategy =async ()=>{
 
     const groups = await getGroups();
 
-    const selectedGroup = groups.find(group=>selectedGroupTitle.includes(group.name));
+    let selectedGroup = groups.find(group=>selectedGroupTitle.includes(group.name));
+
+    const portfolioList = await getOptionPortfolioList();
+
+    selectedGroup.positions = selectedGroup.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId))
 
 
 
@@ -249,7 +256,10 @@ const selectStrategy =async ()=>{
 
     const foundStrategies = strategies.filter(strategy=> {
 
-        const hasAllInstrumentId =  selectedGroup.instrumentIds.every(instrumentId=> strategy.items.find(sItem=>instrumentId===sItem.instrumentId));
+
+        strategy.items = Array.from(new Map(strategy.items.map(sItem => [sItem.instrumentId, sItem])).values());
+
+        const hasAllInstrumentId =  selectedGroup.positions.every(groupPosition=> strategy.items.find(sItem=>groupPosition.instrumentId===sItem.instrumentId && groupPosition.orderSide===sItem.side));
 
         return hasAllInstrumentId && strategy.items.length===selectedGroup.instrumentIds.length
 
