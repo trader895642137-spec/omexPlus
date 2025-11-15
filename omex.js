@@ -64,7 +64,9 @@ const createDeleteAllOrdersButton = () => {
     removeAllOrderButton.style.cssText += `
         margin-right: auto;
         `;
-    removeAllOrderButton.addEventListener('click', function(event) {
+    removeAllOrderButton.addEventListener('click', async function(event) {
+        OMEXApi.deleteAllOpenOrders();
+        await new Promise(resolve => setTimeout(resolve, 500));
         OMEXApi.deleteAllOpenOrders();
     });
     
