@@ -1118,7 +1118,11 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
 
 }
 
-const calcShortGUTSStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", strategySubName, callListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceFromOption2StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption2StrikeInPercent=Infinity, minStockPriceDistanceFromSarBeSarInPercent=0, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcShortGUTSStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN",
+     strategySubName, callListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+     minStockPriceToLowBreakevenPercent=0, maxStockPriceToLowBreakevenPercent=Infinity, 
+     minStockPriceToHighBreakevenPercent=-Infinity, maxStockPriceToHighBreakevenPercent=0, 
+     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -1156,12 +1160,7 @@ const calcShortGUTSStrategies = (list, {priceType, expectedProfitPerMonth, settl
                     if (_option.optionDetails?.strikePrice <= _option.optionDetails.stockSymbolDetails.last)
                         return false
 
-                    const stockPriceHigherStrikeRatio = (_option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
-
-                    if (stockPriceHigherStrikeRatio > minStockPriceDistanceFromOption2StrikeInPercent && stockPriceHigherStrikeRatio < maxStockPriceDistanceFromOption2StrikeInPercent) {} else {
-                        return false
-                    }
-
+                    
                     return true
 
                 }
@@ -1201,8 +1200,39 @@ const calcShortGUTSStrategies = (list, {priceType, expectedProfitPerMonth, settl
                     });
 
 
-                    const offsetPrice = (option.strikePrice + _option.strikePrice)/2
+                    const breakevenList = findBreakevenList({
+                        positions: strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    });
 
+                    const lowBreakeven = Math.min(...breakevenList);
+                    const highBreakeven = Math.max(...breakevenList);
+
+
+
+
+
+                    const stockPriceToLowBreakevenPercent = (option.optionDetails.stockSymbolDetails.last / lowBreakeven) - 1;
+                    const stockPriceToHighBreakevenPercent = (option.optionDetails.stockSymbolDetails.last / highBreakeven) - 1;
+
+
+
+                    if (stockPriceToLowBreakevenPercent < minStockPriceToLowBreakevenPercent || stockPriceToLowBreakevenPercent > maxStockPriceToLowBreakevenPercent)
+                        return _allPossibleStrategies
+                    if (stockPriceToHighBreakevenPercent < minStockPriceToHighBreakevenPercent || stockPriceToHighBreakevenPercent > maxStockPriceToHighBreakevenPercent)
+                        return _allPossibleStrategies
+
+
+
+
+
+                    const offsetPrice = (option.strikePrice + _option.strikePrice)/2;
+
+                  
 
 
                     const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
@@ -1255,8 +1285,6 @@ const calcShortGUTSStrategies = (list, {priceType, expectedProfitPerMonth, settl
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
-        minStockPriceDistanceFromOption2StrikeInPercent,
-        maxStockPriceDistanceFromOption2StrikeInPercent,
         minVol,
         expectedProfitNotif,
         expectedProfitPerMonth,
@@ -1265,28 +1293,27 @@ const calcShortGUTSStrategies = (list, {priceType, expectedProfitPerMonth, settl
             strategyName: "SHORT_GUTS",
             strategySubName,
             priceType,
+            customLabels: [
+                typeof minStockPriceToLowBreakevenPercent !== 'undefined' && minStockPriceToLowBreakevenPercent !== null && minStockPriceToLowBreakevenPercent !== -Infinity && {
+                    label: "minToLow",
+                    value: `${((minStockPriceToLowBreakevenPercent) * 100).toFixed(0)}%`
+                },
+                typeof maxStockPriceToHighBreakevenPercent !== 'undefined' && maxStockPriceToHighBreakevenPercent !== null && maxStockPriceToHighBreakevenPercent !== Infinity && {
+                    label: "maxToHigh",
+                    value: `${((maxStockPriceToHighBreakevenPercent) * 100).toFixed(0)}%`
+                },].filter(Boolean),
             min_time_to_settlement,
             max_time_to_settlement,
-            customLabels: [typeof minStockPriceDistanceFromOption2StrikeInPercent !== 'undefined' && minStockPriceDistanceFromOption2StrikeInPercent !== null && minStockPriceDistanceFromOption2StrikeInPercent !== -Infinity && {
-                label: "minToHigh",
-                value: `${((minStockPriceDistanceFromOption2StrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceDistanceFromOption2StrikeInPercent !== 'undefined' && maxStockPriceDistanceFromOption2StrikeInPercent !== null && maxStockPriceDistanceFromOption2StrikeInPercent !== Infinity && {
-                label: "maxToHigh",
-                value: `${((maxStockPriceDistanceFromOption2StrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof minStockPriceDistanceFromSarBeSarInPercent !== 'undefined' && minStockPriceDistanceFromSarBeSarInPercent !== null && minStockPriceDistanceFromSarBeSarInPercent !== 0 && {
-                label: "minToSar",
-                value: `${((minStockPriceDistanceFromSarBeSarInPercent) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceDistanceFromSarBeSarInPercent !== 'undefined' && maxStockPriceDistanceFromSarBeSarInPercent !== null && maxStockPriceDistanceFromSarBeSarInPercent !== Infinity && {
-                label: "maxToSar",
-                value: `${((maxStockPriceDistanceFromSarBeSarInPercent) * 100).toFixed(0)}%`
-            }, ].filter(Boolean),
             minVol
         })
     }
 
 }
-
-const calcShortSTRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", strategySubName, callListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceFromPutStrikeInPercent=-Infinity, maxStockPriceDistanceFromPutStrikeInPercent=Infinity, minStockPriceDistanceFromSarBeSarInPercent=0, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcShortSTRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", 
+    strategySubName, callListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    minStockPriceToLowBreakevenPercent=0, maxStockPriceToLowBreakevenPercent=Infinity, 
+    minStockPriceToHighBreakevenPercent=-Infinity, maxStockPriceToHighBreakevenPercent=0, 
+    minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -1322,11 +1349,7 @@ const calcShortSTRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, s
                     if (_option.optionDetails?.strikePrice >= _option.optionDetails.stockSymbolDetails.last)
                         return false
 
-                    const stockPricePutStrikeRatio = (_option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
-
-                    if (stockPricePutStrikeRatio > minStockPriceDistanceFromPutStrikeInPercent && stockPricePutStrikeRatio < maxStockPriceDistanceFromPutStrikeInPercent) {} else {
-                        return false
-                    }
+                    
 
                     return true
 
@@ -1363,6 +1386,33 @@ const calcShortSTRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, s
                             sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
                         })
                     });
+
+
+                    const breakevenList = findBreakevenList({
+                        positions: strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    });
+
+                    const lowBreakeven = Math.min(...breakevenList);
+                    const highBreakeven = Math.max(...breakevenList);
+
+
+
+
+
+                    const stockPriceToLowBreakevenPercent = (option.optionDetails.stockSymbolDetails.last / lowBreakeven) - 1;
+                    const stockPriceToHighBreakevenPercent = (option.optionDetails.stockSymbolDetails.last / highBreakeven) - 1;
+
+
+
+                    if (stockPriceToLowBreakevenPercent < minStockPriceToLowBreakevenPercent || stockPriceToLowBreakevenPercent > maxStockPriceToLowBreakevenPercent)
+                        return _allPossibleStrategies
+                    if (stockPriceToHighBreakevenPercent < minStockPriceToHighBreakevenPercent || stockPriceToHighBreakevenPercent > maxStockPriceToHighBreakevenPercent)
+                        return _allPossibleStrategies
 
 
                     const offsetPrice = (option.strikePrice + _option.strikePrice)/2
@@ -1413,6 +1463,10 @@ const calcShortSTRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, s
 
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
+
+
+
+
     return {
         enrichedList,
         allStrategiesSorted: sortedStrategies,
@@ -1420,8 +1474,6 @@ const calcShortSTRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, s
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
-        minStockPriceDistanceFromPutStrikeInPercent,
-        maxStockPriceDistanceFromPutStrikeInPercent,
         minVol,
         expectedProfitNotif,
         expectedProfitPerMonth,
@@ -1432,19 +1484,15 @@ const calcShortSTRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, s
             priceType,
             min_time_to_settlement,
             max_time_to_settlement,
-            customLabels: [typeof minStockPriceDistanceFromPutStrikeInPercent !== 'undefined' && minStockPriceDistanceFromPutStrikeInPercent !== null && minStockPriceDistanceFromPutStrikeInPercent !== -Infinity && {
-                label: "minToLow",
-                value: `${((minStockPriceDistanceFromPutStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceDistanceFromPutStrikeInPercent !== 'undefined' && maxStockPriceDistanceFromPutStrikeInPercent !== null && maxStockPriceDistanceFromPutStrikeInPercent !== Infinity && {
-                label: "minToLow",
-                value: `${((maxStockPriceDistanceFromPutStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof minStockPriceDistanceFromSarBeSarInPercent !== 'undefined' && minStockPriceDistanceFromSarBeSarInPercent !== null && minStockPriceDistanceFromSarBeSarInPercent !== 0 && {
-                label: "minToSar",
-                value: `${((minStockPriceDistanceFromSarBeSarInPercent) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceDistanceFromSarBeSarInPercent !== 'undefined' && maxStockPriceDistanceFromSarBeSarInPercent !== null && maxStockPriceDistanceFromSarBeSarInPercent !== Infinity && {
-                label: "maxToSar",
-                value: `${((maxStockPriceDistanceFromSarBeSarInPercent) * 100).toFixed(0)}%`
-            }, ].filter(Boolean),
+            customLabels: [
+                typeof minStockPriceToLowBreakevenPercent !== 'undefined' && minStockPriceToLowBreakevenPercent !== null && minStockPriceToLowBreakevenPercent !== -Infinity && {
+                    label: "minToLow",
+                    value: `${((minStockPriceToLowBreakevenPercent) * 100).toFixed(0)}%`
+                },
+                typeof maxStockPriceToHighBreakevenPercent !== 'undefined' && maxStockPriceToHighBreakevenPercent !== null && maxStockPriceToHighBreakevenPercent !== Infinity && {
+                    label: "maxToHigh",
+                    value: `${((maxStockPriceToHighBreakevenPercent) * 100).toFixed(0)}%`
+                },].filter(Boolean),
             minVol
         })
     }
@@ -9362,34 +9410,29 @@ const createListFilterContetnByList=(list)=>{
         callListIgnorer: ({option, minVol}) => {
             if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol || option.optionDetails?.strikePrice >= option.optionDetails.stockSymbolDetails.last)
                 return true
-            const stockStrikeDistanceInPercent = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
-            if (stockStrikeDistanceInPercent > .12)
-                return true
-            // if (stockStrikeDistanceInPercent > .15) return true
             return false
         }
         ,
         // min_time_to_settlement: 15 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         // minVol: 1000 * 1000 * 1000,
-        maxStockPriceDistanceFromOption2StrikeInPercent: -.15,
+        minStockPriceToLowBreakevenPercent: .2,
+        maxStockPriceToHighBreakevenPercent: -.2
         // expectedProfitNotif: true
     }), calcShortSTRANGLEStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         callListIgnorer: ({option, minVol}) => {
             if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol || option.optionDetails?.strikePrice <= option.optionDetails.stockSymbolDetails.last)
                 return true
-            const stockStrikeDistanceInPercent = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
-            if (stockStrikeDistanceInPercent > -.15)
-                return true
-            // if (stockStrikeDistanceInPercent > .15) return true
+            
             return false
         }
         ,
         // min_time_to_settlement: 15 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         // minVol: 1000 * 1000 * 1000,
-        minStockPriceDistanceFromPutStrikeInPercent: .15,
+        minStockPriceToLowBreakevenPercent: .2,
+        maxStockPriceToHighBreakevenPercent: -.2
         // expectedProfitNotif: true
     })
     , calcCALL_BUTTERFLYStrategies(list, {
