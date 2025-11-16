@@ -6362,7 +6362,7 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType, settlementGainChoosePri
 }
 
 const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFactorOfBUCS=0.6, 
-    maxBUCSCostSellOptionRatio=2, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
+    maxQuantityFactorOfBUCS=2, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
     minStockPriceToSarBeSarPercent=-Infinity,maxStockPriceToSarBeSarPercent=-.2,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -6480,7 +6480,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
                         const quantityFactorOfBUCS = Math.abs(maxProfitOfSellingCall/maxLossOfBUCS);
 
 
-                        if (quantityFactorOfBUCS < minQuantityFactorOfBUCS)
+                        if (quantityFactorOfBUCS < minQuantityFactorOfBUCS  || quantityFactorOfBUCS > maxQuantityFactorOfBUCS)
                             return ___allPossibleStrategies
 
 
@@ -10056,7 +10056,6 @@ const createListFilterContetnByList=(list)=>{
     
     , calcBUCSRatioStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        // maxBUCSCostSellOptionRatio: 1.1,
         BUCSSOptionListIgnorer: ({option, minVol}) => {
             if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
                 return true
@@ -10069,7 +10068,6 @@ const createListFilterContetnByList=(list)=>{
         max_time_to_settlement: 60 * 24 * 3600000,
     }), calcBUCSRatioStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        // maxBUCSCostSellOptionRatio: 1.1,
         BUCSSOptionListIgnorer: ({option, minVol}) => {
             if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
                 return true
@@ -10083,21 +10081,18 @@ const createListFilterContetnByList=(list)=>{
     })
     , calcBUPSRatioStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        // maxBUCSCostSellOptionRatio: 1.1,
         // maxStockPriceDistanceInPercent: .2,
         // min_time_to_settlement: 15 * 24 * 3600000,
         max_time_to_settlement: 39 * 24 * 3600000,
     })
     , calcBECSRatioStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        // maxBUCSCostSellOptionRatio: 1.1,
         // maxStockPriceDistanceInPercent: .2,
         // min_time_to_settlement: 15 * 24 * 3600000,
         max_time_to_settlement: 39 * 24 * 3600000,
     })
     , calcBEPSRatioStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        // maxBUCSCostSellOptionRatio: 1.1,
         // maxStockPriceDistanceInPercent: .2,
         // min_time_to_settlement: 15 * 24 * 3600000,
         max_time_to_settlement: 39 * 24 * 3600000,
