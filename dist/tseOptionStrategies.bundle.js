@@ -13132,7 +13132,7 @@ const htmlStrategyListCreator = ({strategyList, title, expectedProfitNotif}) => 
                     row-gap: 10px;
                     overflow: auto;
                     padding: 5px;
-                    border: ${expectedProfitNotif && strategyList?.length ? '4px solid green' : '1px solid'};
+                    border: ${expectedProfitNotif && strategyList?.length ? '7px solid #00d820' : '1px solid'};
                     flex-grow: 1;
                     ${expectedProfitNotif ? 'background: #f4fdf4;' : ''}
                     
