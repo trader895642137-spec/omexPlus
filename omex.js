@@ -601,10 +601,15 @@ const informExtremeOrderPrice = (_strategyPositions, type) => {
     });
 
     // const orderPriceElement = getOrderPriceElement(positionWithMaxDiff);
+
+
     const firstPriceElement = getOrderPriceElement(sortedPositionsByDiff[0]);
-    const secondPriceElement = getOrderPriceElement(sortedPositionsByDiff[1]);
     firstPriceElement.parentElement.classList.add("amin-bold");
-    secondPriceElement.parentElement.classList.add("amin-bold--light");
+
+    if(sortedPositionsByDiff[1]){
+        const secondPriceElement = getOrderPriceElement(sortedPositionsByDiff[1]);
+        secondPriceElement.parentElement.classList.add("amin-bold--light");
+    }
 
 }
 

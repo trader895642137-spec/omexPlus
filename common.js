@@ -166,7 +166,7 @@ export const settlementProfitCalculator = ({ strategyPositions, stockPrice }) =>
   const valuablePositions = strategyPositions.filter(strategyPosition => getNearSettlementPrice({ strategyPosition, stockPrice }) > 0);
 
 
-  const sumSettlementGains = valuablePositions.reduce((sumSettlementGains, valuablePosition) => {
+  const sumSettlementGainsInfo = valuablePositions.reduce((sumSettlementGainsInfo, valuablePosition) => {
 
     const tax = isTaxFree(valuablePosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
     const quantity = valuablePosition.getQuantity();
@@ -176,22 +176,31 @@ export const settlementProfitCalculator = ({ strategyPositions, stockPrice }) =>
 
     if (isBuyStock) {
 
-      sumSettlementGains -= (quantity * (valuablePosition.strikePrice + (valuablePosition.strikePrice * exerciseFee)))
+      sumSettlementGainsInfo.sumOfGains -= (quantity * (valuablePosition.strikePrice + (valuablePosition.strikePrice * exerciseFee)))
+      sumSettlementGainsInfo.remainedQuantity+=quantity;
     } else {
 
       // is sell stock
-      sumSettlementGains += (quantity * (valuablePosition.strikePrice - (valuablePosition.strikePrice * exerciseFee) - (valuablePosition.strikePrice * tax)))
+      sumSettlementGainsInfo.sumOfGains += (quantity * (valuablePosition.strikePrice - (valuablePosition.strikePrice * exerciseFee) - (valuablePosition.strikePrice * tax)))
+      sumSettlementGainsInfo.remainedQuantity-=quantity;
 
     }
 
-    sumSettlementGains += reservedMargin;
+    sumSettlementGainsInfo.sumOfGains += reservedMargin;
 
 
+    return sumSettlementGainsInfo;
+
+  }, {sumOfGains:0,remainedQuantity:0});
 
 
-    return sumSettlementGains;
+  if(sumSettlementGainsInfo && sumSettlementGainsInfo.remainedQuantity>0){
+    const sellStockFee = isTaxFree(valuablePositions[0]) ? COMMISSION_FACTOR.ETF.SELL : COMMISSION_FACTOR.STOCK.SELL
 
-  }, 0)
+    sumSettlementGainsInfo.sumOfGains += (sumSettlementGainsInfo.remainedQuantity * (stockPrice -  (stockPrice * sellStockFee)))
+    sumSettlementGainsInfo.remainedQuantity = 0;
+  }
+
 
 
   const totalCostObj = totalCostCalculatorForPriceTypes(strategyPositions);
@@ -199,11 +208,11 @@ export const settlementProfitCalculator = ({ strategyPositions, stockPrice }) =>
 
   const settlementProfitByBestPrices = profitPercentCalculator({
     costWithSign: totalCostObj.totalCostByBestPrices,
-    gainWithSign: sumSettlementGains
+    gainWithSign: sumSettlementGainsInfo.sumOfGains
   });
   const settlementProfitByInsertedPrices = profitPercentCalculator({
     costWithSign: totalCostObj.totalCostByInsertedPrices,
-    gainWithSign: sumSettlementGains
+    gainWithSign: sumSettlementGainsInfo.sumOfGains
   });
 
 
