@@ -74,6 +74,20 @@ const createDeleteAllOrdersButton = () => {
     return removeAllOrderButton
 }
 
+const stopDraggingWrongOfOrdersModals =()=>{
+
+    strategyPositions.forEach(strategyPosition => {
+
+        strategyPosition.ordersModal.querySelector('client-instrument-favorites-item-main').addEventListener("mousedown", (e) => {
+            e.stopPropagation();
+        });
+
+    })
+
+
+
+}
+
 const createStrategyExpectedProfitCnt = () => {
     let parent = document.createElement('div');
     let cnt = document.createElement('div');
@@ -410,53 +424,46 @@ const showCurrentStrategyPositionState = ({totalCurrentPositionCost,totalOffsetG
     let statusCnt = getStatusCnt();
 
     statusCnt.innerHTML = `
-            <span style="
-                display: inline-block;
-                direction: ltr !important;
-            ">
-            ${totalCurrentPositionCost.toLocaleString('en-US', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    })}
-            </span>
-            
-            __ 
             
             <span style="
                 display: inline-block;
                 direction: ltr !important;
             ">
-            ${totalOffsetGainOfCurrentPositionObj.byOffsetOrderPrices.toLocaleString('en-US', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    })} 
+                ${totalOffsetGainOfCurrentPositionObj.byOffsetOrderPrices.toLocaleString('en-US', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                })} 
             </span>
 
-            <div style="color:${profitLossByOffsetOrdersPercent >= 0 ? 'green' : 'red'};margin-right: 10px;"> ${profitLossByOffsetOrdersPercent.toLocaleString('en-US', {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1
-    })} </div>
+            <div style="color:${profitLossByOffsetOrdersPercent >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
+                ${profitLossByOffsetOrdersPercent.toLocaleString('en-US', {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1
+                })} 
+            </div>
 
         
 
 
 
             <div style="margin-right: 200px;font-size: 85%;"> 
-            آفست با کادر قیمت
-            <span style="
-                display: inline-block;
-                direction: ltr !important;
-            ">
-                ${totalOffsetGainOfCurrentPositionObj.byInsertedPrices.toLocaleString('en-US', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    })}
-            </span>
+             آفست با کادر قیمت
+                <span style="
+                    display: inline-block;
+                    direction: ltr !important;
+                ">
+                    ${totalOffsetGainOfCurrentPositionObj.byInsertedPrices.toLocaleString('en-US', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                    })}
+                </span>
                 
-                <span style="color:${profitLossByInsertedPricesPercent >= 0 ? 'green' : 'red'};margin-right: 10px;"> ${profitLossByInsertedPricesPercent.toLocaleString('en-US', {
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1
-    })}</span>
+                <span style="color:${profitLossByInsertedPricesPercent >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
+                ${profitLossByInsertedPricesPercent.toLocaleString('en-US', {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1
+                })}
+                </span>
             </div>
 
 
@@ -2173,6 +2180,7 @@ const injectStyles = () => {
             .amin-bold {
                 padding: 2px !important;
                 border: 2px solid !important;
+                background: #b9daf7;
             }
             .amin-bold--light {
                 padding: 2px !important;
@@ -2283,6 +2291,8 @@ const Run = () => {
 
     getStrategyExpectedProfitCnt();
     createDeleteAllOrdersButton();
+
+    stopDraggingWrongOfOrdersModals()
 
     fillCurrentStockPriceByStrikes(strategyPositions)
 
