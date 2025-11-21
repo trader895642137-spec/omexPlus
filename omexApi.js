@@ -175,7 +175,7 @@ const deleteAllOpenOrders =async ()=>{
     const openOrderList = await getTodayOpenOrders();
 
     for (let i = 0; i < openOrderList.length; i++) {
-        await new Promise(resolve => setTimeout(resolve, 150));
+        await new Promise(resolve => setTimeout(resolve, 10));
         const {orderId,id}=openOrderList[i];
         await deleteOrder({orderId,id});
     }
