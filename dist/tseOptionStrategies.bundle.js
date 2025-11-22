@@ -14909,7 +14909,14 @@ const calcSyntheticCoveredCallStrategies = (list,
 
 }
 
-const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", strategySubName, BUPSOptionListIgnorer=generalConfig.BUPSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+// مرید پوت مصنوعی
+const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth, 
+    settlementGainChoosePriceType="MIN", strategySubName, 
+    BUPSOptionListIgnorer=generalConfig.BUPSOptionListIgnorer, 
+    justIfWholeIsPofitable=false,
+    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
+    minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -15055,8 +15062,8 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth, set
                         strategyTypeTitle: "BUPS_COLLAR",
                         expectedProfitNotif,
                         expectedProfitPerMonth,
-                        name: createStrategyName([option, _option]),
-                        profitPercent
+                        name: createStrategyName([option, _option,callOptionWithSameStrike]),
+                        profitPercent : justIfWholeIsPofitable ? profit>=0 ? 1 :0:profitPercent
                     }
 
                     if (Number.isNaN(strategyObj.profitPercent))
@@ -20265,7 +20272,12 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 }
 
 
-const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, strategySubName, 
+    BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
+    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
+    justIfWholeIsPofitable=false,
+    minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -20366,8 +20378,8 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
                         strategyTypeTitle: "BUCS_COLLAR",
                         expectedProfitNotif,
                         expectedProfitPerMonth,
-                        name: createStrategyName([option, _option]),
-                        profitPercent
+                        name: createStrategyName([option, _option,putOptionWithSameStrike]),
+                        profitPercent : justIfWholeIsPofitable ? profit>=0 ? 1 :0:profitPercent
                     }
 
                     if (Number.isNaN(strategyObj.profitPercent))
@@ -20425,7 +20437,11 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
 }
 
 
-const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, strategySubName, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, 
+    strategySubName, min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
+    justIfWholeIsPofitable=false,
+    minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -20553,7 +20569,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
                         expectedProfitNotif,
                         expectedProfitPerMonth,
                         name: createStrategyName([option, buyingPut,callWithSameStrikeOfSellingPut]),
-                        profitPercent
+                        profitPercent : justIfWholeIsPofitable ? profit>=0 ? 1 :0:profitPercent
                     }
 
                     if (Number.isNaN(strategyObj.profitPercent))
@@ -22940,15 +22956,27 @@ const createListFilterContetnByList=(list)=>{
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         expectedProfitNotif: true // priceType: CONSTS.PRICE_TYPE.LAST_PRICE ,
     }),
+    , calcBUPS_COLLARStrategies(list, {
+        priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        justIfWholeIsPofitable:true,
+    }),
     
     
     , calcBUCS_COLLAR_Strategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         expectedProfitNotif: true // priceType: CONSTS.PRICE_TYPE.LAST_PRICE ,
     })
+    , calcBUCS_COLLAR_Strategies(list, {
+        priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        justIfWholeIsPofitable:true,
+    })
     , calcBEPS_COLLAR_Strategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         expectedProfitNotif: true // priceType: CONSTS.PRICE_TYPE.LAST_PRICE ,
+    })
+    , calcBEPS_COLLAR_Strategies(list, {
+        priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        justIfWholeIsPofitable:true,
     })
     
     
@@ -23005,7 +23033,7 @@ const createListFilterContetnByList=(list)=>{
     calcBOXStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         min_time_to_settlement: 0 * 24 * 3600000,
-        expectedProfitPerMonth: 1.02,
+        expectedProfitPerMonth: 1.026,
         expectedProfitNotif: true,
     }), 
     
@@ -23013,7 +23041,7 @@ const createListFilterContetnByList=(list)=>{
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         min_time_to_settlement: 0,
         max_time_to_settlement: 1 * 24 * 3600000,
-        expectedProfitPerMonth: 1.02,
+        expectedProfitPerMonth: 1.026,
         expectedProfitNotif: true,
     }),
     
@@ -23021,14 +23049,14 @@ const createListFilterContetnByList=(list)=>{
     calcBOX_BUPS_BECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         min_time_to_settlement: 0 * 24 * 3600000,
-        expectedProfitPerMonth: 1.02,
+        expectedProfitPerMonth: 1.026,
         expectedProfitNotif: true,
     }), 
     calcBOX_BUPS_BECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         min_time_to_settlement: 0,
         max_time_to_settlement: 1 * 24 * 3600000,
-        expectedProfitPerMonth: 1.02,
+        expectedProfitPerMonth: 1.026,
         expectedProfitNotif: true,
     }), calcBECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,

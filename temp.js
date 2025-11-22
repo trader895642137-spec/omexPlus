@@ -1,8 +1,6 @@
-const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, 
-    settlementGainChoosePriceType="MIN", strategySubName,
-    justIfWholeIsPofitable=false,  
+const calcBECS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, strategySubName, 
     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
-    minStockPriceToSarBeSarPercent=-Infinity, maxStockPriceToSarBeSarPercent=Infinity, 
+    minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
@@ -21,196 +19,127 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
         let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
 
-            const _enrichedList = optionListOfSameDate.map(buyingPut => {
+            const _enrichedList = optionListOfSameDate.map(option => {
 
-                if (!buyingPut.isPut ||  buyingPut.vol < minVol)
-                        return buyingPut
+                if (!option.isCall || option.vol < minVol)
+                    return option
 
 
-                const buyingPutPrice = getPriceOfAsset({
-                        asset: buyingPut,
-                        priceType,
-                        sideType: 'BUY'
+                const optionPrice = getPriceOfAsset({
+                    asset: option,
+                    priceType,
+                    sideType: 'SELL'
                 });
 
-                if(buyingPutPrice===0) return buyingPut
-                
+                if(optionPrice===0) return option
 
-                const eligibleCallsForBECS =   optionListOfSameDate.filter(_option => {
-                    let isEligible = true;
+                const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
+                    if (_option.symbol === option.symbol || !_option.isPut || _option.vol < minVol)
+                        return
+                    if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
+                        return
 
-                    if (_option.symbol === buyingPut.symbol || !_option.isCall ||  _option.vol < minVol)
-                        return false
-                    if (_option.optionDetails?.strikePrice <= buyingPut.optionDetails?.strikePrice)
-                        return false
+                    if(!_option.optionDetails?.stockSymbolDetails) return false
 
-
-                    if(!_option.optionDetails.stockSymbolDetails) return false
-
-
-                    return isEligible
+                    return true
 
                 }
                 );
-              
 
-                let allPossibleStrategies = eligibleCallsForBECS.reduce( (_allPossibleStrategies, sellingCall) => {
+                let allPossibleStrategies = callListWithHigherStrikePrice.reduce( (_allPossibleStrategies, buyingCall) => {
 
+                    const buyingCallPrice = getPriceOfAsset({
+                        asset: buyingCall,
+                        priceType,
+                        sideType: 'BUY'
+                    });
 
-                    const sellingCallPrice = getPriceOfAsset({
-                        asset: sellingCall,
+                    if(buyingCallPrice===0) return _allPossibleStrategies
+
+                    const putWithSameStrikeOfBuyingCall = optionListOfSameDate.find(optionOfSameDate => {
+                        return optionOfSameDate.isPut && optionOfSameDate.bestSell > 0 && (optionOfSameDate.optionDetails?.strikePrice === buyingCall.optionDetails?.strikePrice)
+                    }
+                    );
+
+                    if (!putWithSameStrikeOfBuyingCall) {
+                        return _allPossibleStrategies
+                    }
+
+                    const putWithSameStrikeOfBuyingCallPrice = getPriceOfAsset({
+                        asset: putWithSameStrikeOfBuyingCall,
                         priceType,
                         sideType: 'SELL'
                     });
 
-                    if(sellingCallPrice===0) return _allPossibleStrategies
+                    if(putWithSameStrikeOfBuyingCallPrice===0) return _allPossibleStrategies
 
 
-                    const higherStrikeCalls = optionListOfSameDate.filter(_option => {
 
-                        if (_option.symbol === sellingCall.symbol || !_option.isCall || _option.vol < minVol)
-                            return false
-                        if (_option.optionDetails?.strikePrice <= sellingCall.optionDetails?.strikePrice)
-                            return false
+                    const strategyPositions = [
+                        {
+                            ...buyingCall,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ...option,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ...putWithSameStrikeOfBuyingCall,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                       
+                    ]
 
-                        return true
 
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    });
+
+
+
+                    const offsetPrice = Math.min(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))/ 1.2;
+
+
+
+                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+
+
+                    const profitPercent = profit / Math.abs(totalCost);
+                    const strategyObj = {
+                        option: {
+                            ...option
+                        },
+                        positions:[option, buyingCall,putWithSameStrikeOfBuyingCall],
+                        strategyTypeTitle: "BEPS_COLLAR",
+                        expectedProfitNotif,
+                        expectedProfitPerMonth,
+                        name: createStrategyName([option, buyingCall,putWithSameStrikeOfBuyingCall]),
+                        profitPercent
                     }
-                    );
 
-                    let allPossibleStrategies =  higherStrikeCalls.reduce((_allPossibleStrategies, buyingCall) => {
+                    if (Number.isNaN(strategyObj.profitPercent))
+                        return _allPossibleStrategies
 
-
-                        const buyingCallPrice = getPriceOfAsset({
-                            asset: buyingCall,
-                            priceType,
-                            sideType: 'BUY'
-                        });
-
-                        if(buyingCallPrice===0) return _allPossibleStrategies
-
-                        const sellingPutWithSameStrikeOfBuyingCall = optionListOfSameDate.find(_option=> _option.isPut && _option.vol > minVol && ( _option.optionDetails?.strikePrice === buyingCall.optionDetails?.strikePrice));
-
-
-                        if(!sellingPutWithSameStrikeOfBuyingCall) return _allPossibleStrategies
-
-
-                        const sellingPutWithSameStrikeOfBuyingCallPrice = getPriceOfAsset({
-                            asset: sellingPutWithSameStrikeOfBuyingCall,
-                            priceType,
-                            sideType: 'SELL'
-                        });
-
-                        if(sellingPutWithSameStrikeOfBuyingCallPrice===0) return _allPossibleStrategies
-
-
-                        const diffOfBUPS_Strikes = sellingPutWithSameStrikeOfBuyingCall.optionDetails?.strikePrice - buyingPut.optionDetails?.strikePrice;
-                        const diffOfBECS_Strikes = buyingCall.optionDetails?.strikePrice - sellingCall.optionDetails?.strikePrice;
-
-                        const strategyPositions = [
-                            {
-                                ...buyingPut,
-                                isBuy: true,
-                                getQuantity: () => baseQuantity,
-                                getRequiredMargin() { }
-                            },
-                            {
-                                ...sellingPutWithSameStrikeOfBuyingCall,
-                                isSell: true,
-                                getQuantity: () => baseQuantity,
-                                getRequiredMargin: () => diffOfBUPS_Strikes
-                            },
-                            {
-                                ...sellingCall,
-                                isSell: true,
-                                getQuantity: () => baseQuantity,
-                                getRequiredMargin: () => diffOfBECS_Strikes
-                            },
-                            {
-                                ...buyingCall,
-                                isBuy: true,
-                                getQuantity: () => baseQuantity,
-                                getRequiredMargin() { }
-                            }
-                        ]
-
-
-
-                        const totalCost = totalCostCalculatorCommon({
-                            strategyPositions,
-                            getPrice: (strategyPosition) => getPriceOfAsset({
-                                asset: strategyPosition,
-                                priceType,
-                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                            })
-                        });
-
-                        const breakevenList = findBreakevenList({
-                            positions: strategyPositions,
-                            getPrice: (strategyPosition) => getPriceOfAsset({
-                                asset: strategyPosition,
-                                priceType,
-                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                            })
-                        });
-
-                        const breakeven = breakevenList[0];
-
-                        const priceThatCauseMaxProfit = Math.max(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) * 1.2;
-                        const maxProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxProfit });
-
-                        if(breakeven){
-
-                            const stockPriceToSarBeSarPercent = (buyingPut.optionDetails.stockSymbolDetails.last/breakeven) - 1;
-    
-                            if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent)
-                                return _allPossibleStrategies
-                        }else if(maxProfit<=0){
-                             return _allPossibleStrategies
-                        }
-
-
-                        const profitPercent =  maxProfit / Math.abs(totalCost);
-
-                     
-                        
-                        
-                        const strategyObj = {
-                            option: {
-                                ...buyingCall
-                            },
-                            positions:[buyingPut,sellingPutWithSameStrikeOfBuyingCall,buyingCall,sellingCall],
-                            strategyTypeTitle: "BUS_With_BUPS_BECS",
-                            expectedProfitNotif,
-                            expectedProfitPerMonth,
-                            name: createStrategyName([buyingPut,sellingPutWithSameStrikeOfBuyingCall,buyingCall,sellingCall]),
-                            profitPercent : (()=>{
-                                if(justIfWholeIsPofitable){
-                                    return !breakeven ? 1 :-1
-                                }
-                                return profitPercent
-
-                            })()
-                        }
-
-                        if (Number.isNaN(strategyObj.profitPercent))
-                            return _allPossibleStrategies
-
-                        return _allPossibleStrategies.concat([strategyObj])
-
-
-                    }, [])
-
-
-                    
-
-                    return _allPossibleStrategies.concat(allPossibleStrategies)
+                    return _allPossibleStrategies.concat([strategyObj])
 
                 }
                 , []);
 
                 return {
-                    ...buyingPut,
+                    ...option,
                     allPossibleStrategies
                 }
 
@@ -231,29 +160,24 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
     return {
         enrichedList,
         allStrategiesSorted: sortedStrategies,
-        strategyName: "BUS_With_BUPS_BECS",
+        strategyName: "BEPS_COLLAR",
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
-        minStockPriceToSarBeSarPercent,
-        maxStockPriceToSarBeSarPercent,
+        minStockPriceDistanceInPercent,
+        maxStockPriceDistanceInPercent,
         minVol,
         expectedProfitNotif,
         expectedProfitPerMonth,
         ...restConfig,
         htmlTitle: configsToHtmlTitle({
-            strategyName: "BUS_With_BUPS_BECS",
+            strategyName: "BEPS_COLLAR",
             strategySubName,
             priceType,
             min_time_to_settlement,
             max_time_to_settlement,
-            customLabels: [typeof minStockPriceToSarBeSarPercent !== 'undefined' && minStockPriceToSarBeSarPercent !== null && minStockPriceToSarBeSarPercent !== 0 && {
-                label: "minToSar",
-                value: `${((minStockPriceToSarBeSarPercent) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceToSarBeSarPercent !== 'undefined' && maxStockPriceToSarBeSarPercent !== null && maxStockPriceToSarBeSarPercent !== Infinity && {
-                label: "maxToSar",
-                value: `${((maxStockPriceToSarBeSarPercent) * 100).toFixed(0)}%`
-            },].filter(Boolean),
+            minStockPriceDistanceInPercent,
+            maxStockPriceDistanceInPercent,
             minVol
         })
     }
