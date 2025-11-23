@@ -2187,6 +2187,11 @@ const injectStyles = () => {
                 border: 1px dashed !important;
             }
 
+
+            client-instrument-price-position-row .-is-price .-is-clickable {
+                width: 100%;
+            }
+
             section.-is-buy  p , section.-is-sell p{
                 background-color: transparent !important
             }
