@@ -161,9 +161,15 @@ export const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
 
 export const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
 
-  const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE
+  const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE;
 
-  const valuablePositions = strategyPositions.filter(strategyPosition => getNearSettlementPrice({ strategyPosition, stockPrice }) > 0);
+
+  if(strategyPositions.some(sp=>sp.strikePrice===stockPrice)){
+    stockPrice+=1;
+  }
+
+  const valuablePositions = strategyPositions.filter(strategyPosition => strategyPosition.isCall ? strategyPosition.strikePrice < stockPrice : strategyPosition.strikePrice > stockPrice );
+
 
 
   const sumSettlementGainsInfo = valuablePositions.reduce((sumSettlementGainsInfo, valuablePosition) => {

@@ -2180,7 +2180,7 @@ const injectStyles = () => {
             .amin-bold {
                 padding: 2px !important;
                 border: 2px solid !important;
-                background: #b9daf7;
+                background: #f7ff62;
             }
             .amin-bold--light {
                 padding: 2px !important;

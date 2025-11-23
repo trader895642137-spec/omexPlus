@@ -10144,6 +10144,13 @@ const createListFilterContetnByList=(list)=>{
     }),
     , calcBUPS_COLLARStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        min_time_to_settlement: 0 * 24 * 3600000,
+        max_time_to_settlement: 35 * 24 * 3600000,
+        justIfWholeIsPofitable:true,
+    }),
+    , calcBUPS_COLLARStrategies(list, {
+        priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        min_time_to_settlement: 35 * 24 * 3600000,
         justIfWholeIsPofitable:true,
     }),
     
@@ -10154,6 +10161,13 @@ const createListFilterContetnByList=(list)=>{
     })
     , calcBUCS_COLLAR_Strategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        min_time_to_settlement: 0 * 24 * 3600000,
+        max_time_to_settlement: 35 * 24 * 3600000,
+        justIfWholeIsPofitable:true,
+    })
+    , calcBUCS_COLLAR_Strategies(list, {
+        priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        min_time_to_settlement: 35 * 24 * 3600000,
         justIfWholeIsPofitable:true,
     })
     , calcBEPS_COLLAR_Strategies(list, {
@@ -10162,6 +10176,13 @@ const createListFilterContetnByList=(list)=>{
     })
     , calcBEPS_COLLAR_Strategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        min_time_to_settlement: 0 * 24 * 3600000,
+        max_time_to_settlement: 35 * 24 * 3600000,
+        justIfWholeIsPofitable:true,
+    })
+    , calcBEPS_COLLAR_Strategies(list, {
+        priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        min_time_to_settlement: 35 * 24 * 3600000,
         justIfWholeIsPofitable:true,
     })
     

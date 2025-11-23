@@ -183,9 +183,15 @@ const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
 
 const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
 
-  const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE
+  const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE;
 
-  const valuablePositions = strategyPositions.filter(strategyPosition => getNearSettlementPrice({ strategyPosition, stockPrice }) > 0);
+
+  if(strategyPositions.some(sp=>sp.strikePrice===stockPrice)){
+    stockPrice+=1;
+  }
+
+  const valuablePositions = strategyPositions.filter(strategyPosition => strategyPosition.isCall ? strategyPosition.strikePrice < stockPrice : strategyPosition.strikePrice > stockPrice );
+
 
 
   const sumSettlementGainsInfo = valuablePositions.reduce((sumSettlementGainsInfo, valuablePosition) => {
@@ -2942,7 +2948,7 @@ const injectStyles = () => {
             .amin-bold {
                 padding: 2px !important;
                 border: 2px solid !important;
-                background: #b9daf7;
+                background: #f7ff62;
             }
             .amin-bold--light {
                 padding: 2px !important;
