@@ -274,7 +274,8 @@ export const getNearSettlementPrice = ({strategyPosition,stockPrice,stockPriceAd
   function calculatePutPrice(stockPrice, strikePrice) {
     if (stockPrice >= strikePrice) return 0
     const adjustedStockPrice = stockPrice*stockPriceAdjustFactor;
-     return (strikePrice * (1 - tax - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
+     return (strikePrice * (1 -  exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
+    //  return (strikePrice * (1 - tax - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
   }
 
   const price = strategyPosition.isCall ? calculateCallPrice(stockPrice, strategyPosition.strikePrice) : calculatePutPrice(stockPrice, strategyPosition.strikePrice)
