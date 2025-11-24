@@ -296,7 +296,8 @@ const getNearSettlementPrice = ({strategyPosition,stockPrice,stockPriceAdjustFac
   function calculatePutPrice(stockPrice, strikePrice) {
     if (stockPrice >= strikePrice) return 0
     const adjustedStockPrice = stockPrice*stockPriceAdjustFactor;
-     return (strikePrice * (1 - tax - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
+     return (strikePrice * (1 -  exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
+    //  return (strikePrice * (1 - tax - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
   }
 
   const price = strategyPosition.isCall ? calculateCallPrice(stockPrice, strategyPosition.strikePrice) : calculatePutPrice(stockPrice, strategyPosition.strikePrice)
@@ -13001,14 +13002,17 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
 
     return ignoreStrategyList.find(ignoreStrategyObj => {
 
+
         if (ignoreStrategyObj.type !== 'ALL' && ignoreStrategyObj.type !== strategy.strategyTypeTitle)
             return false
 
         const strategyFullSymbolNames = strategy.positions.map(opt => opt.symbol).join('-');
 
-        if (!ignoreStrategyObj.name && ignoreStrategyObj.type === strategy.strategyTypeTitle) return true
+        const isRequestedProfitEnough = !ignoreStrategyObj.profitPercent || (strategy.profitPercent >= ignoreStrategyObj.profitPercent);
 
-        if (ignoreStrategyObj.name === strategyFullSymbolNames) return true
+        if (!ignoreStrategyObj.name && !isRequestedProfitEnough && ignoreStrategyObj.type === strategy.strategyTypeTitle) return true
+
+        if (ignoreStrategyObj.name === strategyFullSymbolNames && !isRequestedProfitEnough) return true
         if (strategySymbols.some(symbol => symbol.includes(ignoreStrategyObj.name)))
             return true
 
@@ -23692,7 +23696,8 @@ const getIgnoreStrategyNames = () => {
             }
         return {
             type: strategyTypeAndName[0],
-            name: strategyTypeAndName[1]
+            name: strategyTypeAndName[1],
+            profitPercent: strategyTypeAndName[2] ?  parseFloat(strategyTypeAndName[2])/100 :  null
         }
     }
     );

@@ -181,14 +181,17 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
 
     return ignoreStrategyList.find(ignoreStrategyObj => {
 
+
         if (ignoreStrategyObj.type !== 'ALL' && ignoreStrategyObj.type !== strategy.strategyTypeTitle)
             return false
 
         const strategyFullSymbolNames = strategy.positions.map(opt => opt.symbol).join('-');
 
-        if (!ignoreStrategyObj.name && ignoreStrategyObj.type === strategy.strategyTypeTitle) return true
+        const isRequestedProfitEnough = !ignoreStrategyObj.profitPercent || (strategy.profitPercent >= ignoreStrategyObj.profitPercent);
 
-        if (ignoreStrategyObj.name === strategyFullSymbolNames) return true
+        if (!ignoreStrategyObj.name && !isRequestedProfitEnough && ignoreStrategyObj.type === strategy.strategyTypeTitle) return true
+
+        if (ignoreStrategyObj.name === strategyFullSymbolNames && !isRequestedProfitEnough) return true
         if (strategySymbols.some(symbol => symbol.includes(ignoreStrategyObj.name)))
             return true
 
@@ -10871,7 +10874,8 @@ const getIgnoreStrategyNames = () => {
             }
         return {
             type: strategyTypeAndName[0],
-            name: strategyTypeAndName[1]
+            name: strategyTypeAndName[1],
+            profitPercent: strategyTypeAndName[2] ?  parseFloat(strategyTypeAndName[2])/100 :  null
         }
     }
     );
