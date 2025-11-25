@@ -185,9 +185,9 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
         if (ignoreStrategyObj.type !== 'ALL' && ignoreStrategyObj.type !== strategy.strategyTypeTitle)
             return false
 
-        const strategyFullSymbolNames = strategy.positions.map(opt => opt.symbol).join('-');
+        const strategyFullSymbolNames = strategy.positions.map(opt => opt.symbol).join('-').replaceAll('ي','ی');
 
-        const isRequestedProfitEnough = !ignoreStrategyObj.profitPercent || (strategy.profitPercent >= ignoreStrategyObj.profitPercent);
+        const isRequestedProfitEnough = ignoreStrategyObj.profitPercent && (strategy.profitPercent >= ignoreStrategyObj.profitPercent);
 
         if (!ignoreStrategyObj.name && !isRequestedProfitEnough && ignoreStrategyObj.type === strategy.strategyTypeTitle) return true
 
