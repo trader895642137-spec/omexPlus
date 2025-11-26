@@ -43,7 +43,7 @@ const COMMISSION_FACTOR = {
 }
 
 const configs = {
-  stockPriceAdjustFactor: 1
+  stockPriceAdjustFactor: 1.001
 }
 
 
@@ -278,25 +278,29 @@ const mainTotalOffsetGainCalculator = ({ strategyPositions, getBestPriceCb, getQ
 }
 
 
-const getNearSettlementPrice = ({strategyPosition,stockPrice,stockPriceAdjustFactor=configs.stockPriceAdjustFactor}) => {
+const getNearSettlementPrice = ({ strategyPosition, stockPrice, stockPriceAdjustFactor = configs.stockPriceAdjustFactor }) => {
 
 
   const tradeFee = strategyPosition.isBuy ? COMMISSION_FACTOR.OPTION.BUY : COMMISSION_FACTOR.OPTION.SELL;
   const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE
   const tax = isTaxFree(strategyPosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
+  const discounter = optionPremium => strategyPosition.isBuy ? (optionPremium - 1) : (optionPremium + 1)
 
 
   function calculateCallPrice(stockPrice, strikePrice) {
     if (stockPrice <= strikePrice) return 0
 
-    const adjustedStockPrice = stockPrice/stockPriceAdjustFactor;
-    return (adjustedStockPrice -  (strikePrice * (1 + exerciseFee))) / (1 + tradeFee);
+    const adjustedStockPrice = stockPrice / stockPriceAdjustFactor;
+    let optionPremium = (adjustedStockPrice - (strikePrice * (1 + exerciseFee))) / (1 + tradeFee);
+
+    return discounter(optionPremium)
   }
 
   function calculatePutPrice(stockPrice, strikePrice) {
     if (stockPrice >= strikePrice) return 0
-    const adjustedStockPrice = stockPrice*stockPriceAdjustFactor;
-     return (strikePrice * (1 -  exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
+    const adjustedStockPrice = stockPrice * stockPriceAdjustFactor;
+    let optionPremium = (strikePrice * (1 - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
+    return discounter(optionPremium)
     //  return (strikePrice * (1 - tax - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
   }
 
@@ -13006,9 +13010,9 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
         if (ignoreStrategyObj.type !== 'ALL' && ignoreStrategyObj.type !== strategy.strategyTypeTitle)
             return false
 
-        const strategyFullSymbolNames = strategy.positions.map(opt => opt.symbol).join('-');
+        const strategyFullSymbolNames = strategy.positions.map(opt => opt.symbol).join('-').replaceAll('ي','ی');
 
-        const isRequestedProfitEnough = !ignoreStrategyObj.profitPercent || (strategy.profitPercent >= ignoreStrategyObj.profitPercent);
+        const isRequestedProfitEnough = ignoreStrategyObj.profitPercent && (strategy.profitPercent >= ignoreStrategyObj.profitPercent);
 
         if (!ignoreStrategyObj.name && !isRequestedProfitEnough && ignoreStrategyObj.type === strategy.strategyTypeTitle) return true
 

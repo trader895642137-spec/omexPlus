@@ -21,7 +21,7 @@ export const COMMISSION_FACTOR = {
 }
 
 export const configs = {
-  stockPriceAdjustFactor: 1
+  stockPriceAdjustFactor: 1.001
 }
 
 
@@ -256,25 +256,29 @@ export const mainTotalOffsetGainCalculator = ({ strategyPositions, getBestPriceC
 }
 
 
-export const getNearSettlementPrice = ({strategyPosition,stockPrice,stockPriceAdjustFactor=configs.stockPriceAdjustFactor}) => {
+export const getNearSettlementPrice = ({ strategyPosition, stockPrice, stockPriceAdjustFactor = configs.stockPriceAdjustFactor }) => {
 
 
   const tradeFee = strategyPosition.isBuy ? COMMISSION_FACTOR.OPTION.BUY : COMMISSION_FACTOR.OPTION.SELL;
   const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE
   const tax = isTaxFree(strategyPosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
+  const discounter = optionPremium => strategyPosition.isBuy ? (optionPremium - 1) : (optionPremium + 1)
 
 
   function calculateCallPrice(stockPrice, strikePrice) {
     if (stockPrice <= strikePrice) return 0
 
-    const adjustedStockPrice = stockPrice/stockPriceAdjustFactor;
-    return (adjustedStockPrice -  (strikePrice * (1 + exerciseFee))) / (1 + tradeFee);
+    const adjustedStockPrice = stockPrice / stockPriceAdjustFactor;
+    let optionPremium = (adjustedStockPrice - (strikePrice * (1 + exerciseFee))) / (1 + tradeFee);
+
+    return discounter(optionPremium)
   }
 
   function calculatePutPrice(stockPrice, strikePrice) {
     if (stockPrice >= strikePrice) return 0
-    const adjustedStockPrice = stockPrice*stockPriceAdjustFactor;
-     return (strikePrice * (1 -  exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
+    const adjustedStockPrice = stockPrice * stockPriceAdjustFactor;
+    let optionPremium = (strikePrice * (1 - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
+    return discounter(optionPremium)
     //  return (strikePrice * (1 - tax - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
   }
 

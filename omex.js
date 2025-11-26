@@ -94,7 +94,7 @@ const createStrategyExpectedProfitCnt = () => {
     cnt.classList.add('status-cnt');
     parent.style.cssText += `
             position:absolute;
-            width: 190px;
+            width: 205px;
             padding: 0 10px;
             background: #FFF;
             display: flex;
