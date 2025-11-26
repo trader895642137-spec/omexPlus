@@ -2377,7 +2377,7 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
                             maximumFractionDigits: 1
                         })}
                 </div>
-                ${settlementProfitByBestPrices ? `<div style="margin-right:auto;font-size: small;">
+                ${settlementProfitByBestPrices ? `<div style="margin-right:auto;font-size: small; color:${settlementProfitByBestPrices >= 0 ? 'green' : '#db4848'}">
                         اعمال ${settlementProfitByBestPrices.toLocaleString('en-US', {
                         minimumFractionDigits: 1,
                         maximumFractionDigits: 1
@@ -2392,7 +2392,7 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
                         maximumFractionDigits: 1
                     })}
                 </div>
-                ${settlementProfitByInsertedPrices ? `<div style="margin-right:auto;font-size: small;">
+                ${settlementProfitByInsertedPrices ? `<div style="margin-right:auto;font-size: small;color:${settlementProfitByInsertedPrices >= 0 ? 'green' : '#db4848'}">
                         اعمال ${settlementProfitByInsertedPrices.toLocaleString('en-US', {
                         minimumFractionDigits: 1,
                         maximumFractionDigits: 1
