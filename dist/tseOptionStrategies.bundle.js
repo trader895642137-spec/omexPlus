@@ -192,6 +192,11 @@ const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
 
   const valuablePositions = strategyPositions.filter(strategyPosition => strategyPosition.isCall ? strategyPosition.strikePrice < stockPrice : strategyPosition.strikePrice > stockPrice );
 
+  const notValuablePositionReservedMargins = strategyPositions.filter(strategyPosition => strategyPosition.isCall ? strategyPosition.strikePrice > stockPrice : strategyPosition.strikePrice < stockPrice).reduce((notValuablePositionReservedMargins, notValuablePosition) => {
+    const reservedMargin = notValuablePosition.getReservedMarginOfEstimationQuantity();
+    notValuablePositionReservedMargins += reservedMargin;
+    return notValuablePositionReservedMargins
+  }, 0) || 0;
 
 
   const sumSettlementGainsInfo = valuablePositions.reduce((sumSettlementGainsInfo, valuablePosition) => {
@@ -227,6 +232,11 @@ const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
 
     sumSettlementGainsInfo.sumOfGains += (sumSettlementGainsInfo.remainedQuantity * (stockPrice -  (stockPrice * sellStockFee)))
     sumSettlementGainsInfo.remainedQuantity = 0;
+  }
+
+
+  if(notValuablePositionReservedMargins){
+    sumSettlementGainsInfo.sumOfGains +=notValuablePositionReservedMargins;
   }
 
 
