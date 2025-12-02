@@ -12,10 +12,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   configs: () => (/* binding */ configs),
 /* harmony export */   getCommissionFactor: () => (/* binding */ getCommissionFactor),
 /* harmony export */   getNearSettlementPrice: () => (/* binding */ getNearSettlementPrice),
+/* harmony export */   getReservedMarginOfEstimationQuantity: () => (/* binding */ getReservedMarginOfEstimationQuantity),
 /* harmony export */   hasGreaterRatio: () => (/* binding */ hasGreaterRatio),
 /* harmony export */   isTaxFree: () => (/* binding */ isTaxFree),
 /* harmony export */   mainTotalOffsetGainCalculator: () => (/* binding */ mainTotalOffsetGainCalculator),
 /* harmony export */   profitPercentCalculator: () => (/* binding */ profitPercentCalculator),
+/* harmony export */   settlementGainCalculator: () => (/* binding */ settlementGainCalculator),
 /* harmony export */   settlementProfitCalculator: () => (/* binding */ settlementProfitCalculator),
 /* harmony export */   totalCostCalculator: () => (/* binding */ totalCostCalculator),
 /* harmony export */   totalCostCalculatorForPriceTypes: () => (/* binding */ totalCostCalculatorForPriceTypes)
@@ -72,6 +74,19 @@ const getCommissionFactor = (_strategyPosition) => {
   }
 
   return COMMISSION_FACTOR.STOCK
+}
+
+
+const getReservedMarginOfEstimationQuantity = (strategyPosition) => {
+
+  const requiredMargin = strategyPosition.getRequiredMargin();
+
+  const quantity = strategyPosition.getQuantity();
+
+  const marginOfEstimation = requiredMargin ? (requiredMargin * quantity) : 0
+
+  return marginOfEstimation
+
 }
 
 
@@ -181,7 +196,7 @@ const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
 }
 
 
-const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
+const settlementGainCalculator = ({ strategyPositions, stockPrice })=>{
 
   const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE;
 
@@ -193,7 +208,7 @@ const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
   const valuablePositions = strategyPositions.filter(strategyPosition => strategyPosition.isCall ? strategyPosition.strikePrice < stockPrice : strategyPosition.strikePrice > stockPrice );
 
   const notValuablePositionReservedMargins = strategyPositions.filter(strategyPosition => strategyPosition.isCall ? strategyPosition.strikePrice > stockPrice : strategyPosition.strikePrice < stockPrice).reduce((notValuablePositionReservedMargins, notValuablePosition) => {
-    const reservedMargin = notValuablePosition.getReservedMarginOfEstimationQuantity();
+    const reservedMargin = getReservedMarginOfEstimationQuantity(notValuablePosition);
     notValuablePositionReservedMargins += reservedMargin;
     return notValuablePositionReservedMargins
   }, 0) || 0;
@@ -203,7 +218,7 @@ const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
 
     const tax = isTaxFree(valuablePosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
     const quantity = valuablePosition.getQuantity();
-    const reservedMargin = valuablePosition.getReservedMarginOfEstimationQuantity();
+    const reservedMargin = getReservedMarginOfEstimationQuantity(valuablePosition);
 
     const isBuyStock = (valuablePosition.isCall && valuablePosition.isBuy) || (valuablePosition.isPut && !valuablePosition.isBuy);
 
@@ -240,17 +255,26 @@ const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
   }
 
 
+  return sumSettlementGainsInfo.sumOfGains
+
+}
+
+const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
+
+  
+  const sumOfGains = settlementGainCalculator({ strategyPositions, stockPrice })
+
 
   const totalCostObj = totalCostCalculatorForPriceTypes(strategyPositions);
 
 
   const settlementProfitByBestPrices = profitPercentCalculator({
     costWithSign: totalCostObj.totalCostByBestPrices,
-    gainWithSign: sumSettlementGainsInfo.sumOfGains
+    gainWithSign: sumOfGains
   });
   const settlementProfitByInsertedPrices = profitPercentCalculator({
     costWithSign: totalCostObj.totalCostByInsertedPrices,
-    gainWithSign: sumSettlementGainsInfo.sumOfGains
+    gainWithSign: sumOfGains
   });
 
 
@@ -972,7 +996,7 @@ const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions }) =
         strategyPositions,
         getBestPriceCb,
         getReservedMargin: _strategyPosition => {
-            return _strategyPosition.getReservedMarginOfEstimationQuantity()
+            return (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getReservedMarginOfEstimationQuantity)(_strategyPosition)
         }
     });
 
@@ -1038,7 +1062,7 @@ const totalOffsetGainOfChunkOfEstimationQuantityCalculator = ({ strategyPosition
 
 
     const getReservedMargin = (position, __strategyPositions) => {
-        return position.getReservedMarginOfEstimationQuantity()
+        return (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getReservedMarginOfEstimationQuantity)(position)
     }
 
 
@@ -1107,7 +1131,7 @@ const totalSettlementGainByEstimationQuantity = (_strategyPositions, stock, sell
 
             const gainWithSideSign = gain * sign;
 
-            const reservedMargin = _position.getReservedMarginOfEstimationQuantity();
+            const reservedMargin = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getReservedMarginOfEstimationQuantity)(_position);
 
             const _totalGain = (gainWithSideSign * quantity) + reservedMargin - (gain * quantity * commissionFactor);
             return sum + _totalGain
@@ -1665,17 +1689,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
 
 
-        const getReservedMarginOfEstimationQuantity = () => {
-
-            const requiredMargin = getRequiredMargin();
-
-            const quantity = getQuantity();
-
-            const marginOfEstimation = requiredMargin ? (requiredMargin * quantity) : 0
-
-            return marginOfEstimation
-
-        }
+       
 
 
 
@@ -1752,7 +1766,6 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             getInsertedPrice,
             getInsertedQuantity,
             getRequiredMargin,
-            getReservedMarginOfEstimationQuantity,
             getCurrentPositionAvgPrice,
             getUnreliableCurrentPositionAvgPrice,
             strikePrice,
@@ -2292,7 +2305,7 @@ const observePriceChanges = () => {
                     setTimeout(() => {
                         calcProfitOfStrategyInformUntilNotProfit()
                     }
-                        , 100);
+                        , 400);
                     calcOffsetProfitOfStrategyInformUntilNotProfit();
                 }
 
@@ -2307,7 +2320,7 @@ const observePriceChanges = () => {
                     setTimeout(() => {
                         calcProfitOfStrategyInformUntilNotProfit()
                     }
-                        , 100);
+                        , 400);
                     calcOffsetProfitOfStrategyInformUntilNotProfit();
 
                 }
@@ -2632,7 +2645,9 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
         const totalCostObj = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculatorForPriceTypes)(_strategyPositions);
 
         const totalGainObj = totalSettlementGainByEstimationQuantity(calOptions);
-        const reservedMarginOfOtherSell = _strategyPositions.find(_strategyPosition => !_strategyPosition.isBuy).getReservedMarginOfEstimationQuantity();
+
+        const sellPosition = _strategyPositions.find(_strategyPosition => !_strategyPosition.isBuy)
+        const reservedMarginOfOtherSell = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getReservedMarginOfEstimationQuantity)(sellPosition);
 
 
         const profitPercentByBestPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({

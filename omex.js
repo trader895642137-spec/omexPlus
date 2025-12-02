@@ -1,7 +1,8 @@
 
 import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator ,
     profitPercentCalculator,totalCostCalculatorForPriceTypes,
-    settlementProfitCalculator} from './common.js';
+    settlementProfitCalculator,
+    getReservedMarginOfEstimationQuantity} from './common.js';
 import { OMEXApi } from './omexApi.js';
 
 export   {OMEXApi} from './omexApi.js'
@@ -189,7 +190,7 @@ const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions }) =
         strategyPositions,
         getBestPriceCb,
         getReservedMargin: _strategyPosition => {
-            return _strategyPosition.getReservedMarginOfEstimationQuantity()
+            return getReservedMarginOfEstimationQuantity(_strategyPosition)
         }
     });
 
@@ -255,7 +256,7 @@ const totalOffsetGainOfChunkOfEstimationQuantityCalculator = ({ strategyPosition
 
 
     const getReservedMargin = (position, __strategyPositions) => {
-        return position.getReservedMarginOfEstimationQuantity()
+        return getReservedMarginOfEstimationQuantity(position)
     }
 
 
@@ -324,7 +325,7 @@ const totalSettlementGainByEstimationQuantity = (_strategyPositions, stock, sell
 
             const gainWithSideSign = gain * sign;
 
-            const reservedMargin = _position.getReservedMarginOfEstimationQuantity();
+            const reservedMargin = getReservedMarginOfEstimationQuantity(_position);
 
             const _totalGain = (gainWithSideSign * quantity) + reservedMargin - (gain * quantity * commissionFactor);
             return sum + _totalGain
@@ -882,17 +883,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
 
 
-        const getReservedMarginOfEstimationQuantity = () => {
-
-            const requiredMargin = getRequiredMargin();
-
-            const quantity = getQuantity();
-
-            const marginOfEstimation = requiredMargin ? (requiredMargin * quantity) : 0
-
-            return marginOfEstimation
-
-        }
+       
 
 
 
@@ -969,7 +960,6 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             getInsertedPrice,
             getInsertedQuantity,
             getRequiredMargin,
-            getReservedMarginOfEstimationQuantity,
             getCurrentPositionAvgPrice,
             getUnreliableCurrentPositionAvgPrice,
             strikePrice,
@@ -1509,7 +1499,7 @@ const observePriceChanges = () => {
                     setTimeout(() => {
                         calcProfitOfStrategyInformUntilNotProfit()
                     }
-                        , 100);
+                        , 400);
                     calcOffsetProfitOfStrategyInformUntilNotProfit();
                 }
 
@@ -1524,7 +1514,7 @@ const observePriceChanges = () => {
                     setTimeout(() => {
                         calcProfitOfStrategyInformUntilNotProfit()
                     }
-                        , 100);
+                        , 400);
                     calcOffsetProfitOfStrategyInformUntilNotProfit();
 
                 }
@@ -1849,7 +1839,9 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
         const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
         const totalGainObj = totalSettlementGainByEstimationQuantity(calOptions);
-        const reservedMarginOfOtherSell = _strategyPositions.find(_strategyPosition => !_strategyPosition.isBuy).getReservedMarginOfEstimationQuantity();
+
+        const sellPosition = _strategyPositions.find(_strategyPosition => !_strategyPosition.isBuy)
+        const reservedMarginOfOtherSell = getReservedMarginOfEstimationQuantity(sellPosition);
 
 
         const profitPercentByBestPrices = profitPercentCalculator({

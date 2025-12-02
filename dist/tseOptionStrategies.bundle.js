@@ -12,10 +12,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   configs: () => (/* binding */ configs),
 /* harmony export */   getCommissionFactor: () => (/* binding */ getCommissionFactor),
 /* harmony export */   getNearSettlementPrice: () => (/* binding */ getNearSettlementPrice),
+/* harmony export */   getReservedMarginOfEstimationQuantity: () => (/* binding */ getReservedMarginOfEstimationQuantity),
 /* harmony export */   hasGreaterRatio: () => (/* binding */ hasGreaterRatio),
 /* harmony export */   isTaxFree: () => (/* binding */ isTaxFree),
 /* harmony export */   mainTotalOffsetGainCalculator: () => (/* binding */ mainTotalOffsetGainCalculator),
 /* harmony export */   profitPercentCalculator: () => (/* binding */ profitPercentCalculator),
+/* harmony export */   settlementGainCalculator: () => (/* binding */ settlementGainCalculator),
 /* harmony export */   settlementProfitCalculator: () => (/* binding */ settlementProfitCalculator),
 /* harmony export */   totalCostCalculator: () => (/* binding */ totalCostCalculator),
 /* harmony export */   totalCostCalculatorForPriceTypes: () => (/* binding */ totalCostCalculatorForPriceTypes)
@@ -72,6 +74,19 @@ const getCommissionFactor = (_strategyPosition) => {
   }
 
   return COMMISSION_FACTOR.STOCK
+}
+
+
+const getReservedMarginOfEstimationQuantity = (strategyPosition) => {
+
+  const requiredMargin = strategyPosition.getRequiredMargin();
+
+  const quantity = strategyPosition.getQuantity();
+
+  const marginOfEstimation = requiredMargin ? (requiredMargin * quantity) : 0
+
+  return marginOfEstimation
+
 }
 
 
@@ -181,7 +196,7 @@ const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
 }
 
 
-const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
+const settlementGainCalculator = ({ strategyPositions, stockPrice })=>{
 
   const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE;
 
@@ -193,7 +208,7 @@ const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
   const valuablePositions = strategyPositions.filter(strategyPosition => strategyPosition.isCall ? strategyPosition.strikePrice < stockPrice : strategyPosition.strikePrice > stockPrice );
 
   const notValuablePositionReservedMargins = strategyPositions.filter(strategyPosition => strategyPosition.isCall ? strategyPosition.strikePrice > stockPrice : strategyPosition.strikePrice < stockPrice).reduce((notValuablePositionReservedMargins, notValuablePosition) => {
-    const reservedMargin = notValuablePosition.getReservedMarginOfEstimationQuantity();
+    const reservedMargin = getReservedMarginOfEstimationQuantity(notValuablePosition);
     notValuablePositionReservedMargins += reservedMargin;
     return notValuablePositionReservedMargins
   }, 0) || 0;
@@ -203,7 +218,7 @@ const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
 
     const tax = isTaxFree(valuablePosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
     const quantity = valuablePosition.getQuantity();
-    const reservedMargin = valuablePosition.getReservedMarginOfEstimationQuantity();
+    const reservedMargin = getReservedMarginOfEstimationQuantity(valuablePosition);
 
     const isBuyStock = (valuablePosition.isCall && valuablePosition.isBuy) || (valuablePosition.isPut && !valuablePosition.isBuy);
 
@@ -240,17 +255,26 @@ const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
   }
 
 
+  return sumSettlementGainsInfo.sumOfGains
+
+}
+
+const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
+
+  
+  const sumOfGains = settlementGainCalculator({ strategyPositions, stockPrice })
+
 
   const totalCostObj = totalCostCalculatorForPriceTypes(strategyPositions);
 
 
   const settlementProfitByBestPrices = profitPercentCalculator({
     costWithSign: totalCostObj.totalCostByBestPrices,
-    gainWithSign: sumSettlementGainsInfo.sumOfGains
+    gainWithSign: sumOfGains
   });
   const settlementProfitByInsertedPrices = profitPercentCalculator({
     costWithSign: totalCostObj.totalCostByInsertedPrices,
-    gainWithSign: sumSettlementGainsInfo.sumOfGains
+    gainWithSign: sumOfGains
   });
 
 
@@ -13530,6 +13554,12 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to
 
                     const profitPercent = profit / Math.abs(totalCost);
 
+                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+
+
+                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
+
+                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
                     
                     const strategyObj = {
                         // TODO:remove option prop
@@ -13730,6 +13760,22 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, m
                     
 
                     const profitPercent = profit  /  Math.abs(totalCost);
+
+
+
+
+
+
+
+
+
+
+                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+
+
+                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
+
+                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
 
                     
                     const strategyObj = {
@@ -15078,6 +15124,17 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
 
 
                     const profitPercent = profit / Math.abs(totalCost);
+
+
+
+                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+
+
+                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
+
+                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+
+
                     const strategyObj = {
                         option: {
                             ...option
@@ -20394,6 +20451,22 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
                     const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
 
                     const profitPercent = profit / Math.abs(totalCost);
+
+
+
+
+
+
+                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+
+
+                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
+
+                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+
+
+
+
                     const strategyObj = {
                         option: {
                             ...option
@@ -20584,6 +20657,22 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
 
                     const profitPercent = profit / Math.abs(totalCost);
+
+
+
+
+
+
+
+
+                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+
+
+                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
+
+                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+
+
                     const strategyObj = {
                         option: {
                             ...option

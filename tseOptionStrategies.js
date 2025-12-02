@@ -2,7 +2,7 @@ import {moment} from './jalali-moment.browser.js'
 
 
 
-import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin } from './common.js';
+import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator } from './common.js';
 import { findBreakevenList } from './findBreakevens.js';
 
 
@@ -695,6 +695,12 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to
 
                     const profitPercent = profit / Math.abs(totalCost);
 
+                    const settlementGain =  settlementGainCalculator({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+
+
+                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
+
+                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
                     
                     const strategyObj = {
                         // TODO:remove option prop
@@ -895,6 +901,22 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, m
                     
 
                     const profitPercent = profit  /  Math.abs(totalCost);
+
+
+
+
+
+
+
+
+
+
+                    const settlementGain =  settlementGainCalculator({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+
+
+                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
+
+                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
 
                     
                     const strategyObj = {
@@ -2243,6 +2265,17 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
 
 
                     const profitPercent = profit / Math.abs(totalCost);
+
+
+
+                    const settlementGain =  settlementGainCalculator({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+
+
+                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
+
+                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+
+
                     const strategyObj = {
                         option: {
                             ...option
@@ -7559,6 +7592,22 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
                     const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
 
                     const profitPercent = profit / Math.abs(totalCost);
+
+
+
+
+
+
+                    const settlementGain =  settlementGainCalculator({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+
+
+                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
+
+                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+
+
+
+
                     const strategyObj = {
                         option: {
                             ...option
@@ -7749,6 +7798,22 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
 
                     const profitPercent = profit / Math.abs(totalCost);
+
+
+
+
+
+
+
+
+                    const settlementGain =  settlementGainCalculator({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+
+
+                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
+
+                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+
+
                     const strategyObj = {
                         option: {
                             ...option
