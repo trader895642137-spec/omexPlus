@@ -764,6 +764,82 @@ const Api={
     getOptionPortfolioListForFilterListIgnore
 }
 
+/***/ }),
+/* 4 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _flashTitle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5);
+
+
+ (() => {
+  // 1) اگر مرورگر نوتیفیکیشن را پشتیبانی نمی‌کند
+  if (!("Notification" in window)) {
+
+    (0,_flashTitle__WEBPACK_IMPORTED_MODULE_0__.flashTitle)("⚠️ این مرورگر نوتیفیکیشن را پشتیبانی نمی‌کند!");
+    
+    return;
+  }
+
+  // 2) اگر قبلاً اجازه داده شده
+  if (Notification.permission === "granted") {
+    console.log("نوتیفیکیشن قبلاً مجاز شده");
+    return;
+  }
+
+  // 3) اگر نه مجاز است نه بلاک شده → از کاربر اجازه می‌گیریم
+  if (Notification.permission === "default") {
+    Notification.requestPermission().then(result => {
+      if (result === "granted") {
+        console.log("کاربر اجازه داد");
+      } else {
+        console.log("کاربر اجازه نداد");
+      }
+    });
+  }
+
+
+  if (Notification.permission === "denied") {
+    (0,_flashTitle__WEBPACK_IMPORTED_MODULE_0__.flashTitle)("⚠️ دسکتاپ نوتیفیکیشن غیر فعال است!");
+    return;
+  }
+
+
+
+  
+  // 4) اگر permission = denied بود، نمی‌توانی دوباره درخواست بدهی
+  // فقط باید کاربر خودش از تنظیمات مرورگر اصلاح کند
+})()
+
+/***/ }),
+/* 5 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   flashTitle: () => (/* binding */ flashTitle)
+/* harmony export */ });
+let flashing = false;
+let intervalId;
+
+function flashTitle(message = "🔔 توجه!") {
+  if (flashing) return;
+  flashing = true;
+
+  const original = document.title;
+
+  intervalId = setInterval(() => {
+    document.title = document.title === original ? message : original;
+  }, 700);
+
+  return () => {
+    clearInterval(intervalId);
+    document.title = original;
+    flashing = false;
+  };
+}
+
+
 /***/ })
 /******/ 	]);
 /************************************************************************/
@@ -837,6 +913,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
 /* harmony import */ var _omexApi_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
 /* harmony import */ var _api_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
+/* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4);
 
 
 
@@ -845,6 +922,8 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
+;
 
 
 

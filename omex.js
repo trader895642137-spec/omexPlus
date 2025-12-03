@@ -11,6 +11,8 @@ export   {Api} from './api.js'
 
 export { configs } from './common.js';
 
+import './desktopNotificationCheck.js'
+
 
 
 try {

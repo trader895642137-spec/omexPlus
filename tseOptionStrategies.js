@@ -1,6 +1,7 @@
 import {moment} from './jalali-moment.browser.js'
 
 import './hookFetch.js'
+import './desktopNotificationCheck.js'
 
 
 import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator, showNotification } from './common.js';
