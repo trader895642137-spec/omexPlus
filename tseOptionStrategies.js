@@ -1,8 +1,9 @@
 import {moment} from './jalali-moment.browser.js'
 
+import './hookFetch.js'
 
 
-import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator } from './common.js';
+import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator, showNotification } from './common.js';
 import { findBreakevenList } from './findBreakevens.js';
 
 
@@ -241,27 +242,7 @@ const calcOffsetGainOfPositions = ({ strategyPositions, stockPrice }) => {
 
 
 
-const showNotification = ({title, body, tag}) => {
 
-    Notification.requestPermission().then(function(permission) {
-        const notifTime = Date.now();
-
-        if (permission !== "granted" || !document.hidden)
-            return
-        let notification = new Notification(title,{
-            body,
-            renotify: tag ? true : false,
-            tag
-        });
-
-        console.log(body)
-
-        notification.onclick = function() {
-            window.parent.parent.focus();
-        }
-        ;
-    })
-}
 
 
 
@@ -6425,7 +6406,7 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType, settlementGainChoosePri
 const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFactorOfBUCS=0.6, 
     maxQuantityFactorOfBUCS=2, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
-    minStockPriceToSarBeSarPercent=-Infinity,maxStockPriceToSarBeSarPercent=-.2,
+    minStockPriceToSarBeSarPercent=-Infinity,maxStockPriceToSarBeSarPercent=-.15,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
@@ -6679,7 +6660,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
 
 const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBUPS=0.6, 
     minStockPriceToSarBeSarPercent=-Infinity,
-    maxStockPriceToSarBeSarPercent=-.2,
+    maxStockPriceToSarBeSarPercent=-.15,
     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
@@ -9561,7 +9542,8 @@ const createListFilterContetnByList=(list)=>{
         // minVol: 1000 * 1000 * 1000,
         // minStockPriceDistanceFromHigherStrikeInPercent: .22,
         expectedProfitNotif: true
-    }), calcShortGUTSStrategies(list, {
+    }), 
+    calcShortGUTSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         callListIgnorer: ({option, minVol}) => {
             if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol || option.optionDetails?.strikePrice >= option.optionDetails.stockSymbolDetails.last)
@@ -9572,10 +9554,11 @@ const createListFilterContetnByList=(list)=>{
         // min_time_to_settlement: 15 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         // minVol: 1000 * 1000 * 1000,
-        minStockPriceToLowBreakevenPercent: .2,
-        maxStockPriceToHighBreakevenPercent: -.2
+        minStockPriceToLowBreakevenPercent: .15,
+        maxStockPriceToHighBreakevenPercent: -.15
         // expectedProfitNotif: true
-    }), calcShortSTRANGLEStrategies(list, {
+    }), 
+    calcShortSTRANGLEStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         callListIgnorer: ({option, minVol}) => {
             if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol || option.optionDetails?.strikePrice <= option.optionDetails.stockSymbolDetails.last)
@@ -9587,8 +9570,8 @@ const createListFilterContetnByList=(list)=>{
         // min_time_to_settlement: 15 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         // minVol: 1000 * 1000 * 1000,
-        minStockPriceToLowBreakevenPercent: .2,
-        maxStockPriceToHighBreakevenPercent: -.2
+        minStockPriceToLowBreakevenPercent: .15,
+        maxStockPriceToHighBreakevenPercent: -.15
         // expectedProfitNotif: true
     })
     , calcCALL_BUTTERFLYStrategies(list, {
@@ -10980,24 +10963,39 @@ const createFilterPanel = () => {
 }
 
 const interval = async () => {
-    const list = createList();
-    // const list = await createList2();
-    if(list?.length>0){
-        createListFilterContetnByList(list);
+
+
+    try {
+
+        const list = createList();
+        // const list = await createList2();
+        if (list?.length > 0) {
+            createListFilterContetnByList(list);
+
+            newTabList.forEach(childWindowTab => {
+                const generalIgnoreText = getGeneralIgnoreText();
+                if (childWindowTab.document.readyState === "complete") {
+                    //notifiedStrategyList=[]
+                    childWindowTab.postMessage({
+                        list,
+                        generalIgnoreText,
+                        $tempIgnoredNotifList: tempIgnoredNotifList,
+                        $notifiedStrategyList: notifiedStrategyList
+                    }, "*");
+                }
+            });
+        }
         
-        newTabList.forEach(childWindowTab=>{
-            const  generalIgnoreText = getGeneralIgnoreText();
-            if(childWindowTab.document.readyState === "complete"){
-                //notifiedStrategyList=[]
-                childWindowTab.postMessage({ 
-                    list ,
-                    generalIgnoreText ,
-                    $tempIgnoredNotifList: tempIgnoredNotifList,
-                    $notifiedStrategyList :notifiedStrategyList
-                }, "*");
-            }
+    } catch (error) {
+
+        showNotification({
+            title: 'خطا در interval',
+            body: 'interval error',
+            tag: `interval_issue`
         });
+        
     }
+    
 
     setTimeout(interval, 2000)
 }

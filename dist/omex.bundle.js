@@ -19,6 +19,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   profitPercentCalculator: () => (/* binding */ profitPercentCalculator),
 /* harmony export */   settlementGainCalculator: () => (/* binding */ settlementGainCalculator),
 /* harmony export */   settlementProfitCalculator: () => (/* binding */ settlementProfitCalculator),
+/* harmony export */   showNotification: () => (/* binding */ showNotification),
 /* harmony export */   totalCostCalculator: () => (/* binding */ totalCostCalculator),
 /* harmony export */   totalCostCalculatorForPriceTypes: () => (/* binding */ totalCostCalculatorForPriceTypes)
 /* harmony export */ });
@@ -46,6 +47,35 @@ const COMMISSION_FACTOR = {
 
 const configs = {
   stockPriceAdjustFactor: 1.001
+}
+
+
+let lastNotifTime = {};
+
+const showNotification = ({ title, body, tag }) => {
+
+    if (lastNotifTime[tag] && (Date.now() - lastNotifTime[tag]) < 5000)
+        return
+
+    Notification.requestPermission().then(function (permission) {
+        const notifTime = Date.now();
+        lastNotifTime[tag] = notifTime
+
+        if (permission !== "granted" || !document.hidden)
+            return
+        let notification = new Notification(title, {
+            body,
+            renotify: tag ? true : false,
+            tag
+        });
+
+        console.log(body)
+
+        notification.onclick = function () {
+            window.parent.parent.focus();
+        }
+            ;
+    })
 }
 
 
@@ -934,33 +964,7 @@ const getStrategyExpectedProfitCnt = () => {
 
 }
 
-let lastNotifTime = {};
 
-const showNotification = ({ title, body, tag }) => {
-
-    if (lastNotifTime[tag] && (Date.now() - lastNotifTime[tag]) < 5000)
-        return
-
-    Notification.requestPermission().then(function (permission) {
-        const notifTime = Date.now();
-        lastNotifTime[tag] = notifTime
-
-        if (permission !== "granted" || !document.hidden)
-            return
-        let notification = new Notification(title, {
-            body,
-            renotify: tag ? true : false,
-            tag
-        });
-
-        console.log(body)
-
-        notification.onclick = function () {
-            window.parent.parent.focus();
-        }
-            ;
-    })
-}
 
 
 
@@ -1211,7 +1215,7 @@ const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositio
 
     if(!isGood){
 
-        showNotification({
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
                 title: 'مشکل با محاسبه قیمت میانگین',
                 body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
                 tag: `${strategyPositions[0].instrumentName}-doubleCheckProfitByExactDecimalPricesOfPortFolio`
@@ -1373,7 +1377,7 @@ const checkProfitPercentAndInform =async ({strategyPositions,profitLossByOffsetO
 
         informExtremeOrderPrice(strategyPositions, 'offset');
 
-        showNotification({
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
             title: 'به سود رسید',
             body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
             tag: `${strategyPositions[0].instrumentName}-expectedProfitForCurrentPositionsPrecent`
@@ -1651,7 +1655,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
                 return false
             }
             if (hasIssue()) {
-                !window.doNotNotifAvrageIssue && showNotification({
+                !window.doNotNotifAvrageIssue && (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
                     title: 'مشکل میانگین',
                     body: `${instrumentName}`,
                     tag: `${instrumentName}-CurrentPositionAvgPriceIssue`
@@ -1967,7 +1971,7 @@ const observePortfolioQuantityOfOrderModal = () => {
 
 
         if (hasIssue) {
-            showNotification({
+            (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
                 title: 'تعداد بالانس نیست',
                 body: `${strategyPositions[0].instrumentName}`,
                 tag: `${strategyPositions[0].instrumentName}-currentPositionQuantityUnbalance`
@@ -2026,7 +2030,7 @@ const observePortfolioQuantityOfOrderModal = () => {
 
                 // quantityFooter.style.backgroundColor = bgColor;
                 tradePanelElement.style.backgroundColor = bgColor;
-                showNotification({
+                (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
                     title: 'معامله شد',
                     body: `${strategyPositionObj.instrumentName}`,
                     tag: `${strategyPositionObj.instrumentName}-PortfolioQuantityChange`
@@ -2180,7 +2184,7 @@ const observeMyOrderInOrdersModal = () => {
                 isBuy,
                 isSell
             })) {
-                showNotification({
+                (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
                     title: `سفارش ${strategyPositionObj.instrumentName} از سفارشات ${isBuy ? 'خرید' : 'فروش'} خارج شد`,
                     body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
                 });
@@ -2205,7 +2209,7 @@ const observeMyOrderInOrdersModal = () => {
 
                 myOrderOnOrdersModal.setTimeout({
                     isBuy,
-                    cb: () => showNotification({
+                    cb: () => (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
                         title: `سفارش  ${isBuy ? 'خرید' : 'فروش'} ${strategyPositionObj.instrumentName}   طولانی شده`,
                         body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
                     })
@@ -2437,7 +2441,7 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
 
         isProfit =true;
         informExtremeOrderPrice(_strategyPositions, 'openMore');
-        showNotification({
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
             title: `سود %${profitPercentByBestPrices.toFixed()}`,
             body: `${_strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
             tag: `${_strategyPositions[0].instrumentName}-expectedProfitPrecent`

@@ -25,6 +25,35 @@ export const configs = {
 }
 
 
+let lastNotifTime = {};
+
+export const showNotification = ({ title, body, tag }) => {
+
+    if (lastNotifTime[tag] && (Date.now() - lastNotifTime[tag]) < 5000)
+        return
+
+    Notification.requestPermission().then(function (permission) {
+        const notifTime = Date.now();
+        lastNotifTime[tag] = notifTime
+
+        if (permission !== "granted" || !document.hidden)
+            return
+        let notification = new Notification(title, {
+            body,
+            renotify: tag ? true : false,
+            tag
+        });
+
+        console.log(body)
+
+        notification.onclick = function () {
+            window.parent.parent.focus();
+        }
+            ;
+    })
+}
+
+
 
 const isBaseInstrumentETF = (strategyPosition)=>{
  const ETF_SYMBOLS = ['ضهرم', 'طهرم', 'ضتوان', 'طتوان', 'ضموج', 'طموج'];

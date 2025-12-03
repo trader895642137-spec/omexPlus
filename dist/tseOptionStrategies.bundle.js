@@ -19,6 +19,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   profitPercentCalculator: () => (/* binding */ profitPercentCalculator),
 /* harmony export */   settlementGainCalculator: () => (/* binding */ settlementGainCalculator),
 /* harmony export */   settlementProfitCalculator: () => (/* binding */ settlementProfitCalculator),
+/* harmony export */   showNotification: () => (/* binding */ showNotification),
 /* harmony export */   totalCostCalculator: () => (/* binding */ totalCostCalculator),
 /* harmony export */   totalCostCalculatorForPriceTypes: () => (/* binding */ totalCostCalculatorForPriceTypes)
 /* harmony export */ });
@@ -46,6 +47,35 @@ const COMMISSION_FACTOR = {
 
 const configs = {
   stockPriceAdjustFactor: 1.001
+}
+
+
+let lastNotifTime = {};
+
+const showNotification = ({ title, body, tag }) => {
+
+    if (lastNotifTime[tag] && (Date.now() - lastNotifTime[tag]) < 5000)
+        return
+
+    Notification.requestPermission().then(function (permission) {
+        const notifTime = Date.now();
+        lastNotifTime[tag] = notifTime
+
+        if (permission !== "granted" || !document.hidden)
+            return
+        let notification = new Notification(title, {
+            body,
+            renotify: tag ? true : false,
+            tag
+        });
+
+        console.log(body)
+
+        notification.onclick = function () {
+            window.parent.parent.focus();
+        }
+            ;
+    })
 }
 
 
@@ -12664,6 +12694,78 @@ const  moment = function(e) {
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _common__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
+
+
+(function () {
+    const originalFetch = window.fetch;
+
+    if (originalFetch) {
+        window.fetch = async function (...args) {
+            try {
+                const response = await originalFetch.apply(this, args);
+                if (!response.ok) {
+
+                    (0,_common__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+                        title: 'مشکل ریکویست',
+                        body: args[0],
+                        tag: `request_issue`
+                    });
+                }
+                return response;
+            } catch (err) {
+                (0,_common__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+                    title: 'مشکل ریکویست',
+                    body: args[0],
+                    tag: `request_issue`
+                });
+                throw err;
+            }
+        };
+    }
+})();
+
+// ==== Hook XHR ====
+(function () {
+    const open = XMLHttpRequest.prototype.open;
+    const send = XMLHttpRequest.prototype.send;
+
+    XMLHttpRequest.prototype.open = function (method, url) {
+        this._url = url;
+        return open.apply(this, arguments);
+    };
+
+    XMLHttpRequest.prototype.send = function (body) {
+        this.addEventListener("load", function () {
+            if (this.status >= 400) {
+                (0,_common__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+                    title: 'مشکل ریکویست',
+                    body: this._url,
+                    tag: `request_issue`
+                });
+            }
+        });
+
+        this.addEventListener("error", function () {
+            (0,_common__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+                title: 'مشکل ریکویست',
+                body: this._url,
+                tag: `request_issue`
+            });
+        });
+
+        return send.apply(this, arguments);
+    };
+})();
+
+
+
+
+/***/ }),
+/* 7 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   findBreakevenList: () => (/* binding */ findBreakevenList)
 /* harmony export */ });
@@ -12855,8 +12957,10 @@ var __webpack_exports__ = {};
 (() => {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5);
-/* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(1);
-/* harmony import */ var _findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(6);
+/* harmony import */ var _hookFetch_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(6);
+/* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(1);
+/* harmony import */ var _findBreakevens_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(7);
+
 
 
 
@@ -13089,9 +13193,9 @@ const isProfitEnough = ({strategy,profitPercent})=>{
 
 
 const calcOffsetGainOfPositions = ({ strategyPositions, stockPrice }) => {
-    return (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.mainTotalOffsetGainCalculator)({
+    return (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.mainTotalOffsetGainCalculator)({
         strategyPositions,
-        getBestPriceCb: (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.getNearSettlementPrice)({ strategyPosition: _strategyPosition, stockPrice }),
+        getBestPriceCb: (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.getNearSettlementPrice)({ strategyPosition: _strategyPosition, stockPrice }),
         getReservedMargin: _strategyPosition => {
             return (_strategyPosition.getRequiredMargin ? (_strategyPosition.getRequiredMargin() * _strategyPosition.getQuantity()):0) || 0;
         }
@@ -13100,27 +13204,7 @@ const calcOffsetGainOfPositions = ({ strategyPositions, stockPrice }) => {
 
 
 
-const showNotification = ({title, body, tag}) => {
 
-    Notification.requestPermission().then(function(permission) {
-        const notifTime = Date.now();
-
-        if (permission !== "granted" || !document.hidden)
-            return
-        let notification = new Notification(title,{
-            body,
-            renotify: tag ? true : false,
-            tag
-        });
-
-        console.log(body)
-
-        notification.onclick = function() {
-            window.parent.parent.focus();
-        }
-        ;
-    })
-}
 
 
 
@@ -13163,7 +13247,7 @@ const checkProfitsAnNotif = ({sortedStrategies}) => {
 
     notifiedStrategyList = [].concat(opportunities);
 
-    showNotification({
+    (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.showNotification)({
         title: `سود ${foundStrategy.strategyTypeTitle} بالای ${((foundStrategy.profitPercent) * 100).toFixed()} درصد`,
         body: `${foundStrategy.strategyTypeTitle} ${foundStrategy.name}`,
         tag: `profit`
@@ -13337,7 +13421,7 @@ const totalCostCalculator = ({buyOptions, buyStocks, sellOptions, priceType}) =>
 
         if (!price)
             return (_totalBuyCost + Infinity)
-        return _totalBuyCost + ((price) * (1 + (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.getCommissionFactor)(asset).BUY));
+        return _totalBuyCost + ((price) * (1 + (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.getCommissionFactor)(asset).BUY));
     }
     , 0);
 
@@ -13352,7 +13436,7 @@ const totalCostCalculator = ({buyOptions, buyStocks, sellOptions, priceType}) =>
         if (!price)
             return (_totalSellCost + Infinity)
 
-        return _totalSellCost + (price / (1 + (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.getCommissionFactor)(asset).SELL));
+        return _totalSellCost + (price / (1 + (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.getCommissionFactor)(asset).SELL));
     }
     , 0);
     return totalSellCost - totalBuyCost
@@ -13535,7 +13619,7 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to
 
 
 
-                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                         strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -13554,7 +13638,7 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to
 
                     const profitPercent = profit / Math.abs(totalCost);
 
-                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
 
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
@@ -13743,7 +13827,7 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, m
 
 
 
-                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                         strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -13770,7 +13854,7 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, m
 
 
 
-                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
 
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
@@ -13907,7 +13991,7 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
 
 
 
-                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                         strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -14074,7 +14158,7 @@ const calcShortGUTSStrategies = (list, {priceType, expectedProfitPerMonth, settl
 
 
 
-                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                         strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -14084,7 +14168,7 @@ const calcShortGUTSStrategies = (list, {priceType, expectedProfitPerMonth, settl
                     });
 
 
-                    const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                    const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_3__.findBreakevenList)({
                         positions: strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -14262,7 +14346,7 @@ const calcShortSTRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, s
 
 
 
-                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                         strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -14272,7 +14356,7 @@ const calcShortSTRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, s
                     });
 
 
-                    const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                    const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_3__.findBreakevenList)({
                         positions: strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -14472,7 +14556,7 @@ const calcBUCSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
 
 
 
-                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                         strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -14665,7 +14749,7 @@ const calcBUPSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
 
 
 
-                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                         strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -14837,7 +14921,7 @@ const calcSyntheticCoveredCallStrategies = (list,
                             isSell: true,
                             getQuantity: () => baseQuantity,
                             getRequiredMargin: () => {
-                                return ((0,_common_js__WEBPACK_IMPORTED_MODULE_1__.calculateOptionMargin)({
+                                return ((0,_common_js__WEBPACK_IMPORTED_MODULE_2__.calculateOptionMargin)({
                                     priceSpot: sameStrikePut.optionDetails.stockSymbolDetails.last,
                                     strikePrice: sameStrikePut.optionDetails.strikePrice,
                                     contractSize: 1000,
@@ -14862,7 +14946,7 @@ const calcSyntheticCoveredCallStrategies = (list,
 
 
 
-                    const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                    const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_3__.findBreakevenList)({
                         positions: strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -14883,7 +14967,7 @@ const calcSyntheticCoveredCallStrategies = (list,
 
 
 
-                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                         strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -15105,7 +15189,7 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
-                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                         strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -15127,7 +15211,7 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
-                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
 
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
@@ -15376,7 +15460,7 @@ const calcCALL_BUTT_CONDORStrategies = (list, {priceType, settlementGainChoosePr
 
 
 
-                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                                 strategyPositions,
                                 getPrice: (strategyPosition) => getPriceOfAsset({
                                     asset: strategyPosition,
@@ -15682,7 +15766,7 @@ const calcCALL_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePric
 
 
 
-                        const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                        const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                             strategyPositions,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -15995,7 +16079,7 @@ const calcCALL_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTy
                                 }
                             ]
 
-                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                                 strategyPositions,
                                 getPrice: (strategyPosition) => getPriceOfAsset({
                                     asset: strategyPosition,
@@ -16292,7 +16376,7 @@ const calcPUT_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePrice
 
 
 
-                        const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                        const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                             strategyPositions,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -16594,7 +16678,7 @@ const calcPUT_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTyp
 
 
 
-                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                                 strategyPositions,
                                 getPrice: (strategyPosition) => getPriceOfAsset({
                                     asset: strategyPosition,
@@ -17044,7 +17128,7 @@ const IRON_BUTTERFLY_CONDOR_BUCS_strategyObjCreator = (option, option2, option3,
     ]
 
 
-    const totalCostBUCS = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+    const totalCostBUCS = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
         strategyPositions:strategyPositionsBUCS,
         getPrice: (strategyPosition) => getPriceOfAsset({
             asset: strategyPosition,
@@ -17052,7 +17136,7 @@ const IRON_BUTTERFLY_CONDOR_BUCS_strategyObjCreator = (option, option2, option3,
             sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
         })
     });
-    const totalCostBEPS = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+    const totalCostBEPS = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
         strategyPositions:strategyPositionsBEPS,
         getPrice: (strategyPosition) => getPriceOfAsset({
             asset: strategyPosition,
@@ -17061,7 +17145,7 @@ const IRON_BUTTERFLY_CONDOR_BUCS_strategyObjCreator = (option, option2, option3,
         })
     });
 
-    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
         strategyPositions,
         getPrice: (strategyPosition) => getPriceOfAsset({
             asset: strategyPosition,
@@ -17084,7 +17168,7 @@ const IRON_BUTTERFLY_CONDOR_BUCS_strategyObjCreator = (option, option2, option3,
 
 
 
-    if((0,_common_js__WEBPACK_IMPORTED_MODULE_1__.hasGreaterRatio)({num1:totalCostBUCS,num2:totalCostBEPS,properRatio:BUCS_BEPS_COST_notProperRatio}) && minProfitPercent <2){
+    if((0,_common_js__WEBPACK_IMPORTED_MODULE_2__.hasGreaterRatio)({num1:totalCostBUCS,num2:totalCostBEPS,properRatio:BUCS_BEPS_COST_notProperRatio}) && minProfitPercent <2){
         return 
     }
 
@@ -17961,7 +18045,7 @@ const IRON_BUTTERFLY_BUPS_strategyObjCreator = (option, option2, option3, option
 
 
 
-    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
         strategyPositions, 
         getPrice: (strategyPosition) => getPriceOfAsset({
             asset: strategyPosition,
@@ -18512,7 +18596,7 @@ const calcIRON_CONDOR_BUPS_Strategies = (list, {priceType, settlementGainChooseP
 
 
 
-                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                                 strategyPositions,
                                 getPrice: (strategyPosition) => getPriceOfAsset({
                                     asset: strategyPosition,
@@ -18844,7 +18928,7 @@ const calcIRON_BUTT_CONDOR_BUPS_Strategies = (list, {priceType, settlementGainCh
 
 
 
-                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                                 strategyPositions,
                                 getPrice: (strategyPosition) => getPriceOfAsset({
                                     asset: strategyPosition,
@@ -19143,7 +19227,7 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType, settlementGainChoosePri
 
 
 
-                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                                 strategyPositions,
                                 getPrice: (strategyPosition) => getPriceOfAsset({
                                     asset: strategyPosition,
@@ -19284,7 +19368,7 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType, settlementGainChoosePri
 const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFactorOfBUCS=0.6, 
     maxQuantityFactorOfBUCS=2, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
-    minStockPriceToSarBeSarPercent=-Infinity,maxStockPriceToSarBeSarPercent=-.2,
+    minStockPriceToSarBeSarPercent=-Infinity,maxStockPriceToSarBeSarPercent=-.15,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
@@ -19378,7 +19462,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
                                 getRequiredMargin() { }
                             },
                         ]
-                        const totalCostOfBUCS = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                        const totalCostOfBUCS = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                             strategyPositions: strategyPositionsOfBUCS,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -19426,7 +19510,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
                             },
                         ]
 
-                        const totalCostOfBUCS_RATIO = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                        const totalCostOfBUCS_RATIO = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                             strategyPositions: strategyPositionsOfBUCS_RATIO,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -19442,7 +19526,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
                         const maxLossOfBUCS_RATIO = totalCostOfBUCS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUCS_RATIO, stockPrice:priceThatCauseMaxLossOfBUCS_RATIO});
 
 
-                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_3__.findBreakevenList)({
                             positions:strategyPositionsOfBUCS_RATIO, 
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -19538,7 +19622,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
 
 const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBUPS=0.6, 
     minStockPriceToSarBeSarPercent=-Infinity,
-    maxStockPriceToSarBeSarPercent=-.2,
+    maxStockPriceToSarBeSarPercent=-.15,
     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
@@ -19653,7 +19737,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
 
 
-                        const totalCostOfBUPS = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                        const totalCostOfBUPS = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                             strategyPositions: strategyPositionsOfBUPS,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -19699,7 +19783,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             },
                         ]
 
-                        const totalCostOfBUPS_RATIO = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                        const totalCostOfBUPS_RATIO = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                             strategyPositions: strategyPositionsOfBUPS_RATIO,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -19715,7 +19799,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                         const maxLossOfBUPS_RATIO = totalCostOfBUPS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUPS_RATIO, stockPrice:priceThatCauseMaxLossOfBUPS_RATIO});
 
 
-                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_3__.findBreakevenList)({
                             positions:strategyPositionsOfBUPS_RATIO, 
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -19925,7 +20009,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
 
 
-                        const totalCostOfBECS = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                        const totalCostOfBECS = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                             strategyPositions: strategyPositionsOfBECS,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -19976,7 +20060,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                         
 
 
-                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_3__.findBreakevenList)({
                             positions:strategyPositionsOfBECS_RATIO, 
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -19985,7 +20069,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             })
                         });
 
-                         const totalCostOfBECS_RATIO = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                         const totalCostOfBECS_RATIO = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                             strategyPositions: strategyPositionsOfBECS_RATIO,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -20190,7 +20274,7 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
 
 
-                        const totalCostOfBEPS = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                        const totalCostOfBEPS = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                             strategyPositions: strategyPositionsOfBEPS,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -20241,7 +20325,7 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                        
 
 
-                         const totalCostOfBEPS_RATIO = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                         const totalCostOfBEPS_RATIO = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                             strategyPositions: strategyPositionsOfBEPS_RATIO,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -20257,7 +20341,7 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                         const maxLossOfBEPS_RATIO = totalCostOfBEPS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBEPS_RATIO, stockPrice:priceThatCauseMaxLossOfBEPS_RATIO});
 
 
-                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_3__.findBreakevenList)({
                             positions:strategyPositionsOfBEPS_RATIO, 
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -20437,7 +20521,7 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
 
 
 
-                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                         strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -20457,7 +20541,7 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
 
 
 
-                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
 
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
@@ -20638,7 +20722,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
-                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                         strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -20665,7 +20749,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
-                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+                    const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
 
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
@@ -21107,7 +21191,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth, min_time_t
 
 
 
-                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                         strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -21259,7 +21343,7 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
 
 
 
-                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                         strategyPositions,
                         getPrice: (strategyPosition) => getPriceOfAsset({
                             asset: strategyPosition,
@@ -21485,7 +21569,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
 
 
-                        const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                        const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                             strategyPositions,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -21494,7 +21578,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                             })
                         });
 
-                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_3__.findBreakevenList)({
                             positions: strategyPositions,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -21753,7 +21837,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
 
 
-                        const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                        const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                             strategyPositions,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -21762,7 +21846,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                             })
                         });
 
-                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_3__.findBreakevenList)({
                             positions: strategyPositions,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -22019,7 +22103,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
 
 
-                        const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                        const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                             strategyPositions,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -22028,7 +22112,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                             })
                         });
 
-                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_3__.findBreakevenList)({
                             positions: strategyPositions,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -22282,7 +22366,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
 
 
-                        const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.totalCostCalculator)({
+                        const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.totalCostCalculator)({
                             strategyPositions,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -22291,7 +22375,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                             })
                         });
 
-                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_2__.findBreakevenList)({
+                        const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_3__.findBreakevenList)({
                             positions: strategyPositions,
                             getPrice: (strategyPosition) => getPriceOfAsset({
                                 asset: strategyPosition,
@@ -22420,7 +22504,8 @@ const createListFilterContetnByList=(list)=>{
         // minVol: 1000 * 1000 * 1000,
         // minStockPriceDistanceFromHigherStrikeInPercent: .22,
         expectedProfitNotif: true
-    }), calcShortGUTSStrategies(list, {
+    }), 
+    calcShortGUTSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         callListIgnorer: ({option, minVol}) => {
             if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol || option.optionDetails?.strikePrice >= option.optionDetails.stockSymbolDetails.last)
@@ -22431,10 +22516,11 @@ const createListFilterContetnByList=(list)=>{
         // min_time_to_settlement: 15 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         // minVol: 1000 * 1000 * 1000,
-        minStockPriceToLowBreakevenPercent: .2,
-        maxStockPriceToHighBreakevenPercent: -.2
+        minStockPriceToLowBreakevenPercent: .15,
+        maxStockPriceToHighBreakevenPercent: -.15
         // expectedProfitNotif: true
-    }), calcShortSTRANGLEStrategies(list, {
+    }), 
+    calcShortSTRANGLEStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         callListIgnorer: ({option, minVol}) => {
             if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol || option.optionDetails?.strikePrice <= option.optionDetails.stockSymbolDetails.last)
@@ -22446,8 +22532,8 @@ const createListFilterContetnByList=(list)=>{
         // min_time_to_settlement: 15 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         // minVol: 1000 * 1000 * 1000,
-        minStockPriceToLowBreakevenPercent: .2,
-        maxStockPriceToHighBreakevenPercent: -.2
+        minStockPriceToLowBreakevenPercent: .15,
+        maxStockPriceToHighBreakevenPercent: -.15
         // expectedProfitNotif: true
     })
     , calcCALL_BUTTERFLYStrategies(list, {
@@ -23490,7 +23576,7 @@ const createList = ()=>{
 
         if(listItem.optionDetails.stockSymbolDetails){
 
-            const calculatedRequiredMargin = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.calculateOptionMargin)({
+            const calculatedRequiredMargin = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.calculateOptionMargin)({
                 priceSpot: listItem.optionDetails.stockSymbolDetails.last,
                 strikePrice: listItem.optionDetails.strikePrice,
                 contractSize: 1000,
@@ -23608,7 +23694,7 @@ const createList2 = async ()=>{
 
         if(listItem.optionDetails.stockSymbolDetails){
 
-            const calculatedRequiredMargin = (0,_common_js__WEBPACK_IMPORTED_MODULE_1__.calculateOptionMargin)({
+            const calculatedRequiredMargin = (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.calculateOptionMargin)({
                 priceSpot: listItem.optionDetails.stockSymbolDetails.last,
                 strikePrice: listItem.optionDetails.strikePrice,
                 contractSize: 1000,
@@ -23840,24 +23926,39 @@ const createFilterPanel = () => {
 }
 
 const interval = async () => {
-    const list = createList();
-    // const list = await createList2();
-    if(list?.length>0){
-        createListFilterContetnByList(list);
+
+
+    try {
+
+        const list = createList();
+        // const list = await createList2();
+        if (list?.length > 0) {
+            createListFilterContetnByList(list);
+
+            newTabList.forEach(childWindowTab => {
+                const generalIgnoreText = getGeneralIgnoreText();
+                if (childWindowTab.document.readyState === "complete") {
+                    //notifiedStrategyList=[]
+                    childWindowTab.postMessage({
+                        list,
+                        generalIgnoreText,
+                        $tempIgnoredNotifList: tempIgnoredNotifList,
+                        $notifiedStrategyList: notifiedStrategyList
+                    }, "*");
+                }
+            });
+        }
         
-        newTabList.forEach(childWindowTab=>{
-            const  generalIgnoreText = getGeneralIgnoreText();
-            if(childWindowTab.document.readyState === "complete"){
-                //notifiedStrategyList=[]
-                childWindowTab.postMessage({ 
-                    list ,
-                    generalIgnoreText ,
-                    $tempIgnoredNotifList: tempIgnoredNotifList,
-                    $notifiedStrategyList :notifiedStrategyList
-                }, "*");
-            }
+    } catch (error) {
+
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_2__.showNotification)({
+            title: 'خطا در interval',
+            body: 'interval error',
+            tag: `interval_issue`
         });
+        
     }
+    
 
     setTimeout(interval, 2000)
 }
