@@ -682,7 +682,7 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
                     
                     const strategyObj = {
                         // TODO:remove option prop
@@ -898,7 +898,7 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, m
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
 
                     
                     const strategyObj = {
@@ -2255,7 +2255,7 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
 
 
                     const strategyObj = {
@@ -7585,7 +7585,7 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
 
 
 
@@ -7793,7 +7793,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
 
 
                     const strategyObj = {

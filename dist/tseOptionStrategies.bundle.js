@@ -348,7 +348,7 @@ const getNearSettlementPrice = ({ strategyPosition, stockPrice, stockPriceAdjust
   const tradeFee = strategyPosition.isBuy ? COMMISSION_FACTOR.OPTION.BUY : COMMISSION_FACTOR.OPTION.SELL;
   const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE
   const tax = isTaxFree(strategyPosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
-  const discounter = optionPremium => strategyPosition.isBuy ? (optionPremium - 1) : (optionPremium + 1)
+  const discounter = optionPremium => strategyPosition.isBuy ? (optionPremium - 0.7) : (optionPremium + 0.7)
 
 
   function calculateCallPrice(stockPrice, strikePrice) {
@@ -13721,7 +13721,7 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
                     
                     const strategyObj = {
                         // TODO:remove option prop
@@ -13937,7 +13937,7 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, m
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
 
                     
                     const strategyObj = {
@@ -15294,7 +15294,7 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
 
 
                     const strategyObj = {
@@ -20624,7 +20624,7 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
 
 
 
@@ -20832,7 +20832,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
                     const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<1) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
 
 
                     const strategyObj = {

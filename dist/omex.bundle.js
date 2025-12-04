@@ -348,7 +348,7 @@ const getNearSettlementPrice = ({ strategyPosition, stockPrice, stockPriceAdjust
   const tradeFee = strategyPosition.isBuy ? COMMISSION_FACTOR.OPTION.BUY : COMMISSION_FACTOR.OPTION.SELL;
   const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE
   const tax = isTaxFree(strategyPosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
-  const discounter = optionPremium => strategyPosition.isBuy ? (optionPremium - 1) : (optionPremium + 1)
+  const discounter = optionPremium => strategyPosition.isBuy ? (optionPremium - 0.7) : (optionPremium + 0.7)
 
 
   function calculateCallPrice(stockPrice, strikePrice) {
