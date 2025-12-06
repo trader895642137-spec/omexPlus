@@ -1540,11 +1540,17 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
         const isCall = isOption && instrumentName && instrumentName.charAt(0) === 'ض';
         let cSize = 1000;
+        let daysLeftToSettlement =30;
         const optionContractInfo = (async ()=>{
 
             const optionContractInfo = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionContractInfoBySymbol(instrumentName);
             optionID = optionContractInfo.instrumentId;
             cSize = optionContractInfo.cSize
+
+
+            daysLeftToSettlement = Math.ceil((new Date(optionContractInfo.psDate).valueOf() - Date.now())/(24*60*60000))
+
+
             return optionContractInfo
 
         })()
@@ -1788,7 +1794,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         }
 
         const strikePrice = convertStringToInt(document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="strikePrice"]`)?.innerHTML) || convertStringToInt(optionRowEl.querySelectorAll('.o-item-row > div')[5].innerHTML);
-        const daysLeftToSettlement = convertStringToInt(optionRowEl.querySelectorAll('.o-item-row > div')[7].innerHTML);
+        
 
         const getStrikePriceWithSideSign = () => {
             const buySellFactor = isBuy ? -1 : 1;
@@ -2886,8 +2892,12 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
 }
 
+let prevCalcProfitOfStrategyTimeout;
+
 const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositions) => {
     // getStrategyName
+
+    clearTimeout(prevCalcProfitOfStrategyTimeout)
 
     const profitCalculator = STRATEGY_NAME_PROFIT_CALCULATOR[_strategyPositions[0].getStrategyType() || 'OTHERS'];
     if (!profitCalculator)
@@ -2897,13 +2907,23 @@ const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositions) => 
 
     const { profitPercentByBestPrices, profitPercentByInsertedPrices,settlementProfitByBestPrices,settlementProfitByInsertedPrices } = profitCalculator(_strategyPositions, _unChekcedPositions);
 
-    return informForExpectedProfitOnStrategy({
+    const isProfitable = informForExpectedProfitOnStrategy({
         _strategyPositions,
         profitPercentByBestPrices,
         profitPercentByInsertedPrices,
         settlementProfitByBestPrices,
         settlementProfitByInsertedPrices
     });
+
+    if(isProfitable){
+        prevCalcProfitOfStrategyTimeout = setTimeout(() => {
+            calcProfitOfStrategy(_strategyPositions,_unChekcedPositions);
+
+            
+        }, 5000);
+    }
+ 
+    return isProfitable
 }
 
 const highSumValueOfInsertedOrderInformer = ({ orderModalQuantityGetter,orderModalPriceGetter, informer, informCleaner })=>{
