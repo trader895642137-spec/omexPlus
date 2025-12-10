@@ -86,6 +86,38 @@ const deleteOrder = ({orderId,id}) => {
     });
 }
 
+
+
+
+const getStockInfos = async (instrumentIds) => {
+    return fetch(`${redOrigin}/api/PublicMessages/GetInstruments`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "content-type": "application/json",
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": JSON.stringify({
+            instrumentIds
+        }),
+        "method": "POST",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const stockInfos = res.response.data;
+        return stockInfos
+    });
+}
+
 const getOptionContractInfos = async (instrumentIds) => {
 
     return fetch(`${redOrigin}/api/PublicMessages/GetOptionContractInfos`, {
@@ -148,23 +180,28 @@ const searchOptionContractInfos = async (symbol) => {
 
 }
 
-const getOptionContractInfoBySymbol = async (symbol)=>{
+const getInstrumentInfoBySymbol = async (instrumentName)=>{
 
-     const optionNameObj = await searchOptionContractInfos(symbol);
+     const instrumentNameObj = await searchOptionContractInfos(instrumentName);
 
-     if(!optionNameObj) return null
+     if(!instrumentNameObj) return null
 
-     const instrumentId = optionNameObj.instrumentId;
-
-
-
-     const optionContractInfos = await getOptionContractInfos([instrumentId]);
-
-     if(!optionContractInfos?.length) return null
+     const instrumentId = instrumentNameObj.instrumentId;
 
 
+     let instrumentInfos;
+     if(isInstrumentNameOfOption(instrumentName)){
+        instrumentInfos = await getOptionContractInfos([instrumentId]);
 
-     return optionContractInfos[0]
+     }else{
+        instrumentInfos = await getStockInfos([instrumentId]);
+     }
+
+
+     if(!instrumentInfos?.length) return null
+
+
+     return instrumentInfos[0]
 
 }
 
@@ -291,10 +328,11 @@ const selectStrategy =async ()=>{
     
 
 }
+export const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
 
 export const OMEXApi = {
     getOptionPortfolioList,
     getOptionContractInfos,
-    getOptionContractInfoBySymbol,
+    getInstrumentInfoBySymbol,
     deleteAllOpenOrders
 }

@@ -437,7 +437,8 @@ const calculateOptionMargin=({ priceSpot, // قیمت پایانی دارایی 
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   OMEXApi: () => (/* binding */ OMEXApi)
+/* harmony export */   OMEXApi: () => (/* binding */ OMEXApi),
+/* harmony export */   isInstrumentNameOfOption: () => (/* binding */ isInstrumentNameOfOption)
 /* harmony export */ });
 // https://khobregan.tsetab.ir
 const origin = window.location.origin
@@ -527,6 +528,38 @@ const deleteOrder = ({orderId,id}) => {
     });
 }
 
+
+
+
+const getStockInfos = async (instrumentIds) => {
+    return fetch(`${redOrigin}/api/PublicMessages/GetInstruments`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "content-type": "application/json",
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": JSON.stringify({
+            instrumentIds
+        }),
+        "method": "POST",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const stockInfos = res.response.data;
+        return stockInfos
+    });
+}
+
 const getOptionContractInfos = async (instrumentIds) => {
 
     return fetch(`${redOrigin}/api/PublicMessages/GetOptionContractInfos`, {
@@ -589,23 +622,28 @@ const searchOptionContractInfos = async (symbol) => {
 
 }
 
-const getOptionContractInfoBySymbol = async (symbol)=>{
+const getInstrumentInfoBySymbol = async (instrumentName)=>{
 
-     const optionNameObj = await searchOptionContractInfos(symbol);
+     const instrumentNameObj = await searchOptionContractInfos(instrumentName);
 
-     if(!optionNameObj) return null
+     if(!instrumentNameObj) return null
 
-     const instrumentId = optionNameObj.instrumentId;
-
-
-
-     const optionContractInfos = await getOptionContractInfos([instrumentId]);
-
-     if(!optionContractInfos?.length) return null
+     const instrumentId = instrumentNameObj.instrumentId;
 
 
+     let instrumentInfos;
+     if(isInstrumentNameOfOption(instrumentName)){
+        instrumentInfos = await getOptionContractInfos([instrumentId]);
 
-     return optionContractInfos[0]
+     }else{
+        instrumentInfos = await getStockInfos([instrumentId]);
+     }
+
+
+     if(!instrumentInfos?.length) return null
+
+
+     return instrumentInfos[0]
 
 }
 
@@ -732,11 +770,12 @@ const selectStrategy =async ()=>{
     
 
 }
+const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
 
 const OMEXApi = {
     getOptionPortfolioList,
     getOptionContractInfos,
-    getOptionContractInfoBySymbol,
+    getInstrumentInfoBySymbol,
     deleteAllOpenOrders
 }
 
@@ -1534,24 +1573,24 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         let optionID = Array.from(document.querySelectorAll('client-option-positions-main .ag-pinned-right-cols-container .ag-row'))?.find(optionNameCellEl => Array.from(optionNameCellEl.querySelectorAll('span'))?.find(span => span.innerHTML === instrumentName))?.getAttribute('row-id');
         const isBuy = optionRowEl.querySelector('client-option-strategy-estimation-main-ui-order-side .-isActive')?.classList?.contains('buy');
 
-        const isOption = ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
+        const isOption = (0,_omexApi_js__WEBPACK_IMPORTED_MODULE_1__.isInstrumentNameOfOption)(instrumentName);
 
         const isPut = isOption && instrumentName && instrumentName.charAt(0) === 'ط';
 
         const isCall = isOption && instrumentName && instrumentName.charAt(0) === 'ض';
         let cSize = 1000;
         let daysLeftToSettlement =30;
-        const optionContractInfo = (async ()=>{
+        const instrumentInfo = (async ()=>{
 
-            const optionContractInfo = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionContractInfoBySymbol(instrumentName);
-            optionID = optionContractInfo.instrumentId;
-            cSize = optionContractInfo.cSize
-
-
-            daysLeftToSettlement = Math.ceil((new Date(optionContractInfo.psDate).valueOf() - Date.now())/(24*60*60000))
+            const instrumentInfo = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getInstrumentInfoBySymbol(instrumentName);
+            optionID = instrumentInfo.instrumentId;
+            cSize = instrumentInfo.cSize
 
 
-            return optionContractInfo
+            daysLeftToSettlement = Math.ceil((new Date(instrumentInfo.psDate).valueOf() - Date.now())/(24*60*60000))
+
+
+            return instrumentInfo
 
         })()
 
@@ -1739,7 +1778,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
                 }
                 return false
             }
-            if (hasIssue()) {
+            if (executedPrice && breakEvenPrice && hasIssue()) {
                 !window.doNotNotifAvrageIssue && (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
                     title: 'مشکل میانگین',
                     body: `${instrumentName}`,
@@ -1748,7 +1787,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
                 return breakEvenPrice
             }
 
-            return executedPrice
+            return executedPrice || getUnreliableCurrentPositionAvgPrice()
 
         }
 

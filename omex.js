@@ -4,7 +4,7 @@ import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalc
     settlementProfitCalculator,
     getReservedMarginOfEstimationQuantity,
     showNotification} from './common.js';
-import { OMEXApi } from './omexApi.js';
+import { isInstrumentNameOfOption,  OMEXApi } from './omexApi.js';
 
 export   {OMEXApi} from './omexApi.js'
 export   {Api} from './api.js'
@@ -622,24 +622,24 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         let optionID = Array.from(document.querySelectorAll('client-option-positions-main .ag-pinned-right-cols-container .ag-row'))?.find(optionNameCellEl => Array.from(optionNameCellEl.querySelectorAll('span'))?.find(span => span.innerHTML === instrumentName))?.getAttribute('row-id');
         const isBuy = optionRowEl.querySelector('client-option-strategy-estimation-main-ui-order-side .-isActive')?.classList?.contains('buy');
 
-        const isOption = ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
+        const isOption = isInstrumentNameOfOption(instrumentName);
 
         const isPut = isOption && instrumentName && instrumentName.charAt(0) === 'ط';
 
         const isCall = isOption && instrumentName && instrumentName.charAt(0) === 'ض';
         let cSize = 1000;
         let daysLeftToSettlement =30;
-        const optionContractInfo = (async ()=>{
+        const instrumentInfo = (async ()=>{
 
-            const optionContractInfo = await OMEXApi.getOptionContractInfoBySymbol(instrumentName);
-            optionID = optionContractInfo.instrumentId;
-            cSize = optionContractInfo.cSize
-
-
-            daysLeftToSettlement = Math.ceil((new Date(optionContractInfo.psDate).valueOf() - Date.now())/(24*60*60000))
+            const instrumentInfo = await OMEXApi.getInstrumentInfoBySymbol(instrumentName);
+            optionID = instrumentInfo.instrumentId;
+            cSize = instrumentInfo.cSize
 
 
-            return optionContractInfo
+            daysLeftToSettlement = Math.ceil((new Date(instrumentInfo.psDate).valueOf() - Date.now())/(24*60*60000))
+
+
+            return instrumentInfo
 
         })()
 
@@ -827,7 +827,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
                 }
                 return false
             }
-            if (hasIssue()) {
+            if (executedPrice && breakEvenPrice && hasIssue()) {
                 !window.doNotNotifAvrageIssue && showNotification({
                     title: 'مشکل میانگین',
                     body: `${instrumentName}`,
@@ -836,7 +836,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
                 return breakEvenPrice
             }
 
-            return executedPrice
+            return executedPrice || getUnreliableCurrentPositionAvgPrice()
 
         }
 
