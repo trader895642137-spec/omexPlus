@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "OMEX_PLUS",
+  "author": "TRADER",
+  "version": "1.0",
+  "description": "OMEX Chrome extension.",
+  "permissions": ["scripting","tabs"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Run Script"
+  },
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}

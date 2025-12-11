@@ -1,3 +1,5 @@
+import { waitForElement } from "./common"
+
 // https://khobregan.tsetab.ir
 const origin = window.location.origin
 const redOrigin = origin.replace('.tsetab','-red.tsetab')
@@ -224,7 +226,7 @@ const deleteAllOpenOrders =async ()=>{
 
 
 const getGroups =async () => {
-    return fetch("https://khobregan-red.tsetab.ir/api/AssetGrouping/GetGroups", {
+    return fetch(`${redOrigin}/api/AssetGrouping/GetGroups`, {
         "headers": {
             "accept": "application/json, text/plain, */*",
             "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
@@ -238,7 +240,7 @@ const getGroups =async () => {
             "sec-fetch-mode": "cors",
             "sec-fetch-site": "same-site"
         },
-        "referrer": "https://khobregan.tsetab.ir/",
+        "referrer": `${origin}/`,
         "body": null,
         "method": "GET",
         "mode": "cors",
@@ -249,7 +251,7 @@ const getGroups =async () => {
     });
 }
 const getCustomerOptionStrategyEstimationWithItems = async () => {
-    return fetch("https://khobregan-red.tsetab.ir/api/OptionStrategyEstimations/GetCustomerOptionStrategyEstimationWithItems", {
+    return fetch(`${redOrigin}/api/OptionStrategyEstimations/GetCustomerOptionStrategyEstimationWithItems`, {
         "headers": {
             "accept": "application/json, text/plain, */*",
             "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
@@ -263,7 +265,7 @@ const getCustomerOptionStrategyEstimationWithItems = async () => {
             "sec-fetch-mode": "cors",
             "sec-fetch-site": "same-site"
         },
-        "referrer": "https://khobregan.tsetab.ir/",
+        "referrer": `${origin}/`,
         "body": null,
         "method": "GET",
         "mode": "cors",
@@ -328,11 +330,103 @@ const selectStrategy =async ()=>{
     
 
 }
+
+export const logSumOfPositionsOfGroups = async ()=>{
+    const groups = await getGroups();
+    let portfolioList = await getOptionPortfolioList();
+    const sum  = groups.reduce((sum,g)=>sum+=(g.instrumentIds.length),0);
+
+    const instrumentIdsOfGroups = groups.flatMap(group=>group.instrumentIds);
+
+
+    const areNotInGroups = portfolioList.reduce((areNotInGroups,position)=>{
+
+        if(!instrumentIdsOfGroups.find(instrumentId=>instrumentId===position.instrumentId)){
+            areNotInGroups.push(position.instrumentName) 
+        }
+        return areNotInGroups
+    },[])
+    
+    console.log(sum,areNotInGroups)
+    
+}
+
+
+export const getBlockedAmount = ()=>{
+
+    getOptionPortfolioList().then(list=>{
+        console.log(list.map(op=>op.blockedAmount).filter(Boolean).reduce((sum,current)=>sum+current,0))
+    })
+}
+
+
+export const fillEstimationPanelByStrategyName=async ()=>{
+
+    const strategyName = document.querySelector('client-option-strategy-estimation-header .e-title-input input').value;
+    if(!strategyName) return 
+
+    const optionSymbolList = strategyName.split('@')[1].split('-');
+
+    const addNewRowButton = document.querySelector('client-option-strategy-estimation-main .o-footer button');
+
+    const searchAndSelectOption = async (optionSymbol)=>{
+        const getEmptyRow = ()=>{
+            const row = document.querySelector('client-option-strategy-estimation-main .o-items .o-item-body:last-child');
+            const searchInput = row?.querySelector('client-instrument-search input');
+
+            return searchInput &&  {
+                searchInput,
+                row
+            }
+        }
+
+        let {searchInput,row} = getEmptyRow() || {};
+
+        const estimationPanelElement = document.querySelector('client-option-strategy-estimation-main .o-items');
+        
+        if(!searchInput){
+
+            addNewRowButton.click();
+            const result = await waitForElement(estimationPanelElement,getEmptyRow);
+            searchInput = result.searchInput;
+            row = result.row;
+        }
+
+        searchInput.value = optionSymbol;
+        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+        try {
+            const resultBodyElement = await waitForElement(row,()=>row.querySelector('client-instrument-search ng-dropdown-panel .ng-dropdown-panel-items .ng-option:first-child .c-resultBody'));
+            resultBodyElement.click();
+        } catch (err) {
+            console.error("Error:", err.message);
+        }
+
+        const quantityInput = row.querySelector('c-k-input-number[formcontrolname=quantity] input');
+        quantityInput.value='10';
+        quantityInput.dispatchEvent(new Event('input', { bubbles: true }));
+        const linkPriceButton = row.querySelector('.o-price-group client-option-strategy-estimation-main-ui-lock button')
+        linkPriceButton.click();
+        
+    }
+
+    for (const optionSymbol of optionSymbolList) {
+
+        await searchAndSelectOption(optionSymbol)
+
+    }
+   
+}
+
 export const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
 
 export const OMEXApi = {
     getOptionPortfolioList,
     getOptionContractInfos,
     getInstrumentInfoBySymbol,
-    deleteAllOpenOrders
+    deleteAllOpenOrders,
+    selectStrategy,
+    logSumOfPositionsOfGroups,
+    getBlockedAmount,
+    fillEstimationPanelByStrategyName
 }

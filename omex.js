@@ -965,9 +965,6 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
     );
 }
 
-export let strategyPositions = createPositionObjectArrayByElementRowArray(Array.from(document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => rowEl.querySelector('c-k-input-checkbox input').checked));
-export let unChekcedPositions  = createPositionObjectArrayByElementRowArray(Array.from(document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => !rowEl.querySelector('c-k-input-checkbox input').checked));
-
 
 
 
@@ -2266,7 +2263,15 @@ const fillCurrentStockPriceByStrikes = (strategyPositions)=>{
 
 }
 
-const Run = () => {
+export let strategyPositions;
+export let unChekcedPositions;
+export const Run = () => {
+
+
+    
+    strategyPositions = createPositionObjectArrayByElementRowArray(Array.from(document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => rowEl.querySelector('c-k-input-checkbox input').checked));
+    unChekcedPositions  = createPositionObjectArrayByElementRowArray(Array.from(document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => !rowEl.querySelector('c-k-input-checkbox input').checked));
+
 
     injectStyles()
 
@@ -2292,7 +2297,7 @@ const Run = () => {
 
 }
 
-Run();
+// Run();
 
 
 

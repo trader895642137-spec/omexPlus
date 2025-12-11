@@ -1,5 +1,6 @@
 var tseOptionStrategiesLib;
 /******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ([
 /* 0 */,
 /* 1 */
@@ -21,7 +22,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   settlementProfitCalculator: () => (/* binding */ settlementProfitCalculator),
 /* harmony export */   showNotification: () => (/* binding */ showNotification),
 /* harmony export */   totalCostCalculator: () => (/* binding */ totalCostCalculator),
-/* harmony export */   totalCostCalculatorForPriceTypes: () => (/* binding */ totalCostCalculatorForPriceTypes)
+/* harmony export */   totalCostCalculatorForPriceTypes: () => (/* binding */ totalCostCalculatorForPriceTypes),
+/* harmony export */   waitForElement: () => (/* binding */ waitForElement)
 /* harmony export */ });
 const COMMISSION_FACTOR = {
   OPTION: {
@@ -429,6 +431,35 @@ const calculateOptionMargin=({ priceSpot, // قیمت پایانی دارایی 
         required: finalMargin
     }
 
+}
+
+
+const waitForElement = (parent,checkerFn, timeout = 4000) =>{
+  return new Promise((resolve, reject) => {
+    
+    const result = checkerFn();
+    if (result) return resolve(result);
+
+    const observer = new MutationObserver(() => {
+      const result = checkerFn();
+      if (result) {
+        clearTimeout(timer);
+        observer.disconnect();
+        resolve(result);
+      }
+    });
+
+    observer.observe(parent, {
+      childList: true,
+      subtree: true,
+    });
+
+    // اگر بعد از timeout میلی‌ثانیه پیدا نشد → خطا بده
+    const timer = setTimeout(() => {
+      observer.disconnect();
+      reject(new Error(`Element "${selector}" not found within ${timeout} ms`));
+    }, timeout);
+  });
 }
 
 /***/ }),

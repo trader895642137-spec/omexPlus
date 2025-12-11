@@ -5,13 +5,18 @@
   "main": "omex.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack"
+    "build": "node clean.js && webpack"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "copy-webpack-plugin": "^13.0.1",
+    "del": "^8.0.1",
     "webpack": "^5.102.1",
     "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "clean-webpack-plugin": "^4.0.0"
   }
 }

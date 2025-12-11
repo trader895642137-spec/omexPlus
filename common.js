@@ -405,3 +405,32 @@ export const calculateOptionMargin=({ priceSpot, // قیمت پایانی دار
     }
 
 }
+
+
+export const waitForElement = (parent,checkerFn, timeout = 4000) =>{
+  return new Promise((resolve, reject) => {
+    
+    const result = checkerFn();
+    if (result) return resolve(result);
+
+    const observer = new MutationObserver(() => {
+      const result = checkerFn();
+      if (result) {
+        clearTimeout(timer);
+        observer.disconnect();
+        resolve(result);
+      }
+    });
+
+    observer.observe(parent, {
+      childList: true,
+      subtree: true,
+    });
+
+    // اگر بعد از timeout میلی‌ثانیه پیدا نشد → خطا بده
+    const timer = setTimeout(() => {
+      observer.disconnect();
+      reject(new Error(`Element "${selector}" not found within ${timeout} ms`));
+    }, timeout);
+  });
+}
