@@ -899,7 +899,8 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
                 return
 
             const strategyType = strategyName.split('@')[0];
-            return ['COVERED'].find(type => strategyType === type);
+            return 
+            // return ['COVERED'].find(type => strategyType === type);
             // return ['BUCS_COLLAR', 'BUPS_COLLAR', 'BEPS_COLLAR', 'BUCS', 'BECS', 'BUPS', 'BEPS', 'BOX_BUPS_BECS', 'BOX', 'COVERED', 'GUTS', 'LongGUTS_STRANGLE', 'CALL_BUTT_CONDOR'].find(type => strategyType === type);
         }
 
