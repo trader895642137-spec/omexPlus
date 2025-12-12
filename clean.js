@@ -1,5 +1,7 @@
-import {deleteAsync} from 'del';
-
 (async () => {
-    await deleteAsync(['chromeExtension/build/omex.bundle.js']);
+    const { deleteAsync } = await import('del');
+
+    await deleteAsync([
+        'chromeExtension/build/omex.bundle.js'
+    ]);
 })();

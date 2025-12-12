@@ -238,6 +238,8 @@ const settlementGainCalculator = ({ strategyPositions, stockPrice })=>{
   }
 
   const valuablePositions = strategyPositions.filter(strategyPosition => strategyPosition.isCall ? strategyPosition.strikePrice < stockPrice : strategyPosition.strikePrice > stockPrice );
+  const stocks = strategyPositions.filter(strategyPosition => !strategyPosition.isOption );
+
 
   const notValuablePositionReservedMargins = strategyPositions.filter(strategyPosition => strategyPosition.isCall ? strategyPosition.strikePrice > stockPrice : strategyPosition.strikePrice < stockPrice).reduce((notValuablePositionReservedMargins, notValuablePosition) => {
     const reservedMargin = getReservedMarginOfEstimationQuantity(notValuablePosition);
@@ -273,11 +275,25 @@ const settlementGainCalculator = ({ strategyPositions, stockPrice })=>{
 
   }, {sumOfGains:0,remainedQuantity:0});
 
+  if(!sumSettlementGainsInfo) return 
 
-  if(sumSettlementGainsInfo && sumSettlementGainsInfo.remainedQuantity>0){
-    const sellStockFee = isTaxFree(valuablePositions[0]) ? COMMISSION_FACTOR.ETF.SELL : COMMISSION_FACTOR.STOCK.SELL
 
-    sumSettlementGainsInfo.sumOfGains += (sumSettlementGainsInfo.remainedQuantity * (stockPrice -  (stockPrice * sellStockFee)))
+  const totalStockQuantity = stocks.reduce((totalStockQuantity, stock) => {
+    return totalStockQuantity + stock.getQuantity();
+  }, 0) || 0;
+  
+
+  sumSettlementGainsInfo.remainedQuantity+=totalStockQuantity;
+
+
+  if (sumSettlementGainsInfo?.remainedQuantity > 0) {
+    const sellStockFee = isTaxFree(valuablePositions[0]) ? COMMISSION_FACTOR.ETF.SELL : COMMISSION_FACTOR.STOCK.SELL;
+    sumSettlementGainsInfo.sumOfGains += (sumSettlementGainsInfo.remainedQuantity * (stockPrice - (stockPrice * sellStockFee)))
+    sumSettlementGainsInfo.remainedQuantity = 0;
+  } else if (sumSettlementGainsInfo?.remainedQuantity < 0) {
+    const quantityNeedToBuy = Math.abs(sumSettlementGainsInfo.remainedQuantity);
+    const buyStockFee = isTaxFree(valuablePositions[0]) ? COMMISSION_FACTOR.ETF.BUY : COMMISSION_FACTOR.STOCK.BUY;
+    sumSettlementGainsInfo.sumOfGains -= (quantityNeedToBuy * (stockPrice + (stockPrice * buyStockFee)))
     sumSettlementGainsInfo.remainedQuantity = 0;
   }
 
@@ -370,7 +386,7 @@ const getNearSettlementPrice = ({ strategyPosition, stockPrice, stockPriceAdjust
     //  return (strikePrice * (1 - tax - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
   }
 
-  const price = strategyPosition.isCall ? calculateCallPrice(stockPrice, strategyPosition.strikePrice) : calculatePutPrice(stockPrice, strategyPosition.strikePrice)
+  const price = strategyPosition.isOption?  strategyPosition.isCall ? calculateCallPrice(stockPrice, strategyPosition.strikePrice) : calculatePutPrice(stockPrice, strategyPosition.strikePrice) : stockPrice;
   return price > 0 ? price : 0
 }
 
