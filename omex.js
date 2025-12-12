@@ -15,7 +15,12 @@ import './desktopNotificationCheck.js'
 
 
 
+
+
 try {
+    OMEXApi.strategyGroupsLogger.runInterval();
+    OMEXApi.portfolioLogger.runInterval();
+
     if (typeof strategyPositions !== 'undefined') {
         strategyPositions.forEach(strategyPosition => {
             strategyPosition.observers.map(observerInfoObj => observerInfoObj?.observer.disconnect());

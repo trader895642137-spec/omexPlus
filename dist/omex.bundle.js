@@ -487,10 +487,16 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   OMEXApi: () => (/* binding */ OMEXApi),
 /* harmony export */   fillEstimationPanelByStrategyName: () => (/* binding */ fillEstimationPanelByStrategyName),
 /* harmony export */   getBlockedAmount: () => (/* binding */ getBlockedAmount),
+/* harmony export */   getGroups: () => (/* binding */ getGroups),
+/* harmony export */   getOptionPortfolioList: () => (/* binding */ getOptionPortfolioList),
 /* harmony export */   isInstrumentNameOfOption: () => (/* binding */ isInstrumentNameOfOption),
 /* harmony export */   logSumOfPositionsOfGroups: () => (/* binding */ logSumOfPositionsOfGroups)
 /* harmony export */ });
 /* harmony import */ var _common__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
+/* harmony import */ var _portfolioLogger__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3);
+/* harmony import */ var _strategyGroupsLogger__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4);
+
+
 
 
 // https://khobregan.tsetab.ir
@@ -913,6 +919,9 @@ const fillEstimationPanelByStrategyName=async ()=>{
 
 const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
 
+
+
+
 const OMEXApi = {
     getOptionPortfolioList,
     getOptionContractInfos,
@@ -921,11 +930,205 @@ const OMEXApi = {
     selectStrategy,
     logSumOfPositionsOfGroups,
     getBlockedAmount,
-    fillEstimationPanelByStrategyName
+    fillEstimationPanelByStrategyName,
+    strategyGroupsLogger: _strategyGroupsLogger__WEBPACK_IMPORTED_MODULE_2__.strategyGroupsLogger,
+    portfolioLogger:_portfolioLogger__WEBPACK_IMPORTED_MODULE_1__.portfolioLogger
 }
 
 /***/ }),
 /* 3 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   portfolioLogger: () => (/* binding */ portfolioLogger)
+/* harmony export */ });
+/* harmony import */ var _omexApi__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
+
+
+const INTERVAL = 30 * 60 * 1000; // ۳۰ دقیقه
+const STORAGE_KEY = "portfolioLogs";
+
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function loadLogs() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (err) {
+    console.error("Error reading logs:", err);
+    return {};
+  }
+}
+
+function saveLogs(logs) {
+  try {
+    const keys = Object.keys(logs).sort().reverse(); // جدید → قدیم
+    const trimmed = {};
+
+    for (let i = 0; i < Math.min(3, keys.length); i++) {
+      trimmed[keys[i]] = logs[keys[i]];
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+  } catch (err) {
+    console.error("Error saving logs:", err);
+  }
+}
+
+
+
+async function collectLog() {
+  try {
+    const data = await (0,_omexApi__WEBPACK_IMPORTED_MODULE_0__.getOptionPortfolioList)();
+    if (!data) return; // اگر چیزی نیاومد لاگ نمی‌زنیم
+
+    const logs = loadLogs();
+    const today = getTodayKey();
+    const now = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    if (!logs[today]) logs[today] = [];
+
+    logs[today].push({
+      time: now,
+      data,
+    });
+
+    saveLogs(logs);
+
+  } catch (err) {
+    // هر خطای غیرمنتظره
+    console.error("Unexpected error inside collectLog:", err);
+  }
+}
+
+
+
+
+const portfolioLogger = {
+    collectLog,
+    runInterval() {
+        try {
+            collectLog(); // اگر این throw کند catch آبشاری نمی‌شود
+        } catch (err) {
+            console.error("Error in runInterval wrapper:", err);
+            setInterval(() => {
+                try {
+                    collectLog(); // اگر این throw کند catch آبشاری نمی‌شود
+                } catch (err) {
+                    console.error("Error in setInterval wrapper:", err);
+                }
+            }, INTERVAL);
+        }
+        // تکرار با فاصله نیم ساعت
+
+
+    }
+}
+
+/***/ }),
+/* 4 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   strategyGroupsLogger: () => (/* binding */ strategyGroupsLogger)
+/* harmony export */ });
+/* harmony import */ var _omexApi__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
+
+
+const INTERVAL = 30 * 60 * 1000; // ۳۰ دقیقه
+const STORAGE_KEY = "strategyGroupsLogs";
+
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function loadLogs() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (err) {
+    console.error("Error reading logs:", err);
+    return {};
+  }
+}
+
+function saveLogs(logs) {
+  try {
+    const keys = Object.keys(logs).sort().reverse(); // جدید → قدیم
+    const trimmed = {};
+
+    for (let i = 0; i < Math.min(3, keys.length); i++) {
+      trimmed[keys[i]] = logs[keys[i]];
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
+  } catch (err) {
+    console.error("Error saving logs:", err);
+  }
+}
+
+
+
+async function collectLog() {
+  try {
+    const data = await (0,_omexApi__WEBPACK_IMPORTED_MODULE_0__.getGroups)();
+    if (!data) return; // اگر چیزی نیاومد لاگ نمی‌زنیم
+
+    const logs = loadLogs();
+    const today = getTodayKey();
+    const now = new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    if (!logs[today]) logs[today] = [];
+
+    logs[today].push({
+      time: now,
+      data,
+    });
+
+    saveLogs(logs);
+
+  } catch (err) {
+    // هر خطای غیرمنتظره
+    console.error("Unexpected error inside collectLog:", err);
+  }
+}
+
+
+
+
+const strategyGroupsLogger = {
+    collectLog,
+    runInterval() {
+        try {
+            collectLog(); // اگر این throw کند catch آبشاری نمی‌شود
+        } catch (err) {
+            console.error("Error in runInterval wrapper:", err);
+            setInterval(() => {
+                try {
+                    collectLog(); // اگر این throw کند catch آبشاری نمی‌شود
+                } catch (err) {
+                    console.error("Error in setInterval wrapper:", err);
+                }
+            }, INTERVAL);
+        }
+        // تکرار با فاصله نیم ساعت
+
+
+    }
+}
+
+/***/ }),
+/* 5 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -949,11 +1152,11 @@ const Api={
 }
 
 /***/ }),
-/* 4 */
+/* 6 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _flashTitle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5);
+/* harmony import */ var _flashTitle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(7);
 
 
  (() => {
@@ -996,7 +1199,7 @@ __webpack_require__.r(__webpack_exports__);
 })()
 
 /***/ }),
-/* 5 */
+/* 7 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1097,8 +1300,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
 /* harmony import */ var _omexApi_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
-/* harmony import */ var _api_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
-/* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4);
+/* harmony import */ var _api_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(5);
+/* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(6);
 
 
 
@@ -1112,7 +1315,12 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+
+
 try {
+    _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.strategyGroupsLogger.runInterval();
+    _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.portfolioLogger.runInterval();
+
     if (typeof strategyPositions !== 'undefined') {
         strategyPositions.forEach(strategyPosition => {
             strategyPosition.observers.map(observerInfoObj => observerInfoObj?.observer.disconnect());

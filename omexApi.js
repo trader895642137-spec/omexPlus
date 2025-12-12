@@ -1,10 +1,12 @@
 import { waitForElement } from "./common"
+import { portfolioLogger } from "./portfolioLogger"
+import { strategyGroupsLogger } from "./strategyGroupsLogger"
 
 // https://khobregan.tsetab.ir
 const origin = window.location.origin
 const redOrigin = origin.replace('.tsetab','-red.tsetab')
 
-const getOptionPortfolioList = async () => {
+export const getOptionPortfolioList = async () => {
 
     
 
@@ -225,7 +227,7 @@ const deleteAllOpenOrders =async ()=>{
 }
 
 
-const getGroups =async () => {
+export const getGroups =async () => {
     return fetch(`${redOrigin}/api/AssetGrouping/GetGroups`, {
         "headers": {
             "accept": "application/json, text/plain, */*",
@@ -420,6 +422,9 @@ export const fillEstimationPanelByStrategyName=async ()=>{
 
 export const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
 
+
+
+
 export const OMEXApi = {
     getOptionPortfolioList,
     getOptionContractInfos,
@@ -428,5 +433,7 @@ export const OMEXApi = {
     selectStrategy,
     logSumOfPositionsOfGroups,
     getBlockedAmount,
-    fillEstimationPanelByStrategyName
+    fillEstimationPanelByStrategyName,
+    strategyGroupsLogger: strategyGroupsLogger,
+    portfolioLogger:portfolioLogger
 }
