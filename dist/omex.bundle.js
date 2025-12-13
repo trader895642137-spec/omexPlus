@@ -3548,6 +3548,9 @@ const injectStyles = () => {
             client-option-strategy-estimation-header .e-title-input{
                 width: 442px !important;
             }
+            client-trade-ui-input-price-advance-compact .o-rangeButtonsContainer{
+                display:none;
+            }
         `;
 
     const style = document.createElement("style");
