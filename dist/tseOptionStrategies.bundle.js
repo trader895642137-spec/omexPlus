@@ -13247,7 +13247,7 @@ let prevListSymbolMap = {};
 let generalConfig = {
     expectedProfitPerMonth: 1.04,
     minProfitToFilter: 0.035,
-    minProfitUnder2Days:0.2,
+    minProfitUnder2Days:0.02,
     BUCSSOptionListIgnorer: ({option, minVol}) => {
         return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol || option.optionDetails.stockSymbolDetails.last < option.optionDetails.strikePrice)
     }
@@ -13300,6 +13300,8 @@ const isProfitEnough = ({strategy,profitPercent})=>{
 
     const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(strategy.option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
     const daysToSettlement = Math.floor(settlementTimeDiff / (24 * 3600000));
+
+    if(strategy.isProfitEnough) return true
 
     if (daysToSettlement >= 2 && (profitPercent < generalConfig.minProfitToFilter))
         return false
@@ -13643,6 +13645,9 @@ const totalSettlementGain = (positionInfoList) => {
 //     }
 
 // }
+
+
+
 
 const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to_settlement=0, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -14705,6 +14710,13 @@ const calcBUCSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
 
 
                     const profitPercent = profit / Math.abs(totalCost);
+
+
+                    // if(option.symbol==='ضخود1151' && _option.symbol==='ضخود1152'){
+                    //     profitPercent>0 && console.log(profitPercent);
+
+                    // }
+                    
                     const strategyObj = {
                         option: {
                             ...option
@@ -22621,11 +22633,140 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
 }
 
+
+
+
+const calcBuyStockStrategies = (list, {priceType, expectedProfitPerMonth,
+    isProfitEnoughFn, 
+    min_time_to_settlement=0, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, 
+    expectedProfitNotif=false, ...restConfig}) => {
+
+    const filteredList = list.filter(item => {
+        if (!item.isOption)
+            return
+        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
+    }
+    )
+
+    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+
+    let enrichedList = []
+    for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
+        const optionsGroupedByDate = Object.groupBy(optionList, ({optionDetails}) => optionDetails.date);
+
+        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
+
+            const _enrichedList = optionListOfSameDate.map(option => {
+
+                if (!option.optionDetails?.stockSymbolDetails  || option.vol < minVol)
+                    return option
+
+                if(option.isCall && (option.optionDetails.strikePrice > option.optionDetails.stockSymbolDetails?.last) )
+                    return option
+                if(option.isPut && (option.optionDetails.strikePrice < option.optionDetails.stockSymbolDetails?.last) )
+                    return option
+
+
+                const optionPrice = getPriceOfAsset({
+                        asset: option,
+                        priceType,
+                        sideType: option.isCall ? 'BUY' : 'SELL'
+                });
+
+                if(optionPrice===0) return option
+
+
+                const exerciseFee = _common_js__WEBPACK_IMPORTED_MODULE_3__.COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE;
+
+                let calculatedSettlementStockPrice;
+
+                if(option.isCall){
+
+                    calculatedSettlementStockPrice =(option.optionDetails.strikePrice * (1 + exerciseFee)) + (optionPrice * (1 + _common_js__WEBPACK_IMPORTED_MODULE_3__.COMMISSION_FACTOR.OPTION.BUY)) ;
+                }else{
+                    calculatedSettlementStockPrice =(option.optionDetails.strikePrice * (1 + exerciseFee)) - (optionPrice / (1 + _common_js__WEBPACK_IMPORTED_MODULE_3__.COMMISSION_FACTOR.OPTION.SELL)) ;
+                }
+
+
+                const currentStockPriceRatio =   (option.optionDetails?.stockSymbolDetails?.last / calculatedSettlementStockPrice)-1;
+
+                
+
+
+               
+
+
+                const strategyObj = {
+                        // TODO:remove option prop
+                        option: {
+                            ...option
+                        },
+                        positions:[option],
+                        strategyTypeTitle: "BuyStock",
+                        expectedProfitNotif,
+                        expectedProfitPerMonth,
+                        name: createStrategyName([option]),
+                        isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(currentStockPriceRatio),
+                        profitPercent : currentStockPriceRatio
+                    }
+
+                return {
+                    ...option,
+                    allPossibleStrategies:[strategyObj]
+                }
+
+            }
+            );
+
+            return _enrichedList
+
+        }
+        )
+
+        enrichedList = enrichedList.concat(enrichedListOfStock)
+
+    }
+    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+
+    return {
+        enrichedList,
+        allStrategiesSorted: sortedStrategies,
+        strategyName: "BuyStock",
+        priceType,
+        min_time_to_settlement,
+        max_time_to_settlement,
+        minVol,
+        expectedProfitNotif,
+        expectedProfitPerMonth,
+        ...restConfig,
+        htmlTitle: configsToHtmlTitle({
+            strategyName: "BuyStock",
+            priceType,
+            min_time_to_settlement,
+            max_time_to_settlement,
+            minVol
+        })
+    }
+
+}
+
+
+
+
 const createListFilterContetnByList=(list)=>{
 
        let htmlContent = '';
 
     const strategyMapList = [
+    calcBuyStockStrategies(list, {
+        priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        max_time_to_settlement: 5 * 3600000,
+        expectedProfitNotif: true,
+        isProfitEnoughFn(stockPriceRatio){
+            return stockPriceRatio > 0.02
+        }
+    }), 
     calcLongGUTS_STRANGLEStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
 

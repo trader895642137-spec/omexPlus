@@ -33,32 +33,24 @@ const calcBuyStockStrategies = (list, {priceType, expectedProfitPerMonth,
                 if(optionPrice===0) return option
 
 
-                const strategyPositions = [
-                    {
-                        ...option,
-                        isBuy: option.isCall,
-                        getQuantity: () => baseQuantity,
-                        getRequiredMargin:()=>option.isPut ? option.calculatedRequiredMargin/1000:0
-                    },
-                   
-                ]
+                const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE;
+
+                let calculatedSettlementStockPrice;
+
+                if(option.isCall){
+
+                    calculatedSettlementStockPrice =(option.optionDetails.strikePrice * (1 + exerciseFee)) + (optionPrice * (1 + COMMISSION_FACTOR.OPTION.BUY)) ;
+                }else{
+                    calculatedSettlementStockPrice =(option.optionDetails.strikePrice * (1 + exerciseFee)) - (optionPrice / (1 + COMMISSION_FACTOR.OPTION.SELL)) ;
+                }
 
 
+                const currentStockPriceRatio =   option.optionDetails?.stockSymbolDetails?.last / calculatedSettlementStockPrice
 
-                const totalCost = totalCostCalculatorCommon({
-                    strategyPositions,
-                    getPrice: (strategyPosition) => getPriceOfAsset({
-                        asset: strategyPosition,
-                        priceType,
-                        sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                    })
-                });
-
-
-                const settlementGain =  settlementGainCalculator({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
                 
-                
-                const profitPercent = settlementGain / Math.abs(totalCost);
+
+
+               
 
 
                 const strategyObj = {
@@ -71,7 +63,7 @@ const calcBuyStockStrategies = (list, {priceType, expectedProfitPerMonth,
                         expectedProfitNotif,
                         expectedProfitPerMonth,
                         name: createStrategyName([option]),
-                        profitPercent
+                        profitPercent : currentStockPriceRatio
                     }
 
                 return {
