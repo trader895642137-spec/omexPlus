@@ -13247,7 +13247,6 @@ let prevListSymbolMap = {};
 let generalConfig = {
     expectedProfitPerMonth: 1.04,
     minProfitToFilter: 0.035,
-    minProfitUnder2Days:0.02,
     BUCSSOptionListIgnorer: ({option, minVol}) => {
         return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol || option.optionDetails.stockSymbolDetails.last < option.optionDetails.strikePrice)
     }
@@ -13303,9 +13302,7 @@ const isProfitEnough = ({strategy,profitPercent})=>{
 
     if(strategy.isProfitEnough) return true
 
-    if (daysToSettlement >= 2 && (profitPercent < generalConfig.minProfitToFilter))
-        return false
-    if (daysToSettlement < 2 && (profitPercent < generalConfig.minProfitUnder2Days))
+    if (profitPercent < generalConfig.minProfitToFilter)
         return false
 
     // const minDiffTimeOflastTrade = 6 * 60 * 1000;
