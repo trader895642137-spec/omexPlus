@@ -488,6 +488,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getBlockedAmount: () => (/* binding */ getBlockedAmount),
 /* harmony export */   getGroups: () => (/* binding */ getGroups),
 /* harmony export */   getOptionPortfolioList: () => (/* binding */ getOptionPortfolioList),
+/* harmony export */   getStockPortfolioList: () => (/* binding */ getStockPortfolioList),
 /* harmony export */   isInstrumentNameOfOption: () => (/* binding */ isInstrumentNameOfOption),
 /* harmony export */   logSumOfPositionsOfGroups: () => (/* binding */ logSumOfPositionsOfGroups)
 /* harmony export */ });
@@ -529,6 +530,31 @@ const getOptionPortfolioList = async () => {
 
     return list
 
+}
+
+const getStockPortfolioList = async () => {
+    const list = await fetch(`${redOrigin}/api/assets/portfolio-info`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => res.response.data);
+
+    return list
 }
 
 
@@ -923,6 +949,7 @@ const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar
 
 const OMEXApi = {
     getOptionPortfolioList,
+    getStockPortfolioList,
     getOptionContractInfos,
     getInstrumentInfoBySymbol,
     deleteAllOpenOrders,
@@ -2074,7 +2101,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             const isMarginRequired = optionRowEl.querySelector('input[formcontrolname="requiredMarginIsSelected"]')?.checked;
 
             if (!isMarginRequired)
-                0
+                return 0
 
             const requiredMargin = convertStringToInt(optionRowEl.querySelector('[formcontrolname="requiredMargin"] input').value) / cSize;
 

@@ -775,7 +775,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             const isMarginRequired = optionRowEl.querySelector('input[formcontrolname="requiredMarginIsSelected"]')?.checked;
 
             if (!isMarginRequired)
-                0
+                return 0
 
             const requiredMargin = convertStringToInt(optionRowEl.querySelector('[formcontrolname="requiredMargin"] input').value) / cSize;
 
