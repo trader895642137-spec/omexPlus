@@ -18,9 +18,9 @@ module.exports = [
             libraryTarget: "var", // یعنی: window.bundleALib = {...}
             iife: true,
         },
-        // experiments: {
-        //     outputModule: true, // اجازه بده خروجی module باشه
-        // },
+        experiments: {
+            outputModule: true, // اجازه بده خروجی module باشه
+        },
         optimization: {
             minimize: false, // minify نکن
             concatenateModules: false, // tree shaking نکن

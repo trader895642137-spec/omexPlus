@@ -1,6 +1,5 @@
 var tseOptionStrategiesLib;
 /******/ (() => { // webpackBootstrap
-/******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ([
 /* 0 */,
 /* 1 */
@@ -13248,6 +13247,7 @@ let prevListSymbolMap = {};
 let generalConfig = {
     expectedProfitPerMonth: 1.04,
     minProfitToFilter: 0.035,
+    minProfitUnder2Days:0.2,
     BUCSSOptionListIgnorer: ({option, minVol}) => {
         return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol || option.optionDetails.stockSymbolDetails.last < option.optionDetails.strikePrice)
     }
@@ -13298,7 +13298,12 @@ const isProfitEnough = ({strategy,profitPercent})=>{
     if (profitPercent < 0)
         return false
 
-    if (profitPercent < generalConfig.minProfitToFilter)
+    const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(strategy.option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+    const daysToSettlement = Math.floor(settlementTimeDiff / (24 * 3600000));
+
+    if (daysToSettlement >= 2 && (profitPercent < generalConfig.minProfitToFilter))
+        return false
+    if (daysToSettlement < 2 && (profitPercent < generalConfig.minProfitUnder2Days))
         return false
 
     // const minDiffTimeOflastTrade = 6 * 60 * 1000;
@@ -13306,8 +13311,6 @@ const isProfitEnough = ({strategy,profitPercent})=>{
     //     return false
     // }
 
-    const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(strategy.option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-    const daysToSettlement = Math.floor(settlementTimeDiff / (24 * 3600000));
     const percentPerDay = Math.pow((1 + profitPercent), 1 / daysToSettlement);
     const percentPerMonth = Math.pow(percentPerDay, 30);
 
