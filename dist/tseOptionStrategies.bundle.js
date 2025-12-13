@@ -22754,11 +22754,136 @@ const calcBuyStockStrategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
+const calcMARRIED_PUTStrategies = (list, {priceType, expectedProfitPerMonth, 
+    isProfitEnoughFn,
+    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
+    minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+
+    const filteredList = list.filter(item => {
+        if (!item.isOption)
+            return
+        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
+    }
+    )
+
+    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+
+    let enrichedList = [];
+    for (let[stockSymbol,optionListOfStock] of Object.entries(optionsGroupedByStock)) {
+
+        const _enrichedList = optionListOfStock.map(option => {
+
+            if (!option.optionDetails?.stockSymbolDetails)
+                return option
+
+
+            if (!option.isPut || option.vol < minVol)
+                return option
+
+
+            const optionPrice = getPriceOfAsset({
+                asset: option,
+                priceType,
+                sideType: 'BUY'
+            });
+
+            if (optionPrice === 0) return option
+
+
+            const strategyPositions = [
+                {
+                    ...option.optionDetails?.stockSymbolDetails,
+                    isBuy: true,
+                    getQuantity: () => baseQuantity,
+                    getRequiredMargin() { }
+                },
+                {
+                    ...option,
+                    isBuy: true,
+                    getQuantity: () => baseQuantity,
+                    getRequiredMargin() { }
+                },
+
+            ]
+
+
+
+            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
+                strategyPositions,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
+            });
+
+            const profit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: option.optionDetails?.stockSymbolDetails?.last });
+
+            const profitPercent = profit / Math.abs(totalCost);
+            const strategyObj = {
+                option: {
+                    ...option
+                },
+                positions:[option.optionDetails?.stockSymbolDetails, option],
+                strategyTypeTitle: "MARRIED_PUT",
+                expectedProfitNotif,
+                expectedProfitPerMonth,
+                name: createStrategyName([option.optionDetails?.stockSymbolDetails, option]),
+                isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(profitPercent),
+                profitPercent
+            }
+
+            return {
+                ...option,
+                allPossibleStrategies: [strategyObj]
+            }
+
+        }
+        );
+
+        enrichedList = enrichedList.concat(_enrichedList)
+
+    }
+
+    return {
+        enrichedList,
+        allStrategiesSorted: getAllPossibleStrategiesSorted(enrichedList),
+        strategyName: "MARRIED_PUT",
+        priceType,
+        min_time_to_settlement,
+        max_time_to_settlement,
+        minVol,
+        expectedProfitNotif,
+        expectedProfitPerMonth,
+        ...restConfig,
+        htmlTitle: configsToHtmlTitle({
+            strategyName: "MARRIED_PUT",
+            priceType,
+            min_time_to_settlement,
+            max_time_to_settlement,
+            minVol
+        })
+    }
+
+}
+
+
+
+
 const createListFilterContetnByList=(list)=>{
 
        let htmlContent = '';
 
     const strategyMapList = [
+    calcMARRIED_PUTStrategies(list, {
+        priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        expectedProfitNotif: true,
+        isProfitEnoughFn(stockPriceRatio){
+            return stockPriceRatio > 0.006
+        }
+    }), 
     calcBuyStockStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         max_time_to_settlement: 5 * 3600000,
