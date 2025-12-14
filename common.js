@@ -152,7 +152,9 @@ export const totalCostCalculatorForPriceTypes = (_strategyPositions,getAvgPrice)
         getQuantity: (position, __strategyPositions) => {
             return quantityCalculatorOfCurrentPosition(position, __strategyPositions);
         },
-        getPrice: (position) => getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice()
+        getPrice: (position) => {
+          return getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice();
+        }
     });
     let unreliableTotalCostOfCurrentPositions = totalCostCalculator({
         strategyPositions: _strategyPositions,

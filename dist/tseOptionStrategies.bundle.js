@@ -178,7 +178,9 @@ const totalCostCalculatorForPriceTypes = (_strategyPositions,getAvgPrice) => {
         getQuantity: (position, __strategyPositions) => {
             return quantityCalculatorOfCurrentPosition(position, __strategyPositions);
         },
-        getPrice: (position) => getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice()
+        getPrice: (position) => {
+          return getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice();
+        }
     });
     let unreliableTotalCostOfCurrentPositions = totalCostCalculator({
         strategyPositions: _strategyPositions,
@@ -480,13 +482,11 @@ const waitForElement = (parent,checkerFn, timeout = 4000) =>{
 /***/ }),
 /* 2 */,
 /* 3 */,
-/* 4 */,
-/* 5 */,
-/* 6 */
+/* 4 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _flashTitle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(7);
+/* harmony import */ var _flashTitle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5);
 
 
  (() => {
@@ -529,7 +529,7 @@ __webpack_require__.r(__webpack_exports__);
 })()
 
 /***/ }),
-/* 7 */
+/* 5 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -558,8 +558,9 @@ function flashTitle(message = "🔔 توجه!") {
 
 
 /***/ }),
-/* 8 */,
-/* 9 */
+/* 6 */,
+/* 7 */,
+/* 8 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -12814,7 +12815,7 @@ const  moment = function(e) {
 
 
 /***/ }),
-/* 10 */
+/* 9 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -12886,7 +12887,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 /***/ }),
-/* 11 */
+/* 10 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -13080,11 +13081,11 @@ var __webpack_exports__ = {};
 // This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
 (() => {
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(9);
-/* harmony import */ var _hookFetch_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(10);
-/* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(6);
+/* harmony import */ var _jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(8);
+/* harmony import */ var _hookFetch_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(9);
+/* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4);
 /* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(1);
-/* harmony import */ var _findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(11);
+/* harmony import */ var _findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(10);
 
 
 

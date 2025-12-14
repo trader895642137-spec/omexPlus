@@ -1,10 +1,9 @@
 import { waitForElement } from "./common"
-import { portfolioLogger } from "./portfolioLogger"
-import { strategyGroupsLogger } from "./strategyGroupsLogger"
 
 // https://khobregan.tsetab.ir
 const origin = window.location.origin
 const redOrigin = origin.replace('.tsetab','-red.tsetab')
+const deltaOrigin = origin.replace('.tsetab','-delta.tsetab')
 
 export const getOptionPortfolioList = async () => {
 
@@ -33,6 +32,32 @@ export const getOptionPortfolioList = async () => {
 
     return list
 
+}
+
+export const getStockPortfolioList = async () => {
+
+    const list = await fetch(`${deltaOrigin}/api/assets/portfolio-info`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => res.response?.data?.items);
+
+    return list
 }
 
 
@@ -227,7 +252,7 @@ const deleteAllOpenOrders =async ()=>{
 }
 
 
-export const getGroups =async () => {
+const getGroups =async () => {
     return fetch(`${redOrigin}/api/AssetGrouping/GetGroups`, {
         "headers": {
             "accept": "application/json, text/plain, */*",
@@ -426,7 +451,9 @@ export const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(opt
 
 
 export const OMEXApi = {
+    getGroups,
     getOptionPortfolioList,
+    getStockPortfolioList,
     getOptionContractInfos,
     getInstrumentInfoBySymbol,
     deleteAllOpenOrders,
@@ -434,6 +461,4 @@ export const OMEXApi = {
     logSumOfPositionsOfGroups,
     getBlockedAmount,
     fillEstimationPanelByStrategyName,
-    strategyGroupsLogger: strategyGroupsLogger,
-    portfolioLogger:portfolioLogger
 }

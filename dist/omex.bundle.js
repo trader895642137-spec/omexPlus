@@ -178,7 +178,9 @@ const totalCostCalculatorForPriceTypes = (_strategyPositions,getAvgPrice) => {
         getQuantity: (position, __strategyPositions) => {
             return quantityCalculatorOfCurrentPosition(position, __strategyPositions);
         },
-        getPrice: (position) => getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice()
+        getPrice: (position) => {
+          return getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice();
+        }
     });
     let unreliableTotalCostOfCurrentPositions = totalCostCalculator({
         strategyPositions: _strategyPositions,
@@ -486,22 +488,18 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   OMEXApi: () => (/* binding */ OMEXApi),
 /* harmony export */   fillEstimationPanelByStrategyName: () => (/* binding */ fillEstimationPanelByStrategyName),
 /* harmony export */   getBlockedAmount: () => (/* binding */ getBlockedAmount),
-/* harmony export */   getGroups: () => (/* binding */ getGroups),
 /* harmony export */   getOptionPortfolioList: () => (/* binding */ getOptionPortfolioList),
 /* harmony export */   getStockPortfolioList: () => (/* binding */ getStockPortfolioList),
 /* harmony export */   isInstrumentNameOfOption: () => (/* binding */ isInstrumentNameOfOption),
 /* harmony export */   logSumOfPositionsOfGroups: () => (/* binding */ logSumOfPositionsOfGroups)
 /* harmony export */ });
 /* harmony import */ var _common__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
-/* harmony import */ var _portfolioLogger__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3);
-/* harmony import */ var _strategyGroupsLogger__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4);
-
-
 
 
 // https://khobregan.tsetab.ir
 const origin = window.location.origin
 const redOrigin = origin.replace('.tsetab','-red.tsetab')
+const deltaOrigin = origin.replace('.tsetab','-delta.tsetab')
 
 const getOptionPortfolioList = async () => {
 
@@ -533,7 +531,8 @@ const getOptionPortfolioList = async () => {
 }
 
 const getStockPortfolioList = async () => {
-    const list = await fetch(`${redOrigin}/api/assets/portfolio-info`, {
+
+    const list = await fetch(`${deltaOrigin}/api/assets/portfolio-info`, {
         "headers": {
             "accept": "application/json, text/plain, */*",
             "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
@@ -552,7 +551,7 @@ const getStockPortfolioList = async () => {
         "method": "GET",
         "mode": "cors",
         "credentials": "include"
-    }).then(response => response.json()).then(res => res.response.data);
+    }).then(response => response.json()).then(res => res.response?.data?.items);
 
     return list
 }
@@ -948,6 +947,7 @@ const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar
 
 
 const OMEXApi = {
+    getGroups,
     getOptionPortfolioList,
     getStockPortfolioList,
     getOptionContractInfos,
@@ -957,204 +957,10 @@ const OMEXApi = {
     logSumOfPositionsOfGroups,
     getBlockedAmount,
     fillEstimationPanelByStrategyName,
-    strategyGroupsLogger: _strategyGroupsLogger__WEBPACK_IMPORTED_MODULE_2__.strategyGroupsLogger,
-    portfolioLogger:_portfolioLogger__WEBPACK_IMPORTED_MODULE_1__.portfolioLogger
 }
 
 /***/ }),
 /* 3 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   portfolioLogger: () => (/* binding */ portfolioLogger)
-/* harmony export */ });
-/* harmony import */ var _omexApi__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
-
-
-const INTERVAL = 30 * 60 * 1000; // ۳۰ دقیقه
-const STORAGE_KEY = "portfolioLogs";
-
-function getTodayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function loadLogs() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch (err) {
-    console.error("Error reading logs:", err);
-    return {};
-  }
-}
-
-function saveLogs(logs) {
-  try {
-    const keys = Object.keys(logs).sort().reverse(); // جدید → قدیم
-    const trimmed = {};
-
-    for (let i = 0; i < Math.min(3, keys.length); i++) {
-      trimmed[keys[i]] = logs[keys[i]];
-    }
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
-  } catch (err) {
-    console.error("Error saving logs:", err);
-  }
-}
-
-
-
-async function collectLog() {
-  try {
-    const data = await (0,_omexApi__WEBPACK_IMPORTED_MODULE_0__.getOptionPortfolioList)();
-    if (!data) return; // اگر چیزی نیاومد لاگ نمی‌زنیم
-
-    const logs = loadLogs();
-    const today = getTodayKey();
-    const now = new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    if (!logs[today]) logs[today] = [];
-
-    logs[today].push({
-      time: now,
-      data,
-    });
-
-    saveLogs(logs);
-
-  } catch (err) {
-    // هر خطای غیرمنتظره
-    console.error("Unexpected error inside collectLog:", err);
-  }
-}
-
-
-
-
-const portfolioLogger = {
-    collectLog,
-    runInterval() {
-        try {
-            collectLog(); // اگر این throw کند catch آبشاری نمی‌شود
-        } catch (err) {
-            console.error("Error in runInterval wrapper:", err);
-            setInterval(() => {
-                try {
-                    collectLog(); // اگر این throw کند catch آبشاری نمی‌شود
-                } catch (err) {
-                    console.error("Error in setInterval wrapper:", err);
-                }
-            }, INTERVAL);
-        }
-        // تکرار با فاصله نیم ساعت
-
-
-    }
-}
-
-/***/ }),
-/* 4 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   strategyGroupsLogger: () => (/* binding */ strategyGroupsLogger)
-/* harmony export */ });
-/* harmony import */ var _omexApi__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
-
-
-const INTERVAL = 30 * 60 * 1000; // ۳۰ دقیقه
-const STORAGE_KEY = "strategyGroupsLogs";
-
-function getTodayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function loadLogs() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : {};
-  } catch (err) {
-    console.error("Error reading logs:", err);
-    return {};
-  }
-}
-
-function saveLogs(logs) {
-  try {
-    const keys = Object.keys(logs).sort().reverse(); // جدید → قدیم
-    const trimmed = {};
-
-    for (let i = 0; i < Math.min(3, keys.length); i++) {
-      trimmed[keys[i]] = logs[keys[i]];
-    }
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
-  } catch (err) {
-    console.error("Error saving logs:", err);
-  }
-}
-
-
-
-async function collectLog() {
-  try {
-    const data = await (0,_omexApi__WEBPACK_IMPORTED_MODULE_0__.getGroups)();
-    if (!data) return; // اگر چیزی نیاومد لاگ نمی‌زنیم
-
-    const logs = loadLogs();
-    const today = getTodayKey();
-    const now = new Date().toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    if (!logs[today]) logs[today] = [];
-
-    logs[today].push({
-      time: now,
-      data,
-    });
-
-    saveLogs(logs);
-
-  } catch (err) {
-    // هر خطای غیرمنتظره
-    console.error("Unexpected error inside collectLog:", err);
-  }
-}
-
-
-
-
-const strategyGroupsLogger = {
-    collectLog,
-    runInterval() {
-        try {
-            collectLog(); // اگر این throw کند catch آبشاری نمی‌شود
-        } catch (err) {
-            console.error("Error in runInterval wrapper:", err);
-            setInterval(() => {
-                try {
-                    collectLog(); // اگر این throw کند catch آبشاری نمی‌شود
-                } catch (err) {
-                    console.error("Error in setInterval wrapper:", err);
-                }
-            }, INTERVAL);
-        }
-        // تکرار با فاصله نیم ساعت
-
-
-    }
-}
-
-/***/ }),
-/* 5 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1178,11 +984,11 @@ const Api={
 }
 
 /***/ }),
-/* 6 */
+/* 4 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _flashTitle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(7);
+/* harmony import */ var _flashTitle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5);
 
 
  (() => {
@@ -1225,7 +1031,7 @@ __webpack_require__.r(__webpack_exports__);
 })()
 
 /***/ }),
-/* 7 */
+/* 5 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1252,6 +1058,105 @@ function flashTitle(message = "🔔 توجه!") {
   };
 }
 
+
+/***/ }),
+/* 6 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   createIntervalLogger: () => (/* binding */ createIntervalLogger)
+/* harmony export */ });
+function createIntervalLogger({ key, interval, sync }) {
+  if (!key || !interval || typeof sync !== "function") {
+    throw new Error("Invalid logger configuration");
+  }
+
+  function getTodayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function loadLogs() {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function saveLogs(logs) {
+    try {
+      const keys = Object.keys(logs).sort().reverse();
+      const trimmed = {};
+
+      for (let i = 0; i < Math.min(3, keys.length); i++) {
+        trimmed[keys[i]] = logs[keys[i]];
+      }
+
+      localStorage.setItem(key, JSON.stringify(trimmed));
+    } catch {}
+  }
+
+  function canCollect(logs) {
+    const today = getTodayKey();
+    const todayLogs = logs[today];
+    if (!todayLogs || todayLogs.length === 0) return true;
+
+    const lastLog = todayLogs[todayLogs.length - 1];
+    return Date.now() - lastLog.timestamp >= interval;
+  }
+
+  async function collect() {
+    try {
+      const logs = loadLogs();
+
+      // ⛔ قبل از sync
+      if (!canCollect(logs)) return;
+
+      const data = await sync();
+
+      const today = getTodayKey();
+      const nowTs = Date.now();
+
+      if (!logs[today]) logs[today] = [];
+
+      logs[today].push({
+        time: new Date(nowTs).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        timestamp: nowTs,
+        data,
+      });
+
+      saveLogs(logs);
+
+    } catch (err) {
+      console.error(`Logger [${key}] error:`, err);
+    }
+  }
+
+  // اجراها
+  collect();
+  const timer = setInterval(collect, interval);
+
+  // API خروجی
+  return {
+    stop() {
+      clearInterval(timer);
+    },
+    runNow() {
+      collect();
+    },
+    getLogs() {
+      return loadLogs();
+    },
+    clear() {
+      localStorage.removeItem(key);
+    }
+  };
+}
 
 /***/ })
 /******/ 	]);
@@ -1326,8 +1231,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
 /* harmony import */ var _omexApi_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
-/* harmony import */ var _api_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(5);
-/* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(6);
+/* harmony import */ var _api_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
+/* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4);
+/* harmony import */ var _createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(6);
 
 
 
@@ -1342,10 +1248,20 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+let strategyLogger,portfolioLogger;
 
 try {
-    _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.strategyGroupsLogger.runInterval();
-    _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.portfolioLogger.runInterval();
+
+    strategyLogger = (0,_createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_4__.createIntervalLogger)({
+        key: "strategyGroups",
+        interval: 30 * 60 * 1000,
+        sync: _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getGroups
+    });
+    portfolioLogger = (0,_createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_4__.createIntervalLogger)({
+        key: "optionPortfolio",
+        interval: 30 * 60 * 1000,
+        sync: _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionPortfolioList
+    });
 
     if (typeof strategyPositions !== 'undefined') {
         strategyPositions.forEach(strategyPosition => {
@@ -1665,10 +1581,12 @@ let lastCheckProfitByExactDecimalPricesOfPortFolio={
 const calcProfitLossByExactDecimalPricesOfPortFolio = async (_strategyPositions)=>{
 
     const portfolioList = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionPortfolioList();
+    const stockPortfolioList  = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getStockPortfolioList();
     lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList = portfolioList;
+    lastCheckProfitByExactDecimalPricesOfPortFolio.stockPortfolioList = stockPortfolioList;
     const getAvgPrice =(position)=>{
 
-        const currentPortfolioPosition= portfolioList.find(currentPortfolioPosition=>currentPortfolioPosition.instrumentName===position.instrumentName)
+        let currentPortfolioPosition= findPositionInfoByGivenPortfolio(position,[...portfolioList,...stockPortfolioList]);
 
         if(!currentPortfolioPosition) return null
 
@@ -1801,6 +1719,12 @@ const showCurrentStrategyPositionState = ({totalCurrentPositionCost,totalOffsetG
         `;
 
 }
+const findPositionInfoByGivenPortfolio = (position,portfolioList) => {
+    let currentPortfolioPosition = portfolioList.find(currentPortfolioPosition => currentPortfolioPosition.instrumentId === position.instrumentId)
+
+    return currentPortfolioPosition
+
+}
 const calcOffsetProfitOfStrategy = async (_strategyPositions) => {
 
 
@@ -1808,7 +1732,7 @@ const calcOffsetProfitOfStrategy = async (_strategyPositions) => {
     if(lastCheckProfitByExactDecimalPricesOfPortFolio?.portfolioList?.length &&   lastCheckProfitByExactDecimalPricesOfPortFolio.time && (Date.now() - lastCheckProfitByExactDecimalPricesOfPortFolio.time)<60000 ){
         getAvgPrice =(position)=>{
 
-            const currentPortfolioPosition= lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList.find(currentPortfolioPosition=>currentPortfolioPosition.instrumentName===position.instrumentName)
+            let currentPortfolioPosition= findPositionInfoByGivenPortfolio(position,[...lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList,...lastCheckProfitByExactDecimalPricesOfPortFolio.stockPortfolioList]);
 
             if(!currentPortfolioPosition) return null
 
@@ -3598,9 +3522,35 @@ const fillCurrentStockPriceByStrikes = (strategyPositions)=>{
 
 }
 
+const getAndSetInstrumentData = async (strategyPositions)=>{
+
+    const strategyPositionWithInstrumentInfo = async (strategyPosition) => {
+
+        const instrumentInfo = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getInstrumentInfoBySymbol(strategyPosition.instrumentName);
+        strategyPosition.optionID = instrumentInfo.instrumentId;
+        strategyPosition.instrumentId = instrumentInfo.instrumentId;
+        strategyPosition.cSize = instrumentInfo.cSize
+
+        strategyPosition.daysLeftToSettlement = Math.ceil((new Date(instrumentInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000))
+
+        return strategyPosition
+
+    }
+
+    const _strategyPositions = await Promise.all(
+        strategyPositions.map(async (strategyPosition) => {
+
+            return await strategyPositionWithInstrumentInfo(strategyPosition);
+        })
+    );
+
+    return _strategyPositions
+
+}
+
 let strategyPositions;
 let unChekcedPositions;
-const Run = () => {
+const Run = async () => {
 
 
     
@@ -3626,9 +3576,12 @@ const Run = () => {
     getStrategyExpectedProfitCnt();
     createDeleteAllOrdersButton();
 
-    stopDraggingWrongOfOrdersModals()
+    stopDraggingWrongOfOrdersModals();
 
-    fillCurrentStockPriceByStrikes(strategyPositions)
+    fillCurrentStockPriceByStrikes(strategyPositions);
+
+    strategyPositions = await getAndSetInstrumentData(strategyPositions);
+    console.log(strategyPositions)
 
 }
 

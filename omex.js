@@ -12,14 +12,24 @@ export   {Api} from './api.js'
 export { configs } from './common.js';
 
 import './desktopNotificationCheck.js'
+import { createIntervalLogger } from './createIntervalLogger.js';
 
 
 
-
+let strategyLogger,portfolioLogger;
 
 try {
-    OMEXApi.strategyGroupsLogger.runInterval();
-    OMEXApi.portfolioLogger.runInterval();
+
+    strategyLogger = createIntervalLogger({
+        key: "strategyGroups",
+        interval: 30 * 60 * 1000,
+        sync: OMEXApi.getGroups
+    });
+    portfolioLogger = createIntervalLogger({
+        key: "optionPortfolio",
+        interval: 30 * 60 * 1000,
+        sync: OMEXApi.getOptionPortfolioList
+    });
 
     if (typeof strategyPositions !== 'undefined') {
         strategyPositions.forEach(strategyPosition => {
@@ -339,10 +349,12 @@ let lastCheckProfitByExactDecimalPricesOfPortFolio={
 const calcProfitLossByExactDecimalPricesOfPortFolio = async (_strategyPositions)=>{
 
     const portfolioList = await OMEXApi.getOptionPortfolioList();
+    const stockPortfolioList  = await OMEXApi.getStockPortfolioList();
     lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList = portfolioList;
+    lastCheckProfitByExactDecimalPricesOfPortFolio.stockPortfolioList = stockPortfolioList;
     const getAvgPrice =(position)=>{
 
-        const currentPortfolioPosition= portfolioList.find(currentPortfolioPosition=>currentPortfolioPosition.instrumentName===position.instrumentName)
+        let currentPortfolioPosition= findPositionInfoByGivenPortfolio(position,[...portfolioList,...stockPortfolioList]);
 
         if(!currentPortfolioPosition) return null
 
@@ -475,6 +487,12 @@ const showCurrentStrategyPositionState = ({totalCurrentPositionCost,totalOffsetG
         `;
 
 }
+const findPositionInfoByGivenPortfolio = (position,portfolioList) => {
+    let currentPortfolioPosition = portfolioList.find(currentPortfolioPosition => currentPortfolioPosition.instrumentId === position.instrumentId)
+
+    return currentPortfolioPosition
+
+}
 const calcOffsetProfitOfStrategy = async (_strategyPositions) => {
 
 
@@ -482,7 +500,7 @@ const calcOffsetProfitOfStrategy = async (_strategyPositions) => {
     if(lastCheckProfitByExactDecimalPricesOfPortFolio?.portfolioList?.length &&   lastCheckProfitByExactDecimalPricesOfPortFolio.time && (Date.now() - lastCheckProfitByExactDecimalPricesOfPortFolio.time)<60000 ){
         getAvgPrice =(position)=>{
 
-            const currentPortfolioPosition= lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList.find(currentPortfolioPosition=>currentPortfolioPosition.instrumentName===position.instrumentName)
+            let currentPortfolioPosition= findPositionInfoByGivenPortfolio(position,[...lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList,...lastCheckProfitByExactDecimalPricesOfPortFolio.stockPortfolioList]);
 
             if(!currentPortfolioPosition) return null
 
@@ -2272,9 +2290,35 @@ const fillCurrentStockPriceByStrikes = (strategyPositions)=>{
 
 }
 
+const getAndSetInstrumentData = async (strategyPositions)=>{
+
+    const strategyPositionWithInstrumentInfo = async (strategyPosition) => {
+
+        const instrumentInfo = await OMEXApi.getInstrumentInfoBySymbol(strategyPosition.instrumentName);
+        strategyPosition.optionID = instrumentInfo.instrumentId;
+        strategyPosition.instrumentId = instrumentInfo.instrumentId;
+        strategyPosition.cSize = instrumentInfo.cSize
+
+        strategyPosition.daysLeftToSettlement = Math.ceil((new Date(instrumentInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000))
+
+        return strategyPosition
+
+    }
+
+    const _strategyPositions = await Promise.all(
+        strategyPositions.map(async (strategyPosition) => {
+
+            return await strategyPositionWithInstrumentInfo(strategyPosition);
+        })
+    );
+
+    return _strategyPositions
+
+}
+
 export let strategyPositions;
 export let unChekcedPositions;
-export const Run = () => {
+export const Run = async () => {
 
 
     
@@ -2300,9 +2344,12 @@ export const Run = () => {
     getStrategyExpectedProfitCnt();
     createDeleteAllOrdersButton();
 
-    stopDraggingWrongOfOrdersModals()
+    stopDraggingWrongOfOrdersModals();
 
-    fillCurrentStockPriceByStrikes(strategyPositions)
+    fillCurrentStockPriceByStrikes(strategyPositions);
+
+    strategyPositions = await getAndSetInstrumentData(strategyPositions);
+    console.log(strategyPositions)
 
 }
 
