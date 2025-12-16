@@ -816,16 +816,22 @@ const selectStrategy =async ()=>{
 
     const strategies = await getCustomerOptionStrategyEstimationWithItems();
 
-    const foundStrategies = strategies.filter(strategy=> {
+    const foundStrategy = strategies.find(strategy=> {
 
 
         strategy.items = Array.from(new Map(strategy.items.map(sItem => [sItem.instrumentId, sItem])).values());
 
         const hasAllInstrumentId =  selectedGroup.positions.every(groupPosition=> strategy.items.find(sItem=>groupPosition.instrumentId===sItem.instrumentId && groupPosition.orderSide===sItem.side));
 
+
+        if(hasAllInstrumentId){
+            console.log('hasAllInstrumentId',hasAllInstrumentId,{strategy,selectedGroup})
+        }
         return hasAllInstrumentId && strategy.items.length===selectedGroup.instrumentIds.length
 
     });
+
+    if(!foundStrategy) return
 
 
 
@@ -836,20 +842,20 @@ const selectStrategy =async ()=>{
     await new Promise(r => setTimeout(r, 200));
 
     const estimationListSearchInput = document.querySelector('client-option-strategy-estimation-list c-k-input-search input');
-    estimationListSearchInput.value=  foundStrategies[0].title;
+    estimationListSearchInput.value=  foundStrategy.title;
     estimationListSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
 
 
 
 
-    const searchResultElement = document.querySelector('client-option-strategy-estimation-list .o-items-container .o-item');
+    const searchResultElementList = document.querySelectorAll('client-option-strategy-estimation-list .o-items-container .o-item');
 
     await new Promise(r => setTimeout(r, 200));
 
 
-    searchResultElement.click()
+    Array.from(searchResultElementList).find(searchResultElement=>searchResultElement.querySelector('span').innerHTML===foundStrategy.title)?.click()
 
-    console.log(foundStrategies);
+    console.log(foundStrategy);
     
 
 }
