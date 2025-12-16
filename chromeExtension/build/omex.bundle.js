@@ -20,6 +20,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   settlementGainCalculator: () => (/* binding */ settlementGainCalculator),
 /* harmony export */   settlementProfitCalculator: () => (/* binding */ settlementProfitCalculator),
 /* harmony export */   showNotification: () => (/* binding */ showNotification),
+/* harmony export */   silentNotificationForMoment: () => (/* binding */ silentNotificationForMoment),
 /* harmony export */   totalCostCalculator: () => (/* binding */ totalCostCalculator),
 /* harmony export */   totalCostCalculatorForPriceTypes: () => (/* binding */ totalCostCalculatorForPriceTypes),
 /* harmony export */   waitForElement: () => (/* binding */ waitForElement)
@@ -53,7 +54,28 @@ const configs = {
 
 let lastNotifTime = {};
 
+
+let silentNotificationForMomentTimeoutID,_isSilentNotificationModeActive;
+
+
+const silentNotificationForMoment = (millisecond=160000) => {
+
+    clearTimeout(silentNotificationForMomentTimeoutID);
+
+    _isSilentNotificationModeActive = true;
+
+
+    silentNotificationForMomentTimeoutID = setTimeout(() => {
+        _isSilentNotificationModeActive = false;
+    }
+        , millisecond);
+
+}
+
+
 const showNotification = ({ title, body, tag }) => {
+
+    if(_isSilentNotificationModeActive)return 
 
     if (lastNotifTime[tag] && (Date.now() - lastNotifTime[tag]) < 5000)
         return
@@ -970,31 +992,7 @@ const OMEXApi = {
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   Api: () => (/* binding */ Api),
-/* harmony export */   getOptionPortfolioListForFilterListIgnore: () => (/* binding */ getOptionPortfolioListForFilterListIgnore)
-/* harmony export */ });
-/* harmony import */ var _omexApi__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
-
-
-const getOptionPortfolioListForFilterListIgnore = async ()=>{
-   const portfolioList = await _omexApi__WEBPACK_IMPORTED_MODULE_0__.OMEXApi.getOptionPortfolioList();
-
-   console.log(portfolioList.map(instrumentInfo=>`ALL@${instrumentInfo.instrumentName}`).join(' '));
-
-}
-
-
-const Api={
-    getOptionPortfolioListForFilterListIgnore
-}
-
-/***/ }),
-/* 4 */
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _flashTitle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5);
+/* harmony import */ var _flashTitle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4);
 
 
  (() => {
@@ -1037,7 +1035,7 @@ __webpack_require__.r(__webpack_exports__);
 })()
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1066,7 +1064,7 @@ function flashTitle(message = "🔔 توجه!") {
 
 
 /***/ }),
-/* 6 */
+/* 5 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1226,20 +1224,19 @@ var __webpack_exports__ = {};
 (() => {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   Api: () => (/* reexport safe */ _api_js__WEBPACK_IMPORTED_MODULE_2__.Api),
 /* harmony export */   OMEXApi: () => (/* reexport safe */ _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi),
 /* harmony export */   Run: () => (/* binding */ Run),
 /* harmony export */   calcProfitOfStrategy: () => (/* binding */ calcProfitOfStrategy),
 /* harmony export */   configs: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.configs),
 /* harmony export */   expectedProfit: () => (/* binding */ expectedProfit),
+/* harmony export */   silentNotificationForMoment: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.silentNotificationForMoment),
 /* harmony export */   strategyPositions: () => (/* binding */ strategyPositions),
 /* harmony export */   unChekcedPositions: () => (/* binding */ unChekcedPositions)
 /* harmony export */ });
 /* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
 /* harmony import */ var _omexApi_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2);
-/* harmony import */ var _api_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
-/* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4);
-/* harmony import */ var _createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(6);
+/* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
+/* harmony import */ var _createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(5);
 
 
 
@@ -1252,18 +1249,20 @@ __webpack_require__.r(__webpack_exports__);
 ;
 
 
+ 
+
 
 
 let strategyLogger,portfolioLogger;
 
 try {
 
-    strategyLogger = (0,_createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_4__.createIntervalLogger)({
+    strategyLogger = (0,_createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_3__.createIntervalLogger)({
         key: "strategyGroups",
         interval: 30 * 60 * 1000,
         sync: _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getGroups
     });
-    portfolioLogger = (0,_createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_4__.createIntervalLogger)({
+    portfolioLogger = (0,_createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_3__.createIntervalLogger)({
         key: "optionPortfolio",
         interval: 30 * 60 * 1000,
         sync: _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionPortfolioList
@@ -1284,6 +1283,7 @@ let expectedProfit = {
     minExpectedProfitOfStrategy: 3.9,
     currentPositions: 1.4
 }
+
 
 
 

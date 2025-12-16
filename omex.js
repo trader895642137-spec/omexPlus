@@ -6,13 +6,15 @@ import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalc
     showNotification} from './common.js';
 import { isInstrumentNameOfOption,  OMEXApi } from './omexApi.js';
 
+
 export   {OMEXApi} from './omexApi.js'
-export   {Api} from './api.js'
 
 export { configs } from './common.js';
 
 import './desktopNotificationCheck.js'
 import { createIntervalLogger } from './createIntervalLogger.js';
+
+export {silentNotificationForMoment} from './common.js'; 
 
 
 
@@ -46,6 +48,7 @@ export let expectedProfit = {
     minExpectedProfitOfStrategy: 3.9,
     currentPositions: 1.4
 }
+
 
 
 

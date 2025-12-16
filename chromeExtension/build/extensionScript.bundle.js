@@ -61,6 +61,7 @@ document.getElementById('fillEstimationPanelByStrategyName').addEventListener('c
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 
+        // TODO:Remove files: ["build/omex.bundle.js"] seems not nececerly
         chrome.scripting.executeScript({
             target: { tabId: tabs[0].id },
             files: ["build/omex.bundle.js"],
@@ -85,6 +86,33 @@ document.getElementById('fillEstimationPanelByStrategyName').addEventListener('c
 });
 
 
+
+document.getElementById('silentNotificationForMoment').addEventListener('click', () => {
+
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+
+        chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            files: [],
+            world: "MAIN"
+        }, async () => {
+
+            // await new Promise(r => setTimeout(r, 3000)); 
+            chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                func: (actionName) => {
+                    window.omexLib.silentNotificationForMoment();
+                    
+                },
+                args: ['SILENT-NOTIFICATION-FOR-MOMENT'],
+                world: "MAIN"
+            });
+        });
+    });
+
+
+});
 
 
 

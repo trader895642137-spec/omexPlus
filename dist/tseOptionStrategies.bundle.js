@@ -20,6 +20,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   settlementGainCalculator: () => (/* binding */ settlementGainCalculator),
 /* harmony export */   settlementProfitCalculator: () => (/* binding */ settlementProfitCalculator),
 /* harmony export */   showNotification: () => (/* binding */ showNotification),
+/* harmony export */   silentNotificationForMoment: () => (/* binding */ silentNotificationForMoment),
 /* harmony export */   totalCostCalculator: () => (/* binding */ totalCostCalculator),
 /* harmony export */   totalCostCalculatorForPriceTypes: () => (/* binding */ totalCostCalculatorForPriceTypes),
 /* harmony export */   waitForElement: () => (/* binding */ waitForElement)
@@ -53,7 +54,28 @@ const configs = {
 
 let lastNotifTime = {};
 
+
+let silentNotificationForMomentTimeoutID,_isSilentNotificationModeActive;
+
+
+const silentNotificationForMoment = (millisecond=160000) => {
+
+    clearTimeout(silentNotificationForMomentTimeoutID);
+
+    _isSilentNotificationModeActive = true;
+
+
+    silentNotificationForMomentTimeoutID = setTimeout(() => {
+        _isSilentNotificationModeActive = false;
+    }
+        , millisecond);
+
+}
+
+
 const showNotification = ({ title, body, tag }) => {
+
+    if(_isSilentNotificationModeActive)return 
 
     if (lastNotifTime[tag] && (Date.now() - lastNotifTime[tag]) < 5000)
         return
@@ -481,12 +503,11 @@ const waitForElement = (parent,checkerFn, timeout = 4000) =>{
 
 /***/ }),
 /* 2 */,
-/* 3 */,
-/* 4 */
+/* 3 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _flashTitle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(5);
+/* harmony import */ var _flashTitle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4);
 
 
  (() => {
@@ -529,7 +550,7 @@ __webpack_require__.r(__webpack_exports__);
 })()
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -558,9 +579,9 @@ function flashTitle(message = "🔔 توجه!") {
 
 
 /***/ }),
+/* 5 */,
 /* 6 */,
-/* 7 */,
-/* 8 */
+/* 7 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -12815,7 +12836,7 @@ const  moment = function(e) {
 
 
 /***/ }),
-/* 9 */
+/* 8 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -12887,7 +12908,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 /***/ }),
-/* 10 */
+/* 9 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -13081,11 +13102,11 @@ var __webpack_exports__ = {};
 // This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
 (() => {
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(8);
-/* harmony import */ var _hookFetch_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(9);
-/* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4);
+/* harmony import */ var _jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(7);
+/* harmony import */ var _hookFetch_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(8);
+/* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
 /* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(1);
-/* harmony import */ var _findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(10);
+/* harmony import */ var _findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(9);
 
 
 

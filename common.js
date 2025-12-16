@@ -27,7 +27,28 @@ export const configs = {
 
 let lastNotifTime = {};
 
+
+let silentNotificationForMomentTimeoutID,_isSilentNotificationModeActive;
+
+
+export const silentNotificationForMoment = (millisecond=160000) => {
+
+    clearTimeout(silentNotificationForMomentTimeoutID);
+
+    _isSilentNotificationModeActive = true;
+
+
+    silentNotificationForMomentTimeoutID = setTimeout(() => {
+        _isSilentNotificationModeActive = false;
+    }
+        , millisecond);
+
+}
+
+
 export const showNotification = ({ title, body, tag }) => {
+
+    if(_isSilentNotificationModeActive)return 
 
     if (lastNotifTime[tag] && (Date.now() - lastNotifTime[tag]) < 5000)
         return
