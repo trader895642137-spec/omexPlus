@@ -2052,7 +2052,7 @@ const calcSyntheticCoveredCallStrategies = (list,
                         strategyTypeTitle: "SYNTHETIC_COVERED_CALL",
                         expectedProfitNotif,
                         name: createStrategyName([buyingCall, sameStrikePut, sellingCall]),
-                        profitPercent: stockPriceToSarBeSarPercent,
+                        profitPercent: profitPercent,
                         // percentToShow: stockPriceToSarBeSarPercent
                     }
 
