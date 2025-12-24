@@ -2446,7 +2446,8 @@ const observePortfolioQuantityOfOrderModal = () => {
                 // const newValue = mutation.target.nodeValue ? convertStringToInt(mutation.target.nodeValue) : null;
                 const newValue = strategyPositionObj.getOrderModalPortfolioQuantity() || 0;
                 // if(newValue===null) return
-               
+
+                if(oldValue===newValue) return
                 let bgColor
 
 
