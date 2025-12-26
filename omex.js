@@ -2419,6 +2419,81 @@ export const openAllGroupsInNewTabs = async ()=>{
 
 }
 
+
+export const getSummaryNameOfStrategy = () => {
+
+
+    const instrumentNames = strategyPositions.map(strategyPosition=>strategyPosition.instrumentName);
+
+    const map = {};
+    const noNumberItems = [];
+
+    instrumentNames.forEach(item => {
+        const match = item.match(/^(\D+)(\d+)$/);
+
+        // اگه عدد نداشت
+        if (!match) {
+            noNumberItems.push(item);
+            return;
+        }
+
+        const [, prefix, num] = match;
+
+        if (!map[prefix]) {
+            map[prefix] = [];
+        }
+        map[prefix].push(num);
+    });
+
+    const result = [
+        ...Object.entries(map).map(
+            ([prefix, nums]) => `${prefix}${nums.join('-')}`
+        ),
+        ...noNumberItems
+    ].join('-');
+
+    return result
+
+}
+
+export const createGroupOfCurrentStrategy = ()=>{
+    OMEXApi.createGroup({
+        name: getSummaryNameOfStrategy(),
+        instrumentIds: strategyPositions.map(strategyPosition=>strategyPosition.instrumentId)
+    }).then(()=>{
+
+        showToast('گروه ایجاد شد');
+    })
+}
+
+export function showToast(message, duration = 2000) {
+  let toast = domContextWindow.document.getElementById('omex-plus-toast');
+
+  if (!toast) {
+    toast = domContextWindow.document.createElement('div');
+    toast.id = 'omex-plus-toast';
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: black;
+      color: white;
+      padding: 8px 12px;
+      z-index: 9999;
+    `;
+    domContextWindow.document.body.appendChild(toast);
+  }
+
+  toast.textContent = message;
+  toast.style.display = 'block';
+
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.style.display = 'none';
+  }, duration);
+}
+
 export let strategyPositions;
 export let unChekcedPositions;
 

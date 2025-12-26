@@ -454,6 +454,37 @@ export const fillEstimationPanelByStrategyName=async ()=>{
    
 }
 
+
+export const createGroup = ({ name, instrumentIds }) => {
+
+    return fetch(`${redOrigin}/api/AssetGrouping/Create`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "content-type": "application/json",
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": JSON.stringify({
+            name,
+            "assetGroupingTypeId": "OpenPosition",
+            instrumentIds
+        }),
+        "method": "POST",
+        "mode": "cors",
+        "credentials": "include"
+    });
+
+}
+
 export const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
 
 
@@ -470,4 +501,5 @@ export const OMEXApi = {
     logSumOfPositionsOfGroups,
     getBlockedAmount,
     fillEstimationPanelByStrategyName,
+    createGroup
 }

@@ -514,6 +514,8 @@ function createDeferredPromise() {
   return { promise, resolve, reject };
 }
 
+
+
 /***/ }),
 /* 2 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -521,6 +523,7 @@ function createDeferredPromise() {
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   OMEXApi: () => (/* binding */ OMEXApi),
+/* harmony export */   createGroup: () => (/* binding */ createGroup),
 /* harmony export */   fillEstimationPanelByStrategyName: () => (/* binding */ fillEstimationPanelByStrategyName),
 /* harmony export */   getBlockedAmount: () => (/* binding */ getBlockedAmount),
 /* harmony export */   getOptionPortfolioList: () => (/* binding */ getOptionPortfolioList),
@@ -985,6 +988,37 @@ const fillEstimationPanelByStrategyName=async ()=>{
    
 }
 
+
+const createGroup = ({ name, instrumentIds }) => {
+
+    return fetch(`${redOrigin}/api/AssetGrouping/Create`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "content-type": "application/json",
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": JSON.stringify({
+            name,
+            "assetGroupingTypeId": "OpenPosition",
+            instrumentIds
+        }),
+        "method": "POST",
+        "mode": "cors",
+        "credentials": "include"
+    });
+
+}
+
 const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
 
 
@@ -1001,6 +1035,7 @@ const OMEXApi = {
     logSumOfPositionsOfGroups,
     getBlockedAmount,
     fillEstimationPanelByStrategyName,
+    createGroup
 }
 
 /***/ }),
@@ -1244,8 +1279,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   Run: () => (/* binding */ Run),
 /* harmony export */   calcProfitOfStrategy: () => (/* binding */ calcProfitOfStrategy),
 /* harmony export */   configs: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.configs),
+/* harmony export */   createGroupOfCurrentStrategy: () => (/* binding */ createGroupOfCurrentStrategy),
 /* harmony export */   expectedProfit: () => (/* binding */ expectedProfit),
+/* harmony export */   getSummaryNameOfStrategy: () => (/* binding */ getSummaryNameOfStrategy),
 /* harmony export */   openAllGroupsInNewTabs: () => (/* binding */ openAllGroupsInNewTabs),
+/* harmony export */   showToast: () => (/* binding */ showToast),
 /* harmony export */   silentNotificationForMoment: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.silentNotificationForMoment),
 /* harmony export */   strategyPositions: () => (/* binding */ strategyPositions),
 /* harmony export */   unChekcedPositions: () => (/* binding */ unChekcedPositions)
@@ -3667,6 +3705,81 @@ const openAllGroupsInNewTabs = async ()=>{
         
     }
 
+}
+
+
+const getSummaryNameOfStrategy = () => {
+
+
+    const instrumentNames = strategyPositions.map(strategyPosition=>strategyPosition.instrumentName);
+
+    const map = {};
+    const noNumberItems = [];
+
+    instrumentNames.forEach(item => {
+        const match = item.match(/^(\D+)(\d+)$/);
+
+        // اگه عدد نداشت
+        if (!match) {
+            noNumberItems.push(item);
+            return;
+        }
+
+        const [, prefix, num] = match;
+
+        if (!map[prefix]) {
+            map[prefix] = [];
+        }
+        map[prefix].push(num);
+    });
+
+    const result = [
+        ...Object.entries(map).map(
+            ([prefix, nums]) => `${prefix}${nums.join('-')}`
+        ),
+        ...noNumberItems
+    ].join('-');
+
+    return result
+
+}
+
+const createGroupOfCurrentStrategy = ()=>{
+    _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.createGroup({
+        name: getSummaryNameOfStrategy(),
+        instrumentIds: strategyPositions.map(strategyPosition=>strategyPosition.instrumentId)
+    }).then(()=>{
+
+        showToast('گروه ایجاد شد');
+    })
+}
+
+function showToast(message, duration = 2000) {
+  let toast = domContextWindow.document.getElementById('omex-plus-toast');
+
+  if (!toast) {
+    toast = domContextWindow.document.createElement('div');
+    toast.id = 'omex-plus-toast';
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: black;
+      color: white;
+      padding: 8px 12px;
+      z-index: 9999;
+    `;
+    domContextWindow.document.body.appendChild(toast);
+  }
+
+  toast.textContent = message;
+  toast.style.display = 'block';
+
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.style.display = 'none';
+  }, duration);
 }
 
 let strategyPositions;

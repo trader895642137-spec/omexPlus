@@ -147,3 +147,30 @@ document.getElementById('openAllGroupsInNewTabs').addEventListener('click', () =
 
 
 
+
+document.getElementById('createGroup').addEventListener('click', () => {
+
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+
+        chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            files: [],
+            world: "MAIN"
+        }, async () => {
+
+            // await new Promise(r => setTimeout(r, 3000)); 
+            chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                func: (actionName) => {
+                    window.omexLib.createGroupOfCurrentStrategy();
+                },
+                args: ['CREATE-GROUP'],
+                world: "MAIN"
+            });
+        });
+    });
+
+
+});
+
