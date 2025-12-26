@@ -10,6 +10,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   COMMISSION_FACTOR: () => (/* binding */ COMMISSION_FACTOR),
 /* harmony export */   calculateOptionMargin: () => (/* binding */ calculateOptionMargin),
 /* harmony export */   configs: () => (/* binding */ configs),
+/* harmony export */   createDeferredPromise: () => (/* binding */ createDeferredPromise),
 /* harmony export */   getCommissionFactor: () => (/* binding */ getCommissionFactor),
 /* harmony export */   getNearSettlementPrice: () => (/* binding */ getNearSettlementPrice),
 /* harmony export */   getReservedMarginOfEstimationQuantity: () => (/* binding */ getReservedMarginOfEstimationQuantity),
@@ -496,9 +497,21 @@ const waitForElement = (parent,checkerFn, timeout = 4000) =>{
     // اگر بعد از timeout میلی‌ثانیه پیدا نشد → خطا بده
     const timer = setTimeout(() => {
       observer.disconnect();
-      reject(new Error(`Element "${selector}" not found within ${timeout} ms`));
+      reject(new Error(`Element "${checkerFn}" not found within ${timeout} ms`));
     }, timeout);
   });
+}
+
+
+function createDeferredPromise() {
+  let resolve, reject;
+  
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  
+  return { promise, resolve, reject };
 }
 
 /***/ }),

@@ -469,7 +469,19 @@ export const waitForElement = (parent,checkerFn, timeout = 4000) =>{
     // اگر بعد از timeout میلی‌ثانیه پیدا نشد → خطا بده
     const timer = setTimeout(() => {
       observer.disconnect();
-      reject(new Error(`Element "${selector}" not found within ${timeout} ms`));
+      reject(new Error(`Element "${checkerFn}" not found within ${timeout} ms`));
     }, timeout);
   });
+}
+
+
+export function createDeferredPromise() {
+  let resolve, reject;
+  
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  
+  return { promise, resolve, reject };
 }

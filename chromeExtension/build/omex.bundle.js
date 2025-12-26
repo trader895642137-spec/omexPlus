@@ -10,6 +10,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   COMMISSION_FACTOR: () => (/* binding */ COMMISSION_FACTOR),
 /* harmony export */   calculateOptionMargin: () => (/* binding */ calculateOptionMargin),
 /* harmony export */   configs: () => (/* binding */ configs),
+/* harmony export */   createDeferredPromise: () => (/* binding */ createDeferredPromise),
 /* harmony export */   getCommissionFactor: () => (/* binding */ getCommissionFactor),
 /* harmony export */   getNearSettlementPrice: () => (/* binding */ getNearSettlementPrice),
 /* harmony export */   getReservedMarginOfEstimationQuantity: () => (/* binding */ getReservedMarginOfEstimationQuantity),
@@ -496,9 +497,21 @@ const waitForElement = (parent,checkerFn, timeout = 4000) =>{
     // اگر بعد از timeout میلی‌ثانیه پیدا نشد → خطا بده
     const timer = setTimeout(() => {
       observer.disconnect();
-      reject(new Error(`Element "${selector}" not found within ${timeout} ms`));
+      reject(new Error(`Element "${checkerFn}" not found within ${timeout} ms`));
     }, timeout);
   });
+}
+
+
+function createDeferredPromise() {
+  let resolve, reject;
+  
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  
+  return { promise, resolve, reject };
 }
 
 /***/ }),
@@ -823,8 +836,9 @@ const getCustomerOptionStrategyEstimationWithItems = async () => {
 
 
 
-const selectStrategy =async ()=>{
-    const selectedGroupTitle = document.querySelector('client-option-positions-filter-bar .-is-group ng-select .u-ff-number').innerHTML;
+const selectStrategy =async (documentOfWindow)=>{
+    const _document  = documentOfWindow || document;
+    const selectedGroupTitle = _document.querySelector('client-option-positions-filter-bar .-is-group ng-select .u-ff-number').innerHTML;
 
     const groups = await getGroups();
 
@@ -843,11 +857,11 @@ const selectStrategy =async ()=>{
 
         strategy.items = Array.from(new Map(strategy.items.map(sItem => [sItem.instrumentId, sItem])).values());
 
-        const hasAllInstrumentId =  selectedGroup.positions.every(groupPosition=> strategy.items.find(sItem=>groupPosition.instrumentId===sItem.instrumentId && groupPosition.orderSide===sItem.side));
+        const hasAllInstrumentId =  selectedGroup.positions.every(groupPosition=> strategy.items.find(sItem=>groupPosition && sItem &&  groupPosition.instrumentId===sItem.instrumentId && groupPosition.orderSide===sItem.side));
 
 
         if(hasAllInstrumentId){
-            console.log('hasAllInstrumentId',hasAllInstrumentId,{strategy,selectedGroup})
+            // console.log('hasAllInstrumentId',hasAllInstrumentId,{strategy,selectedGroup})
         }
         return hasAllInstrumentId && strategy.items.length===selectedGroup.instrumentIds.length
 
@@ -857,27 +871,29 @@ const selectStrategy =async ()=>{
 
 
 
-    const  estimationListButton = document.querySelector('client-option-strategy-estimation-header button[label="لیست برآوردها"]');
+    const  estimationListButton = _document.querySelector('client-option-strategy-estimation-header button[label="لیست برآوردها"]');
 
 
     estimationListButton.click();
     await new Promise(r => setTimeout(r, 200));
 
-    const estimationListSearchInput = document.querySelector('client-option-strategy-estimation-list c-k-input-search input');
+    const estimationListSearchInput = _document.querySelector('client-option-strategy-estimation-list c-k-input-search input');
     estimationListSearchInput.value=  foundStrategy.title;
     estimationListSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
 
 
 
 
-    const searchResultElementList = document.querySelectorAll('client-option-strategy-estimation-list .o-items-container .o-item');
+    const searchResultElementList = _document.querySelectorAll('client-option-strategy-estimation-list .o-items-container .o-item');
 
     await new Promise(r => setTimeout(r, 200));
 
 
     Array.from(searchResultElementList).find(searchResultElement=>searchResultElement.querySelector('span').innerHTML===foundStrategy.title)?.click()
 
-    console.log(foundStrategy);
+    // console.log(foundStrategy);
+
+    return _document
     
 
 }
@@ -1229,6 +1245,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   calcProfitOfStrategy: () => (/* binding */ calcProfitOfStrategy),
 /* harmony export */   configs: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.configs),
 /* harmony export */   expectedProfit: () => (/* binding */ expectedProfit),
+/* harmony export */   openAllGroupsInNewTabs: () => (/* binding */ openAllGroupsInNewTabs),
 /* harmony export */   silentNotificationForMoment: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.silentNotificationForMoment),
 /* harmony export */   strategyPositions: () => (/* binding */ strategyPositions),
 /* harmony export */   unChekcedPositions: () => (/* binding */ unChekcedPositions)
@@ -1288,7 +1305,7 @@ let expectedProfit = {
 
 
 const createStatusCnt = () => {
-    let statusCnt = document.createElement('div');
+    let statusCnt = domContextWindow.document.createElement('div');
     statusCnt.classList.add('status-cnt');
     statusCnt.style.cssText += `
         padding: 0 10px;
@@ -1302,20 +1319,20 @@ const createStatusCnt = () => {
     statusCnt.addEventListener('click', function(event) {
         doubleCheckProfitByExactDecimalPricesOfPortFolio(strategyPositions,true)
     });
-    document.querySelector('client-option-layout-action-bar').append(statusCnt)
+    domContextWindow.document.querySelector('client-option-layout-action-bar').append(statusCnt)
     return statusCnt
 }
 
 const getStatusCnt = () => {
 
-    let statusCnt = document.querySelector('client-option-layout-action-bar .status-cnt') || createStatusCnt()
+    let statusCnt = domContextWindow.document.querySelector('client-option-layout-action-bar .status-cnt') || createStatusCnt()
 
     return statusCnt
 
 }
 
 const createDeleteAllOrdersButton = () => {
-    let removeAllOrderButton = document.createElement('button');
+    let removeAllOrderButton = domContextWindow.document.createElement('button');
     removeAllOrderButton.classList.add('remove-all-order-button');
     removeAllOrderButton.textContent = 'حذف همه سفارشات';
     removeAllOrderButton.style.cssText += `
@@ -1327,7 +1344,7 @@ const createDeleteAllOrdersButton = () => {
         _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.deleteAllOpenOrders();
     });
     
-    document.querySelector('client-option-reports-actions').append(removeAllOrderButton)
+    domContextWindow.document.querySelector('client-option-reports-actions').append(removeAllOrderButton)
     return removeAllOrderButton
 }
 
@@ -1346,8 +1363,8 @@ const stopDraggingWrongOfOrdersModals =()=>{
 }
 
 const createStrategyExpectedProfitCnt = () => {
-    let parent = document.createElement('div');
-    let cnt = document.createElement('div');
+    let parent = domContextWindow.document.createElement('div');
+    let cnt = domContextWindow.document.createElement('div');
     cnt.classList.add('status-cnt');
     parent.style.cssText += `
             position:absolute;
@@ -1363,23 +1380,23 @@ const createStrategyExpectedProfitCnt = () => {
             top: -8px;
             transform: translateX(-50%);
         `;
-    let currentStockPriceInput = document.createElement('input');
+    let currentStockPriceInput = domContextWindow.document.createElement('input');
     currentStockPriceInput.classList.add('current-stock-price');
 
     currentStockPriceInput.style.cssText += `border: 1px solid #EEE;`
     parent.append(currentStockPriceInput)
     parent.append(cnt)
 
-    document.querySelector('client-option-strategy-estimation-main .o-footer').style.cssText += `
+    domContextWindow.document.querySelector('client-option-strategy-estimation-main .o-footer').style.cssText += `
             position: relative;
         `;
-    document.querySelector('client-option-strategy-estimation-main .o-footer').append(parent)
+    domContextWindow.document.querySelector('client-option-strategy-estimation-main .o-footer').append(parent)
     return cnt
 }
 
 const getStrategyExpectedProfitCnt = () => {
 
-    let cnt = document.querySelector('client-option-strategy-estimation-main .o-footer .status-cnt') || createStrategyExpectedProfitCnt()
+    let cnt = domContextWindow.document.querySelector('client-option-strategy-estimation-main .o-footer .status-cnt') || createStrategyExpectedProfitCnt()
     return cnt
 
 }
@@ -1880,7 +1897,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
     return assetRowLementList.map(optionRowEl => {
 
         const instrumentName = optionRowEl.querySelector('.instrument-title span').innerHTML;
-        let optionID = Array.from(document.querySelectorAll('client-option-positions-main .ag-pinned-right-cols-container .ag-row'))?.find(optionNameCellEl => Array.from(optionNameCellEl.querySelectorAll('span'))?.find(span => span.innerHTML === instrumentName))?.getAttribute('row-id');
+        let optionID = Array.from(domContextWindow.document.querySelectorAll('client-option-positions-main .ag-pinned-right-cols-container .ag-row'))?.find(optionNameCellEl => Array.from(optionNameCellEl.querySelectorAll('span'))?.find(span => span.innerHTML === instrumentName))?.getAttribute('row-id');
         const isBuy = optionRowEl.querySelector('client-option-strategy-estimation-main-ui-order-side .-isActive')?.classList?.contains('buy');
 
         const isOption = (0,_omexApi_js__WEBPACK_IMPORTED_MODULE_1__.isInstrumentNameOfOption)(instrumentName);
@@ -1904,7 +1921,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
         })()
 
-        const ordersModal = Array.from(document.querySelectorAll('client-option-instrument-favorites-item-layout-modal')).find(modal => {
+        const ordersModal = Array.from(domContextWindow.document.querySelectorAll('client-option-instrument-favorites-item-layout-modal')).find(modal => {
             return Array.from(modal.querySelectorAll('label')).find(label => label.innerHTML === instrumentName)
         }
         );
@@ -1935,7 +1952,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         let cachedCurrentPositionQuantityElement;
         const getCurrentPositionQuantity = () => {
 
-            cachedCurrentPositionQuantityElement = document.body.contains(cachedCurrentPositionQuantityElement) ? cachedCurrentPositionQuantityElement : document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy ? 'buyCount' : 'sellCount'}"]`);
+            cachedCurrentPositionQuantityElement = domContextWindow.document.body.contains(cachedCurrentPositionQuantityElement) ? cachedCurrentPositionQuantityElement : domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy ? 'buyCount' : 'sellCount'}"]`);
 
             let currentPositionQuantity
             if (cachedCurrentPositionQuantityElement) {
@@ -1952,13 +1969,13 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
         let cachedOrderModalPortfolioQuantityElement;
         const getOrderModalPortfolioQuantity = () => {
-            cachedOrderModalPortfolioQuantityElement = document.body.contains(cachedOrderModalPortfolioQuantityElement) ? cachedOrderModalPortfolioQuantityElement : ordersModal.querySelector('.o-quantityContainer footer span');
+            cachedOrderModalPortfolioQuantityElement = domContextWindow.document.body.contains(cachedOrderModalPortfolioQuantityElement) ? cachedOrderModalPortfolioQuantityElement : ordersModal.querySelector('.o-quantityContainer footer span');
             return convertStringToInt(cachedOrderModalPortfolioQuantityElement?.innerHTML) || 0
 
         }
         let cachedOrderModalQuantityFooterElement
         const getOrderModalQuantityFooterElement = () => {
-            if (!document.body.contains(cachedOrderModalQuantityFooterElement)) {
+            if (!domContextWindow.document.body.contains(cachedOrderModalQuantityFooterElement)) {
                 cachedOrderModalQuantityFooterElement = ordersModal.querySelector('.o-quantityContainer footer')
             }
 
@@ -1969,7 +1986,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
         let cachedOrderModalTradePanelElement
         const getOrderModalTradePanelElement = () => {
-            if (!document.body.contains(cachedOrderModalTradePanelElement)) {
+            if (!domContextWindow.document.body.contains(cachedOrderModalTradePanelElement)) {
                 cachedOrderModalTradePanelElement = ordersModal.querySelector('client-instrument-favorites-item-trade-panel')
             }
 
@@ -1981,7 +1998,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
         let cachedOrderModalStrategyDropdownElement;
         const getOrderModalStrategyDropdownElement = ()=>{
-            if (!document.body.contains(cachedOrderModalTradePanelElement)) {
+            if (!domContextWindow.document.body.contains(cachedOrderModalTradePanelElement)) {
                 cachedOrderModalStrategyDropdownElement = ordersModal.querySelector('client-instrument-favorites-item-trade-panel ng-select.-is-strategyDropdown');
             }
 
@@ -1995,7 +2012,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
          let cachedOrderModalQuantityInputElement;
         const getOrderModalQuantityInputElement = ()=>{
-            if (!document.body.contains(cachedOrderModalQuantityInputElement)) {
+            if (!domContextWindow.document.body.contains(cachedOrderModalQuantityInputElement)) {
                 cachedOrderModalQuantityInputElement =ordersModal.querySelector('#tabKey-optionTradeQuantityInput');
             }
 
@@ -2008,7 +2025,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         
          let cachedOrderModalQuantityInputArrowUpElement;
         const getOrderModalQuantityInputArrowUpElement = ()=>{
-            if (!document.body.contains(cachedOrderModalQuantityInputArrowUpElement)) {
+            if (!domContextWindow.document.body.contains(cachedOrderModalQuantityInputArrowUpElement)) {
                 cachedOrderModalQuantityInputArrowUpElement = ordersModal.querySelector('[iconname="arrow-up-filled"]');
             }
 
@@ -2019,7 +2036,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
          let cachedOrderModalPriceElement;
         const getOrderModalPriceInputElement = ()=>{
-            if (!document.body.contains(cachedOrderModalPriceElement)) {
+            if (!domContextWindow.document.body.contains(cachedOrderModalPriceElement)) {
                  cachedOrderModalPriceElement =ordersModal.querySelector('#tabKey-optionTradePriceInput');
             }
 
@@ -2076,8 +2093,8 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         const getCurrentPositionAvgPrice = () => {
             const executedPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="executedPrice"]`;
             const breakEvenPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="breakEvenPrice"]`;
-            const executedPrice = convertStringToInt(document.querySelector(executedPriceSelector)?.innerHTML);
-            const breakEvenPrice = convertStringToInt(document.querySelector(breakEvenPriceSelector)?.innerHTML);
+            const executedPrice = convertStringToInt(domContextWindow.document.querySelector(executedPriceSelector)?.innerHTML);
+            const breakEvenPrice = convertStringToInt(domContextWindow.document.querySelector(breakEvenPriceSelector)?.innerHTML);
             const diffPrices = Math.abs(breakEvenPrice - executedPrice);
             const breakEvenPriceNumLength = breakEvenPrice.toString().length;
             const hasIssue = () => {
@@ -2089,7 +2106,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
                 return false
             }
             if (executedPrice && breakEvenPrice && hasIssue()) {
-                !window.doNotNotifAvrageIssue && (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+                !domContextWindow.window.doNotNotifAvrageIssue && (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
                     title: 'مشکل میانگین',
                     body: `${instrumentName}`,
                     tag: `${instrumentName}-CurrentPositionAvgPriceIssue`
@@ -2105,11 +2122,11 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         let cachedUnreliableCurrentPositionAvgPriceElement;
         const getUnreliableCurrentPositionAvgPrice = () => {
 
-            if (!document.body.contains(cachedUnreliableCurrentPositionAvgPriceElement)) {
+            if (!domContextWindow.document.body.contains(cachedUnreliableCurrentPositionAvgPriceElement)) {
                 const labelText = 'میانگین';
                 const xpath = `.//label[normalize-space(text())='${labelText}']/following-sibling::span[1]`;
 
-                const avgPriceElement = document.evaluate(
+                const avgPriceElement = domContextWindow.document.evaluate(
                     xpath,
                     ordersModal, // فقط در این محدوده بگرد
                     null,
@@ -2132,7 +2149,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
 
         const getStrategyName = () => {
-            return document.querySelector('client-option-strategy-estimation-header c-k-input-text input')?.value
+            return domContextWindow.document.querySelector('client-option-strategy-estimation-header c-k-input-text input')?.value
         }
 
         const getBestOpenMorePriceWithSideSign = () => {
@@ -2142,7 +2159,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             return bestOpenMorePrice * (isBuy ? -1 : 1);
         }
 
-        const strikePrice = convertStringToInt(document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="strikePrice"]`)?.innerHTML) || convertStringToInt(optionRowEl.querySelectorAll('.o-item-row > div')[5].innerHTML);
+        const strikePrice = convertStringToInt(domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="strikePrice"]`)?.innerHTML) || convertStringToInt(optionRowEl.querySelectorAll('.o-item-row > div')[5].innerHTML);
         
 
         const getStrikePriceWithSideSign = () => {
@@ -2169,7 +2186,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         const getBaseInstrumentPriceOfOption = () => {
 
 
-            const baseInstrumentPriceInputEl = document.querySelector('.current-stock-price');
+            const baseInstrumentPriceInputEl = domContextWindow.document.querySelector('.current-stock-price');
 
             return baseInstrumentPriceInputEl && convertStringToInt(baseInstrumentPriceInputEl.value);
 
@@ -2381,7 +2398,7 @@ const observeInputBoxInRowOfStrategy = () => {
 
 
 const observePortfolioQuantityOfOrderModal = () => {
-    // TODO:FIXME: use document.body.contains(...)
+    // TODO:FIXME: use domContextWindow.document.body.contains(...)
 
 
     let currentPositionQuantityUnbalanceInformerTimeout;
@@ -2494,7 +2511,7 @@ const observePortfolioQuantityOfOrderModal = () => {
         const tabClickHandler = ()=>{
              setTimeout(() => {
 
-                    const isTradePanelVisible = document.body.contains(strategyPositionObj.getOrderModalTradePanelElement());
+                    const isTradePanelVisible = domContextWindow.document.body.contains(strategyPositionObj.getOrderModalTradePanelElement());
 
                     if (isTradePanelVisible) {
                         PortfolioQuantityObserver && PortfolioQuantityObserver.disconnect();
@@ -2583,7 +2600,7 @@ const observeMyOrderInOrdersModal = () => {
                     const pulseElement = strategyPositionObj.ordersModal.querySelector(`ul.${isBuy ? '-is-buy' : '-is-sell'} .c-pulse`)
                     if (!pulseElement) return
 
-                    const pulseStyle = window.getComputedStyle(pulseElement);
+                    const pulseStyle = domContextWindow.window.getComputedStyle(pulseElement);
 
                     if (pulseStyle.display === 'none') return false;
                     if (pulseStyle.visibility === 'hidden') return false;
@@ -2792,8 +2809,10 @@ const observePriceChanges = () => {
 
         }
 
-        strategyPositionObj.assetDetailsIconClickHandler && strategyPositionObj.ordersModal.querySelector('[iconname="details-outlined"]').removeEventListener('click',strategyPositionObj.assetDetailsIconClickHandler);
-        strategyPositionObj.ordersModal.querySelector('[iconname="details-outlined"]').addEventListener('click', assetDetailsIconClickHandler );
+        const detailsButton = strategyPositionObj?.ordersModal?.querySelector('[iconname="details-outlined"]');
+
+        strategyPositionObj.assetDetailsIconClickHandler && detailsButton && detailsButton.removeEventListener('click',strategyPositionObj.assetDetailsIconClickHandler);
+        detailsButton && detailsButton.addEventListener('click', assetDetailsIconClickHandler );
         strategyPositionObj.assetDetailsIconClickHandler = assetDetailsIconClickHandler;
 
 
@@ -3510,9 +3529,9 @@ const injectStyles = () => {
             }
         `;
 
-    const style = document.createElement("style");
+    const style = domContextWindow.document.createElement("style");
     style.textContent = css;
-    document.head.appendChild(style);
+    domContextWindow.document.head.appendChild(style);
 }
 
 const fillCurrentStockPriceByStrikes = (strategyPositions)=>{
@@ -3520,7 +3539,7 @@ const fillCurrentStockPriceByStrikes = (strategyPositions)=>{
     const greaterThanStrikes = Math.max(...strategyPositions.map(sp=>sp.strikePrice)) * 1.2;
 
 
-    const baseInstrumentPriceInputEl = document.querySelector('.current-stock-price');
+    const baseInstrumentPriceInputEl = domContextWindow.document.querySelector('.current-stock-price');
 
 
     baseInstrumentPriceInputEl.value = greaterThanStrikes
@@ -3555,14 +3574,112 @@ const getAndSetInstrumentData = async (strategyPositions)=>{
 
 }
 
+
+const openModalOfAllPositionsRows = async (documentOfWindow=document) => {
+
+    const _document  = documentOfWindow;
+
+    const estimationPositionRowList = Array.from(_document.querySelectorAll('client-option-strategy-estimation-main .o-item-body'));
+
+
+    for (const estimationPositionRow of estimationPositionRowList) {
+        const openModalButton = estimationPositionRow.querySelector('.o-instrument-container button');
+        if (!openModalButton?.click) continue;
+
+        openModalButton.click();
+        await new Promise(r => setTimeout(r, 300)); 
+    }
+   
+}
+
+const openWindowAndSelectGroup = (groupTitle) => {
+
+    const { promise, resolve, reject } = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.createDeferredPromise)();
+    const newWindow = window.open(`${origin}/#/stock/derivative/main/strategy-estimation`);
+
+    if (!newWindow) {
+        alert('پنجره توسط مرورگر مسدود شد!');
+        return;
+    }
+
+    newWindow.onload = function () {
+        setTimeout(async function () {
+            try {
+                const groupTab = await (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.waitForElement)(newWindow.document,()=>newWindow.document.querySelector('c-k-tab-default:nth-child(4) button'),60000);
+                groupTab.click();
+                await (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.waitForElement)(newWindow.document,()=>newWindow.document.querySelector('client-option-positions-layout client-option-positions-main client-grid .ag-body-viewport div[comp-id]'),60000);
+                await new Promise(r => setTimeout(r, 100));
+                newWindow.document.querySelector('c-k-filter-button button').click();
+                await new Promise(r => setTimeout(r, 100));
+
+                const groupSearchBox = newWindow.document.querySelector('client-option-positions-filter-bar ng-select[placeholder="انتخاب گروه"]');
+                groupSearchBox.querySelector('input').value = groupTitle;
+                groupSearchBox.querySelector('input').dispatchEvent(new Event('input', { bubbles: true }));
+                await new Promise(r => setTimeout(r, 100));
+                groupSearchBox.querySelector('ng-dropdown-panel .ng-option:first-child').click();
+
+                resolve(newWindow);
+
+            } catch (e) {
+                
+                console.error('خطا در دسترسی به پنجره:', e);
+                reject(new Error("خطایی رخ داد"));
+
+            }
+        }, 200); // تأخیر برای اطمینان از رندر شدن UI
+    };
+
+    return promise
+}
+
+const openAllGroupsInNewTabs = async ()=>{
+
+    const groups = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getGroups();
+
+    const doer = async (groupName)=>{
+
+        const childWindow = await openWindowAndSelectGroup(groupName);
+
+        await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.selectStrategy(childWindow.document);
+
+
+
+        await (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.waitForElement)(childWindow.document,()=>childWindow.document.querySelector('client-option-strategy-estimation-main .o-item-body .o-instrument-container button'),60000);
+
+        await new Promise(r => setTimeout(r, 1000));
+
+
+        await openModalOfAllPositionsRows(childWindow.document);
+
+        await new Promise(r => setTimeout(r, 1000));
+
+        Run(childWindow)
+
+
+
+    }
+
+    // for (const group of groups.slice(0, 1)) {
+    for (const group of groups) {
+
+        doer(group.name);
+        await new Promise(r => setTimeout(r, 1000));
+        
+    }
+
+}
+
 let strategyPositions;
 let unChekcedPositions;
-const Run = async () => {
 
 
+let domContextWindow = window;
+const Run = async (_window = window) => {
+
+    domContextWindow = _window
     
-    strategyPositions = createPositionObjectArrayByElementRowArray(Array.from(document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => rowEl.querySelector('c-k-input-checkbox input').checked));
-    unChekcedPositions  = createPositionObjectArrayByElementRowArray(Array.from(document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => !rowEl.querySelector('c-k-input-checkbox input').checked));
+    strategyPositions = createPositionObjectArrayByElementRowArray(Array.from(domContextWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => rowEl.querySelector('c-k-input-checkbox input').checked));
+    unChekcedPositions  = createPositionObjectArrayByElementRowArray(Array.from(domContextWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => !rowEl.querySelector('c-k-input-checkbox input').checked));
 
 
     injectStyles()
