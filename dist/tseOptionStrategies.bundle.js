@@ -22,6 +22,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   settlementProfitCalculator: () => (/* binding */ settlementProfitCalculator),
 /* harmony export */   showNotification: () => (/* binding */ showNotification),
 /* harmony export */   silentNotificationForMoment: () => (/* binding */ silentNotificationForMoment),
+/* harmony export */   takeScreenshot: () => (/* binding */ takeScreenshot),
 /* harmony export */   totalCostCalculator: () => (/* binding */ totalCostCalculator),
 /* harmony export */   totalCostCalculatorForPriceTypes: () => (/* binding */ totalCostCalculatorForPriceTypes),
 /* harmony export */   waitForElement: () => (/* binding */ waitForElement)
@@ -514,6 +515,63 @@ function createDeferredPromise() {
   return { promise, resolve, reject };
 }
 
+
+
+
+async function takeScreenshot() {
+  const stream = await navigator.mediaDevices.getDisplayMedia({
+    video: true,
+    audio: false,
+    preferCurrentTab: true,
+    selfBrowserSurface: "include",
+  });
+
+  const video = document.createElement('video');
+  video.srcObject = stream;
+  await video.play();
+
+  // کمی صبر برای آماده شدن فریم
+  await new Promise(r => setTimeout(r, 200));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  canvas.getContext('2d').drawImage(video, 0, 0);
+
+  // خیلی مهم: استریم رو ببند
+  stream.getTracks().forEach(t => t.stop());
+
+  // تبدیل به blob
+  const blob = await new Promise(res =>
+    canvas.toBlob(res, 'image/png')
+  );
+
+
+  try {
+    // نوشتن در clipboard
+    await navigator.clipboard.write([
+      new ClipboardItem({ 'image/png': blob })
+    ]);
+    console.log('Screenshot copied to clipboard');
+    
+  } catch (error) {
+    
+  }
+  
+
+   // 👇 شروع دانلود
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `screenshot-${Date.now()}.png`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+
+  
+}
 
 
 /***/ }),

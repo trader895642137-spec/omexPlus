@@ -5,7 +5,8 @@ import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalc
     getReservedMarginOfEstimationQuantity,
     showNotification,
     createDeferredPromise,
-    waitForElement} from './common.js';
+    waitForElement,
+    takeScreenshot} from './common.js';
 import { isInstrumentNameOfOption,  OMEXApi } from './omexApi.js';
 
 
@@ -2463,7 +2464,8 @@ export const createGroupOfCurrentStrategy = ()=>{
     }).then(()=>{
 
         showToast('گروه ایجاد شد');
-    })
+    });
+    takeScreenshot();
 }
 
 export function showToast(message, duration = 2000) {
