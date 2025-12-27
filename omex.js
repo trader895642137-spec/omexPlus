@@ -672,7 +672,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
         })()
 
-        const ordersModal = Array.from(domContextWindow.document.querySelectorAll('client-option-instrument-favorites-item-layout-modal')).find(modal => {
+        const ordersModal = Array.from(domContextWindow.document.querySelectorAll('client-option-modal-trade-layout')).find(modal => {
             return Array.from(modal.querySelectorAll('label')).find(label => label.innerHTML === instrumentName)
         }
         );
@@ -2224,7 +2224,7 @@ const injectStyles = () => {
                 background-color: rgba(250, 174, 180, 0.6) !important
             }
 
-            client-option-instrument-favorites-item-layout-modal{
+            client-option-modal-trade-layout{
                 width: 270px !important;
             }
 
@@ -2233,7 +2233,7 @@ const injectStyles = () => {
                 padding-right : 9px !important;
             }
 
-            client-option-instrument-favorites-item-layout-modal .o-inModalWrapper{
+            client-option-modal-trade-layout .o-inModalWrapper{
                 overflow: initial !important;
             }
 
@@ -2391,30 +2391,34 @@ export const openAllGroupsInNewTabs = async ()=>{
 
         const childWindow = await openWindowAndSelectGroup(groupName);
 
-        await OMEXApi.selectStrategy(childWindow.document);
+        const {strategyRowLength} = await OMEXApi.selectStrategy(childWindow.document);
 
 
 
-        await waitForElement(childWindow.document,()=>childWindow.document.querySelector('client-option-strategy-estimation-main .o-item-body .o-instrument-container button'),60000);
+        await waitForElement(childWindow.document,()=>{
+            const openModalButtnList = childWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-item-body .o-instrument-container button:first-child');
+            return strategyRowLength ? (openModalButtnList.length === strategyRowLength) : openModalButtnList
 
-        await new Promise(r => setTimeout(r, 1000));
+        },60000);
+
+        // await new Promise(r => setTimeout(r, 10000));
 
 
-        await openModalOfAllPositionsRows(childWindow.document);
+        // await openModalOfAllPositionsRows(childWindow.document);
 
-        await new Promise(r => setTimeout(r, 1000));
+        // await new Promise(r => setTimeout(r, 1000));
 
-        Run(childWindow)
+        // Run(childWindow)
 
 
 
     }
 
-    // for (const group of groups.slice(0, 1)) {
-    for (const group of groups) {
+    for (const group of groups.slice(0, 1)) {
+    // for (const group of groups) {
 
         doer(group.name);
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 100));
         
     }
 

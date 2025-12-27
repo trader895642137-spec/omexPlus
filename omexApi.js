@@ -324,6 +324,7 @@ const selectStrategy =async (documentOfWindow)=>{
     const foundStrategy = strategies.find(strategy=> {
 
 
+        strategy.rowLength = strategy.items.length;
         strategy.items = Array.from(new Map(strategy.items.map(sItem => [sItem.instrumentId, sItem])).values());
 
         const hasAllInstrumentId =  selectedGroup.positions.every(groupPosition=> strategy.items.find(sItem=>groupPosition && sItem &&  groupPosition.instrumentId===sItem.instrumentId && groupPosition.orderSide===sItem.side));
@@ -362,7 +363,7 @@ const selectStrategy =async (documentOfWindow)=>{
 
     // console.log(foundStrategy);
 
-    return _document
+    return {_document,strategyRowLength:foundStrategy.rowLength}
     
 
 }
