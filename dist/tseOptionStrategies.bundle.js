@@ -15668,7 +15668,7 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
                             if (BUCS_BECS_diffStrikesRatio < MIN_BUCS_BECS_diffStrikesRatio || BUCS_BECS_diffStrikesRatio > MAX_BUCS_BECS_diffStrikesRatio)
                                 return ___allPossibleStrategies
 
-
+                            const isButterFly = diffOfBUCS_Strikes === diffOfBECS_Strikes &&  option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice;
                             const strategyPositions = [
                                 {
                                     ...option,
@@ -15686,7 +15686,7 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
                                     ...option3,
                                     isSell: true,
                                     getQuantity: () => baseQuantity * BUCS_BECS_diffStrikesRatio,
-                                    getRequiredMargin: () => diffOfBECS_Strikes
+                                    getRequiredMargin: () => isButterFly ? 0 : diffOfBECS_Strikes
                                 },
                                 {
                                     ...option4,
@@ -15748,6 +15748,12 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
 
                             if(minProfitPercent > 0 && (stockPrice > (maxStrike* 1.1)) &&    minProfitPercent < 0.02){
                                 return ___allPossibleStrategies
+                            }
+
+
+                            if(option.symbol==='ضهرم1018' && option2.symbol==='ضهرم1021' && option3.symbol==='ضهرم1021' && option4.symbol==='ضهرم1023'){
+                                console.log(3432);
+                                
                             }
 
                             const strategyObj = {
@@ -15977,7 +15983,7 @@ const calcCALL_BUTTERFLYStrategies = (list, {
                         if (BUCS_BECS_diffStrikesRatio < MIN_BUCS_BECS_diffStrikesRatio || BUCS_BECS_diffStrikesRatio > MAX_BUCS_BECS_diffStrikesRatio)
                             return ___allPossibleStrategies
 
-
+                        const isButterFly = diffOfBUCS_Strikes === diffOfBECS_Strikes &&  option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice;
                         const strategyPositions = [
                             {
                                 ...option,
@@ -15995,7 +16001,7 @@ const calcCALL_BUTTERFLYStrategies = (list, {
                                 ...option3,
                                 isSell: true,
                                 getQuantity: () => baseQuantity * BUCS_BECS_diffStrikesRatio,
-                                getRequiredMargin: () => diffOfBECS_Strikes
+                                getRequiredMargin: () => isButterFly ? 0 : diffOfBECS_Strikes
                             },
                             {
                                 ...option4,
@@ -16295,8 +16301,7 @@ const calcCALL_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTy
                                 return ___allPossibleStrategies
 
 
-
-
+                            const isButterFly = diffOfBUCS_Strikes === diffOfBECS_Strikes &&  option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice;
                             const strategyPositions = [
                                 {
                                     ...option,
@@ -16314,7 +16319,7 @@ const calcCALL_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTy
                                     ...option3,
                                     isSell: true,
                                     getQuantity: () => baseQuantity * BUCS_BECS_diffStrikesRatio,
-                                    getRequiredMargin: () => diffOfBECS_Strikes
+                                    getRequiredMargin: () => isButterFly ? 0 :  diffOfBECS_Strikes
                                 },
                                 {
                                     ...option4,
