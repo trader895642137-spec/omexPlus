@@ -16,7 +16,7 @@ document.getElementById('mainButton').addEventListener('click', () => {
                 func: (actionName) => {
 
                     window.omexLib.Run();
-                    
+
                 },
                 args: ['MAIN'],
                 world: "MAIN"
@@ -46,7 +46,7 @@ document.getElementById('selectStrategyButton').addEventListener('click', () => 
                 func: (actionName) => {
 
                     window.omexLib.OMEXApi.selectStrategy();
-                    
+
                 },
                 args: ['SELECT_STRATEGY'],
                 world: "MAIN"
@@ -74,7 +74,7 @@ document.getElementById('fillEstimationPanelByStrategyName').addEventListener('c
                 func: (actionName) => {
 
                     window.omexLib.OMEXApi.fillEstimationPanelByStrategyName();
-                    
+
                 },
                 args: ['FILL-ESTIMATION-PANEL-BY-STRATEGY-NAME'],
                 world: "MAIN"
@@ -103,7 +103,7 @@ document.getElementById('silentNotificationForMoment').addEventListener('click',
                 target: { tabId: tabs[0].id },
                 func: (actionName) => {
                     window.omexLib.silentNotificationForMoment();
-                    
+
                 },
                 args: ['SILENT-NOTIFICATION-FOR-MOMENT'],
                 world: "MAIN"
@@ -118,8 +118,8 @@ document.getElementById('silentNotificationForMoment').addEventListener('click',
 
 
 
-document.getElementById('openAllGroupsInNewTabs').addEventListener('click', () => {
 
+const openAllGroupsInNewTabs = () => {
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
 
@@ -134,7 +134,7 @@ document.getElementById('openAllGroupsInNewTabs').addEventListener('click', () =
                 target: { tabId: tabs[0].id },
                 func: (actionName) => {
                     window.omexLib.openAllGroupsInNewTabs();
-                    
+
                 },
                 args: ['OPEN-ALL-GROUPS-IN-NEW-TABS'],
                 world: "MAIN"
@@ -142,9 +142,39 @@ document.getElementById('openAllGroupsInNewTabs').addEventListener('click', () =
         });
     });
 
+}
 
+
+
+
+let holdTimer = null;
+let isHolding = false;
+
+const HOLD_TIME = 3000;
+
+document.getElementById('openAllGroupsInNewTabs').addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return; // فقط کلیک چپ
+
+    isHolding = true;
+
+    holdTimer = setTimeout(() => {
+        if (isHolding) {
+            openAllGroupsInNewTabs();
+        }
+    }, HOLD_TIME);
 });
 
+const cancelHold = () => {
+    console.log('cancelHold');
+    
+    isHolding = false;
+    clearTimeout(holdTimer);
+    holdTimer = null;
+};
+
+document.getElementById('openAllGroupsInNewTabs').addEventListener('mouseleave', cancelHold);
+document.addEventListener('mouseup', cancelHold);
+window.addEventListener('blur', cancelHold);
 
 
 

@@ -2404,7 +2404,7 @@ export const openAllGroupsInNewTabs = async ()=>{
         // await new Promise(r => setTimeout(r, 10000));
 
 
-        // await openModalOfAllPositionsRows(childWindow.document);
+        await openModalOfAllPositionsRows(childWindow.document);
 
         // await new Promise(r => setTimeout(r, 1000));
 
@@ -2414,8 +2414,8 @@ export const openAllGroupsInNewTabs = async ()=>{
 
     }
 
-    for (const group of groups.slice(0, 1)) {
-    // for (const group of groups) {
+    // for (const group of groups.slice(0, 1)) {
+    for (const group of groups) {
 
         doer(group.name);
         await new Promise(r => setTimeout(r, 100));
