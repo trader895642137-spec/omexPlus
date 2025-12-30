@@ -283,12 +283,14 @@ export const settlementGainCalculator = ({ strategyPositions, stockPrice })=>{
 
 
   if (sumSettlementGainsInfo?.remainedQuantity > 0) {
-    const sellStockFee = isTaxFree(valuablePositions[0]) ? COMMISSION_FACTOR.ETF.SELL : COMMISSION_FACTOR.STOCK.SELL;
+    const optionPosition =  strategyPositions.find(sp=>sp.isOption);
+    const sellStockFee = isTaxFree(optionPosition) ? COMMISSION_FACTOR.ETF.SELL : COMMISSION_FACTOR.STOCK.SELL;
     sumSettlementGainsInfo.sumOfGains += (sumSettlementGainsInfo.remainedQuantity * (stockPrice - (stockPrice * sellStockFee)))
     sumSettlementGainsInfo.remainedQuantity = 0;
   } else if (sumSettlementGainsInfo?.remainedQuantity < 0) {
+    const optionPosition =  strategyPositions.find(sp=>sp.isOption);
     const quantityNeedToBuy = Math.abs(sumSettlementGainsInfo.remainedQuantity);
-    const buyStockFee = isTaxFree(valuablePositions[0]) ? COMMISSION_FACTOR.ETF.BUY : COMMISSION_FACTOR.STOCK.BUY;
+    const buyStockFee = isTaxFree(optionPosition) ? COMMISSION_FACTOR.ETF.BUY : COMMISSION_FACTOR.STOCK.BUY;
     sumSettlementGainsInfo.sumOfGains -= (quantityNeedToBuy * (stockPrice + (stockPrice * buyStockFee)))
     sumSettlementGainsInfo.remainedQuantity = 0;
   }

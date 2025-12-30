@@ -685,10 +685,10 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to
 
                     const settlementGain =  settlementGainCalculator({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
 
+                    const profitOfSettlement = totalCost + settlementGain;
+                    const profitPercentOfSettlement = profitOfSettlement / Math.abs(totalCost);
 
-                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
-
-                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0) return _allPossibleStrategies
                     
                     const strategyObj = {
                         // TODO:remove option prop
@@ -901,10 +901,10 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, m
 
                     const settlementGain =  settlementGainCalculator({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
 
+                    const profitOfSettlement = totalCost + settlementGain;
+                    const profitPercentOfSettlement = profitOfSettlement / Math.abs(totalCost);
 
-                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
-
-                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0) return _allPossibleStrategies
 
                     
                     const strategyObj = {
@@ -2010,6 +2010,9 @@ const calcSyntheticCoveredCallStrategies = (list,
                     const breakeven = breakevenList[0];
 
 
+                    if(!sellingCall?.optionDetails?.stockSymbolDetails?.last) return _allPossibleStrategies
+
+
                     const stockPriceToSarBeSarPercent = (sellingCall.optionDetails.stockSymbolDetails.last/breakeven) - 1;
 
 
@@ -2264,11 +2267,10 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
 
 
                     const settlementGain =  settlementGainCalculator({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+                    const profitOfSettlement = totalCost + settlementGain;
+                    const profitPercentOfSettlement = profitOfSettlement / Math.abs(totalCost);
 
-
-                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
-
-                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0) return _allPossibleStrategies
 
 
                     const strategyObj = {
@@ -2569,10 +2571,10 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
                             }
 
 
-                            if(option.symbol==='ضهرم1018' && option2.symbol==='ضهرم1021' && option3.symbol==='ضهرم1021' && option4.symbol==='ضهرم1023'){
-                                console.log(3432);
+                            // if(option.symbol==='ضهرم1018' && option2.symbol==='ضهرم1021' && option3.symbol==='ضهرم1021' && option4.symbol==='ضهرم1023'){
+                            //     console.log(3432);
                                 
-                            }
+                            // }
 
                             const strategyObj = {
                                 option: {
@@ -6678,6 +6680,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
                         }else if(!breakeven){
                             return _allPossibleStrategies
                         }else{
+                            if(!anotherSellingCall?.optionDetails?.stockSymbolDetails?.last) return _allPossibleStrategies
 
                             stockPriceToSarBeSarPercent = (anotherSellingCall.optionDetails.stockSymbolDetails.last/breakeven) -1
 
@@ -6951,6 +6954,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                         }else if(!breakeven){
                             return _allPossibleStrategies
                         }else{
+                            if(!sellingCall?.optionDetails?.stockSymbolDetails?.last) return _allPossibleStrategies
 
                             stockPriceToSarBeSarPercent = (sellingCall.optionDetails.stockSymbolDetails.last/breakeven) -1
 
@@ -7676,11 +7680,11 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
 
 
                     const settlementGain =  settlementGainCalculator({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+                    const profitOfSettlement = totalCost + settlementGain;
+                    const profitPercentOfSettlement = profitOfSettlement / Math.abs(totalCost);
 
 
-                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
-
-                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0) return _allPossibleStrategies
 
 
 
@@ -7884,11 +7888,10 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
 
                     const settlementGain =  settlementGainCalculator({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+                    const profitOfSettlement = totalCost + settlementGain;
+                    const profitPercentOfSettlement = profitOfSettlement / Math.abs(totalCost);
 
-
-                    const profitPercentOfSettlement = settlementGain / Math.abs(totalCost);
-
-                    if(profitPercentOfSettlement<0.998) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<0) return _allPossibleStrategies
 
 
                     const strategyObj = {
@@ -9746,7 +9749,7 @@ const calcBuyStockStrategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
-const calcMARRIED_PUTStrategies = (list, {priceType, expectedProfitPerMonth, 
+const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth, 
     isProfitEnoughFn,
     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
@@ -9811,20 +9814,31 @@ const calcMARRIED_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
                 })
             });
 
-            const profit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: option.optionDetails?.stockSymbolDetails?.last });
 
-            const profitPercent = profit / Math.abs(totalCost);
+
+
+            const settlementGain =  settlementGainCalculator({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+
+            const profit = totalCost + settlementGain;
+            const profitPercentOfSettlement = profit / Math.abs(totalCost);
+
+
+            // if(option.symbol==='طملت2048'){
+            //     console.log(4234324);
+                
+            // }
+
             const strategyObj = {
                 option: {
                     ...option
                 },
                 positions:[option.optionDetails?.stockSymbolDetails, option],
-                strategyTypeTitle: "MARRIED_PUT",
+                strategyTypeTitle: "ARBITRAGE_PUT",
                 expectedProfitNotif,
                 expectedProfitPerMonth,
                 name: createStrategyName([option.optionDetails?.stockSymbolDetails, option]),
-                isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(profitPercent),
-                profitPercent
+                isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(profitPercentOfSettlement),
+                profitPercent:profitPercentOfSettlement
             }
 
             return {
@@ -9842,7 +9856,7 @@ const calcMARRIED_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
     return {
         enrichedList,
         allStrategiesSorted: getAllPossibleStrategiesSorted(enrichedList),
-        strategyName: "MARRIED_PUT",
+        strategyName: "ARBITRAGE_PUT",
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
@@ -9851,7 +9865,7 @@ const calcMARRIED_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
         expectedProfitPerMonth,
         ...restConfig,
         htmlTitle: configsToHtmlTitle({
-            strategyName: "MARRIED_PUT",
+            strategyName: "ARBITRAGE_PUT",
             priceType,
             min_time_to_settlement,
             max_time_to_settlement,
@@ -9869,11 +9883,11 @@ const createListFilterContetnByList=(list)=>{
        let htmlContent = '';
 
     const strategyMapList = [
-    calcMARRIED_PUTStrategies(list, {
+    calcARBITRAGE_PUTStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         expectedProfitNotif: true,
-        isProfitEnoughFn(stockPriceRatio){
-            return stockPriceRatio > 0.006
+        isProfitEnoughFn(prifitPercent){
+            return prifitPercent > 0.006
         }
     }), 
     calcBuyStockStrategies(list, {
@@ -11339,6 +11353,7 @@ const interval = async () => {
         }
         
     } catch (error) {
+        console.error(error)
 
         showNotification({
             title: 'خطا در interval',
