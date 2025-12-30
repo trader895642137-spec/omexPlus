@@ -545,3 +545,12 @@ export async function takeScreenshot() {
 
   
 }
+
+
+
+export const isETF = (instrumentName)=>{
+  const ETF_LIST = ['اهرم', 'توان', 'موج', 'جهش','شتاب'];
+  const isETF = ETF_LIST.some(_etfName => instrumentName === _etfName);
+
+  return isETF
+}

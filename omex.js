@@ -6,7 +6,8 @@ import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalc
     showNotification,
     createDeferredPromise,
     waitForElement,
-    takeScreenshot} from './common.js';
+    takeScreenshot,
+    isETF} from './common.js';
 import { isInstrumentNameOfOption,  OMEXApi } from './omexApi.js';
 
 
@@ -913,14 +914,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         const strikePrice = convertStringToInt(domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="strikePrice"]`)?.innerHTML) || convertStringToInt(optionRowEl.querySelectorAll('.o-item-row > div')[5].innerHTML);
         
 
-        const getStrikePriceWithSideSign = () => {
-            const buySellFactor = isBuy ? -1 : 1;
-            const callPutFactor = isCall ? 1 : isPut ? -1 : 1;
-
-            const factor = buySellFactor * callPutFactor;
-
-            return strikePrice * factor;
-        }
+       
 
         const getStrategyType = () => {
             const strategyName = getStrategyName();
@@ -945,8 +939,6 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
       
 
-        const ETF_LIST = ['اهرم', 'توان', 'موج', 'جهش'];
-        const isETF = ETF_LIST.some(_etfName => instrumentName === _etfName);
 
         let strategyPosition = {
             optionRowEl,
@@ -954,7 +946,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             instrumentName,
             instrumentFullTitle,
             isBuy,
-            isETF,
+            isETF : isETF(instrumentName),
             optionID,
             isOption,
             isCall,
@@ -977,7 +969,6 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             getUnreliableCurrentPositionAvgPrice,
             strikePrice,
             daysLeftToSettlement,
-            getStrikePriceWithSideSign,
             ordersModal,
             getOffsetOrderPriceElements,
             getOpenMoreOrderPriceElements,

@@ -1,4 +1,4 @@
-import { waitForElement } from "./common"
+import { isETF, waitForElement } from "./common"
 
 // https://khobregan.tsetab.ir
 const origin = window.location.origin
@@ -305,6 +305,29 @@ const getCustomerOptionStrategyEstimationWithItems = async () => {
 
 
 
+const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
+
+    const groupPositions = group.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId));
+
+    const foundStrategy = strategies.find(strategy => {
+
+
+        strategy.rowLength = strategy.items.length;
+        strategy.items = Array.from(new Map(strategy.items.map(sItem => [sItem.instrumentId, sItem])).values());
+
+        const hasAllInstrumentId = groupPositions.every(groupPosition => strategy.items.find(sItem => groupPosition && sItem && groupPosition.instrumentId === sItem.instrumentId && groupPosition.orderSide === sItem.side));
+
+
+        return hasAllInstrumentId && strategy.items.length === group.instrumentIds.length
+
+    });
+
+    return foundStrategy
+
+}
+
+
+
 const selectStrategy =async (documentOfWindow)=>{
     const _document  = documentOfWindow || document;
     const selectedGroupTitle = _document.querySelector('client-option-positions-filter-bar .-is-group ng-select .u-ff-number').innerHTML;
@@ -315,27 +338,11 @@ const selectStrategy =async (documentOfWindow)=>{
 
     const portfolioList = await getOptionPortfolioList();
 
-    selectedGroup.positions = selectedGroup.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId))
-
-
 
     const strategies = await getCustomerOptionStrategyEstimationWithItems();
 
-    const foundStrategy = strategies.find(strategy=> {
 
-
-        strategy.rowLength = strategy.items.length;
-        strategy.items = Array.from(new Map(strategy.items.map(sItem => [sItem.instrumentId, sItem])).values());
-
-        const hasAllInstrumentId =  selectedGroup.positions.every(groupPosition=> strategy.items.find(sItem=>groupPosition && sItem &&  groupPosition.instrumentId===sItem.instrumentId && groupPosition.orderSide===sItem.side));
-
-
-        if(hasAllInstrumentId){
-            // console.log('hasAllInstrumentId',hasAllInstrumentId,{strategy,selectedGroup})
-        }
-        return hasAllInstrumentId && strategy.items.length===selectedGroup.instrumentIds.length
-
-    });
+    const foundStrategy  = findStrategyOfGroup({group:selectedGroup,strategies,portfolioList});
 
     if(!foundStrategy) return
 
@@ -486,6 +493,78 @@ export const createGroup = ({ name, instrumentIds }) => {
 
 }
 
+
+
+export const createStrategyListForAllGroups = async ()=>{
+
+
+    const groups = await getGroups();
+
+
+    const portfolioList = await getOptionPortfolioList();
+
+
+    const strategies = await getCustomerOptionStrategyEstimationWithItems();
+
+
+
+    const strategyListForAllGroups = groups.map(group=>{
+        const positions = group.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId))
+        const strategy  = findStrategyOfGroup({group,strategies,portfolioList});;
+
+
+        if(!strategy?.items) {
+            console.log(group);
+            return null
+        }
+
+        const strategyPositions = strategy.items.map(strategyItem=>{
+
+            const portfolioPosition = positions.find(pos=>pos.instrumentId===strategyItem.instrumentId)
+
+            const instrumentName = portfolioPosition.instrumentName;
+           
+            return {
+                instrumentName,
+                isBuy: strategyItem.side === 'Buy',
+                isETF: isETF(instrumentName),
+                isOption: isInstrumentNameOfOption(instrumentName),
+                isCall: portfolioPosition.optionSide==="Call",
+                isPut: portfolioPosition.optionSide==="Put",
+                cSize: portfolioPosition.cSize,
+                // getBaseInstrumentPriceOfOption,
+                getQuantity:()=>strategyItem.quantity,
+                getCurrentPositionQuantity:()=>portfolioPosition.blockedStrategyQuantity,
+                getRequiredMargin : strategyItem.requiredMargin / portfolioPosition.cSize,
+                getCurrentPositionAvgPrice: portfolioPosition.executedPrice,
+                strikePrice : portfolioPosition.strikePrice,
+                daysLeftToSettlement : portfolioPosition.remainCsDateDays,
+                // getBestOffsetPrice,
+                // getBestOpenMorePrice,
+                // getBestOpenMorePriceWithSideSign,
+                // getStrategyName,
+                // getStrategyType,
+
+            }
+        })
+
+        return {group,strategy,strategyPositions}
+
+       
+
+        
+    }).filter(Boolean)
+
+
+
+    console.log(strategyListForAllGroups);
+    
+
+
+
+
+}
+
 export const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
 
 
@@ -502,5 +581,6 @@ export const OMEXApi = {
     logSumOfPositionsOfGroups,
     getBlockedAmount,
     fillEstimationPanelByStrategyName,
-    createGroup
+    createGroup,
+    createStrategyListForAllGroups
 }
