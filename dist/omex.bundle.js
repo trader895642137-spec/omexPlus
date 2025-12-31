@@ -15,6 +15,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getNearSettlementPrice: () => (/* binding */ getNearSettlementPrice),
 /* harmony export */   getReservedMarginOfEstimationQuantity: () => (/* binding */ getReservedMarginOfEstimationQuantity),
 /* harmony export */   hasGreaterRatio: () => (/* binding */ hasGreaterRatio),
+/* harmony export */   isETF: () => (/* binding */ isETF),
 /* harmony export */   isTaxFree: () => (/* binding */ isTaxFree),
 /* harmony export */   mainTotalOffsetGainCalculator: () => (/* binding */ mainTotalOffsetGainCalculator),
 /* harmony export */   profitPercentCalculator: () => (/* binding */ profitPercentCalculator),
@@ -576,6 +577,14 @@ async function takeScreenshot() {
 }
 
 
+
+const isETF = (instrumentName)=>{
+  const ETF_LIST = ['اهرم', 'توان', 'موج', 'جهش','شتاب'];
+  const isETF = ETF_LIST.some(_etfName => instrumentName === _etfName);
+
+  return isETF
+}
+
 /***/ }),
 /* 2 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -584,6 +593,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   OMEXApi: () => (/* binding */ OMEXApi),
 /* harmony export */   createGroup: () => (/* binding */ createGroup),
+/* harmony export */   createStrategyListForAllGroups: () => (/* binding */ createStrategyListForAllGroups),
 /* harmony export */   fillEstimationPanelByStrategyName: () => (/* binding */ fillEstimationPanelByStrategyName),
 /* harmony export */   getBlockedAmount: () => (/* binding */ getBlockedAmount),
 /* harmony export */   getOptionPortfolioList: () => (/* binding */ getOptionPortfolioList),
@@ -899,6 +909,29 @@ const getCustomerOptionStrategyEstimationWithItems = async () => {
 
 
 
+const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
+
+    const groupPositions = group.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId));
+
+    const foundStrategy = strategies.find(strategy => {
+
+
+        strategy.rowLength = strategy.items.length;
+        strategy.items = Array.from(new Map(strategy.items.map(sItem => [sItem.instrumentId, sItem])).values());
+
+        const hasAllInstrumentId = groupPositions.every(groupPosition => strategy.items.find(sItem => groupPosition && sItem && groupPosition.instrumentId === sItem.instrumentId && groupPosition.orderSide === sItem.side));
+
+
+        return hasAllInstrumentId && strategy.items.length === group.instrumentIds.length
+
+    });
+
+    return foundStrategy
+
+}
+
+
+
 const selectStrategy =async (documentOfWindow)=>{
     const _document  = documentOfWindow || document;
     const selectedGroupTitle = _document.querySelector('client-option-positions-filter-bar .-is-group ng-select .u-ff-number').innerHTML;
@@ -909,27 +942,11 @@ const selectStrategy =async (documentOfWindow)=>{
 
     const portfolioList = await getOptionPortfolioList();
 
-    selectedGroup.positions = selectedGroup.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId))
-
-
 
     const strategies = await getCustomerOptionStrategyEstimationWithItems();
 
-    const foundStrategy = strategies.find(strategy=> {
 
-
-        strategy.rowLength = strategy.items.length;
-        strategy.items = Array.from(new Map(strategy.items.map(sItem => [sItem.instrumentId, sItem])).values());
-
-        const hasAllInstrumentId =  selectedGroup.positions.every(groupPosition=> strategy.items.find(sItem=>groupPosition && sItem &&  groupPosition.instrumentId===sItem.instrumentId && groupPosition.orderSide===sItem.side));
-
-
-        if(hasAllInstrumentId){
-            // console.log('hasAllInstrumentId',hasAllInstrumentId,{strategy,selectedGroup})
-        }
-        return hasAllInstrumentId && strategy.items.length===selectedGroup.instrumentIds.length
-
-    });
+    const foundStrategy  = findStrategyOfGroup({group:selectedGroup,strategies,portfolioList});
 
     if(!foundStrategy) return
 
@@ -1080,6 +1097,78 @@ const createGroup = ({ name, instrumentIds }) => {
 
 }
 
+
+
+const createStrategyListForAllGroups = async ()=>{
+
+
+    const groups = await getGroups();
+
+
+    const portfolioList = await getOptionPortfolioList();
+
+
+    const strategies = await getCustomerOptionStrategyEstimationWithItems();
+
+
+
+    const strategyListForAllGroups = groups.map(group=>{
+        const positions = group.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId))
+        const strategy  = findStrategyOfGroup({group,strategies,portfolioList});;
+
+
+        if(!strategy?.items) {
+            console.log(group);
+            return null
+        }
+
+        const strategyPositions = strategy.items.map(strategyItem=>{
+
+            const portfolioPosition = positions.find(pos=>pos.instrumentId===strategyItem.instrumentId)
+
+            const instrumentName = portfolioPosition.instrumentName;
+           
+            return {
+                instrumentName,
+                isBuy: strategyItem.side === 'Buy',
+                isETF: (0,_common__WEBPACK_IMPORTED_MODULE_0__.isETF)(instrumentName),
+                isOption: isInstrumentNameOfOption(instrumentName),
+                isCall: portfolioPosition.optionSide==="Call",
+                isPut: portfolioPosition.optionSide==="Put",
+                cSize: portfolioPosition.cSize,
+                // getBaseInstrumentPriceOfOption,
+                getQuantity:()=>strategyItem.quantity,
+                getCurrentPositionQuantity:()=>portfolioPosition.blockedStrategyQuantity,
+                getRequiredMargin : strategyItem.requiredMargin / portfolioPosition.cSize,
+                getCurrentPositionAvgPrice: portfolioPosition.executedPrice,
+                strikePrice : portfolioPosition.strikePrice,
+                daysLeftToSettlement : portfolioPosition.remainCsDateDays,
+                // getBestOffsetPrice,
+                // getBestOpenMorePrice,
+                // getBestOpenMorePriceWithSideSign,
+                // getStrategyName,
+                // getStrategyType,
+
+            }
+        })
+
+        return {group,strategy,strategyPositions}
+
+       
+
+        
+    }).filter(Boolean)
+
+
+
+    console.log(strategyListForAllGroups);
+    
+
+
+
+
+}
+
 const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
 
 
@@ -1096,7 +1185,8 @@ const OMEXApi = {
     logSumOfPositionsOfGroups,
     getBlockedAmount,
     fillEstimationPanelByStrategyName,
-    createGroup
+    createGroup,
+    createStrategyListForAllGroups
 }
 
 /***/ }),
@@ -1344,6 +1434,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   expectedProfit: () => (/* binding */ expectedProfit),
 /* harmony export */   getSummaryNameOfStrategy: () => (/* binding */ getSummaryNameOfStrategy),
 /* harmony export */   openAllGroupsInNewTabs: () => (/* binding */ openAllGroupsInNewTabs),
+/* harmony export */   openGroupInNewTab: () => (/* binding */ openGroupInNewTab),
 /* harmony export */   showToast: () => (/* binding */ showToast),
 /* harmony export */   silentNotificationForMoment: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.silentNotificationForMoment),
 /* harmony export */   strategyPositions: () => (/* binding */ strategyPositions),
@@ -1543,6 +1634,12 @@ const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions }) =
     return totalOffsetGainNearSettlement
 }
 
+const sumOfQuantityOfSamePosition = (position)=>{
+
+    return strategyPositions.filter(_position => _position.instrumentName === position.instrumentName).reduce((_sumOfQuantityInEstimationPanel, position) => _sumOfQuantityInEstimationPanel + position.getQuantity(), 0);
+
+}
+
 const totalOffsetGainOfCurrentPositionsCalculator = ({ strategyPositions }) => {
 
 
@@ -1555,7 +1652,7 @@ const totalOffsetGainOfCurrentPositionsCalculator = ({ strategyPositions }) => {
 
     const getQuantityOfCurrentPosition = (position, __strategyPositions) => {
 
-        const sumOfQuantityInEstimationPanel = __strategyPositions.filter(_position => _position.instrumentName === position.instrumentName).reduce((_sumOfQuantityInEstimationPanel, position) => _sumOfQuantityInEstimationPanel + position.getQuantity(), 0);
+        const sumOfQuantityInEstimationPanel = sumOfQuantityOfSamePosition(position);
 
 
         const quantityInEstimationPanel = position.getQuantity();
@@ -2006,19 +2103,6 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         const isCall = isOption && instrumentName && instrumentName.charAt(0) === 'ض';
         let cSize = 1000;
         let daysLeftToSettlement =30;
-        const instrumentInfo = (async ()=>{
-
-            const instrumentInfo = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getInstrumentInfoBySymbol(instrumentName);
-            optionID = instrumentInfo.instrumentId;
-            cSize = instrumentInfo.cSize
-
-
-            daysLeftToSettlement = Math.ceil((new Date(instrumentInfo.psDate).valueOf() - Date.now())/(24*60*60000))
-
-
-            return instrumentInfo
-
-        })()
 
         const ordersModal = Array.from(domContextWindow.document.querySelectorAll('client-option-modal-trade-layout')).find(modal => {
             return Array.from(modal.querySelectorAll('label')).find(label => label.innerHTML === instrumentName)
@@ -2261,14 +2345,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         const strikePrice = convertStringToInt(domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="strikePrice"]`)?.innerHTML) || convertStringToInt(optionRowEl.querySelectorAll('.o-item-row > div')[5].innerHTML);
         
 
-        const getStrikePriceWithSideSign = () => {
-            const buySellFactor = isBuy ? -1 : 1;
-            const callPutFactor = isCall ? 1 : isPut ? -1 : 1;
-
-            const factor = buySellFactor * callPutFactor;
-
-            return strikePrice * factor;
-        }
+       
 
         const getStrategyType = () => {
             const strategyName = getStrategyName();
@@ -2293,8 +2370,6 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
       
 
-        const ETF_LIST = ['اهرم', 'توان', 'موج', 'جهش'];
-        const isETF = ETF_LIST.some(_etfName => instrumentName === _etfName);
 
         let strategyPosition = {
             optionRowEl,
@@ -2302,7 +2377,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             instrumentName,
             instrumentFullTitle,
             isBuy,
-            isETF,
+            isETF : (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.isETF)(instrumentName),
             optionID,
             isOption,
             isCall,
@@ -2325,7 +2400,6 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             getUnreliableCurrentPositionAvgPrice,
             strikePrice,
             daysLeftToSettlement,
-            getStrikePriceWithSideSign,
             ordersModal,
             getOffsetOrderPriceElements,
             getOpenMoreOrderPriceElements,
@@ -3469,7 +3543,9 @@ const observeTabClickOfOrderModal = () => {
                 strategyDropdown.dispatchEvent(enterEvent);
             }
             if (strategyPositionObj.getOrderModalQuantityInputElement().value === '') {
-                strategyPositionObj.getOrderModalQuantityInputArrowUpElement().click()
+
+                setTradeModalQuantity(strategyPositionObj);
+                // strategyPositionObj.getOrderModalQuantityInputArrowUpElement().click();
             }
             
 
@@ -3731,41 +3807,63 @@ const openWindowAndSelectGroup = (groupTitle) => {
     return promise
 }
 
+
+const setTradeModalUiPositions = () => {
+
+    let left = 1200;
+    const top = 55;
+    Array.from(document.querySelectorAll('client-modal-main client-option-modal-trade-layout')).forEach((tradeModal,i) => {
+        tradeModal.style.left =`${left}px`;
+        tradeModal.style.top =`${top}px`;
+
+        left-= (tradeModal.offsetWidth + 1);
+
+        i===1 &&  (left-=350)
+
+    });
+}
+
+
+
+const openGroupInNewTab = async (groupName) => {
+
+
+    const childWindow = await openWindowAndSelectGroup(groupName);
+
+    const { strategyRowLength } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.selectStrategy(childWindow.document);
+
+
+
+    await (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.waitForElement)(childWindow.document, () => {
+        const openModalButtnList = childWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-item-body .o-instrument-container button:first-child');
+        return strategyRowLength ? (openModalButtnList.length === strategyRowLength) : openModalButtnList
+
+    }, 60000);
+
+    // await new Promise(r => setTimeout(r, 10000));
+
+
+    await openModalOfAllPositionsRows(childWindow.document);
+
+
+    childWindow.document.querySelector('c-k-filter-button button').click();
+
+    setTradeModalUiPositions();
+
+    // await new Promise(r => setTimeout(r, 1000));
+
+    // Run(childWindow)
+
+}
+
 const openAllGroupsInNewTabs = async ()=>{
 
     const groups = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getGroups();
 
-    const doer = async (groupName)=>{
-
-        const childWindow = await openWindowAndSelectGroup(groupName);
-
-        const {strategyRowLength} = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.selectStrategy(childWindow.document);
-
-
-
-        await (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.waitForElement)(childWindow.document,()=>{
-            const openModalButtnList = childWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-item-body .o-instrument-container button:first-child');
-            return strategyRowLength ? (openModalButtnList.length === strategyRowLength) : openModalButtnList
-
-        },60000);
-
-        // await new Promise(r => setTimeout(r, 10000));
-
-
-        await openModalOfAllPositionsRows(childWindow.document);
-
-        // await new Promise(r => setTimeout(r, 1000));
-
-        // Run(childWindow)
-
-
-
-    }
-
     // for (const group of groups.slice(0, 1)) {
     for (const group of groups) {
 
-        doer(group.name);
+        openGroupInNewTab(group.name);
         await new Promise(r => setTimeout(r, 100));
         
     }
@@ -3853,6 +3951,25 @@ let unChekcedPositions;
 
 
 let domContextWindow = window;
+
+const setTradeModalQuantityOfAllTradeModals = () => {
+
+    for (const strategyPosition of strategyPositions) {
+
+        setTradeModalQuantity(strategyPosition)
+
+    }
+
+}
+const setTradeModalQuantity = (strategyPosition) => {
+
+    const quantity = sumOfQuantityOfSamePosition(strategyPosition) / strategyPosition.cSize;
+    strategyPosition.getOrderModalQuantityInputElement().value = quantity;
+    strategyPosition.getOrderModalQuantityInputElement().dispatchEvent(new Event('input', { bubbles: true }));
+
+}
+
+
 const Run = async (_window = window) => {
 
     domContextWindow = _window
@@ -3883,7 +4000,14 @@ const Run = async (_window = window) => {
 
     fillCurrentStockPriceByStrikes(strategyPositions);
 
+    setTradeModalQuantityOfAllTradeModals();
+
+    setTradeModalUiPositions();
+
     strategyPositions = await getAndSetInstrumentData(strategyPositions);
+
+
+    
     console.log(strategyPositions)
 
 }

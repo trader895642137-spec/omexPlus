@@ -196,6 +196,12 @@ const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions }) =
     return totalOffsetGainNearSettlement
 }
 
+const sumOfQuantityOfSamePosition = (position)=>{
+
+    return strategyPositions.filter(_position => _position.instrumentName === position.instrumentName).reduce((_sumOfQuantityInEstimationPanel, position) => _sumOfQuantityInEstimationPanel + position.getQuantity(), 0);
+
+}
+
 const totalOffsetGainOfCurrentPositionsCalculator = ({ strategyPositions }) => {
 
 
@@ -208,7 +214,7 @@ const totalOffsetGainOfCurrentPositionsCalculator = ({ strategyPositions }) => {
 
     const getQuantityOfCurrentPosition = (position, __strategyPositions) => {
 
-        const sumOfQuantityInEstimationPanel = __strategyPositions.filter(_position => _position.instrumentName === position.instrumentName).reduce((_sumOfQuantityInEstimationPanel, position) => _sumOfQuantityInEstimationPanel + position.getQuantity(), 0);
+        const sumOfQuantityInEstimationPanel = sumOfQuantityOfSamePosition(position);
 
 
         const quantityInEstimationPanel = position.getQuantity();
@@ -659,19 +665,6 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         const isCall = isOption && instrumentName && instrumentName.charAt(0) === 'ض';
         let cSize = 1000;
         let daysLeftToSettlement =30;
-        const instrumentInfo = (async ()=>{
-
-            const instrumentInfo = await OMEXApi.getInstrumentInfoBySymbol(instrumentName);
-            optionID = instrumentInfo.instrumentId;
-            cSize = instrumentInfo.cSize
-
-
-            daysLeftToSettlement = Math.ceil((new Date(instrumentInfo.psDate).valueOf() - Date.now())/(24*60*60000))
-
-
-            return instrumentInfo
-
-        })()
 
         const ordersModal = Array.from(domContextWindow.document.querySelectorAll('client-option-modal-trade-layout')).find(modal => {
             return Array.from(modal.querySelectorAll('label')).find(label => label.innerHTML === instrumentName)
@@ -2112,7 +2105,9 @@ const observeTabClickOfOrderModal = () => {
                 strategyDropdown.dispatchEvent(enterEvent);
             }
             if (strategyPositionObj.getOrderModalQuantityInputElement().value === '') {
-                strategyPositionObj.getOrderModalQuantityInputArrowUpElement().click()
+
+                setTradeModalQuantity(strategyPositionObj);
+                // strategyPositionObj.getOrderModalQuantityInputArrowUpElement().click();
             }
             
 
@@ -2374,41 +2369,63 @@ const openWindowAndSelectGroup = (groupTitle) => {
     return promise
 }
 
+
+const setTradeModalUiPositions = () => {
+
+    let left = 1200;
+    const top = 55;
+    Array.from(document.querySelectorAll('client-modal-main client-option-modal-trade-layout')).forEach((tradeModal,i) => {
+        tradeModal.style.left =`${left}px`;
+        tradeModal.style.top =`${top}px`;
+
+        left-= (tradeModal.offsetWidth + 1);
+
+        i===1 &&  (left-=350)
+
+    });
+}
+
+
+
+export const openGroupInNewTab = async (groupName) => {
+
+
+    const childWindow = await openWindowAndSelectGroup(groupName);
+
+    const { strategyRowLength } = await OMEXApi.selectStrategy(childWindow.document);
+
+
+
+    await waitForElement(childWindow.document, () => {
+        const openModalButtnList = childWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-item-body .o-instrument-container button:first-child');
+        return strategyRowLength ? (openModalButtnList.length === strategyRowLength) : openModalButtnList
+
+    }, 60000);
+
+    // await new Promise(r => setTimeout(r, 10000));
+
+
+    await openModalOfAllPositionsRows(childWindow.document);
+
+
+    childWindow.document.querySelector('c-k-filter-button button').click();
+
+    setTradeModalUiPositions();
+
+    // await new Promise(r => setTimeout(r, 1000));
+
+    // Run(childWindow)
+
+}
+
 export const openAllGroupsInNewTabs = async ()=>{
 
     const groups = await OMEXApi.getGroups();
 
-    const doer = async (groupName)=>{
-
-        const childWindow = await openWindowAndSelectGroup(groupName);
-
-        const {strategyRowLength} = await OMEXApi.selectStrategy(childWindow.document);
-
-
-
-        await waitForElement(childWindow.document,()=>{
-            const openModalButtnList = childWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-item-body .o-instrument-container button:first-child');
-            return strategyRowLength ? (openModalButtnList.length === strategyRowLength) : openModalButtnList
-
-        },60000);
-
-        // await new Promise(r => setTimeout(r, 10000));
-
-
-        await openModalOfAllPositionsRows(childWindow.document);
-
-        // await new Promise(r => setTimeout(r, 1000));
-
-        // Run(childWindow)
-
-
-
-    }
-
     // for (const group of groups.slice(0, 1)) {
     for (const group of groups) {
 
-        doer(group.name);
+        openGroupInNewTab(group.name);
         await new Promise(r => setTimeout(r, 100));
         
     }
@@ -2496,6 +2513,25 @@ export let unChekcedPositions;
 
 
 let domContextWindow = window;
+
+const setTradeModalQuantityOfAllTradeModals = () => {
+
+    for (const strategyPosition of strategyPositions) {
+
+        setTradeModalQuantity(strategyPosition)
+
+    }
+
+}
+const setTradeModalQuantity = (strategyPosition) => {
+
+    const quantity = sumOfQuantityOfSamePosition(strategyPosition) / strategyPosition.cSize;
+    strategyPosition.getOrderModalQuantityInputElement().value = quantity;
+    strategyPosition.getOrderModalQuantityInputElement().dispatchEvent(new Event('input', { bubbles: true }));
+
+}
+
+
 export const Run = async (_window = window) => {
 
     domContextWindow = _window
@@ -2526,7 +2562,14 @@ export const Run = async (_window = window) => {
 
     fillCurrentStockPriceByStrikes(strategyPositions);
 
+    setTradeModalQuantityOfAllTradeModals();
+
+    setTradeModalUiPositions();
+
     strategyPositions = await getAndSetInstrumentData(strategyPositions);
+
+
+    
     console.log(strategyPositions)
 
 }
