@@ -203,3 +203,40 @@ document.getElementById('createGroup').addEventListener('click', () => {
 
 
 });
+
+
+
+document.getElementById('createFilterWatcher').addEventListener('click', () => {
+
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+
+        chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            files: ["build/tseOptionStrategies.bundle.js"],
+            // world: "MAIN"
+        }, async () => {
+
+            // await new Promise(r => setTimeout(r, 3000)); 
+            chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                func: (actionName) => {
+                    window.tseOptionStrategiesLib.RUN();
+                },
+                args: ['CREATE-FILTER-WATCHER'],
+                // world: "MAIN"
+            });
+        });
+    });
+
+
+});
+document.getElementById('portfolioWatcher').addEventListener('click', () => {
+
+
+    chrome.tabs.create({
+        url: chrome.runtime.getURL("portfolio-watcher.html")
+    });
+
+
+});

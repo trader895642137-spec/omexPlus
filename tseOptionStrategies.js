@@ -11338,8 +11338,8 @@ const interval = async () => {
         if (list?.length > 0) {
             createListFilterContetnByList(list);
 
+            const generalIgnoreText = getGeneralIgnoreText();
             newTabList.forEach(childWindowTab => {
-                const generalIgnoreText = getGeneralIgnoreText();
                 if (childWindowTab.document.readyState === "complete") {
                     //notifiedStrategyList=[]
                     childWindowTab.postMessage({
@@ -11348,6 +11348,19 @@ const interval = async () => {
                         $tempIgnoredNotifList: tempIgnoredNotifList,
                         $notifiedStrategyList: notifiedStrategyList
                     }, "*");
+
+                    
+                }
+            });
+
+
+            chrome?.runtime?.sendMessage && chrome.runtime.sendMessage({
+                type: "FROM_FILTER_TAB",
+                payload: {
+                    list,
+                    generalIgnoreText,
+                    $tempIgnoredNotifList: tempIgnoredNotifList,
+                    $notifiedStrategyList: notifiedStrategyList
                 }
             });
         }
@@ -11369,12 +11382,18 @@ const interval = async () => {
 
 let newTabList =[];
 
-const openNewTab = ()=>{
+export const openNewTab = ()=>{
 
     const newWin = window.open("option-filter-child.html", "_blank");
 
     newTabList.push(newWin);
 
+}
+
+
+export const openPortfolioWatcher = ()=>{
+
+    const portfolioWatcherWin = window.open("portfolio-watcher.html", "_blank");
 }
 
 const injectStyles = ()=>{
@@ -11424,7 +11443,7 @@ const injectStyles = ()=>{
 
 
 
-const RUN = () => {
+export const RUN = () => {
     // var momentJalaliScriptTag = document.createElement('script');
     // momentJalaliScriptTag.src = "https://cdn.jsdelivr.net/npm/jalali-moment@3.2.3/dist/jalali-moment.browser.js";
     // document.head.appendChild(momentJalaliScriptTag);
@@ -11461,9 +11480,12 @@ const RUN = () => {
         createListFilterContetnByList(list);
     });
 
+
+    // chrome.runtime.sendMessage({ type: "FROM_FILTER_TAB", payload: {a:"23"} });
+
 }
 
-RUN();
+// RUN();
 
 
 

@@ -32,6 +32,10 @@ module.exports = [
                     {
                         from: path.resolve(__dirname, 'dist/omex.bundle.js'),
                         to: path.resolve(__dirname, 'chromeExtension/build/omex.bundle.js'),
+                    },
+                    {
+                        from: path.resolve(__dirname, 'dist/tseOptionStrategies.bundle.js'),
+                        to: path.resolve(__dirname, 'chromeExtension/build/tseOptionStrategies.bundle.js'),
                     }
                 ]
             })
