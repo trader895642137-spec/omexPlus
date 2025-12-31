@@ -533,8 +533,14 @@ export const createStrategyListForAllGroups = async ()=>{
                 isPut: portfolioPosition.optionSide==="Put",
                 cSize: portfolioPosition.cSize,
                 // getBaseInstrumentPriceOfOption,
-                getQuantity:()=>strategyItem.quantity,
-                getCurrentPositionQuantity:()=>portfolioPosition.blockedStrategyQuantity,
+
+
+                quantityOfEstimationPositionRow: strategyItem.quantity,
+                // getQuantity:()=>strategyItem.quantity,
+                portfolioPositionQuantity:portfolioPosition.blockedStrategyQuantity,
+                // getCurrentPositionQuantity:()=>portfolioPosition.blockedStrategyQuantity,
+
+
                 getRequiredMargin : strategyItem.requiredMargin / portfolioPosition.cSize,
                 getCurrentPositionAvgPrice: portfolioPosition.executedPrice,
                 strikePrice : portfolioPosition.strikePrice,
