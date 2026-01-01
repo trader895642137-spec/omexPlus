@@ -2592,7 +2592,8 @@ export const Run = async (_window = window) => {
 
     calcProfitOfStrategy(strategyPositions, unChekcedPositions);
 
-    checkStrategyInProfit(strategyPositions);
+
+    calcOffsetProfitOfStrategyInformUntilNotProfit()
 
 
 
