@@ -38,12 +38,13 @@ export function createIntervalLogger({ key, interval, sync }) {
     return Date.now() - lastLog.timestamp >= interval;
   }
 
-  async function collect() {
+  async function collect(isForce) {
     try {
       const logs = loadLogs();
 
       // ⛔ قبل از sync
-      if (!canCollect(logs)) return;
+
+      if (!isForce && !canCollect(logs)) return;
 
       const data = await sync();
 
@@ -80,6 +81,7 @@ export function createIntervalLogger({ key, interval, sync }) {
     runNow() {
       collect();
     },
+    saveLogs:collect,
     getLogs() {
       return loadLogs();
     },
