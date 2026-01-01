@@ -24,27 +24,34 @@ export {silentNotificationForMoment} from './common.js';
 
 let strategyLogger,portfolioLogger;
 
-try {
 
-    strategyLogger = createIntervalLogger({
-        key: "strategyGroups",
-        interval: 30 * 60 * 1000,
-        sync: OMEXApi.getGroups
-    });
-    portfolioLogger = createIntervalLogger({
-        key: "optionPortfolio",
-        interval: 30 * 60 * 1000,
-        sync: OMEXApi.getOptionPortfolioList
-    });
 
-    if (typeof strategyPositions !== 'undefined') {
-        strategyPositions.forEach(strategyPosition => {
-            strategyPosition.observers.map(observerInfoObj => observerInfoObj?.observer.disconnect());
 
+const initLoggers = () => {
+
+    try {
+
+        strategyLogger = createIntervalLogger({
+            key: "strategyGroups",
+            interval: 30 * 60 * 1000,
+            sync: OMEXApi.getGroups
+        });
+        portfolioLogger = createIntervalLogger({
+            key: "optionPortfolio",
+            interval: 30 * 60 * 1000,
+            sync: OMEXApi.getOptionPortfolioList
+        });
+
+        if (typeof strategyPositions !== 'undefined') {
+            strategyPositions.forEach(strategyPosition => {
+                strategyPosition.observers.map(observerInfoObj => observerInfoObj?.observer.disconnect());
+
+            }
+            );
         }
-        );
-    }
-} catch (error) { }
+    } catch (error) { }
+
+}
 
 // FIXME:expectedProfitPerMonth is factor but minExpectedProfitOfStrategy is percent
 export let expectedProfit = {
@@ -196,7 +203,7 @@ const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions }) =
     return totalOffsetGainNearSettlement
 }
 
-const sumOfQuantityOfSamePosition = (position)=>{
+const sumOfQuantityOfSamePosition = (position,strategyPositions)=>{
 
     return strategyPositions.filter(_position => _position.instrumentName === position.instrumentName).reduce((_sumOfQuantityInEstimationPanel, position) => _sumOfQuantityInEstimationPanel + position.getQuantity(), 0);
 
@@ -214,7 +221,7 @@ const totalOffsetGainOfCurrentPositionsCalculator = ({ strategyPositions }) => {
 
     const getQuantityOfCurrentPosition = (position, __strategyPositions) => {
 
-        const sumOfQuantityInEstimationPanel = sumOfQuantityOfSamePosition(position);
+        const sumOfQuantityInEstimationPanel = sumOfQuantityOfSamePosition(position,__strategyPositions);
 
 
         const quantityInEstimationPanel = position.getQuantity();
@@ -419,7 +426,10 @@ const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositio
         });
     }
 
-    calcOffsetProfitOfStrategy(_strategyPositions)
+    console.log('doubleCheckProfitByExactDecimalPricesOfPortFolio');
+    
+
+    checkStrategyInProfit(_strategyPositions)
 
     return isGood
 
@@ -501,12 +511,44 @@ const showCurrentStrategyPositionState = ({totalCurrentPositionCost,totalOffsetG
 
 }
 const findPositionInfoByGivenPortfolio = (position,portfolioList) => {
-    let currentPortfolioPosition = portfolioList.find(currentPortfolioPosition => currentPortfolioPosition.instrumentId === position.instrumentId)
+    let currentPortfolioPosition = portfolioList.find(currentPortfolioPosition => position.instrumentId ? currentPortfolioPosition.instrumentId === position.instrumentId : currentPortfolioPosition.instrumentName === position.instrumentName)
 
     return currentPortfolioPosition
 
 }
-const calcOffsetProfitOfStrategy = async (_strategyPositions) => {
+
+
+const checkStrategyInProfit = async (_strategyPositions)=>{
+
+    const {
+        totalCurrentPositionCost,
+        totalOffsetGainOfCurrentPositionObj,
+        profitLossByOffsetOrdersPercent,
+        profitLossByInsertedPricesPercent,
+        unreliableTotalCostOfCurrentPositions } = calcOffsetProfitOfStrategy(_strategyPositions);
+
+
+        console.log({
+        totalCurrentPositionCost,
+        totalOffsetGainOfCurrentPositionObj,
+        profitLossByOffsetOrdersPercent,
+        profitLossByInsertedPricesPercent,
+        unreliableTotalCostOfCurrentPositions });
+        
+
+    showCurrentStrategyPositionState({
+        totalCurrentPositionCost,totalOffsetGainOfCurrentPositionObj,
+        profitLossByOffsetOrdersPercent,profitLossByInsertedPricesPercent,
+        unreliableTotalCostOfCurrentPositions});
+    
+
+    let hasProfit = await checkProfitPercentAndInform({strategyPositions:_strategyPositions,profitLossByOffsetOrdersPercent});
+    
+
+    return hasProfit
+
+}
+export const calcOffsetProfitOfStrategy = (_strategyPositions) => {
 
 
     let getAvgPrice;
@@ -551,17 +593,15 @@ const calcOffsetProfitOfStrategy = async (_strategyPositions) => {
     });
 
 
+    return {
+        totalCurrentPositionCost,
+        totalOffsetGainOfCurrentPositionObj,
+        profitLossByOffsetOrdersPercent,
+        profitLossByInsertedPricesPercent,
+        unreliableTotalCostOfCurrentPositions
 
-    showCurrentStrategyPositionState({
-        totalCurrentPositionCost,totalOffsetGainOfCurrentPositionObj,
-        profitLossByOffsetOrdersPercent,profitLossByInsertedPricesPercent,
-        unreliableTotalCostOfCurrentPositions});
-    
+    }
 
-    let hasProfit = await checkProfitPercentAndInform({strategyPositions:_strategyPositions,profitLossByOffsetOrdersPercent});
-    
-
-    return hasProfit
 
 }
 
@@ -1085,7 +1125,7 @@ const observeInputBoxInRowOfStrategy = () => {
         const onChangeCb = () => {
             setTimeout(() => {
                 calcProfitOfStrategy(strategyPositions, unChekcedPositions);
-                calcOffsetProfitOfStrategy(strategyPositions);
+                checkStrategyInProfit(strategyPositions);
             }
                 , 300)
 
@@ -1454,7 +1494,7 @@ const observeMyOrderInOrdersModal = () => {
 let calcOffsetProfitOfStrategyInformUntilNotProfitTimeout;
 
 const calcOffsetProfitOfStrategyInformUntilNotProfit = async () => {
-    const isProfit = await calcOffsetProfitOfStrategy(strategyPositions);
+    const isProfit = await checkStrategyInProfit(strategyPositions);
     if (isProfit) {
         clearTimeout(calcOffsetProfitOfStrategyInformUntilNotProfitTimeout);
         calcOffsetProfitOfStrategyInformUntilNotProfitTimeout = setTimeout(calcOffsetProfitOfStrategyInformUntilNotProfit, 10000);
@@ -1641,7 +1681,7 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
     return isProfit;
 }
 
-const STRATEGY_NAME_PROFIT_CALCULATOR = {
+export const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
     utils: {},
 
@@ -2478,6 +2518,7 @@ export const createGroupOfCurrentStrategy = ()=>{
         showToast('گروه ایجاد شد');
     });
     takeScreenshot();
+    strategyLogger?.saveLogs && strategyLogger.saveLogs(true)
 }
 
 export function showToast(message, duration = 2000) {
@@ -2525,7 +2566,7 @@ const setTradeModalQuantityOfAllTradeModals = () => {
 }
 const setTradeModalQuantity = (strategyPosition) => {
 
-    const quantity = sumOfQuantityOfSamePosition(strategyPosition) / strategyPosition.cSize;
+    const quantity = sumOfQuantityOfSamePosition(strategyPosition,strategyPositions) / strategyPosition.cSize;
     strategyPosition.getOrderModalQuantityInputElement().value = quantity;
     strategyPosition.getOrderModalQuantityInputElement().dispatchEvent(new Event('input', { bubbles: true }));
 
@@ -2551,7 +2592,7 @@ export const Run = async (_window = window) => {
 
     calcProfitOfStrategy(strategyPositions, unChekcedPositions);
 
-    calcOffsetProfitOfStrategy(strategyPositions);
+    checkStrategyInProfit(strategyPositions);
 
 
 
@@ -2568,7 +2609,7 @@ export const Run = async (_window = window) => {
 
     strategyPositions = await getAndSetInstrumentData(strategyPositions);
 
-
+    initLoggers();
     
     console.log(strategyPositions)
 
