@@ -149,7 +149,7 @@ function renderStrategies() {
     box.className = 'strategy-box';
 
     box.innerHTML = `
-      <h4>${strategyGroupInfo.group.name}</h4>
+      <h4 class="title">${strategyGroupInfo.group.name}</h4>
 
       ${strategyGroupInfo.offsetProfitOfStrategy ? `<div style="color:${strategyGroupInfo.offsetProfitOfStrategy.profitLossByOffsetOrdersPercent >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
                 ${strategyGroupInfo.offsetProfitOfStrategy.profitLossByOffsetOrdersPercent.toLocaleString('en-US', {
@@ -166,6 +166,13 @@ function renderStrategies() {
       </div>`:``}
       <button class="delete-btn">حذف</button>
     `;
+
+    box.querySelector('.title').addEventListener('click',async ()=>{
+      const groupWindow = await (omexLib && omexLib.openGroupInNewTab(strategyGroupInfo?.group?.name,'https://khobregan.tsetab.ir'));
+
+
+
+    })
 
     setupHoldToDelete(box.querySelector('.delete-btn'), index);
     list.appendChild(box);

@@ -3819,10 +3819,10 @@ const openModalOfAllPositionsRows = async (documentOfWindow=document) => {
    
 }
 
-const openWindowAndSelectGroup = (groupTitle) => {
+const openWindowAndSelectGroup = (groupTitle,_origin=origin) => {
 
     const { promise, resolve, reject } = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.createDeferredPromise)();
-    const newWindow = window.open(`${origin}/#/stock/derivative/main/strategy-estimation`);
+    const newWindow = window.open(`${_origin}/#/stock/derivative/main/strategy-estimation`);
 
     if (!newWindow) {
         alert('پنجره توسط مرورگر مسدود شد!');
@@ -3877,13 +3877,15 @@ const setTradeModalUiPositions = () => {
 
 
 
-const openGroupInNewTab = async (groupName) => {
+const openGroupInNewTab = async (groupName,_origin) => {
 
 
-    const childWindow = await openWindowAndSelectGroup(groupName);
+    const childWindow = await openWindowAndSelectGroup(groupName,_origin);
+    console.log('childWindow',childWindow);
+    
 
     const { strategyRowLength } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.selectStrategy(childWindow.document);
-
+ console.log('strategyRowLength',strategyRowLength);
 
 
     await (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.waitForElement)(childWindow.document, () => {
@@ -3901,6 +3903,8 @@ const openGroupInNewTab = async (groupName) => {
     childWindow.document.querySelector('c-k-filter-button button').click();
 
     setTradeModalUiPositions();
+
+    return childWindow
 
     // await new Promise(r => setTimeout(r, 1000));
 
