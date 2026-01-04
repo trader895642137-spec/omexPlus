@@ -1492,13 +1492,7 @@ const initLoggers = () => {
             sync: _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionPortfolioList
         });
 
-        if (typeof strategyPositions !== 'undefined') {
-            strategyPositions.forEach(strategyPosition => {
-                strategyPosition.observers.map(observerInfoObj => observerInfoObj?.observer.disconnect());
-
-            }
-            );
-        }
+        
     } catch (error) { }
 
 }
@@ -4028,6 +4022,18 @@ const setTradeModalQuantity = (strategyPosition) => {
 
 
 const Run = async (_window = window) => {
+
+    try {
+        if (typeof strategyPositions !== 'undefined') {
+            strategyPositions.forEach(strategyPosition => {
+                strategyPosition.observers.map(observerInfoObj => observerInfoObj?.observer.disconnect());
+
+            }
+            );
+        }
+    } catch (error) {
+
+    }
 
     domContextWindow = _window
     

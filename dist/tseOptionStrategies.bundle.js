@@ -22461,6 +22461,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                         const priceThatCauseMaxProfit = Math.min(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) / 1.3;
                         const maxProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxProfit });
 
+                        if(!sellingCall?.optionDetails?.stockSymbolDetails?.last) return _allPossibleStrategies
                         if(breakeven){
 
                             const stockPriceToSarBeSarPercent = (sellingCall.optionDetails.stockSymbolDetails.last/breakeven) - 1;
@@ -22725,6 +22726,8 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                         const maxProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxProfit });
 
 
+
+                        if(!sellingCall?.optionDetails?.stockSymbolDetails?.last) return _allPossibleStrategies
                         
                         if(breakeven){
 

@@ -42,13 +42,7 @@ const initLoggers = () => {
             sync: OMEXApi.getOptionPortfolioList
         });
 
-        if (typeof strategyPositions !== 'undefined') {
-            strategyPositions.forEach(strategyPosition => {
-                strategyPosition.observers.map(observerInfoObj => observerInfoObj?.observer.disconnect());
-
-            }
-            );
-        }
+        
     } catch (error) { }
 
 }
@@ -2578,6 +2572,18 @@ const setTradeModalQuantity = (strategyPosition) => {
 
 
 export const Run = async (_window = window) => {
+
+    try {
+        if (typeof strategyPositions !== 'undefined') {
+            strategyPositions.forEach(strategyPosition => {
+                strategyPosition.observers.map(observerInfoObj => observerInfoObj?.observer.disconnect());
+
+            }
+            );
+        }
+    } catch (error) {
+
+    }
 
     domContextWindow = _window
     
