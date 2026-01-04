@@ -2409,7 +2409,7 @@ const setTradeModalUiPositions = () => {
 
         left-= (tradeModal.offsetWidth + 1);
 
-        i===1 &&  (left-=350)
+        i===1 &&  (left-=330)
 
     });
 }
