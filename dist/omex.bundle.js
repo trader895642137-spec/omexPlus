@@ -4021,6 +4021,19 @@ const setTradeModalQuantity = (strategyPosition) => {
 }
 
 
+const setDaysFromToday= () => {
+
+    const daysFromTodayInput = domContextWindow.document.querySelector('[formcontrolname="daysFromToday"] input');
+    if(!daysFromTodayInput) {
+        console.error('daysFromTodayInput not found!');
+        return 
+    }
+    daysFromTodayInput.value = 100;
+    daysFromTodayInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+}
+
+
 const Run = async (_window = window) => {
 
     try {
@@ -4067,6 +4080,7 @@ const Run = async (_window = window) => {
     setTradeModalQuantityOfAllTradeModals();
 
     setTradeModalUiPositions();
+    setDaysFromToday();
 
     strategyPositions = await getAndSetInstrumentData(strategyPositions);
 
