@@ -420,7 +420,6 @@ const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositio
         });
     }
 
-    console.log('doubleCheckProfitByExactDecimalPricesOfPortFolio');
     
 
     checkStrategyInProfit(_strategyPositions)
@@ -521,13 +520,7 @@ const checkStrategyInProfit = async (_strategyPositions)=>{
         profitLossByInsertedPricesPercent,
         unreliableTotalCostOfCurrentPositions } = calcOffsetProfitOfStrategy(_strategyPositions);
 
-
-        console.log({
-        totalCurrentPositionCost,
-        totalOffsetGainOfCurrentPositionObj,
-        profitLossByOffsetOrdersPercent,
-        profitLossByInsertedPricesPercent,
-        unreliableTotalCostOfCurrentPositions });
+       
         
 
     showCurrentStrategyPositionState({
@@ -2425,11 +2418,9 @@ export const openGroupInNewTab = async (groupName,_origin) => {
 
 
     const childWindow = await openWindowAndSelectGroup(groupName,_origin);
-    console.log('childWindow',childWindow);
     
 
     const { strategyRowLength } = await OMEXApi.selectStrategy(childWindow.document);
- console.log('strategyRowLength',strategyRowLength);
 
 
     await waitForElement(childWindow.document, () => {
