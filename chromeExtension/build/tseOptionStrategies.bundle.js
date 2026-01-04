@@ -76,9 +76,9 @@ const silentNotificationForMoment = (millisecond=160000) => {
 }
 
 
-const showNotification = ({ title, body, tag }) => {
+const showNotification = ({ title, body, tag,requireInteraction }) => {
 
-    if(_isSilentNotificationModeActive)return 
+    if(_isSilentNotificationModeActive) return 
 
     if (lastNotifTime[tag] && (Date.now() - lastNotifTime[tag]) < 5000)
         return
@@ -92,7 +92,8 @@ const showNotification = ({ title, body, tag }) => {
         let notification = new Notification(title, {
             body,
             renotify: tag ? true : false,
-            tag
+            tag,
+            requireInteraction
         });
 
         console.log(body)
