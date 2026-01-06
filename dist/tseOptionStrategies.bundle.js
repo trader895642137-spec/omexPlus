@@ -13392,8 +13392,9 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
 
         if (!ignoreStrategyObj.name && !isRequestedProfitEnough && ignoreStrategyObj.type === strategy.strategyTypeTitle) return true
 
-        if (ignoreStrategyObj.name === strategyFullSymbolNames && !isRequestedProfitEnough) return true
-        if (strategySymbols.some(symbol => symbol.includes(ignoreStrategyObj.name)))
+        const ignoreStrategyName = ignoreStrategyObj.name.replaceAll('ي','ی');
+        if (ignoreStrategyName === strategyFullSymbolNames && !isRequestedProfitEnough) return true
+        if (strategySymbols.some(symbol => symbol.includes(ignoreStrategyName)))
             return true
 
     }
