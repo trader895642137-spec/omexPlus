@@ -1552,17 +1552,16 @@ const createDeleteAllOrdersButton = () => {
     return removeAllOrderButton
 }
 
+const stopPropagationForDraggingModal = (e)=>{
+        e.stopPropagation();
+}
+
 const stopDraggingWrongOfOrdersModals =()=>{
 
     strategyPositions.forEach(strategyPosition => {
-
-        strategyPosition.ordersModal.querySelector('client-instrument-favorites-item-main').addEventListener("mousedown", (e) => {
-            e.stopPropagation();
-        });
-
-    })
-
-
+        strategyPosition.ordersModal.querySelector('client-instrument-favorites-item-main')?.removeEventListener("mousedown", stopPropagationForDraggingModal);
+        strategyPosition.ordersModal.querySelector('client-instrument-favorites-item-main')?.addEventListener("mousedown", stopPropagationForDraggingModal);
+    });
 
 }
 
@@ -2732,7 +2731,8 @@ const observePortfolioQuantityOfOrderModal = () => {
                         removeAllListeners();
                         strategyPositions = observePortfolioQuantityOfOrderModal();
                     }
-
+                    
+                    stopDraggingWrongOfOrdersModals();
 
                     currentPositionQuantityUnbalanceCheckAndNotif();
 
