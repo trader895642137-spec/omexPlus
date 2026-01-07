@@ -1159,49 +1159,49 @@ const observeInputBoxInRowOfStrategy = () => {
 }
 
 
+let currentPositionQuantityUnbalanceInformerTimeout;
+const currentPositionQuantityUnbalanceCheckAndNotif = () => {
+    const hasIssue = quantityUnbalanceInformer({
+        orderModalQuantityGetter: (strategyPosition) => strategyPosition.getOrderModalPortfolioQuantity(),
+        informer: (strategyPosition) => {
+            if (!strategyPosition?.getOrderModalQuantityFooterElement()) return
+            strategyPosition.getOrderModalQuantityFooterElement().style.cssText = "border-bottom: 2px solid red";
+
+        },
+        informCleaner: (strategyPosition) => {
+            if (!strategyPosition?.getOrderModalQuantityFooterElement()) return
+            strategyPosition.getOrderModalQuantityFooterElement().style.cssText = ''
+        }
+    }).hasIssue;
+
+
+    if (hasIssue) {
+
+
+        showNotification({
+            title: 'تعداد بالانس نیست',
+            body: `${strategyPositions[0].instrumentName}`,
+            tag: `${strategyPositions[0].instrumentName}-currentPositionQuantityUnbalance`
+        });
+
+        clearTimeout(currentPositionQuantityUnbalanceInformerTimeout);
+        currentPositionQuantityUnbalanceInformerTimeout = setTimeout(currentPositionQuantityUnbalanceCheckAndNotif, 40000);
+    } else {
+        clearTimeout(currentPositionQuantityUnbalanceInformerTimeout);
+    }
+
+
+
+}
+
+
 const observePortfolioQuantityOfOrderModal = () => {
     // TODO:FIXME: use domContextWindow.document.body.contains(...)
 
 
-    let currentPositionQuantityUnbalanceInformerTimeout;
-    
-
-    const currentPositionQuantityUnbalanceInformer = () => {
-        const hasIssue = quantityUnbalanceInformer({
-            orderModalQuantityGetter: (strategyPosition) => strategyPosition.getOrderModalPortfolioQuantity(),
-            informer: (strategyPosition) => {
-                if(!strategyPosition?.getOrderModalQuantityFooterElement()) return  
-                strategyPosition.getOrderModalQuantityFooterElement().style.cssText = "border-bottom: 2px solid red";
-
-            },
-            informCleaner: (strategyPosition) => {
-                if(!strategyPosition?.getOrderModalQuantityFooterElement()) return  
-                strategyPosition.getOrderModalQuantityFooterElement().style.cssText = ''
-            }
-        }).hasIssue;
-
-
-        if (hasIssue) {
-            showNotification({
-                title: 'تعداد بالانس نیست',
-                body: `${strategyPositions[0].instrumentName}`,
-                tag: `${strategyPositions[0].instrumentName}-currentPositionQuantityUnbalance`
-            });
-            
-            clearTimeout(currentPositionQuantityUnbalanceInformerTimeout);
-            currentPositionQuantityUnbalanceInformerTimeout = setTimeout(currentPositionQuantityUnbalanceInformer, 40000);
-        } else {
-            clearTimeout(currentPositionQuantityUnbalanceInformerTimeout);
-        }
-
-        
-
-    }
-
-
     return strategyPositions.map(strategyPositionObj => {
 
-        strategyPositionObj.observers.filter(observerInfoObj => ['PortfolioQuantity', 'PortfolioQuantityMousemove'].includes(observerInfoObj.key)).forEach(observerInfoObj => observerInfoObj.observer.disconnect())
+        strategyPositionObj.observers.filter(observerInfoObj => ['PortfolioQuantity', 'PortfolioQuantityMousemove','PortfolioQuantityTabClick'].includes(observerInfoObj.key)).forEach(observerInfoObj => observerInfoObj.observer.disconnect())
 
         // const portfolioQuantityElement =strategyPositionObj.ordersModal.querySelector('client-instrument-favorites-item-trade-panel .o-quantityContainer footer span')
 
@@ -1255,7 +1255,7 @@ const observePortfolioQuantityOfOrderModal = () => {
                 setTimeout(() => {
                     tradePanelElement.style.backgroundColor = '';
 
-                    currentPositionQuantityUnbalanceInformer();
+                    currentPositionQuantityUnbalanceCheckAndNotif();
                 }
                     , 600);
 
@@ -1278,22 +1278,54 @@ const observePortfolioQuantityOfOrderModal = () => {
                     const isTradePanelVisible = domContextWindow.document.body.contains(strategyPositionObj.getOrderModalTradePanelElement());
 
                     if (isTradePanelVisible) {
-                        PortfolioQuantityObserver && PortfolioQuantityObserver.disconnect();
+                        removeAllListeners();
                         strategyPositions = observePortfolioQuantityOfOrderModal();
                     }
 
-                    currentPositionQuantityUnbalanceInformer();
+
+                    currentPositionQuantityUnbalanceCheckAndNotif();
 
                 }
                     , 100)
 
         }
-        strategyPositionObj.ordersModal.querySelectorAll('client-trade-ui-tabs,[iconname="details-outlined"]').forEach(el => {
-            strategyPositionObj.tabClickHandler && el.removeEventListener('click',strategyPositionObj.tabClickHandler )
-            el.addEventListener('click',tabClickHandler );
 
-            strategyPositionObj.tabClickHandler = tabClickHandler;
-        });
+
+        const setupTabListeners = () => {
+            
+            const elements = strategyPositionObj.ordersModal.querySelectorAll(
+                'client-trade-ui-tabs,[iconname="details-outlined"]'
+            );
+            
+            elements.forEach(el => {
+                el.removeEventListener('click', tabClickHandler);
+                el.addEventListener('click', tabClickHandler);
+            });
+            
+        };
+       
+
+        const removeAllListeners = ()=>{
+            PortfolioQuantityObserver && PortfolioQuantityObserver.disconnect();
+
+            mouseMoveObserver && mouseMoveObserver.disconnect();
+            tabClickObserver && tabClickObserver.disconnect();
+        }
+        setupTabListeners();
+
+        const tabClickObserver = {
+            // TODO: remove click event listener
+            disconnect() {
+                const elements = strategyPositionObj.ordersModal.querySelectorAll(
+                    'client-trade-ui-tabs,[iconname="details-outlined"]'
+                );
+
+                elements.forEach(el => {
+                    el.removeEventListener('click', tabClickHandler);
+                });
+            }
+        }
+
 
 
         let lastClickTime = 0;
@@ -1303,7 +1335,7 @@ const observePortfolioQuantityOfOrderModal = () => {
             if ((currentTime - lastClickTime) < minInterval)
                 return
             lastClickTime = currentTime;
-            currentPositionQuantityUnbalanceInformer();
+            currentPositionQuantityUnbalanceCheckAndNotif();
 
         }
 
@@ -1320,7 +1352,7 @@ const observePortfolioQuantityOfOrderModal = () => {
             }
         }
 
-        let observers = strategyPositionObj.observers.filter(observerInfoObj => !['PortfolioQuantity', 'PortfolioQuantityMousemove'].includes(observerInfoObj.key));
+        let observers = strategyPositionObj.observers.filter(observerInfoObj => !['PortfolioQuantity', 'PortfolioQuantityMousemove','PortfolioQuantityTabClick'].includes(observerInfoObj.key));
 
 
         observers.push({
@@ -1331,6 +1363,10 @@ const observePortfolioQuantityOfOrderModal = () => {
         observers.push({
             key: 'PortfolioQuantity',
             observer: PortfolioQuantityObserver
+        });
+        observers.push({
+            key: 'PortfolioQuantityTabClick',
+            observer: tabClickObserver
         });
 
         return {
@@ -2126,6 +2162,8 @@ const observeTabClickOfOrderModal = () => {
 
         const tabClickOfOrderModalHandlerFactory = (ordersModal) => () => {
 
+            
+
 
             const strategyDropdown = strategyPositionObj.getOrderModalStrategyDropdownElement();
 
@@ -2600,7 +2638,9 @@ export const Run = async (_window = window) => {
     injectStyles()
 
     strategyPositions = observePriceChanges();
-    strategyPositions = observeMyOrderInOrdersModal();
+
+    //  not needed and causes issue 
+    // strategyPositions = observeMyOrderInOrdersModal();
     strategyPositions = observeInputBoxInRowOfStrategy();
     strategyPositions = observeInputQuantityOfOrderModal();
     strategyPositions = observeTabClickOfOrderModal();
