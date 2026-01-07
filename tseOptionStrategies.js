@@ -214,6 +214,7 @@ const isProfitEnough = ({strategy,profitPercent})=>{
 
     const settlementTimeDiff = moment(strategy.option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
     const daysToSettlement = Math.floor(settlementTimeDiff / (24 * 3600000));
+    if(daysToSettlement<=0) return true
 
 
     if (profitPercent < generalConfig.minProfitToFilter)
@@ -560,7 +561,7 @@ const totalSettlementGain = (positionInfoList) => {
 
 
 
-const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to_settlement=0, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -764,7 +765,7 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to
 }
 
 
-const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to_settlement=0, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -971,13 +972,21 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, m
 }
 
 
-const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", strategySubName, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceDistanceFromSarBeSarInPercent=0, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, 
+    settlementGainChoosePriceType="MIN", strategySubName, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
+    minStockPriceDistanceFromSarBeSarInPercent=0, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, 
+    minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
             return
+
+       
         const settlementTimeDiff = moment(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
+        return settlementTimeDiff >= min_time_to_settlement && settlementTimeDiff <= max_time_to_settlement
     }
     )
 
@@ -991,21 +1000,19 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
 
             const _enrichedList = optionListOfSameDate.map(option => {
 
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol || option.optionDetails?.strikePrice >= option.optionDetails.stockSymbolDetails.last)
+               
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
                     return option
 
                 const putListWithHigherStrike = optionListOfSameDate.filter(_option => {
 
+               
+
                     if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') || _option.vol < minVol)
                         return false
-                    if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
+                    if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
 
-                    const stockPriceHigherStrikeRatio = (_option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
-
-                    if (stockPriceHigherStrikeRatio > minStockPriceDistanceFromHigherStrikeInPercent && stockPriceHigherStrikeRatio < maxStockPriceDistanceFromHigherStrikeInPercent) {} else {
-                        return false
-                    }
 
                     return true
 
@@ -1016,6 +1023,8 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
 
 
 
+
+                
 
 
 
@@ -1055,6 +1064,8 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
 
 
                     const profitPercent = profit / Math.abs(totalCost);
+
+
                     const strategyObj = {
                         option: {
                             ...option
@@ -1133,7 +1144,7 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
 }
 
 const calcShortGUTSStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN",
-     strategySubName, callListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+     strategySubName, callListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
      minStockPriceToLowBreakevenPercent=0, maxStockPriceToLowBreakevenPercent=Infinity, 
      minStockPriceToHighBreakevenPercent=-Infinity, maxStockPriceToHighBreakevenPercent=0, 
      minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -1324,7 +1335,7 @@ const calcShortGUTSStrategies = (list, {priceType, expectedProfitPerMonth, settl
 
 }
 const calcShortSTRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", 
-    strategySubName, callListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    strategySubName, callListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceToLowBreakevenPercent=0, maxStockPriceToLowBreakevenPercent=Infinity, 
     minStockPriceToHighBreakevenPercent=-Infinity, maxStockPriceToHighBreakevenPercent=0, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -1513,7 +1524,7 @@ const calcShortSTRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, s
 
 }
 
-const calcBUCSStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceDistanceFromSarBeSarInPercent=0, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcBUCSStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceDistanceFromSarBeSarInPercent=0, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -1623,10 +1634,7 @@ const calcBUCSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
                     const profitPercent = profit / Math.abs(totalCost);
 
 
-                    // if(option.symbol==='ضخود1151' && _option.symbol==='ضخود1152'){
-                    //     profitPercent>0 && console.log(profitPercent);
-
-                    // }
+                
                     
                     const strategyObj = {
                         option: {
@@ -1706,7 +1714,7 @@ const calcBUCSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
 }
 
 
-const calcBUPSStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", strategySubName, BUPSOptionListIgnorer=generalConfig.BUPSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcBUPSStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", strategySubName, BUPSOptionListIgnorer=generalConfig.BUPSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -1892,7 +1900,7 @@ const calcSyntheticCoveredCallStrategies = (list,
     {priceType, strategySubName,minQuantityFactorOfBUCS=0.6, 
         minStockPriceToSarBeSarPercent=-Infinity,
         maxStockPriceToSarBeSarPercent=Infinity,
-        BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=0, 
+        BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, 
         max_time_to_settlement=Infinity, 
         minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -2124,7 +2132,7 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
     settlementGainChoosePriceType="MIN", strategySubName, 
     BUPSOptionListIgnorer=generalConfig.BUPSOptionListIgnorer, 
     justIfWholeIsPofitable=false,
-    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -2345,7 +2353,7 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
     priceType, settlementGainChoosePriceType="MIN", strategySubName, 
     isProfitEnoughFn,
     BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
-    min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, MIN_BUCS_BECS_diffStrikesRatio=0, MAX_BUCS_BECS_diffStrikesRatio=Infinity, minStockStrike4DistanceInPercent=-Infinity, maxStockStrike4DistanceInPercent=Infinity, minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, MIN_BUCS_BECS_diffStrikesRatio=0, MAX_BUCS_BECS_diffStrikesRatio=Infinity, minStockStrike4DistanceInPercent=-Infinity, maxStockStrike4DistanceInPercent=Infinity, minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -2572,10 +2580,7 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
                             }
 
 
-                            // if(option.symbol==='ضهرم1018' && option2.symbol==='ضهرم1021' && option3.symbol==='ضهرم1021' && option4.symbol==='ضهرم1023'){
-                            //     console.log(3432);
-                                
-                            // }
+                          
 
                             const strategyObj = {
                                 option: {
@@ -2664,7 +2669,7 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
 const calcCALL_BUTTERFLYStrategies = (list, {
     priceType, settlementGainChoosePriceType="MIN", strategySubName,
     isProfitEnoughFn, 
-    BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, MIN_BUCS_BECS_diffStrikesRatio=0, MAX_BUCS_BECS_diffStrikesRatio=Infinity, minStockStrike4DistanceInPercent=-Infinity, maxStockStrike4DistanceInPercent=Infinity, minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
+    BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, MIN_BUCS_BECS_diffStrikesRatio=0, MAX_BUCS_BECS_diffStrikesRatio=Infinity, minStockStrike4DistanceInPercent=-Infinity, maxStockStrike4DistanceInPercent=Infinity, minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -2973,7 +2978,7 @@ const calcCALL_BUTTERFLYStrategies = (list, {
 const calcCALL_CONDORStrategies = (list, {priceType, settlementGainChoosePriceType="MIN", 
     strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     isProfitEnoughFn,
-    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, MIN_BUCS_BECS_diffStrikesRatio=0, MAX_BUCS_BECS_diffStrikesRatio=Infinity, minStockStrike4DistanceInPercent=-Infinity, maxStockStrike4DistanceInPercent=Infinity, minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
@@ -3280,7 +3285,7 @@ const calcCALL_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTy
 const calcPUT_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePriceType="MIN", 
     strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     isProfitEnoughFn,
-    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
     minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, 
     MIN_BUPS_BEPS_diffStrikesRatio=0, MAX_BUPS_BEPS_diffStrikesRatio=Infinity, minStockStrike4DistanceInPercent=-Infinity, maxStockStrike4DistanceInPercent=Infinity, minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
@@ -3582,7 +3587,7 @@ const calcPUT_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePrice
 const calcPUT_CONDORStrategies = (list, {priceType, settlementGainChoosePriceType="MIN",
      strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
      isProfitEnoughFn,
-     min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
      minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, 
      maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
      minStockPriceDistanceFromSarBeSarInPercent=-Infinity,
@@ -3902,7 +3907,7 @@ const calcPUT_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTyp
 
 
 
-const calcREVERSE_IRON_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePriceType="MIN", showLeftRightProfitType="LEFT&RIGHT", strategySubName, BUCSSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, minStockPriceDistanceFromLowerStrikeInPercent=-Infinity, maxStockPriceDistanceFromLowerStrikeInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcREVERSE_IRON_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePriceType="MIN", showLeftRightProfitType="LEFT&RIGHT", strategySubName, BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, minStockPriceDistanceFromLowerStrikeInPercent=-Infinity, maxStockPriceDistanceFromLowerStrikeInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -4327,7 +4332,7 @@ const IRON_BUTTERFLY_CONDOR_BUCS_strategyObjCreator = (option, option2, option3,
 
 
 const calcIRON_BUTTERFLY_BUCS_Strategies = (list, {priceType, settlementGainChoosePriceType="MIN", showLeftRightProfitType="LEFT&RIGHT", strategySubName,
-     BUCSSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+     BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
      isProfitEnoughFn,
      minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
      minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity,
@@ -4611,7 +4616,7 @@ const calcIRON_BUTTERFLY_BUCS_Strategies = (list, {priceType, settlementGainChoo
 
 const calcIRON_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainChoosePriceType="MIN", showLeftRightProfitType="LEFT&RIGHT", strategySubName,
     isProfitEnoughFn,
-     BUCSSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+     BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
      minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
      minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity,
      minStockPriceDistanceFromOption2StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption2StrikeInPercent=Infinity, 
@@ -4850,7 +4855,7 @@ const calcIRON_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainChooseP
 
 const calcIRON_BUTT_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainChoosePriceType="MIN", showLeftRightProfitType="LEFT&RIGHT", strategySubName,
     isProfitEnoughFn,
-     BUCSSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+     BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
      minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
      minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity,
      minStockPriceDistanceFromOption2StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption2StrikeInPercent=Infinity, 
@@ -5223,7 +5228,7 @@ const IRON_BUTTERFLY_BUPS_strategyObjCreator = (option, option2, option3, option
 const calcIRON_BUTTERFLY_BUPS_Strategies = (list, { priceType, 
     isProfitEnoughFn,
     settlementGainChoosePriceType = "MIN", showLeftRightProfitType = "LEFT&RIGHT", strategySubName,
-    BUCSSOptionListIgnorer, min_time_to_settlement = 0, max_time_to_settlement = Infinity,
+    BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement = Infinity,
     minStockPriceDistanceFromHigherStrikeInPercent = -Infinity, maxStockPriceDistanceFromHigherStrikeInPercent = Infinity,
     minStockPriceDistanceFromSarBeSarInPercent = -Infinity, maxStockPriceDistanceFromSarBeSarInPercent = Infinity,
     minStockPriceDistanceFromOption2StrikeInPercent = -Infinity, maxStockPriceDistanceFromOption2StrikeInPercent = Infinity,
@@ -5507,7 +5512,7 @@ const calcIRON_BUTTERFLY_BUPS_Strategies = (list, { priceType,
 const calcIRON_CONDOR_BUPS_Strategies = (list, {priceType, 
     isProfitEnoughFn,
     settlementGainChoosePriceType="MIN", showLeftRightProfitType="LEFT&RIGHT", strategySubName,
-     BUCSSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+     BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
      minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
      minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity,
      minStockPriceDistanceFromOption2StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption2StrikeInPercent=Infinity, 
@@ -5846,7 +5851,7 @@ const calcIRON_CONDOR_BUPS_Strategies = (list, {priceType,
 const calcIRON_BUTT_CONDOR_BUPS_Strategies = (list, {priceType, 
     isProfitEnoughFn,
     settlementGainChoosePriceType="MIN", showLeftRightProfitType="LEFT&RIGHT", strategySubName,
-     BUCSSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+     BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
      minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
      minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity,
      minStockPriceDistanceFromOption2StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption2StrikeInPercent=Infinity, 
@@ -6171,7 +6176,7 @@ const calcIRON_BUTT_CONDOR_BUPS_Strategies = (list, {priceType,
 const calcPUT_BUTT_CONDORStrategies = (list, {priceType, 
     settlementGainChoosePriceType="MIN", strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     isProfitEnoughFn,
-    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
     minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, 
     MIN_BUPS_BEPS_diffStrikesRatio=0, MAX_BUPS_BEPS_diffStrikesRatio=Infinity, 
@@ -6416,9 +6421,7 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
                             if (profitLossRatio < minProfitLossRatio)
                                 return ___allPossibleStrategies
 
-                            // if(option.symbol==='طهرم1023' && option2.symbol==='طهرم1024' && option3.symbol==='طهرم1024' && option4.symbol==='طهرم1025'){
-                            //     console.log(42342323)
-                            // }
+                           
                             const strategyObj = {
                                 option: {
                                     ...option
@@ -6504,7 +6507,7 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
 
 const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFactorOfBUCS=0.6, 
     maxQuantityFactorOfBUCS=2, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
-    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceToSarBeSarPercent=-Infinity,maxStockPriceToSarBeSarPercent=-.15,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -6761,7 +6764,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
 const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBUPS=0.6, 
     minStockPriceToSarBeSarPercent=-Infinity,
     maxStockPriceToSarBeSarPercent=-.15,
-    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -7034,7 +7037,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBECS=0.6, 
     minStockPriceToSarBeSarPercent=0.2,
     maxStockPriceToSarBeSarPercent=Infinity,
-    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -7307,7 +7310,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBEPS=0.6, 
     minStockPriceToSarBeSarPercent=0.2,
     maxStockPriceToSarBeSarPercent=Infinity,
-    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -7578,7 +7581,7 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
 const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, strategySubName, 
     BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
-    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     justIfWholeIsPofitable=false,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -7758,7 +7761,7 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
 
 
 const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, 
-    strategySubName, min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    strategySubName, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     justIfWholeIsPofitable=false,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -7963,7 +7966,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
-const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -8053,7 +8056,7 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth, min_tim
 
 }
 
-const calcCOVERED_CONVERSION_Strategies = (list, {priceType, expectedProfitPerMonth, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcCOVERED_CONVERSION_Strategies = (list, {priceType, expectedProfitPerMonth, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -8154,7 +8157,7 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType, expectedProfitPerMo
 
 }
 
-const calcCOVERED_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcCOVERED_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -8267,7 +8270,7 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
 }
 
-const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -8413,7 +8416,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth, min_time_t
 
 }
 
-const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", strategySubName, BECSSOptionListIgnorer=generalConfig.BECSSOptionListIgnorer, min_time_to_settlement=0, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", strategySubName, BECSSOptionListIgnorer=generalConfig.BECSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -8572,7 +8575,7 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
 const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMonth, 
     settlementGainChoosePriceType="MIN", strategySubName,  
     justIfWholeIsPofitable=false,
-    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceToSarBeSarPercent=-Infinity, maxStockPriceToSarBeSarPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -8840,7 +8843,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, 
     settlementGainChoosePriceType="MIN", strategySubName,
     justIfWholeIsPofitable=false,  
-    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceToSarBeSarPercent=-Infinity, maxStockPriceToSarBeSarPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -9102,7 +9105,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
 const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMonth, 
     justIfWholeIsPofitable=false,
-    settlementGainChoosePriceType="MIN", strategySubName,  min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    settlementGainChoosePriceType="MIN", strategySubName,  min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceToSarBeSarPercent=-Infinity, maxStockPriceToSarBeSarPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -9369,7 +9372,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
 const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, 
     justIfWholeIsPofitable=false,
-    settlementGainChoosePriceType="MIN", strategySubName,  min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    settlementGainChoosePriceType="MIN", strategySubName,  min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceToSarBeSarPercent=-Infinity, maxStockPriceToSarBeSarPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -9637,7 +9640,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
 const calcBuyStockStrategies = (list, {priceType, expectedProfitPerMonth,
     isProfitEnoughFn, 
-    min_time_to_settlement=0, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, 
     expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
@@ -9755,7 +9758,7 @@ const calcBuyStockStrategies = (list, {priceType, expectedProfitPerMonth,
 
 const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth, 
     isProfitEnoughFn,
-    min_time_to_settlement=0, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -9827,10 +9830,7 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
             const profitPercentOfSettlement = profit / Math.abs(totalCost);
 
 
-            // if(option.symbol==='طملت2048'){
-            //     console.log(4234324);
-                
-            // }
+           
 
             const strategyObj = {
                 option: {
@@ -9944,7 +9944,6 @@ const createListFilterContetnByList=(list)=>{
     })
     , calcCALL_BUTTERFLYStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         // MIN_BUCS_BECS_diffStrikesRatio:1,
         // MAX_BUCS_BECS_diffStrikesRatio:1,
@@ -10000,7 +9999,6 @@ const createListFilterContetnByList=(list)=>{
 
     , calcCALL_CONDORStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         // MIN_BUCS_BECS_diffStrikesRatio:1,
         // MAX_BUCS_BECS_diffStrikesRatio:1,
@@ -10058,7 +10056,6 @@ const createListFilterContetnByList=(list)=>{
 
     , calcCALL_BUTT_CONDORStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         // max_time_to_settlement: 63 * 24 * 3600000,
         // MIN_BUCS_BECS_diffStrikesRatio:1,
         // MAX_BUCS_BECS_diffStrikesRatio:1,
@@ -10085,7 +10082,6 @@ const createListFilterContetnByList=(list)=>{
 
     , calcPUT_BUTTERFLYStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         // MIN_BUCS_BECS_diffStrikesRatio:1,
         // MAX_BUCS_BECS_diffStrikesRatio:1,
@@ -10141,7 +10137,6 @@ const createListFilterContetnByList=(list)=>{
 
     , calcPUT_CONDORStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         // MIN_BUCS_BECS_diffStrikesRatio:1,
         // MAX_BUCS_BECS_diffStrikesRatio:1,
@@ -10196,7 +10191,6 @@ const createListFilterContetnByList=(list)=>{
 
     , calcPUT_BUTT_CONDORStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         // max_time_to_settlement: 63 * 24 * 3600000,
         // MIN_BUCS_BECS_diffStrikesRatio:1,
         // MAX_BUCS_BECS_diffStrikesRatio:1,
@@ -10223,7 +10217,6 @@ const createListFilterContetnByList=(list)=>{
     
     , calcIRON_BUTTERFLY_BUCS_Strategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         // MIN_BUCS_BECS_diffStrikesRatio:1,
         // MAX_BUCS_BECS_diffStrikesRatio:1,
@@ -10282,7 +10275,6 @@ const createListFilterContetnByList=(list)=>{
 
     , calcIRON_CONDOR_BUCS_Strategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         // MIN_BUCS_BECS_diffStrikesRatio:1,
         // MAX_BUCS_BECS_diffStrikesRatio:1,
@@ -10343,7 +10335,6 @@ const createListFilterContetnByList=(list)=>{
     
    , calcIRON_BUTT_CONDOR_BUCS_Strategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         // max_time_to_settlement: 63 * 24 * 3600000,
         // MIN_BUCS_BECS_diffStrikesRatio:1,
         // MAX_BUCS_BECS_diffStrikesRatio:1,
@@ -10373,7 +10364,6 @@ const createListFilterContetnByList=(list)=>{
 
     , calcIRON_BUTTERFLY_BUPS_Strategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         // MIN_BUCS_BECS_diffStrikesRatio:1,
         // MAX_BUCS_BECS_diffStrikesRatio:1,
@@ -10409,7 +10399,6 @@ const createListFilterContetnByList=(list)=>{
 
     , calcIRON_CONDOR_BUPS_Strategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         // MIN_BUCS_BECS_diffStrikesRatio:1,
         // MAX_BUCS_BECS_diffStrikesRatio:1,
@@ -10444,7 +10433,6 @@ const createListFilterContetnByList=(list)=>{
     })
     , calcIRON_BUTT_CONDOR_BUPS_Strategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         // MIN_BUCS_BECS_diffStrikesRatio:1,
         // MAX_BUCS_BECS_diffStrikesRatio:1,
         // maxStockStrike4DistanceInPercent:-0.05,
@@ -10497,19 +10485,16 @@ const createListFilterContetnByList=(list)=>{
 
     calcBUS_With_BUCS_BEPSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         minStockPriceToSarBeSarPercent: .01,
     }),
 
     calcBUS_With_BUCS_BEPSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         minStockPriceToSarBeSarPercent: .12,
         // expectedProfitNotif: true,
     }),
     calcBUS_With_BUCS_BEPSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         justIfWholeIsPofitable:true,
         // expectedProfitNotif: true,
     }),
@@ -10517,19 +10502,16 @@ const createListFilterContetnByList=(list)=>{
 
     calcBUS_With_BUPS_BECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         minStockPriceToSarBeSarPercent: .01,
     }),
 
     calcBUS_With_BUPS_BECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         minStockPriceToSarBeSarPercent: .12,
         // expectedProfitNotif: true,
     }),
     calcBUS_With_BUPS_BECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         justIfWholeIsPofitable:true,
         // expectedProfitNotif: true,
     }),
@@ -10540,18 +10522,15 @@ const createListFilterContetnByList=(list)=>{
 
     calcBES_With_BUCS_BEPSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         maxStockPriceToSarBeSarPercent: -.01,
     }),
     calcBES_With_BUCS_BEPSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         maxStockPriceToSarBeSarPercent: -.12,
         // expectedProfitNotif: true,
     }),
     calcBES_With_BUCS_BEPSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         justIfWholeIsPofitable:true,
         // expectedProfitNotif: true,
     }),
@@ -10559,18 +10538,15 @@ const createListFilterContetnByList=(list)=>{
 
     calcBES_With_BUPS_BECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         maxStockPriceToSarBeSarPercent: -.01,
     }),
     calcBES_With_BUPS_BECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         maxStockPriceToSarBeSarPercent: -.12,
         // expectedProfitNotif: true,
     }),
     calcBES_With_BUPS_BECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         justIfWholeIsPofitable:true,
         // expectedProfitNotif: true,
     }),
@@ -10624,7 +10600,6 @@ const createListFilterContetnByList=(list)=>{
     }),
     , calcBUPS_COLLARStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         justIfWholeIsPofitable:true,
     }),
@@ -10641,7 +10616,6 @@ const createListFilterContetnByList=(list)=>{
     })
     , calcBUCS_COLLAR_Strategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         justIfWholeIsPofitable:true,
     })
@@ -10656,7 +10630,6 @@ const createListFilterContetnByList=(list)=>{
     })
     , calcBEPS_COLLAR_Strategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         max_time_to_settlement: 35 * 24 * 3600000,
         justIfWholeIsPofitable:true,
     })
@@ -10719,14 +10692,12 @@ const createListFilterContetnByList=(list)=>{
     // }), 
     calcBOXStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         expectedProfitPerMonth: 1.026,
         expectedProfitNotif: true,
     }), 
     
     calcBOXStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0,
         max_time_to_settlement: 1 * 24 * 3600000,
         expectedProfitPerMonth: 1.026,
         expectedProfitNotif: true,
@@ -10735,13 +10706,11 @@ const createListFilterContetnByList=(list)=>{
     
     calcBOX_BUPS_BECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         expectedProfitPerMonth: 1.026,
         expectedProfitNotif: true,
     }), 
     calcBOX_BUPS_BECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0,
         max_time_to_settlement: 1 * 24 * 3600000,
         expectedProfitPerMonth: 1.026,
         expectedProfitNotif: true,
@@ -10752,7 +10721,6 @@ const createListFilterContetnByList=(list)=>{
         maxStockPriceDistanceInPercent: -.22
     }), calcBECSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         max_time_to_settlement: 38 * 24 * 3600000,
         maxStockPriceDistanceInPercent: -.15,
         expectedProfitNotif: true
@@ -10762,7 +10730,6 @@ const createListFilterContetnByList=(list)=>{
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         // expectedProfitNotif: true,
         minStockPriceToSarBeSarPercent: .2,
-        // min_time_to_settlement: 0 * 24 * 3600000,
         max_time_to_settlement: 38 * 24 * 3600000,
         // expectedProfitPerMonth: 1.04,
         expectedProfitNotif: true
@@ -10779,7 +10746,6 @@ const createListFilterContetnByList=(list)=>{
         priceType: CONSTS.PRICE_TYPE.LAST_PRICE,
         // expectedProfitNotif: true,
         minStockPriceDistanceInPercent: .08,
-        min_time_to_settlement: 0,
         max_time_to_settlement: 38 * 24 * 3600000,
         expectedProfitPerMonth: 1.04,
         // expectedProfitNotif: true
@@ -10787,7 +10753,6 @@ const createListFilterContetnByList=(list)=>{
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         // expectedProfitNotif: true,
         minStockPriceDistanceInPercent: .08,
-        min_time_to_settlement: 0,
         max_time_to_settlement: 38 * 24 * 3600000,
         expectedProfitPerMonth: 1.04,
         expectedProfitNotif: true
@@ -10800,7 +10765,6 @@ const createListFilterContetnByList=(list)=>{
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         minStockPriceDistanceInPercent: 0,
         maxStockPriceDistanceInPercent: .08,
-        min_time_to_settlement: 0,
         max_time_to_settlement: 38 * 24 * 3600000
     }), calcCOVEREDStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
@@ -10809,7 +10773,6 @@ const createListFilterContetnByList=(list)=>{
     }), calcCOVEREDStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         maxStockPriceDistanceInPercent: .001,
-        min_time_to_settlement: 0,
         max_time_to_settlement: 38 * 24 * 3600000,
     })
     , calcCOVERED_COLLAR_Strategies(list, {
@@ -10821,7 +10784,6 @@ const createListFilterContetnByList=(list)=>{
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
     }), calcBEPSStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        min_time_to_settlement: 0 * 24 * 3600000,
         maxStockPriceDistanceInPercent: -.12,
         expectedProfitNotif: true
     }), calcBUCSStrategies(list, {
@@ -10837,7 +10799,6 @@ const createListFilterContetnByList=(list)=>{
             return false
         }
         ,
-        min_time_to_settlement: 0 * 24 * 3600000,
         // max_time_to_settlement: 35 * 24 * 3600000,
         max_time_to_settlement: 55 * 24 * 3600000,
     }), 
