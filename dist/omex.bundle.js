@@ -2628,6 +2628,7 @@ const currentPositionQuantityUnbalanceCheckAndNotif = () => {
     if (hasIssue) {
 
 
+
         (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
             title: 'تعداد بالانس نیست',
             body: `${strategyPositions[0].instrumentName}`,
@@ -2648,7 +2649,7 @@ const currentPositionQuantityUnbalanceCheckAndNotif = () => {
 const observePortfolioQuantityOfOrderModal = () => {
     // TODO:FIXME: use domContextWindow.document.body.contains(...)
 
-
+    currentPositionQuantityUnbalanceCheckAndNotif();
     return strategyPositions.map(strategyPositionObj => {
 
         strategyPositionObj.observers.filter(observerInfoObj => ['PortfolioQuantity', 'PortfolioQuantityMousemove','PortfolioQuantityTabClick'].includes(observerInfoObj.key)).forEach(observerInfoObj => observerInfoObj.observer.disconnect())
@@ -3007,6 +3008,7 @@ const observePriceChanges = () => {
         const bestOffsetOrderCallback = (mutationList) => {
             for (const mutation of mutationList) {
                 if (mutation?.target?.innerHTML) {
+                    
                     setTimeout(() => {
                         calcProfitOfStrategyInformUntilNotProfit()
                     }
@@ -3021,6 +3023,7 @@ const observePriceChanges = () => {
         const bestOpenMoreOrderCallback = (mutationList) => {
             for (const mutation of mutationList) {
                 if (mutation?.target?.innerHTML) {
+
 
                     setTimeout(() => {
                         calcProfitOfStrategyInformUntilNotProfit()
