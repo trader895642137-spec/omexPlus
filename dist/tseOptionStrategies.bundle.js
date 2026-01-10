@@ -13413,10 +13413,10 @@ const isProfitEnough = ({strategy,profitPercent})=>{
 
     const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(strategy.option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
     const daysToSettlement = Math.floor(settlementTimeDiff / (24 * 3600000));
-    if(daysToSettlement<=0) return true
+    // if(daysToSettlement<=0) return true
 
 
-    if (profitPercent < generalConfig.minProfitToFilter)
+    if (profitPercent < (strategy.minProfitToFilter ?? generalConfig.minProfitToFilter))
         return false
 
     // const minDiffTimeOflastTrade = 6 * 60 * 1000;
@@ -13424,10 +13424,12 @@ const isProfitEnough = ({strategy,profitPercent})=>{
     //     return false
     // }
 
+    if(daysToSettlement<=0) return true
+
     const percentPerDay = Math.pow((1 + profitPercent), 1 / daysToSettlement);
     const percentPerMonth = Math.pow(percentPerDay, 30);
 
-    return percentPerMonth > ((strategy.expectedProfitPerMonth !== undefined && strategy.expectedProfitPerMonth !== null) ? strategy.expectedProfitPerMonth : generalConfig.expectedProfitPerMonth)
+    return percentPerMonth >  (strategy.expectedProfitPerMonth ?? generalConfig.expectedProfitPerMonth)
 
 }
 
@@ -22880,6 +22882,9 @@ const calcBuyStockStrategies = (list, {priceType, expectedProfitPerMonth,
 
 
                
+                const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+
+
 
 
                 const strategyObj = {
@@ -22892,7 +22897,7 @@ const calcBuyStockStrategies = (list, {priceType, expectedProfitPerMonth,
                         expectedProfitNotif,
                         expectedProfitPerMonth,
                         name: createStrategyName([option]),
-                        isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(currentStockPriceRatio),
+                        isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(currentStockPriceRatio,settlementTimeDiff,option),
                         profitPercent : currentStockPriceRatio
                     }
 
@@ -23013,6 +23018,10 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
             const profitPercentOfSettlement = profit / Math.abs(totalCost);
 
 
+
+            const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+
+
            
 
             const strategyObj = {
@@ -23024,7 +23033,7 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
                 expectedProfitNotif,
                 expectedProfitPerMonth,
                 name: createStrategyName([option.optionDetails?.stockSymbolDetails, option]),
-                isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(profitPercentOfSettlement),
+                isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(profitPercentOfSettlement,settlementTimeDiff,option),
                 profitPercent:profitPercentOfSettlement
             }
 
@@ -23073,20 +23082,27 @@ const createListFilterContetnByList=(list)=>{
     calcARBITRAGE_PUTStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
         expectedProfitNotif: true,
-        isProfitEnoughFn(prifitPercent){
-            return prifitPercent > 0.006
-        }
+        minProfitToFilter: 0.006,
+        // isProfitEnoughFn(prifitPercent,settlementTimeDiff,option){
+        //     if(settlementTimeDiff>1) return  
+        //     return prifitPercent > 0.006
+        // }
     }), 
     calcBuyStockStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-        max_time_to_settlement: 5 * 3600000,
+        max_time_to_settlement: 1 * 3600000,
         expectedProfitNotif: true,
-        isProfitEnoughFn(stockPriceRatio){
-            return stockPriceRatio > 0.02
-        }
+        minProfitToFilter: 0.02,
+        // isProfitEnoughFn(stockPriceRatio,settlementTimeDiff,option){
+        //     if(settlementTimeDiff>1) return  
+           
+        //     return stockPriceRatio > 0.02
+        // }
     }), 
     calcLongGUTS_STRANGLEStrategies(list, {
         priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+
+        minProfitToFilter: 0.02,
 
         // min_time_to_settlement: 15 * 24 * 3600000,
         // max_time_to_settlement: 40 * 24 * 3600000,
@@ -24075,7 +24091,13 @@ const createList = ()=>{
         const isPut = isOption && symbol.startsWith('ط');
         let optionDetails,strikePrice;
         if (isOption) {
-            const date = name.split('-').pop();
+            let date = name.split('-').pop();
+            let dateArray = date.split('/');
+            if(dateArray[0].length===2){
+                dateArray[0] = '14' + dateArray[0];
+                date = dateArray.join('/')
+            }
+
             strikePrice = convertStringToInt(name.split('-')[1]);
             const stockSymbol = name.split('-')[0].replace('اختيارخ', '').replace('اختيارف', '').trim();
 
