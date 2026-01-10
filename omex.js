@@ -396,6 +396,38 @@ const calcProfitLossByExactDecimalPricesOfPortFolio = async (_strategyPositions)
 }
 
 
+let lastCheckSumOfMoneyAndAssetsTime;
+export const checkSumOfMoneyAndAssets = async (isForce)=>{
+    // const localstorageKey = 'SumOfMoneyAndAssets';
+    // if(!isForce  && lastCheckSumOfMoneyAndAssetsTime && (Date.now() - lastCheckSumOfMoneyAndAssetsTime)<60000 ) return 
+    // lastCheckSumOfMoneyAndAssetsTime = Date.now();
+
+
+    // const prevSumOfMoneyAndAssets = localStorage.getItem(localstorageKey);
+
+
+    const {sumOfMoneyAndAssets}= await OMEXApi.calculateSumOfMoneyAndAssets();
+
+    showToast(sumOfMoneyAndAssets.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }),5000)
+
+    
+
+    // if(!prevSumOfMoneyAndAssets) return 
+    // const diff = sumOfMoneyAndAssets - prevSumOfMoneyAndAssets;
+
+    // if(diff < 0 && diff < -80000000){
+
+    // }else{
+    //     localStorage.setItem(localstorageKey, sumOfMoneyAndAssets);
+    // }
+
+
+}
+
+
 const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositions,isForce)=>{
     if(!isForce  && lastCheckProfitByExactDecimalPricesOfPortFolio.time && (Date.now() - lastCheckProfitByExactDecimalPricesOfPortFolio.time)<60000 ) return lastCheckProfitByExactDecimalPricesOfPortFolio.isGood
     lastCheckProfitByExactDecimalPricesOfPortFolio.time = Date.now();

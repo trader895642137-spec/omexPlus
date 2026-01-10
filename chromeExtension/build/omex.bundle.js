@@ -593,12 +593,14 @@ const isETF = (instrumentName)=>{
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   OMEXApi: () => (/* binding */ OMEXApi),
+/* harmony export */   calculateSumOfMoneyAndAssets: () => (/* binding */ calculateSumOfMoneyAndAssets),
 /* harmony export */   createGroup: () => (/* binding */ createGroup),
 /* harmony export */   createStrategyListForAllGroups: () => (/* binding */ createStrategyListForAllGroups),
 /* harmony export */   fillEstimationPanelByStrategyName: () => (/* binding */ fillEstimationPanelByStrategyName),
 /* harmony export */   getBlockedAmount: () => (/* binding */ getBlockedAmount),
 /* harmony export */   getOptionPortfolioList: () => (/* binding */ getOptionPortfolioList),
 /* harmony export */   getStockPortfolioList: () => (/* binding */ getStockPortfolioList),
+/* harmony export */   getWalletInfo: () => (/* binding */ getWalletInfo),
 /* harmony export */   isInstrumentNameOfOption: () => (/* binding */ isInstrumentNameOfOption),
 /* harmony export */   logSumOfPositionsOfGroups: () => (/* binding */ logSumOfPositionsOfGroups)
 /* harmony export */ });
@@ -606,9 +608,41 @@ __webpack_require__.r(__webpack_exports__);
 
 
 // https://khobregan.tsetab.ir
-const origin = window.location.origin
-const redOrigin = origin.replace('.tsetab','-red.tsetab')
-const deltaOrigin = origin.replace('.tsetab','-delta.tsetab')
+const origin = window.location.origin;
+const redOrigin = origin.replace('.tsetab','-red.tsetab');
+const deltaOrigin = origin.replace('.tsetab','-delta.tsetab');
+
+
+
+const getWalletInfo = async () => {
+
+    
+
+    const walletInfo = await fetch(`${redOrigin}/api/Customers/wallet-info`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => res.response?.data[0])
+
+    return walletInfo
+
+}
+
 
 const getOptionPortfolioList = async () => {
 
@@ -1001,12 +1035,21 @@ const logSumOfPositionsOfGroups = async ()=>{
 }
 
 
+const calculateBlockedAmount =(optionPortfolioList)=>{
+
+    return optionPortfolioList.map(op=>op.blockedAmount).filter(Boolean).reduce((sum,current)=>sum+current,0)
+
+}
+
+
 const getBlockedAmount = ()=>{
 
     getOptionPortfolioList().then(list=>{
-        console.log(list.map(op=>op.blockedAmount).filter(Boolean).reduce((sum,current)=>sum+current,0))
+        console.log(calculateBlockedAmount(list))
     })
 }
+
+
 
 
 const fillEstimationPanelByStrategyName=async ()=>{
@@ -1183,6 +1226,73 @@ const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar
 
 
 
+const calculateSumOfMoneyAndAssets  = async ()=>{
+
+
+    const [optionPortfolioList,assetPortfolioList,walletInfo] = await Promise.all(
+        [
+            getOptionPortfolioList(),
+            getStockPortfolioList(),
+            getWalletInfo()
+        ]
+    )
+
+
+    // const blockedAmount = await calculateBlockedAmount(optionPortfolioList);
+
+    const sumCostWithoutMarginOfOptions = optionPortfolioList.reduce((sumCostWithoutMarginOfOptions,option)=>{
+
+        const {orderSide,cSize,count,executedPrice} = option;
+        const sumOfExecutedValue =  orderSide==='Buy' ? cSize * count * executedPrice * (1 + _common__WEBPACK_IMPORTED_MODULE_0__.COMMISSION_FACTOR.OPTION.BUY) : (cSize * count * executedPrice)/(1+_common__WEBPACK_IMPORTED_MODULE_0__.COMMISSION_FACTOR.OPTION.SELL);
+
+        sumCostWithoutMarginOfOptions += orderSide==='Buy' ? sumOfExecutedValue : - sumOfExecutedValue;
+
+        return sumCostWithoutMarginOfOptions
+
+    },0);
+
+
+    let isThereFreeRiskETF_SOBAT=false;
+    const sumCostOfAssetsWithoutFreeRiskETF = assetPortfolioList.reduce((sumCostOfAssetsWithoutFreeRiskETF,asset)=>{
+
+        const {quantity,executedPrice,instrumentId} = asset;
+        if(instrumentId==='IRT3SOVF0001'){
+            isThereFreeRiskETF_SOBAT=true;
+            return sumCostOfAssetsWithoutFreeRiskETF
+        }
+        const sumOfExecutedValue =   quantity * executedPrice *  (1 + _common__WEBPACK_IMPORTED_MODULE_0__.COMMISSION_FACTOR.STOCK.BUY);
+        sumCostOfAssetsWithoutFreeRiskETF += sumOfExecutedValue;
+
+        return sumCostOfAssetsWithoutFreeRiskETF
+
+    },0);
+
+
+
+    const {customerOptionPurchasePowerT2,blockedAmount} = walletInfo;
+
+
+
+    const sumOfMoneyAndAssets = sumCostWithoutMarginOfOptions + customerOptionPurchasePowerT2 + blockedAmount + sumCostOfAssetsWithoutFreeRiskETF;
+    console.log(sumOfMoneyAndAssets.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }));
+
+
+    return {
+        sumOfMoneyAndAssets,
+        sumCostWithoutMarginOfOptions,
+        blockedAmount,
+        customerOptionPurchasePowerT2,
+        sumCostOfAssetsWithoutFreeRiskETF
+    }
+
+    
+}
+
+
+
 const OMEXApi = {
     getGroups,
     getOptionPortfolioList,
@@ -1195,7 +1305,8 @@ const OMEXApi = {
     getBlockedAmount,
     fillEstimationPanelByStrategyName,
     createGroup,
-    createStrategyListForAllGroups
+    createStrategyListForAllGroups,
+    calculateSumOfMoneyAndAssets
 }
 
 /***/ }),
@@ -1282,6 +1393,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   createIntervalLogger: () => (/* binding */ createIntervalLogger)
 /* harmony export */ });
+
+// TODO: use in extension for multiple tabs
 function createIntervalLogger({ key, interval, sync }) {
   if (!key || !interval || typeof sync !== "function") {
     throw new Error("Invalid logger configuration");
@@ -1442,6 +1555,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   STRATEGY_NAME_PROFIT_CALCULATOR: () => (/* binding */ STRATEGY_NAME_PROFIT_CALCULATOR),
 /* harmony export */   calcOffsetProfitOfStrategy: () => (/* binding */ calcOffsetProfitOfStrategy),
 /* harmony export */   calcProfitOfStrategy: () => (/* binding */ calcProfitOfStrategy),
+/* harmony export */   checkSumOfMoneyAndAssets: () => (/* binding */ checkSumOfMoneyAndAssets),
 /* harmony export */   configs: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.configs),
 /* harmony export */   createGroupOfCurrentStrategy: () => (/* binding */ createGroupOfCurrentStrategy),
 /* harmony export */   expectedProfit: () => (/* binding */ expectedProfit),
@@ -1843,6 +1957,38 @@ const calcProfitLossByExactDecimalPricesOfPortFolio = async (_strategyPositions)
         profitLossByOffsetOrdersPercent,
         totalCostOfChunkOfEstimationQuantity
     }
+
+}
+
+
+let lastCheckSumOfMoneyAndAssetsTime;
+const checkSumOfMoneyAndAssets = async (isForce)=>{
+    // const localstorageKey = 'SumOfMoneyAndAssets';
+    // if(!isForce  && lastCheckSumOfMoneyAndAssetsTime && (Date.now() - lastCheckSumOfMoneyAndAssetsTime)<60000 ) return 
+    // lastCheckSumOfMoneyAndAssetsTime = Date.now();
+
+
+    // const prevSumOfMoneyAndAssets = localStorage.getItem(localstorageKey);
+
+
+    const {sumOfMoneyAndAssets}= await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calculateSumOfMoneyAndAssets();
+
+    showToast(sumOfMoneyAndAssets.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }),5000)
+
+    
+
+    // if(!prevSumOfMoneyAndAssets) return 
+    // const diff = sumOfMoneyAndAssets - prevSumOfMoneyAndAssets;
+
+    // if(diff < 0 && diff < -80000000){
+
+    // }else{
+    //     localStorage.setItem(localstorageKey, sumOfMoneyAndAssets);
+    // }
+
 
 }
 

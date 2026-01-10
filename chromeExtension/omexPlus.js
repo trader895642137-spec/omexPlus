@@ -240,3 +240,32 @@ document.getElementById('portfolioWatcher').addEventListener('click', () => {
 
 
 });
+
+
+
+
+document.getElementById('calculateSumOfMoneyAndAssets').addEventListener('click', () => {
+
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+
+        chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            files: [],
+            world: "MAIN"
+        }, async () => {
+
+            // await new Promise(r => setTimeout(r, 3000)); 
+            chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                func: (actionName) => {
+                    window.omexLib.checkSumOfMoneyAndAssets();
+                },
+                args: ['CALCULATE-SUM-OF-MONEY-AND-ASSETS'],
+                world: "MAIN"
+            });
+        });
+    });
+
+
+});

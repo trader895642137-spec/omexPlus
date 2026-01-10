@@ -1,9 +1,41 @@
-import { isETF, waitForElement } from "./common"
+import { isETF, waitForElement ,COMMISSION_FACTOR} from "./common"
 
 // https://khobregan.tsetab.ir
-const origin = window.location.origin
-const redOrigin = origin.replace('.tsetab','-red.tsetab')
-const deltaOrigin = origin.replace('.tsetab','-delta.tsetab')
+const origin = window.location.origin;
+const redOrigin = origin.replace('.tsetab','-red.tsetab');
+const deltaOrigin = origin.replace('.tsetab','-delta.tsetab');
+
+
+
+export const getWalletInfo = async () => {
+
+    
+
+    const walletInfo = await fetch(`${redOrigin}/api/Customers/wallet-info`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => res.response?.data[0])
+
+    return walletInfo
+
+}
+
 
 export const getOptionPortfolioList = async () => {
 
@@ -396,12 +428,21 @@ export const logSumOfPositionsOfGroups = async ()=>{
 }
 
 
+const calculateBlockedAmount =(optionPortfolioList)=>{
+
+    return optionPortfolioList.map(op=>op.blockedAmount).filter(Boolean).reduce((sum,current)=>sum+current,0)
+
+}
+
+
 export const getBlockedAmount = ()=>{
 
     getOptionPortfolioList().then(list=>{
-        console.log(list.map(op=>op.blockedAmount).filter(Boolean).reduce((sum,current)=>sum+current,0))
+        console.log(calculateBlockedAmount(list))
     })
 }
+
+
 
 
 export const fillEstimationPanelByStrategyName=async ()=>{
@@ -578,6 +619,73 @@ export const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(opt
 
 
 
+export const calculateSumOfMoneyAndAssets  = async ()=>{
+
+
+    const [optionPortfolioList,assetPortfolioList,walletInfo] = await Promise.all(
+        [
+            getOptionPortfolioList(),
+            getStockPortfolioList(),
+            getWalletInfo()
+        ]
+    )
+
+
+    // const blockedAmount = await calculateBlockedAmount(optionPortfolioList);
+
+    const sumCostWithoutMarginOfOptions = optionPortfolioList.reduce((sumCostWithoutMarginOfOptions,option)=>{
+
+        const {orderSide,cSize,count,executedPrice} = option;
+        const sumOfExecutedValue =  orderSide==='Buy' ? cSize * count * executedPrice * (1 + COMMISSION_FACTOR.OPTION.BUY) : (cSize * count * executedPrice)/(1+COMMISSION_FACTOR.OPTION.SELL);
+
+        sumCostWithoutMarginOfOptions += orderSide==='Buy' ? sumOfExecutedValue : - sumOfExecutedValue;
+
+        return sumCostWithoutMarginOfOptions
+
+    },0);
+
+
+    let isThereFreeRiskETF_SOBAT=false;
+    const sumCostOfAssetsWithoutFreeRiskETF = assetPortfolioList.reduce((sumCostOfAssetsWithoutFreeRiskETF,asset)=>{
+
+        const {quantity,executedPrice,instrumentId} = asset;
+        if(instrumentId==='IRT3SOVF0001'){
+            isThereFreeRiskETF_SOBAT=true;
+            return sumCostOfAssetsWithoutFreeRiskETF
+        }
+        const sumOfExecutedValue =   quantity * executedPrice *  (1 + COMMISSION_FACTOR.STOCK.BUY);
+        sumCostOfAssetsWithoutFreeRiskETF += sumOfExecutedValue;
+
+        return sumCostOfAssetsWithoutFreeRiskETF
+
+    },0);
+
+
+
+    const {customerOptionPurchasePowerT2,blockedAmount} = walletInfo;
+
+
+
+    const sumOfMoneyAndAssets = sumCostWithoutMarginOfOptions + customerOptionPurchasePowerT2 + blockedAmount + sumCostOfAssetsWithoutFreeRiskETF;
+    console.log(sumOfMoneyAndAssets.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }));
+
+
+    return {
+        sumOfMoneyAndAssets,
+        sumCostWithoutMarginOfOptions,
+        blockedAmount,
+        customerOptionPurchasePowerT2,
+        sumCostOfAssetsWithoutFreeRiskETF
+    }
+
+    
+}
+
+
+
 export const OMEXApi = {
     getGroups,
     getOptionPortfolioList,
@@ -590,5 +698,6 @@ export const OMEXApi = {
     getBlockedAmount,
     fillEstimationPanelByStrategyName,
     createGroup,
-    createStrategyListForAllGroups
+    createStrategyListForAllGroups,
+    calculateSumOfMoneyAndAssets
 }

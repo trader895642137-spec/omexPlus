@@ -1,3 +1,5 @@
+
+// TODO: use in extension for multiple tabs
 export function createIntervalLogger({ key, interval, sync }) {
   if (!key || !interval || typeof sync !== "function") {
     throw new Error("Invalid logger configuration");
