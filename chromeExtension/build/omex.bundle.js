@@ -1868,6 +1868,8 @@ const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositio
                 body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
                 tag: `${strategyPositions[0].instrumentName}-doubleCheckProfitByExactDecimalPricesOfPortFolio`
         });
+
+        showToast('مشکل با محاسبه قیمت میانگین');
     }
 
     
@@ -2343,6 +2345,8 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
         let cachedUnreliableCurrentPositionAvgPriceElement;
         const getUnreliableCurrentPositionAvgPrice = () => {
+             
+ 
 
             if (!domContextWindow.document.body.contains(cachedUnreliableCurrentPositionAvgPriceElement)) {
                 const labelText = 'میانگین';
