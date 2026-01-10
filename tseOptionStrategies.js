@@ -2669,7 +2669,16 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
 const calcCALL_BUTTERFLYStrategies = (list, {
     priceType, settlementGainChoosePriceType="MIN", strategySubName,
     isProfitEnoughFn, 
-    BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, MIN_BUCS_BECS_diffStrikesRatio=0, MAX_BUCS_BECS_diffStrikesRatio=Infinity, minStockStrike4DistanceInPercent=-Infinity, maxStockStrike4DistanceInPercent=Infinity, minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
+    BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
+    min_time_to_settlement=-Infinity, 
+    max_time_to_settlement=Infinity, 
+    minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, 
+    maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
+    minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, 
+    MIN_BUCS_BECS_diffStrikesRatio=0, MAX_BUCS_BECS_diffStrikesRatio=Infinity, 
+    minStockStrike4DistanceInPercent=-Infinity, maxStockStrike4DistanceInPercent=Infinity, 
+    minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, 
+    minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -2714,31 +2723,6 @@ const calcCALL_BUTTERFLYStrategies = (list, {
                     if (!_option.optionDetails?.stockSymbolDetails?.last)
                         return false
 
-                    const stockPriceHigherStrikeRatio = (_option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
-
-                    if (stockPriceHigherStrikeRatio > minStockPriceDistanceFromHigherStrikeInPercent && stockPriceHigherStrikeRatio < maxStockPriceDistanceFromHigherStrikeInPercent) {} else {
-                        return false
-                    }
-
-                    
-                    const highStrikePrice = getPriceOfAsset({
-                        asset: _option,
-                        priceType,
-                        sideType: 'SELL'
-                    });
-                    
-
-                     // TODO: use breakeven function 
-
-                    const sarBeSar = option.optionDetails?.strikePrice + (priceOfOptionWithLowStrike - highStrikePrice);
-
-                    
-
-                    const stockPriceSarBeSarRatio = (_option.optionDetails.stockSymbolDetails.last / sarBeSar) - 1;
-
-                    if (stockPriceSarBeSarRatio > minStockPriceDistanceFromSarBeSarInPercent && stockPriceSarBeSarRatio < maxStockPriceDistanceFromSarBeSarInPercent) {} else {
-                        return false
-                    }
 
                     return true
 
