@@ -24060,7 +24060,7 @@ const createListFilterContetnByList=(list)=>{
 
     htmlContent += allStrategyListObject.map(strategyObj => strategyObj.htmlContent).join('');
 
-    // setFiltersContent(htmlContent);
+    setFiltersContent(htmlContent);
 
 }
 
