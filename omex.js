@@ -2308,6 +2308,7 @@ const injectStyles = () => {
             .amin-bold--light {
                 padding: 2px !important;
                 border: 1px dashed !important;
+                background: #c5d8ff;
             }
 
 
