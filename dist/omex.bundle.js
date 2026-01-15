@@ -2017,14 +2017,15 @@ const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositio
     lastCheckProfitByExactDecimalPricesOfPortFolio.isGood =isGood;
 
     if(!isGood){
+        const issueMessage= 'با قیمت دقیق به سود مورد نظر نمیرسد';
 
         (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
-                title: 'مشکل با محاسبه قیمت میانگین',
+                title: issueMessage,
                 body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
-                tag: `${strategyPositions[0].instrumentName}-doubleCheckProfitByExactDecimalPricesOfPortFolio`
+                tag: `doubleCheckProfitByExactDecimalPricesOfPortFolio`
         });
 
-        showToast('مشکل با محاسبه قیمت میانگین');
+        showToast(issueMessage);
     }
 
     
@@ -2144,7 +2145,7 @@ const checkStrategyInProfit = async (_strategyPositions)=>{
 }
 
 
-const getExactDecimalPricesOfPortFolio = ({instrumentId,instrumentName}) => {
+const getRecentExactDecimalPricesOfPortFolio = ({instrumentId,instrumentName}) => {
 
     if (!lastCheckProfitByExactDecimalPricesOfPortFolio?.portfolioList?.length || !lastCheckProfitByExactDecimalPricesOfPortFolio.time || (Date.now() - lastCheckProfitByExactDecimalPricesOfPortFolio.time) > 60000) return null
     let currentPortfolioPosition = findPositionInfoByGivenPortfolio({instrumentId,instrumentName}, [...lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList, ...lastCheckProfitByExactDecimalPricesOfPortFolio.stockPortfolioList]);
@@ -2488,11 +2489,11 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             const {instrumentId,instrumentName} = position;
             let executedPrice,breakEvenPrice;
 
-            const exactDecimalPricesOfPortFolioObj = (instrumentId || instrumentName) && getExactDecimalPricesOfPortFolio({instrumentId,instrumentName});
+            const recentExactDecimalPricesOfPortFolioObj = (instrumentId || instrumentName) && getRecentExactDecimalPricesOfPortFolio({instrumentId,instrumentName});
 
-            if(exactDecimalPricesOfPortFolioObj){
-                executedPrice = exactDecimalPricesOfPortFolioObj.executedPrice;
-                breakEvenPrice = exactDecimalPricesOfPortFolioObj.breakEvenPrice;
+            if(recentExactDecimalPricesOfPortFolioObj){
+                executedPrice = recentExactDecimalPricesOfPortFolioObj.executedPrice;
+                breakEvenPrice = recentExactDecimalPricesOfPortFolioObj.breakEvenPrice;
             }else{
                 const executedPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="executedPrice"]`;
                 const breakEvenPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="breakEvenPrice"]`;
@@ -2502,10 +2503,11 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             if (executedPrice && breakEvenPrice && (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.hasBreakevenExecutedPriceDiffIssue)({executedPrice,breakEvenPrice})) {
 
                 console.log({instrumentName,executedPrice,breakEvenPrice});
+                const issueMessage = 'مشکل تفاوت میانگین و سر به سر';
                 
-                showToast('مشکل تفاوت میانگین و سر به سر');
+                showToast(issueMessage);
                 !domContextWindow.window.doNotNotifAvrageIssue && (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
-                    title: 'مشکل تفاوت میانگین و سر به سر',
+                    title: issueMessage,
                     body: `${instrumentName}`,
                     tag: `CurrentPositionAvgPriceIssue`
                 });

@@ -433,14 +433,15 @@ const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositio
     lastCheckProfitByExactDecimalPricesOfPortFolio.isGood =isGood;
 
     if(!isGood){
+        const issueMessage= 'با قیمت دقیق به سود مورد نظر نمیرسد';
 
         showNotification({
-                title: 'مشکل با محاسبه قیمت میانگین',
+                title: issueMessage,
                 body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
-                tag: `${strategyPositions[0].instrumentName}-doubleCheckProfitByExactDecimalPricesOfPortFolio`
+                tag: `doubleCheckProfitByExactDecimalPricesOfPortFolio`
         });
 
-        showToast('مشکل با محاسبه قیمت میانگین');
+        showToast(issueMessage);
     }
 
     
@@ -918,10 +919,11 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             if (executedPrice && breakEvenPrice && hasBreakevenExecutedPriceDiffIssue({executedPrice,breakEvenPrice})) {
 
                 console.log({instrumentName,executedPrice,breakEvenPrice});
+                const issueMessage = 'مشکل تفاوت میانگین و سر به سر';
                 
-                showToast('مشکل تفاوت میانگین و سر به سر');
+                showToast(issueMessage);
                 !domContextWindow.window.doNotNotifAvrageIssue && showNotification({
-                    title: 'مشکل تفاوت میانگین و سر به سر',
+                    title: issueMessage,
                     body: `${instrumentName}`,
                     tag: `CurrentPositionAvgPriceIssue`
                 });
