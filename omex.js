@@ -2594,12 +2594,25 @@ export const createGroupOfCurrentStrategy = ()=>{
     OMEXApi.createGroup({
         name: getSummaryNameOfStrategy(),
         instrumentIds: strategyPositions.map(strategyPosition=>strategyPosition.instrumentId)
-    }).then(()=>{
+    }).then(async ()=>{
 
         showToast('گروه ایجاد شد');
+        strategyLogger?.saveLogs && strategyLogger.saveLogs(true);
+
+
+        const { sum, areNotInGroups } = await OMEXApi.getSumOfPositionsOfGroups();
+        if(areNotInGroups?.length){
+            const issueMessage = 'در گروه نیستن'
+            showToast(issueMessage);
+            console.log({sum,areNotInGroups});
+            showNotification({
+                title: issueMessage,
+                body: `${areNotInGroups.map(instrumentName => instrumentName).join('-')}`,
+                tag: `areNotInGroups`
+            });
+        }
     });
     takeScreenshot();
-    strategyLogger?.saveLogs && strategyLogger.saveLogs(true)
 }
 
 export function showToast(message, duration = 2000) {

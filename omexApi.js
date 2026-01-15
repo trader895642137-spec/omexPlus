@@ -407,7 +407,7 @@ const selectStrategy =async (documentOfWindow)=>{
 
 }
 
-export const logSumOfPositionsOfGroups = async ()=>{
+export const getSumOfPositionsOfGroups = async ()=>{
     const groups = await getGroups();
     let portfolioList = await getOptionPortfolioList();
     const sum  = groups.reduce((sum,g)=>sum+=(g.instrumentIds.length),0);
@@ -424,6 +424,11 @@ export const logSumOfPositionsOfGroups = async ()=>{
     },[])
     
     console.log(sum,areNotInGroups)
+
+    return {
+        sum,
+        areNotInGroups
+    }
     
 }
 
@@ -693,7 +698,7 @@ export const OMEXApi = {
     getInstrumentInfoBySymbol,
     deleteAllOpenOrders,
     selectStrategy,
-    logSumOfPositionsOfGroups,
+    getSumOfPositionsOfGroups,
     getBlockedAmount,
     fillEstimationPanelByStrategyName,
     createGroup,

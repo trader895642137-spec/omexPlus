@@ -621,9 +621,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getBlockedAmount: () => (/* binding */ getBlockedAmount),
 /* harmony export */   getOptionPortfolioList: () => (/* binding */ getOptionPortfolioList),
 /* harmony export */   getStockPortfolioList: () => (/* binding */ getStockPortfolioList),
+/* harmony export */   getSumOfPositionsOfGroups: () => (/* binding */ getSumOfPositionsOfGroups),
 /* harmony export */   getWalletInfo: () => (/* binding */ getWalletInfo),
-/* harmony export */   isInstrumentNameOfOption: () => (/* binding */ isInstrumentNameOfOption),
-/* harmony export */   logSumOfPositionsOfGroups: () => (/* binding */ logSumOfPositionsOfGroups)
+/* harmony export */   isInstrumentNameOfOption: () => (/* binding */ isInstrumentNameOfOption)
 /* harmony export */ });
 /* harmony import */ var _common__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
 
@@ -1035,7 +1035,7 @@ const selectStrategy =async (documentOfWindow)=>{
 
 }
 
-const logSumOfPositionsOfGroups = async ()=>{
+const getSumOfPositionsOfGroups = async ()=>{
     const groups = await getGroups();
     let portfolioList = await getOptionPortfolioList();
     const sum  = groups.reduce((sum,g)=>sum+=(g.instrumentIds.length),0);
@@ -1052,6 +1052,11 @@ const logSumOfPositionsOfGroups = async ()=>{
     },[])
     
     console.log(sum,areNotInGroups)
+
+    return {
+        sum,
+        areNotInGroups
+    }
     
 }
 
@@ -1321,7 +1326,7 @@ const OMEXApi = {
     getInstrumentInfoBySymbol,
     deleteAllOpenOrders,
     selectStrategy,
-    logSumOfPositionsOfGroups,
+    getSumOfPositionsOfGroups,
     getBlockedAmount,
     fillEstimationPanelByStrategyName,
     createGroup,
@@ -4178,12 +4183,25 @@ const createGroupOfCurrentStrategy = ()=>{
     _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.createGroup({
         name: getSummaryNameOfStrategy(),
         instrumentIds: strategyPositions.map(strategyPosition=>strategyPosition.instrumentId)
-    }).then(()=>{
+    }).then(async ()=>{
 
         showToast('گروه ایجاد شد');
+        strategyLogger?.saveLogs && strategyLogger.saveLogs(true);
+
+
+        const { sum, areNotInGroups } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getSumOfPositionsOfGroups();
+        if(areNotInGroups?.length){
+            const issueMessage = 'در گروه نیستن'
+            showToast(issueMessage);
+            console.log({sum,areNotInGroups});
+            (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+                title: issueMessage,
+                body: `${areNotInGroups.map(instrumentName => instrumentName).join('-')}`,
+                tag: `areNotInGroups`
+            });
+        }
     });
     (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.takeScreenshot)();
-    strategyLogger?.saveLogs && strategyLogger.saveLogs(true)
 }
 
 function showToast(message, duration = 2000) {
