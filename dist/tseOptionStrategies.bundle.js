@@ -14,6 +14,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getCommissionFactor: () => (/* binding */ getCommissionFactor),
 /* harmony export */   getNearSettlementPrice: () => (/* binding */ getNearSettlementPrice),
 /* harmony export */   getReservedMarginOfEstimationQuantity: () => (/* binding */ getReservedMarginOfEstimationQuantity),
+/* harmony export */   hasBreakevenExecutedPriceDiffIssue: () => (/* binding */ hasBreakevenExecutedPriceDiffIssue),
 /* harmony export */   hasGreaterRatio: () => (/* binding */ hasGreaterRatio),
 /* harmony export */   isETF: () => (/* binding */ isETF),
 /* harmony export */   isTaxFree: () => (/* binding */ isTaxFree),
@@ -177,7 +178,7 @@ const totalCostCalculator = ({ strategyPositions, getPrice, getQuantity } = {}) 
   return totalCost
 }
 
-const totalCostCalculatorForPriceTypes = (_strategyPositions,getAvgPrice) => {
+const totalCostCalculatorForPriceTypes = (_strategyPositions) => {
 
 
 
@@ -196,7 +197,7 @@ const totalCostCalculatorForPriceTypes = (_strategyPositions,getAvgPrice) => {
 
     let totalCostOfChunkOfEstimationQuantity = totalCostCalculator({
         strategyPositions: _strategyPositions,
-        getPrice: (position) => getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice()
+        getPrice: (position) =>  position.getCurrentPositionAvgPrice(position)
     });
 
     let totalCostOfCurrentPositions = totalCostCalculator({
@@ -205,7 +206,7 @@ const totalCostCalculatorForPriceTypes = (_strategyPositions,getAvgPrice) => {
             return quantityCalculatorOfCurrentPosition(position, __strategyPositions);
         },
         getPrice: (position) => {
-          return getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice();
+          return  position.getCurrentPositionAvgPrice(position);
         }
     });
     let unreliableTotalCostOfCurrentPositions = totalCostCalculator({
@@ -213,7 +214,7 @@ const totalCostCalculatorForPriceTypes = (_strategyPositions,getAvgPrice) => {
         getQuantity: (position, __strategyPositions) => {
             return quantityCalculatorOfCurrentPosition(position, __strategyPositions);
         },
-        getPrice: (position) => getAvgPrice? getAvgPrice(position): (position.getCurrentPositionAvgPrice() || position.getUnreliableCurrentPositionAvgPrice())
+        getPrice: (position) =>  position.getCurrentPositionAvgPrice(position)
     });
 
 
@@ -584,6 +585,26 @@ const isETF = (instrumentName)=>{
   const isETF = ETF_LIST.some(_etfName => instrumentName === _etfName);
 
   return isETF
+}
+
+
+
+const hasBreakevenExecutedPriceDiffIssue =({executedPrice,breakEvenPrice})=>{
+
+
+  const diffPrices = Math.abs(breakEvenPrice - executedPrice);
+  const breakEvenPriceNumLength = breakEvenPrice.toString().length;
+  const hasIssue = () => {
+    if ((breakEvenPriceNumLength > 3) && ((diffPrices / executedPrice) > 0.03)) {
+      return true
+    } else if ((breakEvenPriceNumLength < 3) && (diffPrices > 1)) {
+      return true
+    }
+    return false
+  }
+
+  return hasIssue()
+  
 }
 
 /***/ }),

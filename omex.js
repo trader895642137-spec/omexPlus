@@ -7,7 +7,8 @@ import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalc
     createDeferredPromise,
     waitForElement,
     takeScreenshot,
-    isETF} from './common.js';
+    isETF,
+    hasBreakevenExecutedPriceDiffIssue} from './common.js';
 import { isInstrumentNameOfOption,  OMEXApi } from './omexApi.js';
 
 
@@ -365,19 +366,8 @@ const calcProfitLossByExactDecimalPricesOfPortFolio = async (_strategyPositions)
     const stockPortfolioList  = await OMEXApi.getStockPortfolioList();
     lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList = portfolioList;
     lastCheckProfitByExactDecimalPricesOfPortFolio.stockPortfolioList = stockPortfolioList;
-    const getAvgPrice =(position)=>{
 
-        let currentPortfolioPosition= findPositionInfoByGivenPortfolio(position,[...portfolioList,...stockPortfolioList]);
-
-        if(!currentPortfolioPosition) return null
-
-        return currentPortfolioPosition.executedPrice
-        
-    }
-
-
-
-    const totalCostOfChunkOfEstimationQuantity = totalCostCalculatorForPriceTypes(_strategyPositions,getAvgPrice).totalCostOfChunkOfEstimationQuantity;
+    const totalCostOfChunkOfEstimationQuantity = totalCostCalculatorForPriceTypes(_strategyPositions).totalCostOfChunkOfEstimationQuantity;
 
     const totalOffsetGainOfChunkOfEstimation = totalOffsetGainOfChunkOfEstimationQuantityCalculator({
         strategyPositions: _strategyPositions
@@ -536,8 +526,8 @@ const showCurrentStrategyPositionState = ({totalCurrentPositionCost,totalOffsetG
         `;
 
 }
-const findPositionInfoByGivenPortfolio = (position,portfolioList) => {
-    let currentPortfolioPosition = portfolioList.find(currentPortfolioPosition => position.instrumentId ? currentPortfolioPosition.instrumentId === position.instrumentId : currentPortfolioPosition.instrumentName === position.instrumentName)
+const findPositionInfoByGivenPortfolio = ({instrumentId,instrumentName},portfolioList) => {
+    let currentPortfolioPosition = portfolioList.find(currentPortfolioPosition => instrumentId ? currentPortfolioPosition.instrumentId === instrumentId : currentPortfolioPosition.instrumentName === instrumentName)
 
     return currentPortfolioPosition
 
@@ -568,23 +558,31 @@ const checkStrategyInProfit = async (_strategyPositions)=>{
     return hasProfit
 
 }
+
+
+const getRecentExactDecimalPricesOfPortFolio = ({instrumentId,instrumentName}) => {
+
+    if (!lastCheckProfitByExactDecimalPricesOfPortFolio?.portfolioList?.length || !lastCheckProfitByExactDecimalPricesOfPortFolio.time || (Date.now() - lastCheckProfitByExactDecimalPricesOfPortFolio.time) > 60000) return null
+    let currentPortfolioPosition = findPositionInfoByGivenPortfolio({instrumentId,instrumentName}, [...lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList, ...lastCheckProfitByExactDecimalPricesOfPortFolio.stockPortfolioList]);
+
+    if (!currentPortfolioPosition) return null
+
+    if(!currentPortfolioPosition.executedPrice || !currentPortfolioPosition.breakEvenPrice){
+        showToast('قیمت دقیق در پرتفوی موجود نمی باشد');
+        return null
+    }
+
+    return {
+        executedPrice : currentPortfolioPosition.executedPrice,
+        breakEvenPrice : currentPortfolioPosition.breakEvenPrice,
+    }
+}
+
+
 export const calcOffsetProfitOfStrategy = (_strategyPositions) => {
 
 
-    let getAvgPrice;
-    if(lastCheckProfitByExactDecimalPricesOfPortFolio?.portfolioList?.length &&   lastCheckProfitByExactDecimalPricesOfPortFolio.time && (Date.now() - lastCheckProfitByExactDecimalPricesOfPortFolio.time)<60000 ){
-        getAvgPrice =(position)=>{
-
-            let currentPortfolioPosition= findPositionInfoByGivenPortfolio(position,[...lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList,...lastCheckProfitByExactDecimalPricesOfPortFolio.stockPortfolioList]);
-
-            if(!currentPortfolioPosition) return null
-
-            return currentPortfolioPosition.executedPrice
-        
-        }
-    }
-
-    const totalCostInfoObj = totalCostCalculatorForPriceTypes(_strategyPositions,getAvgPrice);
+    const totalCostInfoObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
     const totalCurrentPositionCost = totalCostInfoObj.totalCostOfCurrentPositions;
     const unreliableTotalCostOfCurrentPositions = totalCostInfoObj.unreliableTotalCostOfCurrentPositions;
@@ -710,6 +708,13 @@ const convertStringToInt = (stringNumber) => {
         return NaN
     return parseInt(stringNumber.replaceAll(',', '').trim());
 }
+
+
+
+
+
+
+
 
 const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
     return assetRowLementList.map(optionRowEl => {
@@ -893,28 +898,32 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         }
 
 
+        const getCurrentPositionAvgPrice = (position) => {
 
 
-        const getCurrentPositionAvgPrice = () => {
-            const executedPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="executedPrice"]`;
-            const breakEvenPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="breakEvenPrice"]`;
-            const executedPrice = convertStringToInt(domContextWindow.document.querySelector(executedPriceSelector)?.innerHTML);
-            const breakEvenPrice = convertStringToInt(domContextWindow.document.querySelector(breakEvenPriceSelector)?.innerHTML);
-            const diffPrices = Math.abs(breakEvenPrice - executedPrice);
-            const breakEvenPriceNumLength = breakEvenPrice.toString().length;
-            const hasIssue = () => {
-                if ((breakEvenPriceNumLength > 3) && ((diffPrices / executedPrice) > 0.03)) {
-                    return true
-                } else if ((breakEvenPriceNumLength < 3) && (diffPrices > 1)) {
-                    return true
-                }
-                return false
+            const {instrumentId,instrumentName} = position;
+            let executedPrice,breakEvenPrice;
+
+            const recentExactDecimalPricesOfPortFolioObj = (instrumentId || instrumentName) && getRecentExactDecimalPricesOfPortFolio({instrumentId,instrumentName});
+
+            if(recentExactDecimalPricesOfPortFolioObj){
+                executedPrice = recentExactDecimalPricesOfPortFolioObj.executedPrice;
+                breakEvenPrice = recentExactDecimalPricesOfPortFolioObj.breakEvenPrice;
+            }else{
+                const executedPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="executedPrice"]`;
+                const breakEvenPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="breakEvenPrice"]`;
+                executedPrice = convertStringToInt(domContextWindow.document.querySelector(executedPriceSelector)?.innerHTML);
+                breakEvenPrice = convertStringToInt(domContextWindow.document.querySelector(breakEvenPriceSelector)?.innerHTML);
             }
-            if (executedPrice && breakEvenPrice && hasIssue()) {
+            if (executedPrice && breakEvenPrice && hasBreakevenExecutedPriceDiffIssue({executedPrice,breakEvenPrice})) {
+
+                console.log({instrumentName,executedPrice,breakEvenPrice});
+                
+                showToast('مشکل تفاوت میانگین و سر به سر');
                 !domContextWindow.window.doNotNotifAvrageIssue && showNotification({
-                    title: 'مشکل میانگین',
+                    title: 'مشکل تفاوت میانگین و سر به سر',
                     body: `${instrumentName}`,
-                    tag: `${instrumentName}-CurrentPositionAvgPriceIssue`
+                    tag: `CurrentPositionAvgPriceIssue`
                 });
                 return breakEvenPrice
             }

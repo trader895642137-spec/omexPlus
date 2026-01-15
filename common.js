@@ -147,7 +147,7 @@ export const totalCostCalculator = ({ strategyPositions, getPrice, getQuantity }
   return totalCost
 }
 
-export const totalCostCalculatorForPriceTypes = (_strategyPositions,getAvgPrice) => {
+export const totalCostCalculatorForPriceTypes = (_strategyPositions) => {
 
 
 
@@ -166,7 +166,7 @@ export const totalCostCalculatorForPriceTypes = (_strategyPositions,getAvgPrice)
 
     let totalCostOfChunkOfEstimationQuantity = totalCostCalculator({
         strategyPositions: _strategyPositions,
-        getPrice: (position) => getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice()
+        getPrice: (position) =>  position.getCurrentPositionAvgPrice(position)
     });
 
     let totalCostOfCurrentPositions = totalCostCalculator({
@@ -175,7 +175,7 @@ export const totalCostCalculatorForPriceTypes = (_strategyPositions,getAvgPrice)
             return quantityCalculatorOfCurrentPosition(position, __strategyPositions);
         },
         getPrice: (position) => {
-          return getAvgPrice? getAvgPrice(position): position.getCurrentPositionAvgPrice();
+          return  position.getCurrentPositionAvgPrice(position);
         }
     });
     let unreliableTotalCostOfCurrentPositions = totalCostCalculator({
@@ -183,7 +183,7 @@ export const totalCostCalculatorForPriceTypes = (_strategyPositions,getAvgPrice)
         getQuantity: (position, __strategyPositions) => {
             return quantityCalculatorOfCurrentPosition(position, __strategyPositions);
         },
-        getPrice: (position) => getAvgPrice? getAvgPrice(position): (position.getCurrentPositionAvgPrice() || position.getUnreliableCurrentPositionAvgPrice())
+        getPrice: (position) =>  position.getCurrentPositionAvgPrice(position)
     });
 
 
@@ -554,4 +554,24 @@ export const isETF = (instrumentName)=>{
   const isETF = ETF_LIST.some(_etfName => instrumentName === _etfName);
 
   return isETF
+}
+
+
+
+export const hasBreakevenExecutedPriceDiffIssue =({executedPrice,breakEvenPrice})=>{
+
+
+  const diffPrices = Math.abs(breakEvenPrice - executedPrice);
+  const breakEvenPriceNumLength = breakEvenPrice.toString().length;
+  const hasIssue = () => {
+    if ((breakEvenPriceNumLength > 3) && ((diffPrices / executedPrice) > 0.03)) {
+      return true
+    } else if ((breakEvenPriceNumLength < 3) && (diffPrices > 1)) {
+      return true
+    }
+    return false
+  }
+
+  return hasIssue()
+  
 }
