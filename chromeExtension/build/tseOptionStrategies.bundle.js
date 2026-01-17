@@ -13404,23 +13404,16 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
 
     return ignoreStrategyList.find(ignoreStrategyObj => {
 
-
-      
-
         if (ignoreStrategyObj.type !== 'ALL' && ignoreStrategyObj.type !== strategy.strategyTypeTitle)
             return false
 
-        
+        const isProfitEnough = ignoreStrategyObj.profitPercent ? (strategy.profitPercent >= ignoreStrategyObj.profitPercent):false;
 
-        
-        const isRequestedProfitEnough = ignoreStrategyObj.profitPercent && (strategy.profitPercent >= ignoreStrategyObj.profitPercent);
+        if (!isProfitEnough && !ignoreStrategyObj.name && ignoreStrategyObj.type === strategy.strategyTypeTitle) return true
 
-        if (!ignoreStrategyObj.name && !isRequestedProfitEnough && ignoreStrategyObj.type === strategy.strategyTypeTitle) return true
-
-        const ignoreStrategyName = ignoreStrategyObj.name.replaceAll('ي','ی');
-        if (ignoreStrategyName === strategyFullSymbolNames && !isRequestedProfitEnough) return true
-        if (strategySymbols.some(symbol => symbol.includes(ignoreStrategyName)))
-            return true
+        const ignoreStrategyName = ignoreStrategyObj.name.replaceAll('ي', 'ی');
+        if (!isProfitEnough && ignoreStrategyName === strategyFullSymbolNames) return true
+        if (!isProfitEnough && strategySymbols.some(symbol => symbol.includes(ignoreStrategyName))) return true
 
     }
     )
