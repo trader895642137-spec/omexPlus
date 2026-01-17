@@ -135,10 +135,27 @@ const createStrategyExpectedProfitCnt = () => {
         `;
     let currentStockPriceInput = domContextWindow.document.createElement('input');
     currentStockPriceInput.classList.add('current-stock-price');
+    currentStockPriceInput.setAttribute('placeholder','قیمت سهم');
+    currentStockPriceInput.style.cssText += `border: 1px solid #EEE;min-width: 0;flex-basis: 150%;`;
 
-    currentStockPriceInput.style.cssText += `border: 1px solid #EEE;`
-    parent.append(currentStockPriceInput)
-    parent.append(cnt)
+    let nokoolFactorInput = domContextWindow.document.createElement('input');
+    nokoolFactorInput.classList.add('nokool-factor');
+    nokoolFactorInput.setAttribute('placeholder','درصدنکول');
+    nokoolFactorInput.style.cssText += `border: 1px solid #EEE;min-width: 0;`;
+    nokoolFactorInput.value = 0;
+
+
+    let inputsCnt = domContextWindow.document.createElement('div');
+    inputsCnt.style.cssText += `
+            width: 100%;
+            display: flex;
+        `;
+
+
+    inputsCnt.append(currentStockPriceInput);
+    inputsCnt.append(nokoolFactorInput);
+    parent.append(inputsCnt);
+    parent.append(cnt);
 
     domContextWindow.document.querySelector('client-option-strategy-estimation-main .o-footer').style.cssText += `
             position: relative;
@@ -184,7 +201,7 @@ const settlementCommissionFactor = (_strategyPosition) => {
 
 const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions }) => {
 
-    const getBestPriceCb = (_strategyPosition) => getNearSettlementPrice({strategyPosition: _strategyPosition, stockPrice:_strategyPosition.getBaseInstrumentPriceOfOption()});
+    const getBestPriceCb = (_strategyPosition) => getNearSettlementPrice({strategyPosition: _strategyPosition, stockPrice:getBaseInstrumentPriceOfOption()});
 
     const totalOffsetGainNearSettlement = mainTotalOffsetGainCalculator({
         strategyPositions,
@@ -709,9 +726,30 @@ const convertStringToInt = (stringNumber) => {
         return NaN
     return parseInt(stringNumber.replaceAll(',', '').trim());
 }
+const convertStringToFloat = (stringNumber) => {
+    if (!stringNumber)
+        return NaN
+    return parseFloat(stringNumber.replaceAll(',', '').trim());
+}
 
 
 
+
+const getBaseInstrumentPriceOfOption = () => {
+
+
+    const baseInstrumentPriceInputEl = domContextWindow.document.querySelector('.current-stock-price');
+
+    return baseInstrumentPriceInputEl && convertStringToInt(baseInstrumentPriceInputEl.value);
+
+}
+const getNokoolFactor = () => {
+
+    const nokoolFactorInputEl = domContextWindow.document.querySelector('.nokool-factor');
+
+    return convertStringToFloat(nokoolFactorInputEl?.value) || 0;
+
+}
 
 
 
@@ -994,15 +1032,6 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         }
 
 
-        const getBaseInstrumentPriceOfOption = () => {
-
-
-            const baseInstrumentPriceInputEl = domContextWindow.document.querySelector('.current-stock-price');
-
-            return baseInstrumentPriceInputEl && convertStringToInt(baseInstrumentPriceInputEl.value);
-
-        }
-
       
 
 
@@ -1018,7 +1047,6 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             isCall,
             isPut,
             cSize,
-            getBaseInstrumentPriceOfOption,
             getQuantity,
             getCurrentPositionQuantity,
             getOrderModalPortfolioQuantity,
@@ -2094,8 +2122,9 @@ export const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
 
 
-        const stockPrice =   _strategyPositions[0].getBaseInstrumentPriceOfOption()
-        const {settlementProfitByBestPrices,settlementProfitByInsertedPrices} = settlementProfitCalculator({strategyPositions:_strategyPositions,stockPrice});
+        const stockPrice =   getBaseInstrumentPriceOfOption();
+        const nokoolFactor =   getNokoolFactor();
+        const {settlementProfitByBestPrices,settlementProfitByInsertedPrices} = settlementProfitCalculator({strategyPositions:_strategyPositions,stockPrice,nokoolFactor});
 
         return {
             profitPercentByBestPrices,

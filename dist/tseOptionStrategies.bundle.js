@@ -256,7 +256,7 @@ const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
 }
 
 
-const settlementGainCalculator = ({ strategyPositions, stockPrice })=>{
+const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolFactor=0 })=>{
 
   const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE;
 
@@ -279,7 +279,8 @@ const settlementGainCalculator = ({ strategyPositions, stockPrice })=>{
   const sumSettlementGainsInfo = valuablePositions.reduce((sumSettlementGainsInfo, valuablePosition) => {
 
     const tax = isTaxFree(valuablePosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
-    const quantity = valuablePosition.getQuantity();
+    let quantity = valuablePosition.getQuantity();
+    quantity = quantity * (1-nokoolFactor);
     const reservedMargin = getReservedMarginOfEstimationQuantity(valuablePosition);
 
     const isBuyStock = (valuablePosition.isCall && valuablePosition.isBuy) || (valuablePosition.isPut && !valuablePosition.isBuy);
@@ -337,10 +338,10 @@ const settlementGainCalculator = ({ strategyPositions, stockPrice })=>{
 
 }
 
-const settlementProfitCalculator = ({ strategyPositions, stockPrice }) => {
+const settlementProfitCalculator = ({ strategyPositions, stockPrice,nokoolFactor=0 }) => {
 
   
-  const sumOfGains = settlementGainCalculator({ strategyPositions, stockPrice })
+  const sumOfGains = settlementGainCalculator({ strategyPositions, stockPrice,nokoolFactor })
 
 
   const totalCostObj = totalCostCalculatorForPriceTypes(strategyPositions);
