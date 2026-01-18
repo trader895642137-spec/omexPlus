@@ -24238,7 +24238,12 @@ const createList2 = async ()=>{
         const isPut = isOption && symbol.startsWith('ط');
         let optionDetails,strikePrice;
         if (isOption) {
-            const date = name.split('-').pop();
+            let date = name.split('-').pop();
+            let dateArray = date.split('/');
+            if(dateArray[0].length===2){
+                dateArray[0] = '14' + dateArray[0];
+                date = dateArray.join('/')
+            }
             strikePrice = convertStringToInt(name.split('-')[1]);
             const stockSymbol = name.split('-')[0].replace('اختيارخ', '').replace('اختيارف', '').replace('اختیارخ', '').replace('اختیارف', '').trim();
 
@@ -24524,8 +24529,8 @@ const interval = async () => {
 
     try {
 
-        const list = createList();
-        // const list = await createList2();
+        // const list = createList();
+        const list = await createList2();
         if (list?.length > 0) {
             createListFilterContetnByList(list);
 
