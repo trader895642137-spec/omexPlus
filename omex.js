@@ -1320,7 +1320,7 @@ const observePortfolioQuantityOfOrderModal = () => {
                 showNotification({
                     title: 'معامله شد',
                     body: `${strategyPositionObj.instrumentName}`,
-                    tag: `${strategyPositionObj.instrumentName}-PortfolioQuantityChange`,
+                    tag: `${strategyPositionObj.getStrategyName()}-PortfolioQuantityChange`,
                     requireInteraction: true
 
                 });
