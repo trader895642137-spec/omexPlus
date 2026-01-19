@@ -138,11 +138,11 @@ const createStrategyExpectedProfitCnt = () => {
     currentStockPriceInput.setAttribute('placeholder','قیمت سهم');
     currentStockPriceInput.style.cssText += `border: 1px solid #EEE;min-width: 0;flex-basis: 150%;`;
 
-    let nokoolFactorInput = domContextWindow.document.createElement('input');
-    nokoolFactorInput.classList.add('nokool-factor');
-    nokoolFactorInput.setAttribute('placeholder','درصدنکول');
-    nokoolFactorInput.style.cssText += `border: 1px solid #EEE;min-width: 0;`;
-    nokoolFactorInput.value = 0;
+    let nokoolOrNoRequestFactorInput = domContextWindow.document.createElement('input');
+    nokoolOrNoRequestFactorInput.classList.add('nokool-or-no-request-factor');
+    nokoolOrNoRequestFactorInput.setAttribute('placeholder','عدم‌اعمال');
+    nokoolOrNoRequestFactorInput.style.cssText += `border: 1px solid #EEE;min-width: 0;`;
+    nokoolOrNoRequestFactorInput.value = 0;
 
 
     let inputsCnt = domContextWindow.document.createElement('div');
@@ -153,7 +153,7 @@ const createStrategyExpectedProfitCnt = () => {
 
 
     inputsCnt.append(currentStockPriceInput);
-    inputsCnt.append(nokoolFactorInput);
+    inputsCnt.append(nokoolOrNoRequestFactorInput);
     parent.append(inputsCnt);
     parent.append(cnt);
 
@@ -743,11 +743,11 @@ const getBaseInstrumentPriceOfOption = () => {
     return baseInstrumentPriceInputEl && convertStringToInt(baseInstrumentPriceInputEl.value);
 
 }
-const getNokoolFactor = () => {
+const getnokoolOrNoRequestFactor = () => {
 
-    const nokoolFactorInputEl = domContextWindow.document.querySelector('.nokool-factor');
+    const nokoolOrNoRequestFactorInputEl = domContextWindow.document.querySelector('.nokool-or-no-request-factor');
 
-    return convertStringToFloat(nokoolFactorInputEl?.value) || 0;
+    return convertStringToFloat(nokoolOrNoRequestFactorInputEl?.value) || 0;
 
 }
 
@@ -2123,8 +2123,8 @@ export const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
 
         const stockPrice =   getBaseInstrumentPriceOfOption();
-        const nokoolFactor =   getNokoolFactor();
-        const {settlementProfitByBestPrices,settlementProfitByInsertedPrices} = settlementProfitCalculator({strategyPositions:_strategyPositions,stockPrice,nokoolFactor});
+        const nokoolOrNoRequestFactor =   getnokoolOrNoRequestFactor();
+        const {settlementProfitByBestPrices,settlementProfitByInsertedPrices} = settlementProfitCalculator({strategyPositions:_strategyPositions,stockPrice,nokoolOrNoRequestFactor});
 
         return {
             profitPercentByBestPrices,

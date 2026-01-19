@@ -256,9 +256,10 @@ const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
 }
 
 
-const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolFactor=0 })=>{
+const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolOrNoRequestFactor=0 })=>{
 
   const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE;
+
 
 
   if(strategyPositions.some(sp=>sp.strikePrice===stockPrice)){
@@ -268,80 +269,126 @@ const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolFactor=0
   const valuablePositions = strategyPositions.filter(strategyPosition => strategyPosition.isCall ? strategyPosition.strikePrice < stockPrice : strategyPosition.strikePrice > stockPrice );
   const stocks = strategyPositions.filter(strategyPosition => !strategyPosition.isOption );
 
-
-  const notValuablePositionReservedMargins = strategyPositions.filter(strategyPosition => strategyPosition.isCall ? strategyPosition.strikePrice > stockPrice : strategyPosition.strikePrice < stockPrice).reduce((notValuablePositionReservedMargins, notValuablePosition) => {
-    const reservedMargin = getReservedMarginOfEstimationQuantity(notValuablePosition);
-    notValuablePositionReservedMargins += reservedMargin;
-    return notValuablePositionReservedMargins
-  }, 0) || 0;
-
-
-  const sumSettlementGainsInfo = valuablePositions.reduce((sumSettlementGainsInfo, valuablePosition) => {
-
-    const tax = isTaxFree(valuablePosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
-    let quantity = valuablePosition.getQuantity();
-    quantity = quantity * (1-nokoolFactor);
-    const reservedMargin = getReservedMarginOfEstimationQuantity(valuablePosition);
-
-    const isBuyStock = (valuablePosition.isCall && valuablePosition.isBuy) || (valuablePosition.isPut && !valuablePosition.isBuy);
-
-    if (isBuyStock) {
-
-      sumSettlementGainsInfo.sumOfGains -= (quantity * (valuablePosition.strikePrice + (valuablePosition.strikePrice * exerciseFee)))
-      sumSettlementGainsInfo.remainedQuantity+=quantity;
-    } else {
-
-      // is sell stock
-      sumSettlementGainsInfo.sumOfGains += (quantity * (valuablePosition.strikePrice - (valuablePosition.strikePrice * exerciseFee) - (valuablePosition.strikePrice * tax)))
-      sumSettlementGainsInfo.remainedQuantity-=quantity;
-
-    }
-
-    sumSettlementGainsInfo.sumOfGains += reservedMargin;
-
-
-    return sumSettlementGainsInfo;
-
-  }, {sumOfGains:0,remainedQuantity:0});
-
-  if(!sumSettlementGainsInfo) return 
-
-
   const totalStockQuantity = stocks.reduce((totalStockQuantity, stock) => {
     return totalStockQuantity + stock.getQuantity();
   }, 0) || 0;
-  
-
-  sumSettlementGainsInfo.remainedQuantity+=totalStockQuantity;
 
 
-  if (sumSettlementGainsInfo?.remainedQuantity > 0) {
+  const buyStockValuablePositions = valuablePositions.filter(valuablePosition=>(valuablePosition.isCall && valuablePosition.isBuy) || (valuablePosition.isPut && !valuablePosition.isBuy));
+  let sellStockValuablePositions = valuablePositions.filter(valuablePosition=>(valuablePosition.isCall && !valuablePosition.isBuy) || (valuablePosition.isPut && valuablePosition.isBuy));
+
+  sellStockValuablePositions = sellStockValuablePositions.sort((posA, posB) => {
+    if (posA.strikePrice >= posB.strikePrice) {
+      return -1
+    } else {
+      return 1
+    }
+  });
+
+
+  const totalMargins = strategyPositions.reduce((totalMargins, position) => {
+    const reservedMargin = getReservedMarginOfEstimationQuantity(position);
+    totalMargins += reservedMargin;
+    return totalMargins
+  }, 0) || 0;
+
+
+
+  const sumSettlementBuyStockCostInfo = buyStockValuablePositions.reduce((sumSettlementBuyStockCostInfo, valuablePosition) => {
+
+    let quantity = valuablePosition.getQuantity();
+    let nokoolQuantity = 0 ;
+
+    if(valuablePosition.isBuy){
+      nokoolQuantity = quantity * nokoolOrNoRequestFactor;
+    }
+
+    quantity = quantity* (1- nokoolOrNoRequestFactor);
+
+
+
+    sumSettlementBuyStockCostInfo.sumOfCost += (quantity * (valuablePosition.strikePrice + (valuablePosition.strikePrice * exerciseFee)))
+    sumSettlementBuyStockCostInfo.quantity += quantity;
+
+    if(nokoolQuantity>0){
+
+      const nokool = nokoolQuantity * (stockPrice - valuablePosition.strikePrice);
+      const jarimehNokool = nokoolQuantity * stockPrice * 0.01;
+      sumSettlementBuyStockCostInfo.sumOfCost -= (nokool + jarimehNokool);
+
+    }
+
+    return sumSettlementBuyStockCostInfo;
+
+  }, { sumOfCost: 0, quantity: 0 });
+
+
+  let sellLimitQuantity = sumSettlementBuyStockCostInfo.quantity + totalStockQuantity;
+
+
+  const sumSettlementSellStockGainInfo = sellStockValuablePositions.reduce((sumSettlementSellStockGainInfo, valuablePosition) => {
+
+    const tax = isTaxFree(valuablePosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
+    let quantity = valuablePosition.getQuantity();
+
+    let sellQuantity=0;
+    let notEnoughStockQuantity=0;
+
+    if(quantity<=sellLimitQuantity){
+
+      sellQuantity = quantity;
+      
+    }else{
+      sellQuantity = sellLimitQuantity;
+      notEnoughStockQuantity = quantity-sellLimitQuantity;
+    }
+
+    sumSettlementSellStockGainInfo.sumOfGains += (sellQuantity * (valuablePosition.strikePrice - (valuablePosition.strikePrice * exerciseFee) - (valuablePosition.strikePrice * tax)))
+    sumSettlementSellStockGainInfo.quantity += sellQuantity;
+    sellLimitQuantity-=sellQuantity;
+
+    if(notEnoughStockQuantity>0){
+      if(valuablePosition.isBuy) return sumSettlementSellStockGainInfo
+
+      const nokool = notEnoughStockQuantity * (stockPrice - valuablePosition.strikePrice);
+      const jarimehNokool = notEnoughStockQuantity * stockPrice * 0.01;
+      const exerciseFeeOfNokool = notEnoughStockQuantity * valuablePosition.strikePrice * exerciseFee;
+      sumSettlementSellStockGainInfo.sumOfGains -= (nokool + jarimehNokool + exerciseFeeOfNokool);
+
+
+    }
+
+
+
+    return sumSettlementSellStockGainInfo;
+
+  }, { sumOfGains: 0,quantity:0 });
+
+
+
+  const remainedStockQuantity = sumSettlementBuyStockCostInfo.quantity - sumSettlementSellStockGainInfo.quantity;
+
+  let sumOfGain =  sumSettlementSellStockGainInfo.sumOfGains - sumSettlementBuyStockCostInfo.sumOfCost;
+
+  if (remainedStockQuantity > 0) {
     const optionPosition =  strategyPositions.find(sp=>sp.isOption);
     const sellStockFee = isTaxFree(optionPosition) ? COMMISSION_FACTOR.ETF.SELL : COMMISSION_FACTOR.STOCK.SELL;
-    sumSettlementGainsInfo.sumOfGains += (sumSettlementGainsInfo.remainedQuantity * (stockPrice - (stockPrice * sellStockFee)))
-    sumSettlementGainsInfo.remainedQuantity = 0;
-  } else if (sumSettlementGainsInfo?.remainedQuantity < 0) {
-    const optionPosition =  strategyPositions.find(sp=>sp.isOption);
-    const quantityNeedToBuy = Math.abs(sumSettlementGainsInfo.remainedQuantity);
-    const buyStockFee = isTaxFree(optionPosition) ? COMMISSION_FACTOR.ETF.BUY : COMMISSION_FACTOR.STOCK.BUY;
-    sumSettlementGainsInfo.sumOfGains -= (quantityNeedToBuy * (stockPrice + (stockPrice * buyStockFee)))
-    sumSettlementGainsInfo.remainedQuantity = 0;
+    sumOfGain += (remainedStockQuantity * (stockPrice - (stockPrice * sellStockFee)))
+  } 
+
+
+  if(totalMargins){
+    sumOfGain +=totalMargins;
   }
 
-
-  if(notValuablePositionReservedMargins){
-    sumSettlementGainsInfo.sumOfGains +=notValuablePositionReservedMargins;
-  }
-
-
-  return sumSettlementGainsInfo.sumOfGains
+  return sumOfGain
 
 }
 
-const settlementProfitCalculator = ({ strategyPositions, stockPrice,nokoolFactor=0 }) => {
+const settlementProfitCalculator = ({ strategyPositions, stockPrice,nokoolOrNoRequestFactor=0 }) => {
 
   
-  const sumOfGains = settlementGainCalculator({ strategyPositions, stockPrice,nokoolFactor })
+  const sumOfGains = settlementGainCalculator({ strategyPositions, stockPrice,nokoolOrNoRequestFactor })
 
 
   const totalCostObj = totalCostCalculatorForPriceTypes(strategyPositions);
