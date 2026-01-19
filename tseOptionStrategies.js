@@ -11307,8 +11307,8 @@ const interval = async () => {
 
     try {
 
-        // const list = createList();
-        const list = await createList2();
+        const list = createList();
+        // const list = await createList2();
         if (list?.length > 0) {
             createListFilterContetnByList(list);
 
