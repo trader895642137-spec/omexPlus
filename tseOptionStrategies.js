@@ -10015,7 +10015,34 @@ const createListFilterContetnByList=(list)=>{
         })
         , calcCALL_BUTTERFLYStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            min_time_to_settlement: 20 * 24 * 3600000,
             max_time_to_settlement: 35 * 24 * 3600000,
+            // MIN_BUCS_BECS_diffStrikesRatio:1,
+            // MAX_BUCS_BECS_diffStrikesRatio:1,
+            // maxStockStrike4DistanceInPercent:-0.05,
+            minStockMiddleDistanceInPercent: -0.1,
+            maxStockMiddleDistanceInPercent: 0.1,
+            BUCSSOptionListIgnorer: ({ option, minVol }) => {
+                if (!option.optionDetails?.stockSymbolDetails || !option.isCall || option.vol < minVol)
+                    return true
+
+                // const stockStrikeDistanceInPercent = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
+                // if (stockStrikeDistanceInPercent < -.04) return true
+                // if (stockStrikeDistanceInPercent > .15) return true
+                return false
+            }
+            ,
+            minProfitLossRatio: .7,
+            isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
+                return profitLossRatio >= .7
+            },
+            // expectedProfitNotif: true
+            // minVol: 1000 * 1000 * 1000,
+            // minStockPriceDistanceFromHigherStrikeInPercent: .22,
+        }),
+        , calcCALL_BUTTERFLYStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            max_time_to_settlement: 20 * 24 * 3600000,
             // MIN_BUCS_BECS_diffStrikesRatio:1,
             // MAX_BUCS_BECS_diffStrikesRatio:1,
             // maxStockStrike4DistanceInPercent:-0.05,
@@ -10098,7 +10125,34 @@ const createListFilterContetnByList=(list)=>{
 
         , calcPUT_BUTTERFLYStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            min_time_to_settlement: 20 * 24 * 3600000,
             max_time_to_settlement: 35 * 24 * 3600000,
+            // MIN_BUCS_BECS_diffStrikesRatio:1,
+            // MAX_BUCS_BECS_diffStrikesRatio:1,
+            // maxStockStrike4DistanceInPercent:-0.05,
+            minStockMiddleDistanceInPercent: -0.1,
+            maxStockMiddleDistanceInPercent: 0.1,
+            BUCSSOptionListIgnorer: ({ option, minVol }) => {
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط') || option.vol < minVol)
+                    return true
+
+                const stockStrikeDistanceInPercent = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
+                // if (stockStrikeDistanceInPercent < -.04) return true
+                // if (stockStrikeDistanceInPercent > .15) return true
+                return false
+            }
+            ,
+            minProfitLossRatio: .7,
+            isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
+                return profitLossRatio >= .7
+            },
+            // expectedProfitNotif: true
+            // minVol: 1000 * 1000 * 1000,
+            // minStockPriceDistanceFromHigherStrikeInPercent: .22,
+        })
+         , calcPUT_BUTTERFLYStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            max_time_to_settlement: 20 * 24 * 3600000,
             // MIN_BUCS_BECS_diffStrikesRatio:1,
             // MAX_BUCS_BECS_diffStrikesRatio:1,
             // maxStockStrike4DistanceInPercent:-0.05,
@@ -10466,6 +10520,7 @@ const createListFilterContetnByList=(list)=>{
 
         , calcBUPS_COLLARStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            expectedProfitPerMonth: 1.026,
             expectedProfitNotif: true // priceType: CONSTS.PRICE_TYPE.LAST_PRICE ,
         }),
         , calcBUPS_COLLARStrategies(list, {
@@ -10479,9 +10534,9 @@ const createListFilterContetnByList=(list)=>{
             justIfWholeIsPofitable: true,
         }),
 
-
         , calcBUCS_COLLAR_Strategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            expectedProfitPerMonth: 1.026,
             expectedProfitNotif: true // priceType: CONSTS.PRICE_TYPE.LAST_PRICE ,
         })
         , calcBUCS_COLLAR_Strategies(list, {
@@ -10496,6 +10551,7 @@ const createListFilterContetnByList=(list)=>{
         })
         , calcBEPS_COLLAR_Strategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            expectedProfitPerMonth: 1.026,
             expectedProfitNotif: true // priceType: CONSTS.PRICE_TYPE.LAST_PRICE ,
         })
         , calcBEPS_COLLAR_Strategies(list, {
