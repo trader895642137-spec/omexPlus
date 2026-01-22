@@ -2050,12 +2050,17 @@ const checkSumOfMoneyAndAssets = async (isForce)=>{
     // const prevSumOfMoneyAndAssets = localStorage.getItem(localstorageKey);
 
 
-    const {sumOfMoneyAndAssets}= await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calculateSumOfMoneyAndAssets();
+    const {sumOfMoneyAndAssets,blockedAmount}= await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calculateSumOfMoneyAndAssets();
 
     showToast(sumOfMoneyAndAssets.toLocaleString('en-US', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
-    }),5000)
+    }),5000);
+
+    console.log('مارجین',  blockedAmount.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }))
 
     
 

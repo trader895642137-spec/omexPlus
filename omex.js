@@ -413,12 +413,17 @@ export const checkSumOfMoneyAndAssets = async (isForce)=>{
     // const prevSumOfMoneyAndAssets = localStorage.getItem(localstorageKey);
 
 
-    const {sumOfMoneyAndAssets}= await OMEXApi.calculateSumOfMoneyAndAssets();
+    const {sumOfMoneyAndAssets,blockedAmount}= await OMEXApi.calculateSumOfMoneyAndAssets();
 
     showToast(sumOfMoneyAndAssets.toLocaleString('en-US', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
-    }),5000)
+    }),5000);
+
+    console.log('مارجین',  blockedAmount.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }))
 
     
 
