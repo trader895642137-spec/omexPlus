@@ -40,7 +40,7 @@ export function createIntervalLogger({ key, interval, sync }) {
     return Date.now() - lastLog.timestamp >= interval;
   }
 
-  async function collect(isForce) {
+  async function collect({isForce}={}) {
     try {
       const logs = loadLogs();
 
@@ -80,10 +80,7 @@ export function createIntervalLogger({ key, interval, sync }) {
     stop() {
       clearInterval(timer);
     },
-    runNow() {
-      collect();
-    },
-    saveLogs:collect,
+    collect,
     getLogs() {
       return loadLogs();
     },

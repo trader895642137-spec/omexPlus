@@ -23,7 +23,7 @@ export {silentNotificationForMoment} from './common.js';
 
 
 
-let strategyLogger,portfolioLogger;
+export let groupLogger,portfolioLogger;
 
 
 
@@ -32,7 +32,7 @@ const initLoggers = () => {
 
     try {
 
-        strategyLogger = createIntervalLogger({
+        groupLogger = createIntervalLogger({
             key: "strategyGroups",
             interval: 30 * 60 * 1000,
             sync: OMEXApi.getGroups
@@ -2631,7 +2631,7 @@ export const createGroupOfCurrentStrategy = ()=>{
     }).then(async ()=>{
 
         showToast('گروه ایجاد شد');
-        strategyLogger?.saveLogs && strategyLogger.saveLogs(true);
+        groupLogger?.collect && groupLogger.collect({isForce:true});
 
 
         const { sum, areNotInGroups } = await OMEXApi.getSumOfPositionsOfGroups();

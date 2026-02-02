@@ -1508,7 +1508,7 @@ function createIntervalLogger({ key, interval, sync }) {
     return Date.now() - lastLog.timestamp >= interval;
   }
 
-  async function collect(isForce) {
+  async function collect({isForce}={}) {
     try {
       const logs = loadLogs();
 
@@ -1548,10 +1548,7 @@ function createIntervalLogger({ key, interval, sync }) {
     stop() {
       clearInterval(timer);
     },
-    runNow() {
-      collect();
-    },
-    saveLogs:collect,
+    collect,
     getLogs() {
       return loadLogs();
     },
@@ -1633,8 +1630,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   createGroupOfCurrentStrategy: () => (/* binding */ createGroupOfCurrentStrategy),
 /* harmony export */   expectedProfit: () => (/* binding */ expectedProfit),
 /* harmony export */   getSummaryNameOfStrategy: () => (/* binding */ getSummaryNameOfStrategy),
+/* harmony export */   groupLogger: () => (/* binding */ groupLogger),
 /* harmony export */   openAllGroupsInNewTabs: () => (/* binding */ openAllGroupsInNewTabs),
 /* harmony export */   openGroupInNewTab: () => (/* binding */ openGroupInNewTab),
+/* harmony export */   portfolioLogger: () => (/* binding */ portfolioLogger),
 /* harmony export */   showToast: () => (/* binding */ showToast),
 /* harmony export */   silentNotificationForMoment: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.silentNotificationForMoment),
 /* harmony export */   strategyPositions: () => (/* binding */ strategyPositions),
@@ -1660,7 +1659,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-let strategyLogger,portfolioLogger;
+let groupLogger,portfolioLogger;
 
 
 
@@ -1669,7 +1668,7 @@ const initLoggers = () => {
 
     try {
 
-        strategyLogger = (0,_createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_3__.createIntervalLogger)({
+        groupLogger = (0,_createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_3__.createIntervalLogger)({
             key: "strategyGroups",
             interval: 30 * 60 * 1000,
             sync: _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getGroups
@@ -4268,7 +4267,7 @@ const createGroupOfCurrentStrategy = ()=>{
     }).then(async ()=>{
 
         showToast('گروه ایجاد شد');
-        strategyLogger?.saveLogs && strategyLogger.saveLogs(true);
+        groupLogger?.collect && groupLogger.collect({isForce:true});
 
 
         const { sum, areNotInGroups } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getSumOfPositionsOfGroups();
