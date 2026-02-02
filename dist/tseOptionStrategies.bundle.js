@@ -24123,14 +24123,15 @@ const createListFilterContetnByList=(list)=>{
         }),
         , calcCOVERED_COLLAR_Strategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            expectedProfitPerMonth: 1.015,
+            expectedProfitPerMonth: 1.03,
             minProfitToFilter: 0.006,
             expectedProfitNotif: true
         })
         , calcCOVERED_CONVERSION_Strategies(list, {
-            expectedProfitPerMonth: 1.015,
+            expectedProfitPerMonth: 1.03,
             minProfitToFilter: 0.006,
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            expectedProfitNotif: true
         }), 
         calcBEPSStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
