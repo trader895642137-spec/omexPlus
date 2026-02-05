@@ -1,8 +1,10 @@
-const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, 
-    strategySubName, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
-    minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
+    settlementGainChoosePriceType="MIN", strategySubName, 
+    BUPSOptionListIgnorer=generalConfig.BUPSOptionListIgnorer, 
     justIfWholeIsPofitable=false,
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
@@ -23,77 +25,96 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
             const _enrichedList = optionListOfSameDate.map(option => {
 
-                if (!option.isPut || option.vol < minVol)
+                if (BUPSOptionListIgnorer({
+                    option,
+                    minVol
+                }))
                     return option
-
 
                 const optionPrice = getPriceOfAsset({
                     asset: option,
                     priceType,
-                    sideType: 'SELL'
+                    sideType: 'BUY'
                 });
 
                 if(optionPrice===0) return option
+               
 
-                const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === option.symbol || !_option.isPut || _option.vol < minVol)
-                        return
-                    if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
-                        return
-
-                    if(!_option.optionDetails?.stockSymbolDetails) return false
-
-                    const stockPriceHigherStrikeRatio = (_option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
-
-                    return stockPriceHigherStrikeRatio > minStockPriceDistanceInPercent && stockPriceHigherStrikeRatio < maxStockPriceDistanceInPercent
+                const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
+                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط'))
+                        return false
+                    if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
+                        return false
+                    if (_option.vol < minVol)
+                        return false
+                    return true
 
                 }
                 );
 
-                let allPossibleStrategies = putListWithHigherStrikePrice.reduce( (_allPossibleStrategies, buyingPut) => {
+                let allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (_allPossibleStrategies, _option) => {
 
-                    const buyingPutPrice = getPriceOfAsset({
-                        asset: buyingPut,
+                    const _optionPrice = getPriceOfAsset({
+                        asset: _option,
                         priceType,
-                        sideType: 'BUY'
+                        sideType: 'SELL'
                     });
 
-                    if(buyingPutPrice===0) return _allPossibleStrategies
+                    if(_optionPrice===0) return _allPossibleStrategies
 
-                    const callWithSameStrikeOfSellingPut = optionListOfSameDate.find(optionOfSameDate => {
-                        return optionOfSameDate.isCall && optionOfSameDate.bestSell > 0 && (optionOfSameDate.optionDetails?.strikePrice === option.optionDetails?.strikePrice)
+
+                    const callOptionWithSameStrike = optionListOfSameDate.find(optionOfSameDate => {
+                        return optionOfSameDate.isCall && optionOfSameDate.bestSell > 0 && (optionOfSameDate.optionDetails?.strikePrice === _option.optionDetails?.strikePrice)
                     }
                     );
 
-                    if (!callWithSameStrikeOfSellingPut) {
+                    if (!callOptionWithSameStrike) {
                         return _allPossibleStrategies
                     }
 
-                    const callWithSameStrikeOfSellingPutPrice = getPriceOfAsset({
-                        asset: callWithSameStrikeOfSellingPut,
+
+                    const callOptionWithSameStrikePrice = getPriceOfAsset({
+                        asset: callOptionWithSameStrike,
                         priceType,
                         sideType: 'BUY'
                     });
 
-                    if(callWithSameStrikeOfSellingPutPrice===0) return _allPossibleStrategies
+                    if(callOptionWithSameStrikePrice===0) return _allPossibleStrategies
+
+                    const stockPriceHigherStrikeRatio = (option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
+
+                    if (stockPriceHigherStrikeRatio < minStockPriceDistanceInPercent || stockPriceHigherStrikeRatio > maxStockPriceDistanceInPercent)
+                        return _allPossibleStrategies
+
+
+
+
+
+
+
+
+
+
+
+                    const diffOfBUPS_Strikes = _option.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
 
 
 
                     const strategyPositions = [
                         {
-                            ...buyingPut,
+                            ...option,
                             isBuy: true,
                             getQuantity: () => baseQuantity,
                             getRequiredMargin() { }
                         },
                         {
-                            ...option,
+                            ..._option,
                             isSell: true,
                             getQuantity: () => baseQuantity,
-                            getRequiredMargin() { }
+                            getRequiredMargin: () => diffOfBUPS_Strikes
                         },
                         {
-                            ...callWithSameStrikeOfSellingPut,
+                            ...callOptionWithSameStrike,
                             isBuy: true,
                             getQuantity: () => baseQuantity,
                             getRequiredMargin() { }
@@ -120,15 +141,10 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
                     const maxProfit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
 
-
-                    const profitPercent = maxProfit / Math.abs(totalCost);
-
-
-
                     if(justIfWholeIsPofitable && maxProfit<0) return _allPossibleStrategies
 
 
-
+                    const profitPercent = maxProfit / Math.abs(totalCost);
 
 
 
@@ -138,17 +154,19 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
                     if(profitPercentOfSettlement<0) return _allPossibleStrategies
 
+                     
+
 
                     const strategyObj = {
                         option: {
                             ...option
                         },
-                        positions:[option, buyingPut,callWithSameStrikeOfSellingPut],
-                        strategyTypeTitle: "BEPS_COLLAR",
+                        positions:[option, _option,callOptionWithSameStrike],
+                        strategyTypeTitle: "BUPS_COLLAR",
                         expectedProfitNotif,
                         minProfitToFilter,
                         expectedProfitPerMonth,
-                        name: createStrategyName([option, buyingPut,callWithSameStrikeOfSellingPut]),
+                        name: createStrategyName([option, _option,callOptionWithSameStrike]),
                         profitPercent
                     }
 
@@ -182,7 +200,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
     return {
         enrichedList,
         allStrategiesSorted: sortedStrategies,
-        strategyName: "BEPS_COLLAR",
+        strategyName: "BUPS_COLLAR",
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
@@ -193,7 +211,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
         expectedProfitPerMonth,
         ...restConfig,
         htmlTitle: configsToHtmlTitle({
-            strategyName: "BEPS_COLLAR",
+            strategyName: "BUPS_COLLAR",
             strategySubName,
             priceType,
             min_time_to_settlement,
