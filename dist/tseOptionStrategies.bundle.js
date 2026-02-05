@@ -21063,13 +21063,14 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
                         })
                     });
 
-                    const offsetPrice = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
+                    const priceThatCauseMaxProfit = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
 
-                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+                    const maxProfit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
 
-                    const profitPercent = profit / Math.abs(totalCost);
+                    const profitPercent = maxProfit / Math.abs(totalCost);
 
 
+                    if(justIfWholeIsPofitable && maxProfit<0) return _allPossibleStrategies
 
 
 
@@ -21083,6 +21084,8 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
 
 
 
+                    
+
 
                     const strategyObj = {
                         option: {
@@ -21094,7 +21097,7 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
                         minProfitToFilter,
                         expectedProfitPerMonth,
                         name: createStrategyName([option, _option,putOptionWithSameStrike]),
-                        profitPercent : justIfWholeIsPofitable ? profit>=0 ? 1 :0:profitPercent
+                        profitPercent
                     }
 
                     if (Number.isNaN(strategyObj.profitPercent))
@@ -21268,16 +21271,18 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
-                    const offsetPrice = Math.min(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))/ 1.2;
+                    const priceThatCauseMaxProfit = Math.min(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))/ 1.2;
 
 
 
-                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+                    const maxProfit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
 
 
-                    const profitPercent = profit / Math.abs(totalCost);
+                    const profitPercent = maxProfit / Math.abs(totalCost);
 
 
+
+                    if(justIfWholeIsPofitable && maxProfit<0) return _allPossibleStrategies
 
 
 
@@ -21301,7 +21306,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
                         minProfitToFilter,
                         expectedProfitPerMonth,
                         name: createStrategyName([option, buyingPut,callWithSameStrikeOfSellingPut]),
-                        profitPercent : justIfWholeIsPofitable ? profit>=0 ? 1 :0:profitPercent
+                        profitPercent
                     }
 
                     if (Number.isNaN(strategyObj.profitPercent))
@@ -23960,11 +23965,7 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitPerMonth: 1.03,
             expectedProfitNotif: true 
         })
-        , calcBUCS_COLLAR_Strategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            max_time_to_settlement: 35 * 24 * 3600000,
-            justIfWholeIsPofitable: true,
-        })
+        
         , calcBUCS_COLLAR_Strategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             min_time_to_settlement: 35 * 24 * 3600000,
@@ -23975,11 +23976,7 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitPerMonth: 1.03,
             expectedProfitNotif: true 
         })
-        , calcBEPS_COLLAR_Strategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            max_time_to_settlement: 35 * 24 * 3600000,
-            justIfWholeIsPofitable: true,
-        })
+        
         , calcBEPS_COLLAR_Strategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             min_time_to_settlement: 35 * 24 * 3600000,
