@@ -23430,8 +23430,8 @@ const createListFilterContetnByList=(list)=>{
             // min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 35 * 24 * 3600000,
             // minVol: 1000 * 1000 * 1000,
-            minStockPriceToLowBreakevenPercent: .15,
-            maxStockPriceToHighBreakevenPercent: -.15
+            minStockPriceToLowBreakevenPercent: .25,
+            maxStockPriceToHighBreakevenPercent: -.25
             // expectedProfitNotif: true
         }),
         calcShortSTRANGLEStrategies(list, {
@@ -23446,8 +23446,8 @@ const createListFilterContetnByList=(list)=>{
             min_time_to_settlement: 25 * 24 * 3600000,
             max_time_to_settlement: 35 * 24 * 3600000,
             // minVol: 1000 * 1000 * 1000,
-            minStockPriceToLowBreakevenPercent: .15,
-            maxStockPriceToHighBreakevenPercent: -.15
+            minStockPriceToLowBreakevenPercent: .25,
+            maxStockPriceToHighBreakevenPercent: -.25
             // expectedProfitNotif: true
         }),
 
