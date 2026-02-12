@@ -14905,6 +14905,8 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                         })
                     });
 
+                   
+
 
                     const settlementOn = settlementGainChoosePriceType === 'MIN' ? (_option.strikePrice < _option.optionDetails.stockSymbolDetails.last ? "OPTION" : "STOCK") : settlementGainChoosePriceType === 'MAX' ? (_option.strikePrice > _option.optionDetails.stockSymbolDetails.last ? "OPTION" : "STOCK") : "OPTION"
                     const offsetPrice = settlementOn === "OPTION" ? _option.strikePrice*1.2 : _option.optionDetails.stockSymbolDetails.last;
@@ -15123,7 +15125,12 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                     });
 
 
-                    const offsetPrice = Math.max(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) * 1.2;
+                    const settlementOn = settlementGainChoosePriceType === 'MIN' ? (_option.strikePrice < _option.optionDetails.stockSymbolDetails.last ? "OPTION" : "STOCK") : settlementGainChoosePriceType === 'MAX' ? (_option.strikePrice > _option.optionDetails.stockSymbolDetails.last ? "OPTION" : "STOCK") : "OPTION"
+                    const offsetPrice = settlementOn === "OPTION" ? _option.strikePrice*1.2 : _option.optionDetails.stockSymbolDetails.last;
+
+
+                     
+
 
 
 
@@ -21392,6 +21399,14 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
             if (!option.optionDetails?.stockSymbolDetails)
                 return option
 
+            const sellingOptionPrice = getPriceOfAsset({
+                asset: option,
+                priceType,
+                sideType: 'SELL'
+            });
+
+            if (sellingOptionPrice === 0) return option
+
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
             if (!option.symbol.startsWith('ض') || option.vol < minVol || stockPriceStrikeRatio < minStockPriceDistanceInPercent || stockPriceStrikeRatio > maxStockPriceDistanceInPercent)
@@ -21485,6 +21500,15 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
             if (!option.optionDetails?.stockSymbolDetails)
                 return option
 
+
+            const sellingOptionPrice = getPriceOfAsset({
+                asset: option,
+                priceType,
+                sideType: 'SELL'
+            });
+
+            if (sellingOptionPrice === 0) return option
+
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
             if (!option.symbol.startsWith('ض') || option.vol < minVol || stockPriceStrikeRatio < minStockPriceDistanceInPercent || stockPriceStrikeRatio > maxStockPriceDistanceInPercent)
@@ -21495,12 +21519,22 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
             }
             );
 
+            
+
             if (!putOptionWithSameStrike) {
                 return {
                     ...option,
                     allPossibleStrategies: []
                 }
             }
+
+            const buyingPutOptionPrice = getPriceOfAsset({
+                asset: putOptionWithSameStrike,
+                priceType,
+                sideType: 'BUY'
+            });
+
+            if (buyingPutOptionPrice === 0) return option
 
             const totalCostWithSign = totalCostCalculator({
                 buyStocks: [option.optionDetails?.stockSymbolDetails],
