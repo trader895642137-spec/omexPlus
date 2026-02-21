@@ -2497,6 +2497,7 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
 
 const calcCALL_BUTTERFLYStrategies = (list, {
     priceType, settlementGainChoosePriceType="MIN", strategySubName,
+    hasBrokenWing=true,
     minProfitToFilter,
     isProfitEnoughFn, 
     BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
@@ -2598,6 +2599,23 @@ const calcCALL_BUTTERFLYStrategies = (list, {
                             sideType: 'BUY'
                         });
                         if(option4Price===0) return ___allPossibleStrategies
+
+
+
+
+                        const diffOfBUCS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
+                        const diffOfBECS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
+
+                        const BUCS_BECS_diffStrikesRatio = diffOfBUCS_Strikes / diffOfBECS_Strikes;
+
+
+
+                        const isBalancedButterFly = diffOfBUCS_Strikes === diffOfBECS_Strikes
+
+                        if(!hasBrokenWing &&  !isBalancedButterFly) return ___allPossibleStrategies
+
+
+
                         const middlePrice = option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice ? option2.optionDetails?.strikePrice : (option3.optionDetails?.strikePrice + option2.optionDetails?.strikePrice) / 2;
 
                         const stockPriceMiddleRatio = (option4.optionDetails.stockSymbolDetails.last / middlePrice) - 1;
@@ -2615,10 +2633,7 @@ const calcCALL_BUTTERFLYStrategies = (list, {
 
 
 
-                        const diffOfBUCS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
-                        const diffOfBECS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
-
-                        const BUCS_BECS_diffStrikesRatio = diffOfBUCS_Strikes / diffOfBECS_Strikes;
+                        
 
                         if (BUCS_BECS_diffStrikesRatio < MIN_BUCS_BECS_diffStrikesRatio || BUCS_BECS_diffStrikesRatio > MAX_BUCS_BECS_diffStrikesRatio)
                             return ___allPossibleStrategies
@@ -3100,6 +3115,7 @@ const calcCALL_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTy
 
 
 const calcPUT_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePriceType="MIN", 
+    hasBrokenWing=true,
     minProfitToFilter,
     strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     isProfitEnoughFn,
@@ -3220,7 +3236,20 @@ const calcPUT_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePrice
                             sideType: 'BUY'
                         });
 
-                        if(option4Price===0) return ___allPossibleStrategies
+                        if(option4Price===0) return ___allPossibleStrategies;
+
+
+                        const diffOfBUPS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
+                        const diffOfBEPS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
+
+                        const BUPS_BEPS_diffStrikesRatio = diffOfBUPS_Strikes / diffOfBEPS_Strikes;
+
+
+                        const isBalancedButterFly = diffOfBUPS_Strikes === diffOfBEPS_Strikes
+
+                        if(!hasBrokenWing &&  !isBalancedButterFly) return ___allPossibleStrategies
+
+                        
 
                         const middlePrice = option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice ? option2.optionDetails?.strikePrice : (option3.optionDetails?.strikePrice + option2.optionDetails?.strikePrice) / 2;
 
@@ -3239,10 +3268,8 @@ const calcPUT_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePrice
 
 
 
-                        const diffOfBUPS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
-                        const diffOfBEPS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
+                        
 
-                        const BUPS_BEPS_diffStrikesRatio = diffOfBUPS_Strikes / diffOfBEPS_Strikes;
 
                         if (BUPS_BEPS_diffStrikesRatio < MIN_BUPS_BEPS_diffStrikesRatio || BUPS_BEPS_diffStrikesRatio > MAX_BUPS_BEPS_diffStrikesRatio)
                             return ___allPossibleStrategies
@@ -10277,15 +10304,42 @@ const createListFilterContetnByList=(list)=>{
                 return false
             }
             ,
-            minProfitLossRatio: .7,
+            minProfitLossRatio: .65,
             isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
-                return profitLossRatio >= .7
+                return profitLossRatio >= .65
             },
             // expectedProfitNotif: true
             // minVol: 1000 * 1000 * 1000,
             // minStockPriceDistanceFromHigherStrikeInPercent: .22,
         })
 
+        , calcCALL_BUTTERFLYStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            max_time_to_settlement: 20 * 24 * 3600000,
+            // MIN_BUCS_BECS_diffStrikesRatio:1,
+            // MAX_BUCS_BECS_diffStrikesRatio:1,
+            // maxStockStrike4DistanceInPercent:-0.05,
+            minStockMiddleDistanceInPercent: -0.1,
+            maxStockMiddleDistanceInPercent: 0.1,
+            BUCSSOptionListIgnorer: ({ option, minVol }) => {
+                if (!option.optionDetails?.stockSymbolDetails || !option.isCall || option.vol < minVol)
+                    return true
+
+                // const stockStrikeDistanceInPercent = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
+                // if (stockStrikeDistanceInPercent < -.04) return true
+                // if (stockStrikeDistanceInPercent > .15) return true
+                return false
+            }
+            ,
+            minProfitLossRatio: .65,
+            isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
+                return profitLossRatio >= .65
+            },
+            hasBrokenWing:false,
+            // expectedProfitNotif: true
+            // minVol: 1000 * 1000 * 1000,
+            // minStockPriceDistanceFromHigherStrikeInPercent: .22,
+        })
         
 
         , calcCALL_CONDORStrategies(list, {
@@ -10387,9 +10441,36 @@ const createListFilterContetnByList=(list)=>{
                 return false
             }
             ,
-            minProfitLossRatio: .7,
+            minProfitLossRatio: .65,
             isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
-                return profitLossRatio >= .7
+                return profitLossRatio >= .65
+            },
+            // expectedProfitNotif: true
+            // minVol: 1000 * 1000 * 1000,
+            // minStockPriceDistanceFromHigherStrikeInPercent: .22,
+        })
+         , calcPUT_BUTTERFLYStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            max_time_to_settlement: 20 * 24 * 3600000,
+            // MIN_BUCS_BECS_diffStrikesRatio:1,
+            // MAX_BUCS_BECS_diffStrikesRatio:1,
+            // maxStockStrike4DistanceInPercent:-0.05,
+            hasBrokenWing:false,
+            minStockMiddleDistanceInPercent: -0.1,
+            maxStockMiddleDistanceInPercent: 0.1,
+            BUCSSOptionListIgnorer: ({ option, minVol }) => {
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط') || option.vol < minVol)
+                    return true
+
+                const stockStrikeDistanceInPercent = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
+                // if (stockStrikeDistanceInPercent < -.04) return true
+                // if (stockStrikeDistanceInPercent > .15) return true
+                return false
+            }
+            ,
+            minProfitLossRatio: .65,
+            isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
+                return profitLossRatio >= .65
             },
             // expectedProfitNotif: true
             // minVol: 1000 * 1000 * 1000,
