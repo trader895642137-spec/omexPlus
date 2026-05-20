@@ -1138,7 +1138,7 @@ const fillEstimationPanelByStrategyName=async ()=>{
     const searchAndSelectOption = async (optionSymbol)=>{
         const getEmptyRow = ()=>{
             const row = document.querySelector('client-option-strategy-estimation-main .o-items .o-item-body:last-child');
-            const searchInput = row?.querySelector('client-instrument-search input');
+            const searchInput = row?.querySelector('client-option-strategy-estimation-main-ui-instrument-search input');
 
             return searchInput &&  {
                 searchInput,
@@ -1162,7 +1162,7 @@ const fillEstimationPanelByStrategyName=async ()=>{
         searchInput.dispatchEvent(new Event('input', { bubbles: true }));
 
         try {
-            const resultBodyElement = await (0,_common__WEBPACK_IMPORTED_MODULE_0__.waitForElement)(row,()=>row.querySelector('client-instrument-search ng-dropdown-panel .ng-dropdown-panel-items .ng-option:first-child .c-resultBody'));
+            const resultBodyElement = await (0,_common__WEBPACK_IMPORTED_MODULE_0__.waitForElement)(row,()=>row.querySelector('client-option-strategy-estimation-main-ui-instrument-search ng-dropdown-panel .ng-dropdown-panel-items .ng-option:first-child .c-resultBody'));
             resultBodyElement.click();
         } catch (err) {
             console.error("Error:", err.message);
