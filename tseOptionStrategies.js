@@ -692,7 +692,7 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth,
                     const profitOfSettlement = totalCost + settlementGain;
                     const profitPercentOfSettlement = profitOfSettlement / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<0) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<-0.05) return _allPossibleStrategies
                     
                     const strategyObj = {
                         // TODO:remove option prop
@@ -911,7 +911,7 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth,
                     const profitOfSettlement = totalCost + settlementGain;
                     const profitPercentOfSettlement = profitOfSettlement / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<0) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<-0.05) return _allPossibleStrategies
 
                     
                     const strategyObj = {
@@ -7453,7 +7453,7 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
                     const profitOfSettlement = totalCost + settlementGain;
                     const profitPercentOfSettlement = profitOfSettlement / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<0) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<-0.05) return _allPossibleStrategies
 
                      
 
@@ -7636,7 +7636,7 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
                     const profitPercentOfSettlement = profitOfSettlement / Math.abs(totalCost);
 
 
-                    if(profitPercentOfSettlement<0) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<-0.05) return _allPossibleStrategies
 
 
 
@@ -7849,7 +7849,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
                     const profitOfSettlement = totalCost + settlementGain;
                     const profitPercentOfSettlement = profitOfSettlement / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<0) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<-0.05) return _allPossibleStrategies
 
 
                     const strategyObj = {
@@ -8062,7 +8062,7 @@ const calcBECS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
                     const profitOfSettlement = totalCost + settlementGain;
                     const profitPercentOfSettlement = profitOfSettlement / Math.abs(totalCost);
 
-                    if(profitPercentOfSettlement<0) return _allPossibleStrategies
+                    if(profitPercentOfSettlement<-0.05) return _allPossibleStrategies
 
 
                     const strategyObj = {
