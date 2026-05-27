@@ -224,6 +224,14 @@ export const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
     return (totalProfit / Math.abs(costWithSign)) * 100
 }
 
+export const someOfNokoolGainCalculator = ({nokoolQuantity,stockPrice , strikePrice})=>{
+
+  const nokool = nokoolQuantity * (stockPrice - strikePrice);
+  const jarimehNokool = nokoolQuantity * stockPrice * 0.01;
+
+  return nokool + jarimehNokool
+}
+
 
 export const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolOrNoRequestFactor=0 })=>{
 
@@ -281,9 +289,7 @@ export const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolO
 
     if(nokoolQuantity>0){
 
-      const nokool = nokoolQuantity * (stockPrice - valuablePosition.strikePrice);
-      const jarimehNokool = nokoolQuantity * stockPrice * 0.01;
-      sumSettlementBuyStockCostInfo.sumOfCost -= (nokool + jarimehNokool);
+      sumSettlementBuyStockCostInfo.sumOfCost -= someOfNokoolGainCalculator({nokoolQuantity,stockPrice,strikePrice:valuablePosition.strikePrice});
 
     }
 
@@ -319,10 +325,9 @@ export const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolO
     if(notEnoughStockQuantity>0){
       if(valuablePosition.isBuy) return sumSettlementSellStockGainInfo
 
-      const nokool = notEnoughStockQuantity * (stockPrice - valuablePosition.strikePrice);
-      const jarimehNokool = notEnoughStockQuantity * stockPrice * 0.01;
+      const someOfNokoolGain = someOfNokoolGainCalculator({nokoolQuantity:notEnoughStockQuantity,stockPrice,strikePrice:valuablePosition.strikePrice});
       const exerciseFeeOfNokool = notEnoughStockQuantity * valuablePosition.strikePrice * exerciseFee;
-      sumSettlementSellStockGainInfo.sumOfGains -= (nokool + jarimehNokool + exerciseFeeOfNokool);
+      sumSettlementSellStockGainInfo.sumOfGains -= (someOfNokoolGain + exerciseFeeOfNokool);
 
 
     }
