@@ -142,7 +142,7 @@ export const totalCostCalculator = ({ strategyPositions, getPrice, getQuantity }
   }
     , 0);
 
-  totalCost = totalCost < 0 ? Math.floor(totalCost) : Math.ceil(totalCost);
+  // totalCost = totalCost < 0 ? Math.floor(totalCost) : Math.ceil(totalCost);
 
   return totalCost
 }
@@ -224,7 +224,7 @@ export const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
     return (totalProfit / Math.abs(costWithSign)) * 100
 }
 
-export const someOfNokoolGainCalculator = ({nokoolQuantity,stockPrice , strikePrice})=>{
+export const someOfNokoolGainCalculator = ({nokoolQuantity=1,stockPrice , strikePrice})=>{
 
   const nokool = nokoolQuantity * (stockPrice - strikePrice);
   const jarimehNokool = nokoolQuantity * stockPrice * 0.01;

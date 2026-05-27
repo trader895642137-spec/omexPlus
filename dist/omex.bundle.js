@@ -24,6 +24,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   settlementProfitCalculator: () => (/* binding */ settlementProfitCalculator),
 /* harmony export */   showNotification: () => (/* binding */ showNotification),
 /* harmony export */   silentNotificationForMoment: () => (/* binding */ silentNotificationForMoment),
+/* harmony export */   someOfNokoolGainCalculator: () => (/* binding */ someOfNokoolGainCalculator),
 /* harmony export */   takeScreenshot: () => (/* binding */ takeScreenshot),
 /* harmony export */   totalCostCalculator: () => (/* binding */ totalCostCalculator),
 /* harmony export */   totalCostCalculatorForPriceTypes: () => (/* binding */ totalCostCalculatorForPriceTypes),
@@ -173,7 +174,7 @@ const totalCostCalculator = ({ strategyPositions, getPrice, getQuantity } = {}) 
   }
     , 0);
 
-  totalCost = totalCost < 0 ? Math.floor(totalCost) : Math.ceil(totalCost);
+  // totalCost = totalCost < 0 ? Math.floor(totalCost) : Math.ceil(totalCost);
 
   return totalCost
 }
@@ -255,6 +256,14 @@ const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
     return (totalProfit / Math.abs(costWithSign)) * 100
 }
 
+const someOfNokoolGainCalculator = ({nokoolQuantity=1,stockPrice , strikePrice})=>{
+
+  const nokool = nokoolQuantity * (stockPrice - strikePrice);
+  const jarimehNokool = nokoolQuantity * stockPrice * 0.01;
+
+  return nokool + jarimehNokool
+}
+
 
 const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolOrNoRequestFactor=0 })=>{
 
@@ -312,9 +321,7 @@ const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolOrNoRequ
 
     if(nokoolQuantity>0){
 
-      const nokool = nokoolQuantity * (stockPrice - valuablePosition.strikePrice);
-      const jarimehNokool = nokoolQuantity * stockPrice * 0.01;
-      sumSettlementBuyStockCostInfo.sumOfCost -= (nokool + jarimehNokool);
+      sumSettlementBuyStockCostInfo.sumOfCost -= someOfNokoolGainCalculator({nokoolQuantity,stockPrice,strikePrice:valuablePosition.strikePrice});
 
     }
 
@@ -350,10 +357,9 @@ const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolOrNoRequ
     if(notEnoughStockQuantity>0){
       if(valuablePosition.isBuy) return sumSettlementSellStockGainInfo
 
-      const nokool = notEnoughStockQuantity * (stockPrice - valuablePosition.strikePrice);
-      const jarimehNokool = notEnoughStockQuantity * stockPrice * 0.01;
+      const someOfNokoolGain = someOfNokoolGainCalculator({nokoolQuantity:notEnoughStockQuantity,stockPrice,strikePrice:valuablePosition.strikePrice});
       const exerciseFeeOfNokool = notEnoughStockQuantity * valuablePosition.strikePrice * exerciseFee;
-      sumSettlementSellStockGainInfo.sumOfGains -= (nokool + jarimehNokool + exerciseFeeOfNokool);
+      sumSettlementSellStockGainInfo.sumOfGains -= (someOfNokoolGain + exerciseFeeOfNokool);
 
 
     }
@@ -1946,61 +1952,7 @@ const totalOffsetGainOfChunkOfEstimationQuantityCalculator = ({ strategyPosition
 
 
 
-const totalSettlementGainByEstimationQuantity = (_strategyPositions, stock, sellType) => {
 
-    const totalSettlementGainCalculator = (__strategyPositions, stock, stockPrice, sellType) => {
-        return __strategyPositions.reduce((sum, _position) => {
-
-            const strikePrice = _position.strikePrice;
-
-            let gain;
-
-            let commissionFactor;
-            if (_position.isBuy || !stockPrice) {
-                gain = strikePrice;
-                commissionFactor = settlementCommissionFactor(_position);
-            } else if (stockPrice && sellType === 'MIN') {
-
-                if (strikePrice <= stockPrice) {
-                    gain = strikePrice;
-                    commissionFactor = settlementCommissionFactor(_position);
-                } else {
-                    gain = stockPrice;
-                    commissionFactor = settlementCommissionFactor(stock);
-                }
-            } else if (stockPrice && sellType === 'MAX') {
-                if (strikePrice >= stockPrice) {
-                    gain = strikePrice;
-                    commissionFactor = settlementCommissionFactor(_position);
-                } else {
-                    gain = stockPrice;
-                    commissionFactor = settlementCommissionFactor(stock);
-                }
-            }
-
-            const isBuy = _position.isBuy;
-            const quantity = _position.getQuantity();
-            const sign = isBuy ? _position.isCall ? -1 : 1 : _position.isCall ? 1 : -1;
-
-            const gainWithSideSign = gain * sign;
-
-            const reservedMargin = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getReservedMarginOfEstimationQuantity)(_position);
-
-            const _totalGain = (gainWithSideSign * quantity) + reservedMargin - (gain * quantity * commissionFactor);
-            return sum + _totalGain
-        }
-            , 0);
-    }
-
-    const totalGainByBestPrices = totalSettlementGainCalculator(_strategyPositions, stock, stock ? (stock.getBestOffsetPrice() || stock.getBestOpenMorePrice() || stock.getInsertedPrice()) : null, sellType)
-    const totalGainByInsertedPrices = totalSettlementGainCalculator(_strategyPositions, stock, stock ? (stock.getBestOffsetPrice() || stock.getBestOpenMorePrice() || stock.getInsertedPrice()) : null, sellType)
-
-    return {
-        totalGainByBestPrices: Math.floor(totalGainByBestPrices),
-        totalGainByInsertedPrices: Math.floor(totalGainByInsertedPrices)
-    }
-
-}
 
 
 
@@ -3430,319 +3382,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
     utils: {},
 
-    // BUCS(_strategyPositions, _unChekcedPositions) {
-
-    //     const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
-
-    //     const stocks = _unChekcedPositions.filter(_unChekcedPosition => !_unChekcedPosition.isOption);
-    //     if (stocks.length > 1)
-    //         return 0
-    //     const stock = stocks[0];
-
-    //     const totalSettlementGainObj = totalSettlementGainByEstimationQuantity(_strategyPositions.filter(strategyPosition => !strategyPosition.getRequiredMargin()), stock, "MIN");
-
-    //     const additionalSellPositions = _strategyPositions.filter(strategyPosition => strategyPosition.getRequiredMargin());
-
-    //     const totalOffsetGainObjOfAdditionalSellPositions = totalOffsetGainNearSettlementOfEstimationPanel({
-    //         strategyPositions: additionalSellPositions
-    //     });
-
-    //     const profitPercentByBestPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByBestPrices,
-    //         gainWithSign: totalSettlementGainObj.totalGainByBestPrices + totalOffsetGainObjOfAdditionalSellPositions
-    //     });
-    //     const profitPercentByInsertedPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByInsertedPrices,
-    //         gainWithSign: totalSettlementGainObj.totalGainByInsertedPrices + totalOffsetGainObjOfAdditionalSellPositions
-    //     });
-
-    //     return {
-    //         profitPercentByBestPrices,
-    //         profitPercentByInsertedPrices
-    //     }
-    // },
-    // BUCS_COLLAR(_strategyPositions, _unChekcedPositions) {
-
-    //     const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
-
-    //     const buyOptions = _strategyPositions.filter(_strategyPosition => _strategyPosition.isBuy);
-
-    //     const totalSettlementGainObj = totalSettlementGainByEstimationQuantity(buyOptions);
-
-
-
-    //     const profitPercentByBestPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByBestPrices,
-    //         gainWithSign: totalSettlementGainObj.totalGainByBestPrices
-    //     });
-    //     const profitPercentByInsertedPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByInsertedPrices,
-    //         gainWithSign: totalSettlementGainObj.totalGainByInsertedPrices
-    //     });
-
-    //     return {
-    //         profitPercentByBestPrices,
-    //         profitPercentByInsertedPrices
-    //     }
-    // },
-    // BUPS_COLLAR(_strategyPositions, _unChekcedPositions) {
-
-    //     const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
-
-    //     const puts = _strategyPositions.filter(_strategyPosition => _strategyPosition.isPut);
-
-    //     const totalSettlementGainObj = totalSettlementGainByEstimationQuantity(puts);
-
-
-
-    //     const profitPercentByBestPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByBestPrices,
-    //         gainWithSign: totalSettlementGainObj.totalGainByBestPrices
-    //     });
-    //     const profitPercentByInsertedPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByInsertedPrices,
-    //         gainWithSign: totalSettlementGainObj.totalGainByInsertedPrices
-    //     });
-
-    //     return {
-    //         profitPercentByBestPrices,
-    //         profitPercentByInsertedPrices
-    //     }
-    // },
-    // BEPS_COLLAR(_strategyPositions, _unChekcedPositions) {
-
-    //     const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
-
-    //     const buyOptions = _strategyPositions.filter(_strategyPosition => _strategyPosition.isBuy);
-
-    //     const totalSettlementGainObj = totalSettlementGainByEstimationQuantity(buyOptions);
-
-
-
-    //     const profitPercentByBestPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByBestPrices,
-    //         gainWithSign: totalSettlementGainObj.totalGainByBestPrices
-    //     });
-    //     const profitPercentByInsertedPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByInsertedPrices,
-    //         gainWithSign: totalSettlementGainObj.totalGainByInsertedPrices
-    //     });
-
-    //     return {
-    //         profitPercentByBestPrices,
-    //         profitPercentByInsertedPrices
-    //     }
-    // },
-    // BECS(_strategyPositions) {
-    //     const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
-    //     const totalOffsetGainNearSettlement = totalOffsetGainNearSettlementOfEstimationPanel({
-    //         strategyPositions: _strategyPositions
-    //     });
-
-    //     const profitPercentByBestPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByBestPrices,
-    //         gainWithSign: totalOffsetGainNearSettlement
-    //     });
-    //     const profitPercentByInsertedPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByInsertedPrices,
-    //         gainWithSign: totalOffsetGainNearSettlement
-    //     });
-
-    //     return {
-    //         profitPercentByBestPrices,
-    //         profitPercentByInsertedPrices
-    //     }
-
-    // },
-    // BUPS(_strategyPositions) {
-    //     const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
-    //     const totalOffsetGainNearSettlement = totalOffsetGainNearSettlementOfEstimationPanel({
-    //         strategyPositions: _strategyPositions
-    //     });
-
-    //     const profitPercentByBestPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByBestPrices,
-    //         gainWithSign: totalOffsetGainNearSettlement
-    //     });
-    //     const profitPercentByInsertedPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByInsertedPrices,
-    //         gainWithSign: totalOffsetGainNearSettlement
-    //     });
-
-    //     return {
-    //         profitPercentByBestPrices,
-    //         profitPercentByInsertedPrices
-    //     }
-
-    // },
-    // BEPS(_strategyPositions) {
-
-    //     const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
-    //     const totalGainObj = totalSettlementGainByEstimationQuantity(_strategyPositions);
-
-    //     const profitPercentByBestPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByBestPrices,
-    //         gainWithSign: totalGainObj.totalGainByBestPrices
-    //     });
-    //     const profitPercentByInsertedPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByInsertedPrices,
-    //         gainWithSign: totalGainObj.totalGainByInsertedPrices
-    //     });
-
-    //     return {
-    //         profitPercentByBestPrices,
-    //         profitPercentByInsertedPrices
-    //     }
-    // },
-    // BOX(_strategyPositions) {
-
-    //     const calOptions = _strategyPositions.filter(_strategyPosition => _strategyPosition.isCall);
-
-    //     const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
-    //     const totalGainObj = totalSettlementGainByEstimationQuantity(calOptions);
-
-    //     const profitPercentByBestPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByBestPrices,
-    //         gainWithSign: totalGainObj.totalGainByBestPrices
-    //     });
-    //     const profitPercentByInsertedPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByInsertedPrices,
-    //         gainWithSign: totalGainObj.totalGainByInsertedPrices
-    //     });
-
-    //     return {
-    //         profitPercentByBestPrices,
-    //         profitPercentByInsertedPrices
-    //     }
-
-    // },
-    // BOX_BUPS_BECS(_strategyPositions) {
-    //     const calOptions = _strategyPositions.filter(_strategyPosition => _strategyPosition.isCall);
-    //     const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
-
-    //     const totalGainObj = totalSettlementGainByEstimationQuantity(calOptions);
-
-    //     const sellPosition = _strategyPositions.find(_strategyPosition => !_strategyPosition.isBuy)
-    //     const reservedMarginOfOtherSell = getReservedMarginOfEstimationQuantity(sellPosition);
-
-
-    //     const profitPercentByBestPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByBestPrices,
-    //         gainWithSign: totalGainObj.totalGainByBestPrices + reservedMarginOfOtherSell
-    //     });
-    //     const profitPercentByInsertedPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByInsertedPrices,
-    //         gainWithSign: totalGainObj.totalGainByInsertedPrices + reservedMarginOfOtherSell
-    //     });
-
-    //     return {
-    //         profitPercentByBestPrices,
-    //         profitPercentByInsertedPrices
-    //     }
-
-
-
-
-
-    // },
-    // COVERED(_strategyPositions) {
-    //     const calOptions = _strategyPositions.filter(_strategyPosition => _strategyPosition.isCall);
-    //     const putOptions = _strategyPositions.filter(_strategyPosition => _strategyPosition.isPut);
-
-    //     const stocks = _strategyPositions.filter(_strategyPosition => !_strategyPosition.isOption);
-    //     if (!stocks || stocks.length > 1)
-    //         return 0
-    //     const stock = stocks[0];
-
-    //     const totalCostObj = totalCostCalculatorForPriceTypes(calOptions.concat(putOptions).concat([stock]));
-    //     const totalGainObj = totalSettlementGainByEstimationQuantity(calOptions, stock, "MIN");
-
-    //     const profitPercentByBestPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByBestPrices,
-    //         gainWithSign: totalGainObj.totalGainByBestPrices
-    //     });
-    //     const profitPercentByInsertedPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByInsertedPrices,
-    //         gainWithSign: totalGainObj.totalGainByInsertedPrices
-    //     });
-
-    //     return {
-    //         profitPercentByBestPrices,
-    //         profitPercentByInsertedPrices
-    //     }
-
-    // },
-
-    // GUTS(_strategyPositions, _unChekcedPositions) {
-
-    //     const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
-
-
-    //     const totalSettlementGainObj = totalSettlementGainByEstimationQuantity(_strategyPositions);
-
-
-    //     const profitPercentByBestPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByBestPrices,
-    //         gainWithSign: totalSettlementGainObj.totalGainByBestPrices
-    //     });
-    //     const profitPercentByInsertedPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByInsertedPrices,
-    //         gainWithSign: totalSettlementGainObj.totalGainByInsertedPrices
-    //     });
-
-    //     return {
-    //         profitPercentByBestPrices,
-    //         profitPercentByInsertedPrices
-    //     }
-    // },
-    // // same as GUTS!!!
-    // LongGUTS_STRANGLE(_strategyPositions, _unChekcedPositions) {
-
-    //     const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
-
-
-    //     const totalSettlementGainObj = totalSettlementGainByEstimationQuantity(_strategyPositions);
-
-
-    //     const profitPercentByBestPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByBestPrices,
-    //         gainWithSign: totalSettlementGainObj.totalGainByBestPrices
-    //     });
-    //     const profitPercentByInsertedPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByInsertedPrices,
-    //         gainWithSign: totalSettlementGainObj.totalGainByInsertedPrices
-    //     });
-
-    //     return {
-    //         profitPercentByBestPrices,
-    //         profitPercentByInsertedPrices
-    //     }
-    // },
-
-
-    // CALL_BUTT_CONDOR(_strategyPositions, _unChekcedPositions) {
-
-    //     const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
-
-
-    //     const totalOffsetGain = totalOffsetGainNearSettlementOfEstimationPanel({
-    //         strategyPositions: _strategyPositions
-    //     });
-
-    //     const profitPercentByBestPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByBestPrices,
-    //         gainWithSign: totalOffsetGain
-    //     });
-    //     const profitPercentByInsertedPrices = profitPercentCalculator({
-    //         costWithSign: totalCostObj.totalCostByInsertedPrices,
-    //         gainWithSign: totalOffsetGain
-    //     });
-
-    //     return {
-    //         profitPercentByBestPrices,
-    //         profitPercentByInsertedPrices
-    //     }
-    // },
+   
     OTHERS(_strategyPositions) {
 
         const totalCostObj = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculatorForPriceTypes)(_strategyPositions);
