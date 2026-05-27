@@ -147,6 +147,27 @@ export const totalCostCalculator = ({ strategyPositions, getPrice, getQuantity }
   return totalCost
 }
 
+export function calcPercentDifferenceLessThan(a, b, percentThreshold) {
+  if (a === b) return true;
+  
+  const difference = Math.abs(a - b);
+  const average = (Math.abs(a) + Math.abs(b)) / 2;
+  const percentDifference = (difference / average) * 100;
+
+
+  return {
+    percentDifference,
+    isLess:percentDifference < percentThreshold
+  }
+  
+}
+
+
+export const isHourMinGreaterThan = ({houre,minutes})=>{
+
+    return ((new Date()).getHours() > houre || ((new Date()).getHours() === houre && (new Date()).getMinutes() >= minutes))
+}
+
 export const totalCostCalculatorForPriceTypes = (_strategyPositions) => {
 
 

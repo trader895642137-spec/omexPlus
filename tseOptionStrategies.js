@@ -4,7 +4,7 @@ import './hookFetch.js'
 import './desktopNotificationCheck.js'
 
 
-import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator, showNotification, someOfNokoolGainCalculator } from './common.js';
+import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator, showNotification, someOfNokoolGainCalculator, calcPercentDifferenceLessThan, isHourMinGreaterThan } from './common.js';
 import { findBreakevenList } from './findBreakevens.js';
 
 
@@ -9939,7 +9939,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
 
 
-const calcBuyStockFromSafStrategies = (list, {priceType, expectedProfitPerMonth,
+const calcBuyStockByCallFromSafStrategies = (list, {priceType, expectedProfitPerMonth,
     isProfitEnoughFn, 
     minProfitToFilter,
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, 
@@ -10025,7 +10025,7 @@ const calcBuyStockFromSafStrategies = (list, {priceType, expectedProfitPerMonth,
                             ...option
                         },
                         positions:[option],
-                        strategyTypeTitle: "BuyStockFromSaf",
+                        strategyTypeTitle: "BuyStockByCallFromSaf",
                         expectedProfitNotif,
                         minProfitToFilter,
                         expectedProfitPerMonth,
@@ -10055,7 +10055,7 @@ const calcBuyStockFromSafStrategies = (list, {priceType, expectedProfitPerMonth,
     return {
         enrichedList,
         allStrategiesSorted: sortedStrategies,
-        strategyName: "BuyStockFromSaf",
+        strategyName: "BuyStockByCallFromSaf",
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
@@ -10064,7 +10064,7 @@ const calcBuyStockFromSafStrategies = (list, {priceType, expectedProfitPerMonth,
         expectedProfitPerMonth,
         ...restConfig,
         htmlTitle: configsToHtmlTitle({
-            strategyName: "BuyStockFromSaf",
+            strategyName: "BuyStockByCallFromSaf",
             priceType,
             min_time_to_settlement,
             max_time_to_settlement,
@@ -10075,6 +10075,109 @@ const calcBuyStockFromSafStrategies = (list, {priceType, expectedProfitPerMonth,
 }
 
 
+
+const calcBuyStockByPutFromSafStrategies = (list, {priceType, expectedProfitPerMonth,
+    isProfitEnoughFn, 
+    minProfitToFilter,
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, 
+    expectedProfitNotif=false, ...restConfig}) => {
+
+    const filteredList = list.filter(item => {
+        if (!item.isOption)
+            return
+        const settlementTimeDiff = moment(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
+    }
+    )
+
+    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+
+    let enrichedList = []
+    for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
+        const optionsGroupedByDate = Object.groupBy(optionList, ({optionDetails}) => optionDetails.date);
+
+        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
+
+            const _enrichedList = optionListOfSameDate.map(option => {
+
+                if (!option.optionDetails?.stockSymbolDetails)
+                    return option
+
+                if(!option.optionDetails?.stockSymbolDetails?.last || !option.isPut) return option
+
+                const optionPrice = getPriceOfAsset({
+                        asset: option,
+                        priceType,
+                        sideType: option.isCall ? 'BUY' : 'SELL'
+                });
+
+                if(optionPrice===0) return option
+                
+
+
+                const buyingPriceOfStock = option.optionDetails.strikePrice - optionPrice;
+
+                const currentStockPrice = option.optionDetails.stockSymbolDetails?.last;
+
+                const percentDifferenceInfo = calcPercentDifferenceLessThan(buyingPriceOfStock,currentStockPrice,0.5)
+
+                if(!percentDifferenceInfo.isLess) return option
+
+
+                const strategyObj = {
+                        // TODO:remove option prop
+                        option: {
+                            ...option
+                        },
+                        positions:[option],
+                        strategyTypeTitle: "BuyStockByPutFromSaf",
+                        expectedProfitNotif,
+                        minProfitToFilter,
+                        expectedProfitPerMonth,
+                        name: createStrategyName([option]),
+                        isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(option),
+                        profitPercent : percentDifferenceInfo.percentDifference
+                    }
+
+                return {
+                    ...option,
+                    allPossibleStrategies:[strategyObj]
+                }
+
+            }
+            );
+
+            return _enrichedList
+
+        }
+        )
+
+        enrichedList = enrichedList.concat(enrichedListOfStock)
+
+    }
+    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+
+    return {
+        enrichedList,
+        allStrategiesSorted: sortedStrategies,
+        strategyName: "BuyStockByPutFromSaf",
+        priceType,
+        min_time_to_settlement,
+        max_time_to_settlement,
+        minVol,
+        expectedProfitNotif,
+        expectedProfitPerMonth,
+        ...restConfig,
+        htmlTitle: configsToHtmlTitle({
+            strategyName: "BuyStockByPutFromSaf",
+            priceType,
+            min_time_to_settlement,
+            max_time_to_settlement,
+            minVol
+        })
+    }
+
+}
 
 
 const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth, 
@@ -10211,6 +10314,8 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
+
+
 const createListFilterContetnByList=(list)=>{
 
 
@@ -10223,7 +10328,14 @@ const createListFilterContetnByList=(list)=>{
             minProfitToFilter: 0.01,
             
         }),
-        ((new Date()).getHours() >= 12 && (new Date()).getMinutes() >= 20)  && calcBuyStockFromSafStrategies(list, {
+         
+        isHourMinGreaterThan({houre:12,minutes:20}) && calcBuyStockByCallFromSafStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            max_time_to_settlement: 1 * 3600000,
+            expectedProfitNotif: true,
+            minProfitToFilter: 0.001,
+        }),
+        isHourMinGreaterThan({houre:12,minutes:20}) && calcBuyStockByPutFromSafStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             max_time_to_settlement: 1 * 3600000,
             expectedProfitNotif: true,

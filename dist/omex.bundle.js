@@ -8,6 +8,7 @@ var omexLib;
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   COMMISSION_FACTOR: () => (/* binding */ COMMISSION_FACTOR),
+/* harmony export */   calcPercentDifferenceLessThan: () => (/* binding */ calcPercentDifferenceLessThan),
 /* harmony export */   calculateOptionMargin: () => (/* binding */ calculateOptionMargin),
 /* harmony export */   configs: () => (/* binding */ configs),
 /* harmony export */   createDeferredPromise: () => (/* binding */ createDeferredPromise),
@@ -17,6 +18,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   hasBreakevenExecutedPriceDiffIssue: () => (/* binding */ hasBreakevenExecutedPriceDiffIssue),
 /* harmony export */   hasGreaterRatio: () => (/* binding */ hasGreaterRatio),
 /* harmony export */   isETF: () => (/* binding */ isETF),
+/* harmony export */   isHourMinGreaterThan: () => (/* binding */ isHourMinGreaterThan),
 /* harmony export */   isTaxFree: () => (/* binding */ isTaxFree),
 /* harmony export */   mainTotalOffsetGainCalculator: () => (/* binding */ mainTotalOffsetGainCalculator),
 /* harmony export */   profitPercentCalculator: () => (/* binding */ profitPercentCalculator),
@@ -177,6 +179,27 @@ const totalCostCalculator = ({ strategyPositions, getPrice, getQuantity } = {}) 
   // totalCost = totalCost < 0 ? Math.floor(totalCost) : Math.ceil(totalCost);
 
   return totalCost
+}
+
+function calcPercentDifferenceLessThan(a, b, percentThreshold) {
+  if (a === b) return true;
+  
+  const difference = Math.abs(a - b);
+  const average = (Math.abs(a) + Math.abs(b)) / 2;
+  const percentDifference = (difference / average) * 100;
+
+
+  return {
+    percentDifference,
+    isLess:percentDifference < percentThreshold
+  }
+  
+}
+
+
+const isHourMinGreaterThan = ({houre,minutes})=>{
+
+    return ((new Date()).getHours() > houre || ((new Date()).getHours() === houre && (new Date()).getMinutes() >= minutes))
 }
 
 const totalCostCalculatorForPriceTypes = (_strategyPositions) => {
