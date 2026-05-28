@@ -26,7 +26,8 @@ export {silentNotificationForMoment} from './common.js';
 export let groupLogger,portfolioLogger;
 
 
-
+const defaultCSize = 1000;
+const defaultDaysLeftToSettlement = 30;
 
 const initLoggers = () => {
 
@@ -705,7 +706,6 @@ const getnokoolOrNoRequestFactor = () => {
 
 
 
-
 const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
     return assetRowLementList.map(optionRowEl => {
 
@@ -718,8 +718,8 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         const isPut = isOption && instrumentName && instrumentName.charAt(0) === 'ط';
 
         const isCall = isOption && instrumentName && instrumentName.charAt(0) === 'ض';
-        let cSize = 1000;
-        let daysLeftToSettlement =30;
+        let cSize = defaultCSize;
+        let daysLeftToSettlement = defaultDaysLeftToSettlement;
 
         const ordersModal = Array.from(domContextWindow.document.querySelectorAll('client-option-modal-trade-layout')).find(modal => {
             return Array.from(modal.querySelectorAll('label')).find(label => label.innerHTML === instrumentName)
@@ -743,6 +743,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         }
 
         const getQuantity = () => {
+            cSize = instrumentExtraDataMap[instrumentName]?.cSize || cSize;
             const quantity = convertStringToInt(optionRowEl.querySelector('[formcontrolname="quantity"] input').value);
             const quantityMultiplier = isOption ? cSize : 1;
             return quantity * quantityMultiplier;
@@ -751,6 +752,11 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
         let cachedCurrentPositionQuantityElement;
         const getCurrentPositionQuantity = () => {
+
+            const instrumentExtraData = instrumentExtraDataMap[instrumentName];
+            optionID = instrumentExtraData?.optionID || optionID;
+            cSize = instrumentExtraData?.cSize || cSize;
+
 
             cachedCurrentPositionQuantityElement = domContextWindow.document.body.contains(cachedCurrentPositionQuantityElement) ? cachedCurrentPositionQuantityElement : domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy ? 'buyCount' : 'sellCount'}"]`);
 
@@ -846,6 +852,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         const getRequiredMargin = () => {
 
             const isMarginRequired = optionRowEl.querySelector('input[formcontrolname="requiredMarginIsSelected"]')?.checked;
+            cSize = instrumentExtraDataMap[instrumentName]?.cSize || cSize;
 
             if (!isMarginRequired)
                 return 0
@@ -893,6 +900,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
             const {instrumentId,instrumentName} = position;
             let executedPrice,breakEvenPrice;
+            optionID = instrumentExtraDataMap[instrumentName]?.optionID || optionID;
 
             const recentExactDecimalPricesOfPortFolioObj = (instrumentId || instrumentName) && getRecentExactDecimalPricesOfPortFolio({instrumentId,instrumentName});
 
@@ -1712,8 +1720,13 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
 
 
 
-    let daysLeftToSettlement = _strategyPositions.find(_strategyPosition => _strategyPosition.daysLeftToSettlement)?.daysLeftToSettlement;
+    let daysLeftToSettlement = _strategyPositions.find(_strategyPosition =>{
+        const instrumentExtraData = instrumentExtraDataMap[_strategyPosition.instrumentName];
+        _strategyPosition.daysLeftToSettlement = instrumentExtraData?.daysLeftToSettlement;
+        return _strategyPosition.daysLeftToSettlement
+    })?.daysLeftToSettlement || defaultDaysLeftToSettlement;
     daysLeftToSettlement = daysLeftToSettlement>=1 ? daysLeftToSettlement : 1;
+    
     const percentPerDay = Math.pow((1 + (profitPercentByBestPrices / 100)), 1 / daysLeftToSettlement);
     const percentPerMonth = Math.pow(percentPerDay, 30);
 
@@ -1821,7 +1834,9 @@ const highSumValueOfInsertedOrderInformer = ({ orderModalQuantityGetter,orderMod
 
         const positionModalQuantity = orderModalQuantityGetter(strategyPosition);
         const positionModalPrice = orderModalPriceGetter(strategyPosition);
-        if(positionModalQuantity*positionModalPrice*strategyPosition.cSize > 500000000){
+
+        const cSize = instrumentExtraDataMap[strategyPosition.instrumentName]?.cSize || strategyPosition.cSize;
+        if(positionModalQuantity*positionModalPrice * cSize > 500000000){
             informer(strategyPosition);
         }else{
             informCleaner(strategyPosition);
@@ -2072,16 +2087,25 @@ const fillCurrentStockPriceByStrikes = (strategyPositions)=>{
 
 }
 
+const  instrumentExtraDataMap = {};
+
 const getAndSetInstrumentData = async (strategyPositions)=>{
 
     const strategyPositionWithInstrumentInfo = async (strategyPosition) => {
 
         const instrumentInfo = await OMEXApi.getInstrumentInfoBySymbol(strategyPosition.instrumentName);
-        strategyPosition.optionID = instrumentInfo.instrumentId;
-        strategyPosition.instrumentId = instrumentInfo.instrumentId;
-        strategyPosition.cSize = instrumentInfo.cSize
+        const optionID = instrumentInfo.instrumentId;
+        const instrumentId = instrumentInfo.instrumentId;
+        const cSize = instrumentInfo.cSize
 
-        strategyPosition.daysLeftToSettlement = Math.ceil((new Date(instrumentInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000))
+        const daysLeftToSettlement = Math.ceil((new Date(instrumentInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000))
+
+        instrumentExtraDataMap[strategyPosition.instrumentName] = {
+            optionID,
+            instrumentId,
+            cSize,
+            daysLeftToSettlement
+        }
 
         return strategyPosition
 
@@ -2328,7 +2352,9 @@ const setTradeModalQuantityOfAllTradeModals = () => {
 }
 const setTradeModalQuantity = (strategyPosition) => {
 
-    const quantity = sumOfQuantityOfSamePosition(strategyPosition,strategyPositions) / strategyPosition.cSize;
+    const cSize = instrumentExtraDataMap[strategyPosition.instrumentName]?.cSize || strategyPosition.cSize;
+
+    const quantity = sumOfQuantityOfSamePosition(strategyPosition,strategyPositions) / cSize;
     strategyPosition.getOrderModalQuantityInputElement().value = quantity;
     strategyPosition.getOrderModalQuantityInputElement().dispatchEvent(new Event('input', { bubbles: true }));
 
