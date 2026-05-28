@@ -1354,12 +1354,12 @@ const calculateSumOfMoneyAndAssets  = async ()=>{
     },0);
 
 
-    let isThereFreeRiskETF_SOBAT=false;
+    let isThereFreeRiskETF=false;
     const sumCostOfAssetsWithoutFreeRiskETF = assetPortfolioList.reduce((sumCostOfAssetsWithoutFreeRiskETF,asset)=>{
 
         const {quantity,executedPrice,instrumentId} = asset;
-        if(instrumentId==='IRT3SOVF0001'){
-            isThereFreeRiskETF_SOBAT=true;
+        if(instrumentId==='IRT3KMDF0001'){
+            isThereFreeRiskETF=true;
             return sumCostOfAssetsWithoutFreeRiskETF
         }
         const sumOfExecutedValue =   quantity * executedPrice *  (1 + _common__WEBPACK_IMPORTED_MODULE_0__.COMMISSION_FACTOR.STOCK.BUY);
