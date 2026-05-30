@@ -743,7 +743,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         }
 
         const getQuantity = () => {
-            cSize = instrumentExtraDataMap[instrumentName]?.cSize || cSize;
+            cSize = getCSize();
             const quantity = convertStringToInt(optionRowEl.querySelector('[formcontrolname="quantity"] input').value);
             const quantityMultiplier = isOption ? cSize : 1;
             return quantity * quantityMultiplier;
@@ -751,11 +751,26 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
 
         let cachedCurrentPositionQuantityElement;
+        const getCSize = ()=>{
+            const instrumentExtraData = instrumentExtraDataMap[instrumentName];
+            return instrumentExtraData?.cSize || cSize;
+        }
+        const getOptionID = ()=>{
+            const instrumentExtraData = instrumentExtraDataMap[instrumentName];
+            return instrumentExtraData?.optionID || optionID;
+        }
+        const getInstrumentID = ()=>{
+            const instrumentExtraData = instrumentExtraDataMap[instrumentName];
+            return instrumentExtraData?.instrumentId;
+        }
+        const getDaysLeftToSettlement= ()=>{
+            const instrumentExtraData = instrumentExtraDataMap[instrumentName];
+            return instrumentExtraData?.daysLeftToSettlement;
+        }
         const getCurrentPositionQuantity = () => {
 
-            const instrumentExtraData = instrumentExtraDataMap[instrumentName];
-            optionID = instrumentExtraData?.optionID || optionID;
-            cSize = instrumentExtraData?.cSize || cSize;
+            optionID = getOptionID();
+            cSize = getCSize();
 
 
             cachedCurrentPositionQuantityElement = domContextWindow.document.body.contains(cachedCurrentPositionQuantityElement) ? cachedCurrentPositionQuantityElement : domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy ? 'buyCount' : 'sellCount'}"]`);
@@ -852,7 +867,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         const getRequiredMargin = () => {
 
             const isMarginRequired = optionRowEl.querySelector('input[formcontrolname="requiredMarginIsSelected"]')?.checked;
-            cSize = instrumentExtraDataMap[instrumentName]?.cSize || cSize;
+            cSize = getCSize()
 
             if (!isMarginRequired)
                 return 0
@@ -900,7 +915,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
             const {instrumentId,instrumentName} = position;
             let executedPrice,breakEvenPrice;
-            optionID = instrumentExtraDataMap[instrumentName]?.optionID || optionID;
+            optionID = getOptionID();
 
             const recentExactDecimalPricesOfPortFolioObj = (instrumentId || instrumentName) && getRecentExactDecimalPricesOfPortFolio({instrumentId,instrumentName});
 
@@ -1006,6 +1021,10 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             isCall,
             isPut,
             cSize,
+            getCSize,
+            getOptionID,
+            getInstrumentID,
+            getDaysLeftToSettlement,
             getQuantity,
             getCurrentPositionQuantity,
             getOrderModalPortfolioQuantity,
@@ -1721,8 +1740,7 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
 
 
     let daysLeftToSettlement = _strategyPositions.find(_strategyPosition =>{
-        const instrumentExtraData = instrumentExtraDataMap[_strategyPosition.instrumentName];
-        _strategyPosition.daysLeftToSettlement = instrumentExtraData?.daysLeftToSettlement;
+        _strategyPosition.daysLeftToSettlement = _strategyPosition.getDaysLeftToSettlement()
         return _strategyPosition.daysLeftToSettlement
     })?.daysLeftToSettlement || defaultDaysLeftToSettlement;
     daysLeftToSettlement = daysLeftToSettlement>=1 ? daysLeftToSettlement : 1;
@@ -1835,7 +1853,8 @@ const highSumValueOfInsertedOrderInformer = ({ orderModalQuantityGetter,orderMod
         const positionModalQuantity = orderModalQuantityGetter(strategyPosition);
         const positionModalPrice = orderModalPriceGetter(strategyPosition);
 
-        const cSize = instrumentExtraDataMap[strategyPosition.instrumentName]?.cSize || strategyPosition.cSize;
+        const cSize = strategyPosition.getCSize()
+        
         if(positionModalQuantity*positionModalPrice * cSize > 500000000){
             informer(strategyPosition);
         }else{
@@ -2282,15 +2301,22 @@ export const getSummaryNameOfStrategy = () => {
 
 }
 
-export const createGroupOfCurrentStrategy = ()=>{
-    OMEXApi.createGroup({
-        name: getSummaryNameOfStrategy(),
-        instrumentIds: strategyPositions.map(strategyPosition=>strategyPosition.instrumentId)
-    }).then(async ()=>{
+export const createGroupOfCurrentStrategy = async ()=>{
+
+    try {
+
+        const response = await OMEXApi.createGroup({
+            name: getSummaryNameOfStrategy(),
+            instrumentIds: strategyPositions.map(strategyPosition=>strategyPosition.g)
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json(); 
+        console.log('Data received:', data);
 
         showToast('گروه ایجاد شد');
         groupLogger?.collect && groupLogger.collect({isForce:true});
-
 
         const { sum, areNotInGroups } = await OMEXApi.getSumOfPositionsOfGroups();
         if(areNotInGroups?.length){
@@ -2303,7 +2329,22 @@ export const createGroupOfCurrentStrategy = ()=>{
                 tag: `areNotInGroups`
             });
         }
-    });
+        
+    } catch (error) {
+        console.error('Fetch operation failed:', error);
+
+        console.error('Failed to fetch user data:', error);
+        const issueMessage = 'خطا در درخواست ساخت گروه'
+        showToast(issueMessage);
+
+        showNotification({
+                title: issueMessage,
+                body: `${strategyPositions.map(instrumentName => instrumentName).join('-')}`,
+                tag: `createGroupError`
+        });
+        
+    }
+   
     takeScreenshot();
 }
 
@@ -2352,7 +2393,7 @@ const setTradeModalQuantityOfAllTradeModals = () => {
 }
 const setTradeModalQuantity = (strategyPosition) => {
 
-    const cSize = instrumentExtraDataMap[strategyPosition.instrumentName]?.cSize || strategyPosition.cSize;
+    const cSize = strategyPosition.getCSize();
 
     const quantity = sumOfQuantityOfSamePosition(strategyPosition,strategyPositions) / cSize;
     strategyPosition.getOrderModalQuantityInputElement().value = quantity;
