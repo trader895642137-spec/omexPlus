@@ -933,7 +933,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
                 console.log({instrumentName,executedPrice,breakEvenPrice});
                 const issueMessage = 'مشکل تفاوت میانگین و سر به سر';
                 
-                showToast(issueMessage);
+                showToast(issueMessage,5000,'error');
                 !domContextWindow.window.doNotNotifAvrageIssue && showNotification({
                     title: issueMessage,
                     body: `${instrumentName}`,
@@ -2307,7 +2307,7 @@ export const createGroupOfCurrentStrategy = async ()=>{
 
         const response = await OMEXApi.createGroup({
             name: getSummaryNameOfStrategy(),
-            instrumentIds: strategyPositions.map(strategyPosition=>strategyPosition.g)
+            instrumentIds: strategyPositions.map(strategyPosition=>strategyPosition.getInstrumentID())
         });
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -2321,7 +2321,7 @@ export const createGroupOfCurrentStrategy = async ()=>{
         const { sum, areNotInGroups } = await OMEXApi.getSumOfPositionsOfGroups();
         if(areNotInGroups?.length){
             const issueMessage = 'در گروه نیستن'
-            showToast(issueMessage);
+            showToast(issueMessage,10000,'error');
             console.log({sum,areNotInGroups});
             showNotification({
                 title: issueMessage,
@@ -2335,7 +2335,7 @@ export const createGroupOfCurrentStrategy = async ()=>{
 
         console.error('Failed to fetch user data:', error);
         const issueMessage = 'خطا در درخواست ساخت گروه'
-        showToast(issueMessage);
+        showToast(issueMessage,10000,'error');
 
         showNotification({
                 title: issueMessage,
@@ -2348,7 +2348,7 @@ export const createGroupOfCurrentStrategy = async ()=>{
     takeScreenshot();
 }
 
-export function showToast(message, duration = 2000) {
+export function showToast(message, duration = 2000,type ='default') {
   let toast = domContextWindow.document.getElementById('omex-plus-toast');
 
   if (!toast) {
@@ -2366,6 +2366,17 @@ export function showToast(message, duration = 2000) {
     `;
     domContextWindow.document.body.appendChild(toast);
   }
+    if (type === 'error') {
+        toast.style.background = 'red';
+        toast.style.top = 'auto'
+        toast.style.bottom = '20px';
+    } else {
+        toast.style.background = 'black';
+        toast.style.top = '20px';
+        toast.style.bottom = 'auto';
+
+    }
+
 
   toast.textContent = message;
   toast.style.display = 'block';

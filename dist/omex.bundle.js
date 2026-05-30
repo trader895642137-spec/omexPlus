@@ -1216,8 +1216,6 @@ const fillEstimationPanelByStrategyName=async ()=>{
 
 const createGroup = ({ name, instrumentIds }) => {
 
-  
-
     return fetch(`${redOrigin}/api/AssetGrouping/Create`, {
         "headers": {
             "accept": "application/json, text/plain, */*",
@@ -2600,7 +2598,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
                 console.log({instrumentName,executedPrice,breakEvenPrice});
                 const issueMessage = 'مشکل تفاوت میانگین و سر به سر';
                 
-                showToast(issueMessage);
+                showToast(issueMessage,5000,'error');
                 !domContextWindow.window.doNotNotifAvrageIssue && (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
                     title: issueMessage,
                     body: `${instrumentName}`,
@@ -3974,7 +3972,7 @@ const createGroupOfCurrentStrategy = async ()=>{
 
         const response = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.createGroup({
             name: getSummaryNameOfStrategy(),
-            instrumentIds: strategyPositions.map(strategyPosition=>strategyPosition.g)
+            instrumentIds: strategyPositions.map(strategyPosition=>strategyPosition.getInstrumentID())
         });
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
@@ -3988,7 +3986,7 @@ const createGroupOfCurrentStrategy = async ()=>{
         const { sum, areNotInGroups } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getSumOfPositionsOfGroups();
         if(areNotInGroups?.length){
             const issueMessage = 'در گروه نیستن'
-            showToast(issueMessage);
+            showToast(issueMessage,10000,'error');
             console.log({sum,areNotInGroups});
             (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
                 title: issueMessage,
@@ -4002,7 +4000,7 @@ const createGroupOfCurrentStrategy = async ()=>{
 
         console.error('Failed to fetch user data:', error);
         const issueMessage = 'خطا در درخواست ساخت گروه'
-        showToast(issueMessage);
+        showToast(issueMessage,10000,'error');
 
         (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
                 title: issueMessage,
@@ -4015,7 +4013,7 @@ const createGroupOfCurrentStrategy = async ()=>{
     (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.takeScreenshot)();
 }
 
-function showToast(message, duration = 2000) {
+function showToast(message, duration = 2000,type ='default') {
   let toast = domContextWindow.document.getElementById('omex-plus-toast');
 
   if (!toast) {
@@ -4033,6 +4031,17 @@ function showToast(message, duration = 2000) {
     `;
     domContextWindow.document.body.appendChild(toast);
   }
+    if (type === 'error') {
+        toast.style.background = 'red';
+        toast.style.top = 'auto'
+        toast.style.bottom = '20px';
+    } else {
+        toast.style.background = 'black';
+        toast.style.top = '20px';
+        toast.style.bottom = 'auto';
+
+    }
+
 
   toast.textContent = message;
   toast.style.display = 'block';
