@@ -2625,7 +2625,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
                 const issueMessage = 'مشکل تفاوت میانگین و سر به سر';
                 console.log(issueMessage,{instrumentName,executedPrice,breakEvenPrice});
                 
-                showToast(issueMessage,5000,'error');
+                showToast(issueMessage,50000,'error');
                 // !domContextWindow.window.doNotNotifAvrageIssue && showNotification({
                 //     title: issueMessage,
                 //     body: `${instrumentName}`,
