@@ -2258,6 +2258,25 @@ const calcOffsetProfitOfStrategy = (_strategyPositions) => {
 
 }
 
+const getBreakevenExecutedPriceDiffIssueInAllPortfolioLogs = ({ strategyPositions })=>{
+
+    const instrumentNameList = strategyPositions.map(sp => sp.instrumentName);
+    const storedPortfolioLogs = portfolioLogger.getLogs();
+    let issueMap = [];
+    for (let [dateKey, logList] of Object.entries(storedPortfolioLogs)) {
+
+        const hadIssuedLog =  logList.find(logObj => {
+            return logObj.data.find(instrument => instrumentNameList.includes(instrument.instrumentName) && (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.hasBreakevenExecutedPriceDiffIssue)({ executedPrice: instrument.executedPrice, breakEvenPrice: instrument.breakEvenPrice }))
+        });
+
+        hadIssuedLog && issueMap.push({dateKey,hadIssuedLog})
+
+    }
+
+    return issueMap
+
+}
+
 const checkProfitPercentAndInform =async ({strategyPositions,profitLossByOffsetOrdersPercent})=>{
 
     let hasProfit=false
@@ -2268,7 +2287,15 @@ const checkProfitPercentAndInform =async ({strategyPositions,profitLossByOffsetO
             uninformExtremeOrderPrice(strategyPositions, 'offset');
             return hasProfit
         } 
+        const breakevenExecutedPriceIssueListOfAllLogs = getBreakevenExecutedPriceDiffIssueInAllPortfolioLogs({strategyPositions});
+        if(breakevenExecutedPriceIssueListOfAllLogs?.length>0){
 
+            const issueMessage = 'قبلا میانگین و سر به سر مشکل داشته';
+                
+            showToast(issueMessage,50000,'error');
+            console.log('قبلا مشکل میانگین داشته ' , breakevenExecutedPriceIssueListOfAllLogs);
+
+        }
         hasProfit=true;
 
         informExtremeOrderPrice(strategyPositions, 'offset');
@@ -2595,15 +2622,15 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             }
             if (executedPrice && breakEvenPrice && (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.hasBreakevenExecutedPriceDiffIssue)({executedPrice,breakEvenPrice})) {
 
-                console.log({instrumentName,executedPrice,breakEvenPrice});
                 const issueMessage = 'مشکل تفاوت میانگین و سر به سر';
+                console.log(issueMessage,{instrumentName,executedPrice,breakEvenPrice});
                 
                 showToast(issueMessage,5000,'error');
-                !domContextWindow.window.doNotNotifAvrageIssue && (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
-                    title: issueMessage,
-                    body: `${instrumentName}`,
-                    tag: `CurrentPositionAvgPriceIssue`
-                });
+                // !domContextWindow.window.doNotNotifAvrageIssue && showNotification({
+                //     title: issueMessage,
+                //     body: `${instrumentName}`,
+                //     tag: `CurrentPositionAvgPriceIssue`
+                // });
                 return breakEvenPrice
             }
 
