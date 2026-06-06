@@ -8,6 +8,7 @@ var omexLib;
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   COMMISSION_FACTOR: () => (/* binding */ COMMISSION_FACTOR),
+/* harmony export */   calcAveragePriceByExecutedOrders: () => (/* binding */ calcAveragePriceByExecutedOrders),
 /* harmony export */   calcPercentDifferenceLessThan: () => (/* binding */ calcPercentDifferenceLessThan),
 /* harmony export */   calculateOptionMargin: () => (/* binding */ calculateOptionMargin),
 /* harmony export */   configs: () => (/* binding */ configs),
@@ -684,6 +685,100 @@ const hasBreakevenExecutedPriceDiffIssue =({executedPrice,breakEvenPrice})=>{
   
 }
 
+
+const calcAveragePriceByExecutedOrders = (orders)=>{
+
+    let position = 0; // تعداد سهام در پوزیشن (مثبت: خرید، منفی: فروش)
+    let totalCost = 0; // ارزش کل خریدها
+    let averagePrice = 0;
+    
+    // فیلتر کردن سفارشات معتبر (فقط سفارشات انجام شده با مقدار و قیمت معتبر)
+    const validOrders = orders.filter(order => 
+        order.orderStatus === "CompletelySettled" && 
+        order.executedQuantity > 0 && 
+        order.executedPrice > 0
+    );
+    
+    // مرتب‌سازی بر اساس تاریخ
+    const sortedOrders = [...validOrders].sort((a, b) => 
+        new Date(a.createdDate) - new Date(b.createdDate)
+    );
+    
+    
+    for (const order of sortedOrders) {
+        const quantity = order.executedQuantity;
+        const price = order.executedPrice;
+        const isBuy = order.orderSide === "Buy";
+        
+        if (isBuy) {
+            if (position >= 0) {
+                // در موقعیت خرید یا خنثی
+                totalCost += quantity * price;
+                position += quantity;
+                averagePrice = totalCost / position;
+            } else {
+                // در موقعیت فروش
+                const remainingShort = -position;
+                
+                if (quantity <= remainingShort) {
+                    position += quantity;
+                } else {
+                    const coveringQuantity = remainingShort;
+                    const newBuyQuantity = quantity - coveringQuantity;
+                    position = 0;
+                    
+                    totalCost = newBuyQuantity * price;
+                    position = newBuyQuantity;
+                    averagePrice = price;
+                }
+            }
+        } else { // Sell
+            if (position <= 0) {
+                // در موقعیت فروش یا خنثی
+                const shortPosition = -position;
+                const newShortValue = (shortPosition * averagePrice) + (quantity * price);
+                position -= quantity;
+                averagePrice = newShortValue / (-position);
+            } else {
+                // در موقعیت خرید
+                const remainingLong = position;
+                
+                if (quantity <= remainingLong) {
+                    totalCost -= quantity * averagePrice;
+                    position -= quantity;
+                    
+                    if (position > 0) {
+                        averagePrice = totalCost / position;
+                    }
+                } else {
+                    const coveringQuantity = remainingLong;
+                    const newSellQuantity = quantity - coveringQuantity;
+                    
+                    position = 0;
+                    totalCost = 0;
+                    
+                    position = -newSellQuantity;
+                    averagePrice = price;
+                }
+            }
+        }
+    }
+    
+    // تابع برای نمایش با 3 رقم اعشار (بدون گرد کردن)
+    const to3Decimal = (num) => {
+        if (isNaN(num) || num === 0) return 0;
+        return Math.floor(num * 1000) / 1000;
+    };
+    
+    return {
+        position: position,
+        averagePrice: to3Decimal(averagePrice),
+        totalValue: to3Decimal(Math.abs(position) * averagePrice),
+        side: position > 0 ? "Long" : (position < 0 ? "Short" : "Neutral")
+    };
+
+}
+
 /***/ }),
 /* 2 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
@@ -985,6 +1080,45 @@ const deleteAllOpenOrders =async ()=>{
 
 
     return
+
+}
+
+
+const getOrders = async (instrumentId)=>{
+
+    return fetch(`${redOrigin}/api/Orders/GetHistoryOrders?$count=true&instrumentId=${instrumentId}`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": "eyJhbGciOiJBMjU2R0NNS1ciLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwiaXYiOiJMcWlBcldnaEJtWmxhdmw2IiwidGFnIjoiOE5uSGZNRW55MXQ2aE5ybUNFdzFJQSJ9.OIAkMjzfyJcGC2OnLd_UotOHcVbLcFXWturpDdCS7lqmF5gUDY7MpIyeyCNcRD8LIKB4JbGuZPJ7qg0c1mOSPQ.tiCd0z8bs4srtgO2sz9Z2g.MU7MlUVgoSS15YnYoRfsa6lkkMiwe2q41fuoOq0R61wvYNE7LAsxW6z_2yY8HYVpqThB8vBWeY1gibFr6MnxP57VEmyTHJIZANyIqnLbJfwx0sMtvuNqRtV860pgZAIHNKGoV3nu9fET1ccJD_RHGq9Coy420mF6hUI_tiJ6N1EOyUg3MngaU8bM8J46gjsaioKZWazkGvbdA0uKaHnOHTVVmSpS9JFketqVUDeEJW5OUYKqBcuRUwbp5bC_0k3vAuYDDMcWeaHJXc9ZIZGzk8hQPHv704IZi2qD-pjxn6WQhN7KSMhtzB7I5IAdFhn9z7WNpPUXOp-Xw8v7txB-TB6p3DPRabM0cX7o3o5iAhc0yNc3ILsALv_eKQ9YTHFJTZNTjli9EkWOgDFyZmsA9Q4h6yNxoIaXGPmvSOHBA5IND4QHqTmhFtn-gNF6rbWVccqMm_kzVkAUd4e-JpNSw_mME-fGyNimrkftzTbz5UvQuq0bXz5xe2e5rm0hnseoMLjYdxnEGjeZpOhWCLrH9XWOxVPt80hoTJQS6n6RxdOUbusc6aDeGXKf8u2bQzmLOKctZoo4NxHMFWtY88gyr6-FpeeuKggAeZFVly2PT8gGZ4Xx3gCoWMiSJKBI1GDVs0SIU2s5Gsqlgc3iH70sS-0Fxwj9Pi0PqK2X1HEOJ7cOyzpzx0GAnVRj2GIcvjcw9Ynqf4bkrBpk8CqHac-lQz2qyiEw3tZmoKJFDFZuKkbG2L8rCW1xXObZvx9-spbNqpbIhz-Km7rnGBVR_wuA4PP5FtPDbeVZdaQoAoFnSeT6ie86TtxF76I0xRFA_LjV5E4emf34Pn52ZMTgJi8P1g.TzeUZbVhYr-TLLz5eW83Wz9k92eXDcYCDpoJbJfgHY4",
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \"Not/A)Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": "https://khobregan.tsetab.ir/",
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const orders = res.response.data;
+        if (!orders?.length) return null
+        return orders
+    });
+}
+
+const calcAveragePrice = async (instrumentId)=>{
+
+    const orders = await getOrders(instrumentId);
+
+    const averageInfo  = (0,_common__WEBPACK_IMPORTED_MODULE_0__.calcAveragePriceByExecutedOrders)(orders);
+
+    return  averageInfo.averagePrice
 
 }
 
@@ -1408,7 +1542,8 @@ const OMEXApi = {
     fillEstimationPanelByStrategyName,
     createGroup,
     createStrategyListForAllGroups,
-    calculateSumOfMoneyAndAssets
+    calculateSumOfMoneyAndAssets,
+    calcAveragePrice
 }
 
 /***/ }),
@@ -1658,6 +1793,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   configs: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.configs),
 /* harmony export */   createGroupOfCurrentStrategy: () => (/* binding */ createGroupOfCurrentStrategy),
 /* harmony export */   expectedProfit: () => (/* binding */ expectedProfit),
+/* harmony export */   getAvgPrices: () => (/* binding */ getAvgPrices),
 /* harmony export */   getSummaryNameOfStrategy: () => (/* binding */ getSummaryNameOfStrategy),
 /* harmony export */   groupLogger: () => (/* binding */ groupLogger),
 /* harmony export */   openAllGroupsInNewTabs: () => (/* binding */ openAllGroupsInNewTabs),
@@ -3830,6 +3966,18 @@ const getAndSetInstrumentData = async (strategyPositions)=>{
     );
 
     return _strategyPositions
+
+}
+
+
+const getAvgPrices =async ()=>{
+
+
+    for (const strategyPosition of strategyPositions) {
+        const  instrumentID = strategyPosition.getInstrumentID();
+        const avgPrice = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calcAveragePrice(instrumentID);
+        console.log(strategyPosition.instrumentName,avgPrice)
+    }
 
 }
 

@@ -2169,6 +2169,18 @@ const getAndSetInstrumentData = async (strategyPositions)=>{
 }
 
 
+export const getAvgPrices =async ()=>{
+
+
+    for (const strategyPosition of strategyPositions) {
+        const  instrumentID = strategyPosition.getInstrumentID();
+        const avgPrice = await OMEXApi.calcAveragePrice(instrumentID);
+        console.log(strategyPosition.instrumentName,avgPrice)
+    }
+
+}
+
+
 const openModalOfAllPositionsRows = async (documentOfWindow=document) => {
 
     const _document  = documentOfWindow;
