@@ -946,7 +946,16 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
             const recentExactDecimalPricesOfPortFolioObj = (instrumentId || instrumentName) && getRecentExactDecimalPricesOfPortFolio({instrumentId,instrumentName});
 
-            if(recentExactDecimalPricesOfPortFolioObj){
+
+            const recentCalculatedAvgPrices  =  getRecentCalculatedAvgPrices({instrumentId,instrumentName});
+            if(recentCalculatedAvgPrices){
+
+                executedPrice = recentCalculatedAvgPrices.avgPrice;
+                breakEvenPrice = recentCalculatedAvgPrices.avgPrice;
+                showToast('استفاده از میانگین های حساب شده');
+
+            }
+            else if(recentExactDecimalPricesOfPortFolioObj){
                 executedPrice = recentExactDecimalPricesOfPortFolioObj.executedPrice;
                 breakEvenPrice = recentExactDecimalPricesOfPortFolioObj.breakEvenPrice;
             }else{
@@ -2168,15 +2177,36 @@ const getAndSetInstrumentData = async (strategyPositions)=>{
 
 }
 
+const lastCalculatedAvgPrices={}
+
 
 export const getAvgPrices =async ()=>{
 
-
-    for (const strategyPosition of strategyPositions) {
-        const  instrumentID = strategyPosition.getInstrumentID();
+    const requests = strategyPositions.map(async (strategyPosition) => {
+        const instrumentID = strategyPosition.getInstrumentID();
         const avgPrice = await OMEXApi.calcAveragePrice(instrumentID);
-        console.log(strategyPosition.instrumentName,avgPrice)
-    }
+        console.log(strategyPosition.instrumentName, avgPrice);
+        return {
+            instrumentName: strategyPosition.instrumentName,
+            instrumentID: instrumentID,
+            avgPrice: avgPrice,
+            strategyPosition: strategyPosition
+        };
+    });
+
+    const results = await Promise.all(requests);
+
+
+    lastCalculatedAvgPrices.results= results;
+    lastCalculatedAvgPrices.time = Date.now();
+    console.log('همه نتایج:', results);
+
+}
+
+const getRecentCalculatedAvgPrices = ({instrumentId,instrumentName})=>{
+    if (!lastCalculatedAvgPrices.results || !lastCalculatedAvgPrices.time || (Date.now() - lastCalculatedAvgPrices.time) > 60000) return null
+    if(!lastCalculatedAvgPrices.results.length) return 
+    return lastCalculatedAvgPrices.results.find(avgInfo=>avgInfo.instrumentName===instrumentName)
 
 }
 
@@ -2465,6 +2495,20 @@ const setDaysFromToday= () => {
 }
 
 
+const preventWhellScrollOnChart = ()=>{
+
+    function preventWheel(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation(); // برای امنیت بیشتر
+        return false;
+    }
+    
+    
+    domContextWindow.document.querySelector('client-option-strategy-estimation-chart').addEventListener('wheel', preventWheel, { passive: false, capture: true });
+}
+
+
 export const Run = async (_window = window) => {
 
     try {
@@ -2516,6 +2560,7 @@ export const Run = async (_window = window) => {
     setDaysFromToday();
 
     initLoggers();
+    preventWhellScrollOnChart();
     strategyPositions = await getAndSetInstrumentData(strategyPositions);
 
     

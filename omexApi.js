@@ -290,7 +290,7 @@ const getOrders = async (instrumentId)=>{
         "headers": {
             "accept": "application/json, text/plain, */*",
             "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
-            "authorization": "eyJhbGciOiJBMjU2R0NNS1ciLCJlbmMiOiJBMjU2Q0JDLUhTNTEyIiwiaXYiOiJMcWlBcldnaEJtWmxhdmw2IiwidGFnIjoiOE5uSGZNRW55MXQ2aE5ybUNFdzFJQSJ9.OIAkMjzfyJcGC2OnLd_UotOHcVbLcFXWturpDdCS7lqmF5gUDY7MpIyeyCNcRD8LIKB4JbGuZPJ7qg0c1mOSPQ.tiCd0z8bs4srtgO2sz9Z2g.MU7MlUVgoSS15YnYoRfsa6lkkMiwe2q41fuoOq0R61wvYNE7LAsxW6z_2yY8HYVpqThB8vBWeY1gibFr6MnxP57VEmyTHJIZANyIqnLbJfwx0sMtvuNqRtV860pgZAIHNKGoV3nu9fET1ccJD_RHGq9Coy420mF6hUI_tiJ6N1EOyUg3MngaU8bM8J46gjsaioKZWazkGvbdA0uKaHnOHTVVmSpS9JFketqVUDeEJW5OUYKqBcuRUwbp5bC_0k3vAuYDDMcWeaHJXc9ZIZGzk8hQPHv704IZi2qD-pjxn6WQhN7KSMhtzB7I5IAdFhn9z7WNpPUXOp-Xw8v7txB-TB6p3DPRabM0cX7o3o5iAhc0yNc3ILsALv_eKQ9YTHFJTZNTjli9EkWOgDFyZmsA9Q4h6yNxoIaXGPmvSOHBA5IND4QHqTmhFtn-gNF6rbWVccqMm_kzVkAUd4e-JpNSw_mME-fGyNimrkftzTbz5UvQuq0bXz5xe2e5rm0hnseoMLjYdxnEGjeZpOhWCLrH9XWOxVPt80hoTJQS6n6RxdOUbusc6aDeGXKf8u2bQzmLOKctZoo4NxHMFWtY88gyr6-FpeeuKggAeZFVly2PT8gGZ4Xx3gCoWMiSJKBI1GDVs0SIU2s5Gsqlgc3iH70sS-0Fxwj9Pi0PqK2X1HEOJ7cOyzpzx0GAnVRj2GIcvjcw9Ynqf4bkrBpk8CqHac-lQz2qyiEw3tZmoKJFDFZuKkbG2L8rCW1xXObZvx9-spbNqpbIhz-Km7rnGBVR_wuA4PP5FtPDbeVZdaQoAoFnSeT6ie86TtxF76I0xRFA_LjV5E4emf34Pn52ZMTgJi8P1g.TzeUZbVhYr-TLLz5eW83Wz9k92eXDcYCDpoJbJfgHY4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
             "ngsw-bypass": "",
             "priority": "u=1, i",
             "sec-ch-ua": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \"Not/A)Brand\";v=\"99\"",
