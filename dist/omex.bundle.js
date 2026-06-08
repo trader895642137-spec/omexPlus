@@ -2132,6 +2132,8 @@ const calcProfitLossByExactDecimalPricesOfPortFolio = async (_strategyPositions)
     lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList = portfolioList;
     lastCheckProfitByExactDecimalPricesOfPortFolio.stockPortfolioList = stockPortfolioList;
 
+    showToast('پرتفوی دریافت شد');
+
     const totalCostOfChunkOfEstimationQuantity = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculatorForPriceTypes)(_strategyPositions).totalCostOfChunkOfEstimationQuantity;
 
     const totalOffsetGainOfChunkOfEstimation = totalOffsetGainOfChunkOfEstimationQuantityCalculator({
