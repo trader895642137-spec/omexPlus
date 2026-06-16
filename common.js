@@ -44,36 +44,76 @@ export const silentNotificationForMoment = (millisecond=160000) => {
         , millisecond);
 
 }
+let notificationPermission = null;
 
+async function ensureNotificationPermission() {
+    if (notificationPermission !== null) {
+        return notificationPermission;
+    }
+    
+    if (Notification.permission === 'granted') {
+        notificationPermission = 'granted';
+        return notificationPermission;
+    }
+    
+    if (Notification.permission === 'denied') {
+        notificationPermission = 'denied';
+        return notificationPermission;
+    }
+    
+    // فقط در حالت 'default' درخواست می‌کنیم
+    const permission = await Notification.requestPermission();
+    notificationPermission = permission;
+    return permission;
+}
 
-export const showNotification = ({ title, body, tag,requireInteraction }) => {
+// اصلاح گارد با قفل (lock)
+const notificationLocks = {};
 
-    if(_isSilentNotificationModeActive) return 
-
-    if (lastNotifTime[tag] && (Date.now() - lastNotifTime[tag]) < 5000)
-        return
-
-    Notification.requestPermission().then(function (permission) {
-        const notifTime = Date.now();
-        lastNotifTime[tag] = notifTime
-
-        if (permission !== "granted" || !document.hidden)
-            return
-        let notification = new Notification(title, {
+export const showNotification = async ({ title, body, tag, requireInteraction }) => {
+    if (_isSilentNotificationModeActive) return;
+    
+    // گارد اول: بررسی زمان
+    const now = Date.now();
+    if (lastNotifTime[tag] && (now - lastNotifTime[tag]) < 5000) return;
+    
+    // گارد دوم: قفل برای جلوگیری از همزمانی
+    if (notificationLocks[tag]) return;
+    notificationLocks[tag] = true;
+    
+    try {
+        const permission = await ensureNotificationPermission();
+        if (permission !== "granted") return;
+        if (!document.hidden) return;
+        
+        // ست کردن زمان قبل از ایجاد نوتیف
+        lastNotifTime[tag] = Date.now();
+        
+        const notification = new Notification(title, {
             body,
-            renotify: tag ? true : false,
+            renotify: !!tag,
             tag,
             requireInteraction
         });
-
-        console.log(body)
-
+        
         notification.onclick = function () {
             window.parent.parent.focus();
-        }
-            ;
-    })
-}
+        };
+        
+        // پاک کردن لاگ بعد از ۵ ثانیه
+        setTimeout(() => {
+            delete notificationLocks[tag];
+        }, 5000);
+        
+    } catch (error) {
+        console.error('Notification error:', error);
+    } finally {
+        // در صورت خطا، قفل رو آزاد کن
+        setTimeout(() => {
+            delete notificationLocks[tag];
+        }, 1000);
+    }
+};
 
 
 
