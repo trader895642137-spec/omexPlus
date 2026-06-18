@@ -321,7 +321,7 @@ const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
 
 const someOfNokoolGainCalculator = ({nokoolQuantity=1,stockPrice , strikePrice})=>{
 
-  const nokool = nokoolQuantity * (stockPrice - strikePrice);
+  const nokool = stockPrice > strikePrice ?  (nokoolQuantity * (stockPrice - strikePrice)) : 0;
   const jarimehNokool = nokoolQuantity * stockPrice * 0.01;
 
   return nokool + jarimehNokool
@@ -23406,6 +23406,15 @@ const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMo
                 });
 
                 if(optionPrice===0) return option
+
+                const buyingPriceOfStock = option.optionDetails.strikePrice + optionPrice;
+
+                const currentStockPrice = option.optionDetails.stockSymbolDetails?.close;
+
+
+                const percentDifference = ((currentStockPrice - buyingPriceOfStock) / buyingPriceOfStock) * 100
+
+                if(percentDifference<-1 ) return option
                 
                 
                 const strategyPositions = [
@@ -23430,6 +23439,7 @@ const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMo
                         sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
                     })
                 });
+
                 
                 const someOfNokoolGain = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.someOfNokoolGainCalculator)({nokoolQuantity:1, stockPrice:option.optionDetails.stockSymbolDetails?.close   ,strikePrice:option.optionDetails.strikePrice})
 
@@ -23461,7 +23471,7 @@ const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMo
                         minProfitToFilter,
                         expectedProfitPerMonth,
                         name: createStrategyName([option]),
-                        isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(profitPercentOfSettlement,settlementTimeDiff,option),
+                        isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(option),
                         profitPercent : profitPercent
                     }
 
@@ -23550,9 +23560,9 @@ const calcBuyStockByPutStrategies = (list, {priceType, expectedProfitPerMonth,
 
                 const currentStockPrice = option.optionDetails.stockSymbolDetails?.close;
 
-                const percentDifferenceInfo = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.calcPercentDifferenceLessThan)(buyingPriceOfStock,currentStockPrice,5)
+                const percentDifference = ((currentStockPrice - buyingPriceOfStock) / buyingPriceOfStock) * 100
 
-                if(!percentDifferenceInfo.isLess) return option
+                if(percentDifference<-5 || percentDifference>5 ) return option
 
 
                 
@@ -23569,7 +23579,7 @@ const calcBuyStockByPutStrategies = (list, {priceType, expectedProfitPerMonth,
                         expectedProfitPerMonth,
                         name: createStrategyName([option]),
                         isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(option),
-                        profitPercent : (buyingPriceOfStock > currentStockPrice ? -percentDifferenceInfo.percentDifference  :  percentDifferenceInfo.percentDifference)/100
+                        profitPercent : percentDifference/100
                     }
 
                 return {
@@ -23766,7 +23776,10 @@ const createListFilterContetnByList=(list)=>{
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             max_time_to_settlement: 1 * 3600000,
             expectedProfitNotif: true,
-            minProfitToFilter: 0.001,
+            isProfitEnoughFn(){
+                return true
+            },
+            // minProfitToFilter: 0.001,
         }),
         (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isHourMinGreaterThan)({houre:12,minutes:20}) && calcBuyStockByPutStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,

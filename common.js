@@ -187,19 +187,7 @@ export const totalCostCalculator = ({ strategyPositions, getPrice, getQuantity }
   return totalCost
 }
 
-export function calcPercentDifferenceLessThan(a, b, percentThreshold) {
-  
-  const difference = Math.abs(a - b);
-  const average = (Math.abs(a) + Math.abs(b)) / 2;
-  const percentDifference = (difference / average) * 100;
 
-
-  return {
-    percentDifference,
-    isLess:percentDifference < percentThreshold
-  }
-  
-}
 
 
 export const isHourMinGreaterThan = ({houre,minutes})=>{
@@ -286,7 +274,7 @@ export const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
 
 export const someOfNokoolGainCalculator = ({nokoolQuantity=1,stockPrice , strikePrice})=>{
 
-  const nokool = nokoolQuantity * (stockPrice - strikePrice);
+  const nokool = stockPrice > strikePrice ?  (nokoolQuantity * (stockPrice - strikePrice)) : 0;
   const jarimehNokool = nokoolQuantity * stockPrice * 0.01;
 
   return nokool + jarimehNokool

@@ -321,7 +321,7 @@ const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
 
 const someOfNokoolGainCalculator = ({nokoolQuantity=1,stockPrice , strikePrice})=>{
 
-  const nokool = nokoolQuantity * (stockPrice - strikePrice);
+  const nokool = stockPrice > strikePrice ?  (nokoolQuantity * (stockPrice - strikePrice)) : 0;
   const jarimehNokool = nokoolQuantity * stockPrice * 0.01;
 
   return nokool + jarimehNokool
