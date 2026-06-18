@@ -223,7 +223,6 @@ const totalCostCalculator = ({ strategyPositions, getPrice, getQuantity } = {}) 
 }
 
 function calcPercentDifferenceLessThan(a, b, percentThreshold) {
-  if (a === b) return true;
   
   const difference = Math.abs(a - b);
   const average = (Math.abs(a) + Math.abs(b)) / 2;
@@ -23371,7 +23370,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
 
 
-const calcBuyStockByCallFromSafStrategies = (list, {priceType, expectedProfitPerMonth,
+const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMonth,
     isProfitEnoughFn, 
     minProfitToFilter,
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, 
@@ -23398,7 +23397,7 @@ const calcBuyStockByCallFromSafStrategies = (list, {priceType, expectedProfitPer
                 if (!option.optionDetails?.stockSymbolDetails)
                     return option
 
-                if(!option.optionDetails?.stockSymbolDetails?.last || !option.isCall) return option
+                if(!option.optionDetails?.stockSymbolDetails?.close || !option.isCall) return option
 
                 const optionPrice = getPriceOfAsset({
                         asset: option,
@@ -23432,7 +23431,7 @@ const calcBuyStockByCallFromSafStrategies = (list, {priceType, expectedProfitPer
                     })
                 });
                 
-                const someOfNokoolGain = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.someOfNokoolGainCalculator)({nokoolQuantity:1, stockPrice:option.optionDetails.stockSymbolDetails?.last   ,strikePrice:option.optionDetails.strikePrice})
+                const someOfNokoolGain = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.someOfNokoolGainCalculator)({nokoolQuantity:1, stockPrice:option.optionDetails.stockSymbolDetails?.close   ,strikePrice:option.optionDetails.strikePrice})
 
 
                 if( (someOfNokoolGain + totalCost)<0 )
@@ -23457,7 +23456,7 @@ const calcBuyStockByCallFromSafStrategies = (list, {priceType, expectedProfitPer
                             ...option
                         },
                         positions:[option],
-                        strategyTypeTitle: "BuyStockByCallFromSaf",
+                        strategyTypeTitle: "BuyByCallNokoolGain",
                         expectedProfitNotif,
                         minProfitToFilter,
                         expectedProfitPerMonth,
@@ -23487,7 +23486,7 @@ const calcBuyStockByCallFromSafStrategies = (list, {priceType, expectedProfitPer
     return {
         enrichedList,
         allStrategiesSorted: sortedStrategies,
-        strategyName: "BuyStockByCallFromSaf",
+        strategyName: "BuyByCallNokoolGain",
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
@@ -23496,7 +23495,7 @@ const calcBuyStockByCallFromSafStrategies = (list, {priceType, expectedProfitPer
         expectedProfitPerMonth,
         ...restConfig,
         htmlTitle: configsToHtmlTitle({
-            strategyName: "BuyStockByCallFromSaf",
+            strategyName: "BuyByCallNokoolGain",
             priceType,
             min_time_to_settlement,
             max_time_to_settlement,
@@ -23508,7 +23507,7 @@ const calcBuyStockByCallFromSafStrategies = (list, {priceType, expectedProfitPer
 
 
 
-const calcBuyStockByPutFromSafStrategies = (list, {priceType, expectedProfitPerMonth,
+const calcBuyStockByPutStrategies = (list, {priceType, expectedProfitPerMonth,
     isProfitEnoughFn, 
     minProfitToFilter,
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, 
@@ -23535,7 +23534,7 @@ const calcBuyStockByPutFromSafStrategies = (list, {priceType, expectedProfitPerM
                 if (!option.optionDetails?.stockSymbolDetails)
                     return option
 
-                if(!option.optionDetails?.stockSymbolDetails?.last || !option.isPut) return option
+                if(!option.optionDetails?.stockSymbolDetails?.close || !option.isPut) return option
 
                 const optionPrice = getPriceOfAsset({
                         asset: option,
@@ -23549,12 +23548,14 @@ const calcBuyStockByPutFromSafStrategies = (list, {priceType, expectedProfitPerM
 
                 const buyingPriceOfStock = option.optionDetails.strikePrice - optionPrice;
 
-                const currentStockPrice = option.optionDetails.stockSymbolDetails?.last;
+                const currentStockPrice = option.optionDetails.stockSymbolDetails?.close;
 
-                const percentDifferenceInfo = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.calcPercentDifferenceLessThan)(buyingPriceOfStock,currentStockPrice,0.5)
+                const percentDifferenceInfo = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.calcPercentDifferenceLessThan)(buyingPriceOfStock,currentStockPrice,5)
 
                 if(!percentDifferenceInfo.isLess) return option
 
+
+                
 
                 const strategyObj = {
                         // TODO:remove option prop
@@ -23562,13 +23563,13 @@ const calcBuyStockByPutFromSafStrategies = (list, {priceType, expectedProfitPerM
                             ...option
                         },
                         positions:[option],
-                        strategyTypeTitle: "BuyStockByPutFromSaf",
+                        strategyTypeTitle: "BuyStockByPut",
                         expectedProfitNotif,
                         minProfitToFilter,
                         expectedProfitPerMonth,
                         name: createStrategyName([option]),
                         isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(option),
-                        profitPercent : percentDifferenceInfo.percentDifference
+                        profitPercent : (buyingPriceOfStock > currentStockPrice ? -percentDifferenceInfo.percentDifference  :  percentDifferenceInfo.percentDifference)/100
                     }
 
                 return {
@@ -23592,7 +23593,7 @@ const calcBuyStockByPutFromSafStrategies = (list, {priceType, expectedProfitPerM
     return {
         enrichedList,
         allStrategiesSorted: sortedStrategies,
-        strategyName: "BuyStockByPutFromSaf",
+        strategyName: "BuyStockByPut",
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
@@ -23601,7 +23602,7 @@ const calcBuyStockByPutFromSafStrategies = (list, {priceType, expectedProfitPerM
         expectedProfitPerMonth,
         ...restConfig,
         htmlTitle: configsToHtmlTitle({
-            strategyName: "BuyStockByPutFromSaf",
+            strategyName: "BuyStockByPut",
             priceType,
             min_time_to_settlement,
             max_time_to_settlement,
@@ -23761,17 +23762,20 @@ const createListFilterContetnByList=(list)=>{
             
         }),
          
-        (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isHourMinGreaterThan)({houre:12,minutes:20}) && calcBuyStockByCallFromSafStrategies(list, {
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isHourMinGreaterThan)({houre:12,minutes:20}) && calcBuyByCallNokoolGainStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             max_time_to_settlement: 1 * 3600000,
             expectedProfitNotif: true,
             minProfitToFilter: 0.001,
         }),
-        (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isHourMinGreaterThan)({houre:12,minutes:20}) && calcBuyStockByPutFromSafStrategies(list, {
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isHourMinGreaterThan)({houre:12,minutes:20}) && calcBuyStockByPutStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             max_time_to_settlement: 1 * 3600000,
             expectedProfitNotif: true,
-            minProfitToFilter: 0.001,
+            isProfitEnoughFn(){
+                return true
+            },
+            // minProfitToFilter: -0.001,
         }),
         calcLongGUTS_STRANGLEStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
@@ -24400,6 +24404,7 @@ const createList = ()=>{
             optionDetails,
             vol: parseStringToNumber(cells[4].querySelector('div').innerHTML),
             last: convertStringToInt(cells[7].innerHTML),
+            close: convertStringToInt(cells[10].innerHTML),
             bestBuyQ: convertStringToInt(cells[18].querySelector('div').innerHTML),
             bestBuy: convertStringToInt(cells[19].innerHTML),
             bestSell: convertStringToInt(cells[20].innerHTML),

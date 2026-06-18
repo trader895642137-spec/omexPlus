@@ -223,7 +223,6 @@ const totalCostCalculator = ({ strategyPositions, getPrice, getQuantity } = {}) 
 }
 
 function calcPercentDifferenceLessThan(a, b, percentThreshold) {
-  if (a === b) return true;
   
   const difference = Math.abs(a - b);
   const average = (Math.abs(a) + Math.abs(b)) / 2;
