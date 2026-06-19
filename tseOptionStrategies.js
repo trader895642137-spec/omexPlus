@@ -4,7 +4,7 @@ import './hookFetch.js'
 import './desktopNotificationCheck.js'
 
 
-import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator, showNotification, someOfNokoolGainCalculator, isHourMinGreaterThan } from './common.js';
+import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator, showNotification, someOfNokoolGainCalculator, isHourMinGreaterThan, profitPercentCalculator } from './common.js';
 import { findBreakevenList } from './findBreakevens.js';
 
 
@@ -1637,16 +1637,21 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                         })
                     });
 
+                    
+
                    
 
 
                     const settlementOn = settlementGainChoosePriceType === 'MIN' ? (_option.strikePrice < _option.optionDetails.stockSymbolDetails.last ? "OPTION" : "STOCK") : settlementGainChoosePriceType === 'MAX' ? (_option.strikePrice > _option.optionDetails.stockSymbolDetails.last ? "OPTION" : "STOCK") : "OPTION"
                     const offsetPrice = settlementOn === "OPTION" ? _option.strikePrice*1.2 : _option.optionDetails.stockSymbolDetails.last;
 
-                    const profit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: offsetPrice });
 
 
-                    const profitPercent = profit / Math.abs(totalCost);
+                    const profitPercent = profitPercentCalculator(
+                        {
+                            costWithSign:totalCost, 
+                            gainWithSign:calcOffsetGainOfPositions({ strategyPositions, stockPrice: offsetPrice })
+                        }) / 100
 
 
                 
@@ -1861,15 +1866,18 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                     const offsetPrice = settlementOn === "OPTION" ? _option.strikePrice*1.2 : _option.optionDetails.stockSymbolDetails.last;
 
 
-                     
+
+
+
+                     const profitPercent = profitPercentCalculator(
+                        {
+                            costWithSign: totalCost, 
+                            gainWithSign: calcOffsetGainOfPositions({ strategyPositions, stockPrice: offsetPrice })
+                        }) / 100
 
 
 
 
-                    const profit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: offsetPrice });
-
-
-                    const profitPercent = profit / Math.abs(totalCost);
                     const strategyObj = {
                         option: {
                             ...option
@@ -8616,10 +8624,15 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
-                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+
+                    const profitPercent = profitPercentCalculator(
+                        {
+                            costWithSign: totalCost, 
+                            gainWithSign: calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice})
+                        }) / 100
 
 
-                    const profitPercent = profit / Math.abs(totalCost);
+
                     const strategyObj = {
                         option: {
                             ...option
@@ -8791,11 +8804,14 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
 
 
 
-                    const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
+
+                     const profitPercent = profitPercentCalculator(
+                        {
+                            costWithSign:totalCost, 
+                            gainWithSign: calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice})
+                        }) / 100
 
 
-
-                    const profitPercent = profit / Math.abs(totalCost);
                     const strategyObj = {
                         option: {
                             ...option
