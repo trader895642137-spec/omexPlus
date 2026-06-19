@@ -9,7 +9,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   COMMISSION_FACTOR: () => (/* binding */ COMMISSION_FACTOR),
 /* harmony export */   calcAveragePriceByExecutedOrders: () => (/* binding */ calcAveragePriceByExecutedOrders),
-/* harmony export */   calcPercentDifferenceLessThan: () => (/* binding */ calcPercentDifferenceLessThan),
 /* harmony export */   calculateOptionMargin: () => (/* binding */ calculateOptionMargin),
 /* harmony export */   configs: () => (/* binding */ configs),
 /* harmony export */   createDeferredPromise: () => (/* binding */ createDeferredPromise),
@@ -222,19 +221,7 @@ const totalCostCalculator = ({ strategyPositions, getPrice, getQuantity } = {}) 
   return totalCost
 }
 
-function calcPercentDifferenceLessThan(a, b, percentThreshold) {
-  
-  const difference = Math.abs(a - b);
-  const average = (Math.abs(a) + Math.abs(b)) / 2;
-  const percentDifference = (difference / average) * 100;
 
-
-  return {
-    percentDifference,
-    isLess:percentDifference < percentThreshold
-  }
-  
-}
 
 
 const isHourMinGreaterThan = ({houre,minutes})=>{
@@ -313,7 +300,7 @@ const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
         return 100 + (totalProfit / costWithSign) * 100
     }
     if (costWithSign > 0 && totalProfit < 0) {
-        return -Infinity
+        return (totalProfit / costWithSign) * 100
     }
 
     return (totalProfit / Math.abs(costWithSign)) * 100

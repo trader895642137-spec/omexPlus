@@ -266,7 +266,7 @@ export const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
         return 100 + (totalProfit / costWithSign) * 100
     }
     if (costWithSign > 0 && totalProfit < 0) {
-        return -Infinity
+        return (totalProfit / costWithSign) * 100
     }
 
     return (totalProfit / Math.abs(costWithSign)) * 100
