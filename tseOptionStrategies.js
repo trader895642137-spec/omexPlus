@@ -11090,6 +11090,7 @@ const createListFilterContetnByList=(list)=>{
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             max_time_to_settlement: 1 * 3 * 3600000,
             minProfitToFilter: 0.01,
+            minStockPriceToSarBeSarPercent: 0,
             settlementGainChoosePriceType: "MIN",
             // minStockPriceDistanceFromSarBeSarInPercent: .05,
             expectedProfitNotif: true
