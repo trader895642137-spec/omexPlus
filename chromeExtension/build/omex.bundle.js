@@ -8,6 +8,8 @@ var omexLib;
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   COMMISSION_FACTOR: () => (/* binding */ COMMISSION_FACTOR),
+/* harmony export */   ETF_LIST: () => (/* binding */ ETF_LIST),
+/* harmony export */   TAX_FREE_SYMBOLS: () => (/* binding */ TAX_FREE_SYMBOLS),
 /* harmony export */   calcAveragePriceByExecutedOrders: () => (/* binding */ calcAveragePriceByExecutedOrders),
 /* harmony export */   calculateOptionMargin: () => (/* binding */ calculateOptionMargin),
 /* harmony export */   configs: () => (/* binding */ configs),
@@ -151,18 +153,17 @@ const showNotification = async ({ title, body, tag, requireInteraction }) => {
 
 
 
-const isBaseInstrumentETF = (strategyPosition)=>{
- const ETF_SYMBOLS = ['ضهرم', 'طهرم', 'ضتوان', 'طتوان', 'ضموج', 'طموج'];
 
- return ETF_SYMBOLS.some(etfSymbol => strategyPosition.instrumentName.includes(etfSymbol))
+const isBaseInstrumentETF = (strategyPosition)=>{
+
+ return TAX_FREE_SYMBOLS.some(etfSymbol => strategyPosition.instrumentName.includes(etfSymbol))
 
 }
 
 
 const isTaxFree = (_strategyPosition) => {
-  const TAX_FREE_NAMES = ['ضهرم', 'طهرم', 'ضتوان', 'طتوان', 'ضموج', 'طموج'];
 
-  return TAX_FREE_NAMES.some(taxFreeName => _strategyPosition.instrumentName.includes(taxFreeName))
+  return TAX_FREE_SYMBOLS.some(taxFreeName => _strategyPosition.instrumentName.includes(taxFreeName))
 
 }
 const getCommissionFactor = (_strategyPosition) => {
@@ -682,10 +683,11 @@ async function takeScreenshot() {
   
 }
 
+const ETF_LIST = ['اهرم', 'توان', 'موج', 'جهش','هم تراز','آساس','شتاب'];
+const TAX_FREE_SYMBOLS = ['ضهرم', 'طهرم', 'ضتوان', 'طتوان', 'ضموج', 'طموج','ضجهش','طجهش','ضراز','طراز',];
 
 
 const isETF = (instrumentName)=>{
-  const ETF_LIST = ['اهرم', 'توان', 'موج', 'جهش','شتاب'];
   const isETF = ETF_LIST.some(_etfName => instrumentName === _etfName);
 
   return isETF

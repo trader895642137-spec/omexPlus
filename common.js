@@ -117,18 +117,17 @@ export const showNotification = async ({ title, body, tag, requireInteraction })
 
 
 
-const isBaseInstrumentETF = (strategyPosition)=>{
- const ETF_SYMBOLS = ['ضهرم', 'طهرم', 'ضتوان', 'طتوان', 'ضموج', 'طموج'];
 
- return ETF_SYMBOLS.some(etfSymbol => strategyPosition.instrumentName.includes(etfSymbol))
+const isBaseInstrumentETF = (strategyPosition)=>{
+
+ return TAX_FREE_SYMBOLS.some(etfSymbol => strategyPosition.instrumentName.includes(etfSymbol))
 
 }
 
 
 export const isTaxFree = (_strategyPosition) => {
-  const TAX_FREE_NAMES = ['ضهرم', 'طهرم', 'ضتوان', 'طتوان', 'ضموج', 'طموج'];
 
-  return TAX_FREE_NAMES.some(taxFreeName => _strategyPosition.instrumentName.includes(taxFreeName))
+  return TAX_FREE_SYMBOLS.some(taxFreeName => _strategyPosition.instrumentName.includes(taxFreeName))
 
 }
 export const getCommissionFactor = (_strategyPosition) => {
@@ -648,10 +647,11 @@ export async function takeScreenshot() {
   
 }
 
+export const ETF_LIST = ['اهرم', 'توان', 'موج', 'جهش','هم تراز','آساس','شتاب'];
+export const TAX_FREE_SYMBOLS = ['ضهرم', 'طهرم', 'ضتوان', 'طتوان', 'ضموج', 'طموج','ضجهش','طجهش','ضراز','طراز',];
 
 
 export const isETF = (instrumentName)=>{
-  const ETF_LIST = ['اهرم', 'توان', 'موج', 'جهش','شتاب'];
   const isETF = ETF_LIST.some(_etfName => instrumentName === _etfName);
 
   return isETF

@@ -4,7 +4,7 @@ import './hookFetch.js'
 import './desktopNotificationCheck.js'
 
 
-import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator, showNotification, someOfNokoolGainCalculator, isHourMinGreaterThan, profitPercentCalculator } from './common.js';
+import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator, showNotification, someOfNokoolGainCalculator, isHourMinGreaterThan, profitPercentCalculator, ETF_LIST } from './common.js';
 import { findBreakevenList } from './findBreakevens.js';
 
 
@@ -152,7 +152,6 @@ const CONSTS = {
 let notifiedStrategyList = [];
 let isSilentModeActive = false;
 let tempIgnoredNotifList = [];
-const ETF_LIST = ['اهرم', 'توان', 'موج', 'جهش'];
 const isETF = (symbol) => ETF_LIST.some(_etfName => symbol === _etfName);
 
 let prevListSymbolMap = {};
@@ -401,7 +400,8 @@ const getAllPossibleStrategiesSorted = (_enrichedList) => {
 }
 
 const isTaxFreeStock = (option) => {
-    return ['اهرم', 'توان', 'موج', 'جهش', 'آساس'].some(taxFreeSymbol => option.optionDetails.stockSymbolDetails.symbol === taxFreeSymbol)
+    
+    return ETF_LIST.some(taxFreeSymbol => option.optionDetails.stockSymbolDetails.symbol === taxFreeSymbol)
 }
 
 const getSettlementCommission = ({option, positionSide, settlementOn}) => {
