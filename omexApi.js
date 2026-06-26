@@ -283,10 +283,22 @@ const deleteAllOpenOrders =async ()=>{
 
 }
 
+const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+};
 
-const getOrders = async (instrumentId)=>{
+const getOrders = async (instrumentId,daysAgo = 30)=>{
 
-    return fetch(`${redOrigin}/api/Orders/GetHistoryOrders?$count=true&instrumentId=${instrumentId}`, {
+    const today = new Date();
+    const fromDateObj = new Date(today);
+    fromDateObj.setDate(today.getDate() - daysAgo);
+
+    const fromDate = formatDate(fromDateObj);
+
+    return fetch(`${redOrigin}/api/Orders/GetHistoryOrders?$count=true&instrumentId=${instrumentId}&fromDate=${fromDate}`, {
         "headers": {
             "accept": "application/json, text/plain, */*",
             "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
