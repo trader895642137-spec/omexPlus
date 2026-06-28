@@ -177,22 +177,58 @@ let generalConfig = {
 const isStrategyIgnored = (strategy,ignoreStrategyList) => {
 
     
-    if (!ignoreStrategyList?.length) return
+    if (!ignoreStrategyList?.length) return false
     const strategySymbols = strategy.positions.map(pos => pos.symbol).map(symbol=>symbol.replaceAll('ي','ی'));
     const strategyFullSymbolNames = strategy.positions.map(opt => opt.symbol).join('-').replaceAll('ي','ی');
 
-    return ignoreStrategyList.find(ignoreStrategyObj => {
-
-        if (ignoreStrategyObj.type !== 'ALL' && ignoreStrategyObj.type !== strategy.strategyTypeTitle)
-            return false
-
-        const isProfitEnough = ignoreStrategyObj.profitPercent ? (strategy.profitPercent >= ignoreStrategyObj.profitPercent):false;
-
-        if (!isProfitEnough && !ignoreStrategyObj.name && ignoreStrategyObj.type === strategy.strategyTypeTitle) return true
+    const hasSymbolNameChecker = ({ignoreStrategyObj, strategy, strategySymbols}) => {
+        if (!ignoreStrategyObj.name) return true
 
         const ignoreStrategyName = ignoreStrategyObj.name.replaceAll('ي', 'ی');
-        if (!isProfitEnough && ignoreStrategyName === strategyFullSymbolNames) return true
-        if (!isProfitEnough && strategySymbols.some(symbol => symbol.includes(ignoreStrategyName))) return true
+        if (!ignoreStrategyObj.isMinStrike) {
+            if (ignoreStrategyName === strategyFullSymbolNames) return true
+            if (strategySymbols.some(symbol => symbol.includes(ignoreStrategyName))) return true
+        } else {
+
+
+            const symbolInPositions = strategy.positions.find(position=>position.symbol===ignoreStrategyObj.name);
+            if(!symbolInPositions) return false
+
+            return isMinimumStrike({positions: strategy.positions,strikePrice: symbolInPositions.strikePrice})
+
+        }
+
+    }
+
+    function isMinimumStrike({positions,strikePrice}) {
+        for (let i = 0; i < positions.length; i++) {
+            if (strikePrice > positions[i].strikePrice) {
+                return false;  // اگر عددی کوچیک‌تر از num پیدا شد، پس num مینیموم نیست
+            }
+        }
+        return true;  // اگر از همه کوچیک‌تر یا مساوی بود
+    }
+
+    function isSarBeSarOkChecker({strategy,ignoreStrategyObj}){
+        console.log(strategy.stockPriceToSarBeSarPercent)
+
+        return true
+
+    }
+
+    return ignoreStrategyList.find(ignoreStrategyObj => {
+
+        const hasType = ignoreStrategyObj.type === 'ALL' || (ignoreStrategyObj.type === strategy.strategyTypeTitle);
+
+        if (!hasType) return false
+
+        const isProfitOk = ignoreStrategyObj.profitPercent != null ? (strategy.profitPercent >= ignoreStrategyObj.profitPercent) : false;
+
+        const hasSymbolName = hasSymbolNameChecker({ ignoreStrategyObj, strategy, strategySymbols });
+
+        const isSarBeSarOk = isSarBeSarOkChecker({strategy,ignoreStrategyObj});
+
+        return (hasType && !isProfitOk && hasSymbolName)
 
     }
     )
@@ -264,6 +300,8 @@ const checkProfitsAnNotif = ({sortedStrategies}) => {
 
     const ignoreStrategyList = getIgnoreStrategyNames();
 
+
+    
     const opportunities = sortedStrategies.filter(strategy => {
          if (!strategy.expectedProfitNotif)
             return
@@ -2117,6 +2155,7 @@ const calcSyntheticCoveredCallStrategies = (list,
                         strategyTypeTitle: "SYNTHETIC_COVERED_CALL",
                         expectedProfitNotif,
                         minProfitToFilter,
+                        stockPriceToSarBeSarPercent,
                         name: createStrategyName([buyingCall, sameStrikePut, sellingCall]),
                         profitPercent: profitPercent,
                         // percentToShow: stockPriceToSarBeSarPercent
@@ -10562,9 +10601,9 @@ const createListFilterContetnByList=(list)=>{
                 return false
             }
             ,
-            minProfitLossRatio: .99,
+            minProfitLossRatio: .96,
             isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
-                return profitLossRatio >= .99
+                return profitLossRatio >= .96
             },
             expectedProfitNotif: true // minVol: 1000 * 1000 * 1000,
             // minStockPriceDistanceFromHigherStrikeInPercent: .22,
@@ -10697,9 +10736,9 @@ const createListFilterContetnByList=(list)=>{
                 return false
             }
             ,
-            minProfitLossRatio: .99,
+            minProfitLossRatio: .96,
             isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
-                return profitLossRatio >= .99
+                return profitLossRatio >= .96
             },
             expectedProfitNotif: true // minVol: 1000 * 1000 * 1000,
             // minStockPriceDistanceFromHigherStrikeInPercent: .22,
@@ -10783,9 +10822,9 @@ const createListFilterContetnByList=(list)=>{
                 return false
             }
             ,
-            minProfitLossRatio: .99,
+            minProfitLossRatio: .96,
             isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
-                return profitLossRatio >= .99
+                return profitLossRatio >= .96
             },
             expectedProfitNotif: true,
             BUCS_BEPS_COST_notProperRatio: 15,
@@ -10836,9 +10875,9 @@ const createListFilterContetnByList=(list)=>{
             // maxStockStrike4DistanceInPercent:-0.05,
             // minStockMiddleDistanceInPercent:-0.06,
             // maxStockMiddleDistanceInPercent:0.06,
-            minProfitLossRatio: .99,
+            minProfitLossRatio: .96,
             isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
-                return profitLossRatio >= .99
+                return profitLossRatio >= .96
             },
             expectedProfitNotif: true // minVol: 1000 * 1000 * 1000,
             // minStockPriceDistanceFromHigherStrikeInPercent: .22,
@@ -11618,17 +11657,39 @@ const getIgnoreStrategyNames = () => {
         return []
     ignoreStrategyNames = ignoreStrategyNames.filter(Boolean);
     return ignoreStrategyNames.map(ignoreStrategyName => {
-        const strategyTypeAndName = ignoreStrategyName.split('@');
-        if (!strategyTypeAndName?.length)
-            return {
-                type: null,
-                name: null
-            }
-        return {
-            type: strategyTypeAndName[0],
-            name: strategyTypeAndName[1],
-            profitPercent: strategyTypeAndName[2] ?  parseFloat(strategyTypeAndName[2])/100 :  null
+        const filterParts = ignoreStrategyName.split('@');
+        const result = {
+            type: null,
+            name: null,
+            isMinStrike: null,
+            profitPercent: null,
+            raw: ignoreStrategyName
+        };
+        if (!filterParts?.length)
+            return result
+
+        result.type = filterParts[0];
+        result.name = filterParts[1];
+        const profitRule = filterParts[2] || null;
+
+
+        if (profitRule?.includes(':')) {
+            const [key, profitPercent] = profitRule.split(':');
+            result.profitPercent = profitPercent ? parseFloat(profitPercent) / 100 : null;
+            
+        }else{
+            result.profitPercent = profitRule ? parseFloat(profitRule) / 100 : null;
         }
+
+        if (result.name.includes(':')) {
+            const [key, optionSymbol] = result.name.split(':');
+            
+            if (key === 'min') {
+                result.isMinStrike = true;
+                result.name = optionSymbol;
+            }
+        }
+        return result
     }
     );
 }
@@ -11650,15 +11711,15 @@ const createFilterPanel = () => {
     cnt.classList.add('amin-filter-cnt');
 
     cnt.style.cssText += `
-        width: 200px;
+        width: 260px;
         height: 100vh;
         display: flex;
         flex-direction: column;
     `;
 
     cnt.innerHTML = `
-        <textarea class="amin-ignoreList amin-ignoreList--private"  style="width: 176px; min-width: 122px; height: 299px; font-size: 12px;"></textarea>
-        <textarea class="amin-ignoreList amin-ignoreList--general"  style="width: 176px; min-width: 122px; height: 299px; font-size: 12px;"></textarea>
+        <textarea class="amin-ignoreList amin-ignoreList--private"  style="width: 95%; min-width: 122px; height: 299px; font-size: 12px;direction:ltr;"></textarea>
+        <textarea class="amin-ignoreList amin-ignoreList--general"  style="width: 95%; min-width: 122px; height: 299px; font-size: 12px;direction:ltr;"></textarea>
         <textarea class="amin-filterList"  style="width: 170px; min-width: 122px; height: 53px; font-size: 12px;"></textarea>`;
 
         
