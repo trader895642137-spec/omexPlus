@@ -13601,7 +13601,7 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
     const strategySymbols = strategy.positions.map(pos => pos.symbol).map(symbol=>symbol.replaceAll('ي','ی'));
     const strategyFullSymbolNames = strategy.positions.map(opt => opt.symbol).join('-').replaceAll('ي','ی');
 
-    const hasSymbolNameChecker = ({ignoreStrategyObj, strategy, strategySymbols}) => {
+    const isSymbolNameIgnoredChecker = ({ignoreStrategyObj, strategy, strategySymbols}) => {
         if (!ignoreStrategyObj.name) return true
 
         const ignoreStrategyName = ignoreStrategyObj.name.replaceAll('ي', 'ی');
@@ -13629,17 +13629,37 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
         return true;  // اگر از همه کوچیک‌تر یا مساوی بود
     }
 
+    function isSarBeSarIgnoredChecker({strategy,ignoreStrategyObj}){
+        if(strategy.stockPriceToSarBeSarPercent== null || ignoreStrategyObj.toSarBeSar==null) return false
+        if(ignoreStrategyObj.toSarBeSar<0){
+
+            return strategy.stockPriceToSarBeSarPercent > ignoreStrategyObj.toSarBeSar
+        }else{
+            return strategy.stockPriceToSarBeSarPercent <= ignoreStrategyObj.toSarBeSar
+        }
+
+        // removed by dead control flow
+
+
+    }
+
     return ignoreStrategyList.find(ignoreStrategyObj => {
 
-        const hasType = ignoreStrategyObj.type === 'ALL' || (ignoreStrategyObj.type === strategy.strategyTypeTitle);
+        const isTypeIgnored = ignoreStrategyObj.type === 'ALL' || (ignoreStrategyObj.type === strategy.strategyTypeTitle);
 
-        if (!hasType) return false
+        if (!isTypeIgnored) return false
 
-        const isProfitOk = ignoreStrategyObj.profitPercent != null ? (strategy.profitPercent >= ignoreStrategyObj.profitPercent) : false;
+        const isSymbolNameIgnored = isSymbolNameIgnoredChecker({ ignoreStrategyObj, strategy, strategySymbols });
+        if (!isSymbolNameIgnored) return false
 
-        const hasSymbolName = hasSymbolNameChecker({ ignoreStrategyObj, strategy, strategySymbols });
+        const isProfitIgnored = ignoreStrategyObj.profitPercent != null ? (strategy.profitPercent < ignoreStrategyObj.profitPercent) : false;
 
-        return (hasType && !isProfitOk && hasSymbolName)
+
+
+
+        const isSarBeSarIgnored = isSarBeSarIgnoredChecker({strategy,ignoreStrategyObj});
+
+        return  isSymbolNameIgnored || isProfitIgnored ||  isSarBeSarIgnored
 
     }
     )
@@ -13712,6 +13732,7 @@ const checkProfitsAnNotif = ({sortedStrategies}) => {
     const ignoreStrategyList = getIgnoreStrategyNames();
 
 
+    
     
     const opportunities = sortedStrategies.filter(strategy => {
          if (!strategy.expectedProfitNotif)
@@ -15336,6 +15357,7 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                         expectedProfitNotif,
                         minProfitToFilter,
                         expectedProfitPerMonth,
+                        stockPriceToSarBeSarPercent,
                         name: createStrategyName([option, _option]),
                         profitPercent
                     }
@@ -15376,6 +15398,7 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
         max_time_to_settlement,
         minStockPriceDistanceFromSarBeSarInPercent,
         maxStockPriceDistanceFromSarBeSarInPercent,
+        
         minVol,
         expectedProfitNotif,
         expectedProfitPerMonth,
@@ -19828,6 +19851,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
                             strategyTypeTitle: "BUCS_RATIO",
                             expectedProfitNotif,
                             minProfitToFilter,
+                            stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingCall, sellingCall, anotherSellingCall]),
                             // profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
                             profitPercent: isFullBodyProfitable ? 10: maxProfitPercentOfBUCS_RATIO 
@@ -20114,6 +20138,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             strategyTypeTitle: "BUPS_Ratio",
                             expectedProfitNotif,
                             minProfitToFilter,
+                            stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingPut, sellingPut, sellingCall]),
                             profitPercent: isFullBodyProfitable ? 10 : maxProfitPercentOfBUPS_RATIO
                             // profitPercent: isFullBodyProfitable ? 1 : -stockPriceToSarBeSarPercent
@@ -20407,6 +20432,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             strategyTypeTitle: "BECS_Ratio",
                             minProfitToFilter,
                             expectedProfitNotif,
+                            stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingCall, sellingCall, sellingPut]),
                             // profitPercent: isFullBodyProfitable? 1: stockPriceToSarBeSarPercent
                             profitPercent: isFullBodyProfitable? 10: maxProfitPercentOfBECS_RATIO
@@ -20696,6 +20722,7 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             strategyTypeTitle: "BEPS_Ratio",
                             expectedProfitNotif,
                             minProfitToFilter,
+                            stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingPut, sellingPut, anotherSellingPut]),
                             profitPercent: isFullBodyProfitable ? 10 : maxProfitPercentOfBEPS_RATIO
                             // profitPercent: isFullBodyProfitable ? 1 : stockPriceToSarBeSarPercent
@@ -22505,9 +22532,10 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
 
                         if(justIfWholeIsPofitable && breakeven) return _allPossibleStrategies
+                        let stockPriceToSarBeSarPercent;
                         if(breakeven){
 
-                            const stockPriceToSarBeSarPercent = (buyingCall.optionDetails.stockSymbolDetails.last/breakeven) - 1;
+                            stockPriceToSarBeSarPercent = (buyingCall.optionDetails.stockSymbolDetails.last/breakeven) - 1;
     
                             if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent)
                                 return _allPossibleStrategies
@@ -22527,6 +22555,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                             expectedProfitNotif,
                             minProfitToFilter,
                             expectedProfitPerMonth,
+                            stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingCall,sellingCallWithSameStrikeOfBuyingPut,buyingPut,sellingPut]),
                             profitPercent
                         }
@@ -22770,9 +22799,10 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
                         if(justIfWholeIsPofitable && breakeven) return _allPossibleStrategies
 
+                        let stockPriceToSarBeSarPercent;
                         if(breakeven){
 
-                            const stockPriceToSarBeSarPercent = (buyingPut.optionDetails.stockSymbolDetails.last/breakeven) - 1;
+                            stockPriceToSarBeSarPercent = (buyingPut.optionDetails.stockSymbolDetails.last/breakeven) - 1;
     
                             if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent)
                                 return _allPossibleStrategies
@@ -22798,6 +22828,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                             expectedProfitNotif,
                             expectedProfitPerMonth,
                             minProfitToFilter,
+                            stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingPut,sellingPutWithSameStrikeOfBuyingCall,buyingCall,sellingCall]),
                             profitPercent
                         }
@@ -23043,9 +23074,11 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                         const currentPriceProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: sellingCall.optionDetails.stockSymbolDetails.last });
                         let profitPercent;
                         if(justIfWholeIsPofitable && breakeven) return _allPossibleStrategies
+
+                        let stockPriceToSarBeSarPercent;
                         if(breakeven){
 
-                            const stockPriceToSarBeSarPercent = (sellingCall.optionDetails.stockSymbolDetails.last/breakeven) - 1;
+                            stockPriceToSarBeSarPercent = (sellingCall.optionDetails.stockSymbolDetails.last/breakeven) - 1;
     
                             if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent)
                                 return _allPossibleStrategies
@@ -23067,6 +23100,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                             expectedProfitNotif,
                             minProfitToFilter,
                             expectedProfitPerMonth,
+                            stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingCall,sellingCall,sellingPut,buyingPutWithSameStrikeOfSellingCall]),
                             profitPercent
                         }
@@ -23310,9 +23344,10 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                         let profitPercent;
                         
                         if(justIfWholeIsPofitable && breakeven) return _allPossibleStrategies
+                        let stockPriceToSarBeSarPercent;
                         if(breakeven){
 
-                            const stockPriceToSarBeSarPercent = (sellingCall.optionDetails.stockSymbolDetails.last/breakeven) - 1;
+                            stockPriceToSarBeSarPercent = (sellingCall.optionDetails.stockSymbolDetails.last/breakeven) - 1;
     
                             if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent)
                                 return _allPossibleStrategies
@@ -23332,6 +23367,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                             expectedProfitNotif,
                             minProfitToFilter,
                             expectedProfitPerMonth,
+                            stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingPut,sellingPut,sellingCall,buyingCallWithSameStrikeOfSellingPut]),
                             profitPercent
                         }
@@ -24786,32 +24822,42 @@ const getIgnoreStrategyNames = () => {
             name: null,
             isMinStrike: null,
             profitPercent: null,
+            toSarBeSar:null,
             raw: ignoreStrategyName
         };
         if (!filterParts?.length)
             return result
 
         result.type = filterParts[0];
-        result.name = filterParts[1];
-        const profitRule = filterParts[2] || null;
 
-
-        if (profitRule?.includes(':')) {
-            const [key, profitPercent] = profitRule.split(':');
-            result.profitPercent = profitPercent ? parseFloat(profitPercent) / 100 : null;
-            
-        }else{
-            result.profitPercent = profitRule ? parseFloat(profitRule) / 100 : null;
-        }
-
-        if (result.name.includes(':')) {
-            const [key, optionSymbol] = result.name.split(':');
-            
-            if (key === 'min') {
-                result.isMinStrike = true;
-                result.name = optionSymbol;
+        filterParts.slice(1).forEach((filterPart, index) => {
+            if(index===0 && !filterPart?.includes(':')){
+                result.name = filterPart;
+                return result
             }
-        }
+
+            if (filterPart?.includes(':')) {
+                const [ruleName, ruleValue] = filterPart.split(':');
+                if(ruleName=='toSar'){
+                    result.toSarBeSar = ruleValue ? parseFloat(ruleValue) : null;
+                }
+                if(ruleName=='profit'){
+                    result.profitPercent = ruleValue ? parseFloat(ruleValue) / 100 : null;
+                }
+                if(ruleName=='minStrike'){
+                    result.name = ruleValue;
+                    result.isMinStrike = true;
+                }
+                
+
+            }
+
+
+            return result;
+        });
+
+
+        
         return result
     }
     );
