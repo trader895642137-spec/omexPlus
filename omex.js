@@ -2134,11 +2134,13 @@ const fillCurrentStockPriceByStrikes = (strategyPositions)=>{
 
     const greaterThanStrikes = Math.max(...strategyPositions.map(sp=>sp.strikePrice)) * 1.2;
 
+    const stockPrice = instrumentExtraDataMap[strategyPositions[0].instrumentName]?.stockPrice || greaterThanStrikes;
+
 
     const baseInstrumentPriceInputEl = domContextWindow.document.querySelector('.current-stock-price');
 
 
-    baseInstrumentPriceInputEl.value = greaterThanStrikes
+    baseInstrumentPriceInputEl.value = stockPrice
 
 
 
@@ -2148,34 +2150,43 @@ const  instrumentExtraDataMap = {};
 
 const getAndSetInstrumentData = async (strategyPositions)=>{
 
-    const strategyPositionWithInstrumentInfo = async (strategyPosition) => {
+    const strategyPositionWithInstrumentInfo = async (strategyPositions) => {
 
-        const instrumentInfo = await OMEXApi.getInstrumentInfoBySymbol(strategyPosition.instrumentName);
-        const optionID = instrumentInfo.instrumentId;
-        const instrumentId = instrumentInfo.instrumentId;
-        const cSize = instrumentInfo.cSize
+        const instIdInfoMap = await OMEXApi.getInstrumentInfoBySymbol(strategyPositions.map(stP=>stP.instrumentName));
 
-        const daysLeftToSettlement = Math.ceil((new Date(instrumentInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000))
+        instIdInfoMap.forEach(instIdInfo=>{
+    
+            const daysLeftToSettlement = Math.ceil((new Date(instIdInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000))
+    
+            instrumentExtraDataMap[instIdInfo.instrumentName] = {
+                optionID : instIdInfo.instrumentId,
+                instrumentId: instIdInfo.instrumentId,
+                cSize: instIdInfo.cSize,
+                stockPrice:instIdInfo.stockPrice,
+                daysLeftToSettlement
+            }
 
-        instrumentExtraDataMap[strategyPosition.instrumentName] = {
-            optionID,
-            instrumentId,
-            cSize,
-            daysLeftToSettlement
-        }
+        });
+        
 
-        return strategyPosition
+
+        return strategyPositions
 
     }
 
-    const _strategyPositions = await Promise.all(
-        strategyPositions.map(async (strategyPosition) => {
+    const options = strategyPositions.filter(stP=>stP.isOption);
 
-            return await strategyPositionWithInstrumentInfo(strategyPosition);
-        })
-    );
 
-    return _strategyPositions
+    await strategyPositionWithInstrumentInfo(options);
+
+    // const _strategyPositions = await Promise.all(
+    //     strategyPositions.map(async (strategyPosition) => {
+
+    //         return await strategyPositionWithInstrumentInfo(strategyPosition);
+    //     })
+    // );
+
+    return strategyPositions
 
 }
 
@@ -2554,7 +2565,7 @@ export const Run = async (_window = window) => {
 
     stopDraggingWrongOfOrdersModals();
 
-    fillCurrentStockPriceByStrikes(strategyPositions);
+    
 
     setTradeModalQuantityOfAllTradeModals();
 
@@ -2563,7 +2574,12 @@ export const Run = async (_window = window) => {
 
     initLoggers();
     preventWhellScrollOnChart();
+    fillCurrentStockPriceByStrikes(strategyPositions);
     strategyPositions = await getAndSetInstrumentData(strategyPositions);
+
+    fillCurrentStockPriceByStrikes(strategyPositions);
+
+
 
     
     console.log(strategyPositions)

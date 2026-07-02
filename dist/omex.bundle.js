@@ -977,6 +977,34 @@ const deleteOrder = ({orderId,id}) => {
 
 
 
+const getStockPricesData = async (instrumentIds)=>{
+
+    return fetch(`${redOrigin}/api/PublicMessages/InstTrades`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "content-type": "application/json",
+            "ngsw-bypass": "",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": JSON.stringify({
+            instrumentIds
+        }),
+        "method": "POST",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const stockInfos = res.response.data;
+        return stockInfos
+    });
+}
+
 
 const getStockInfos = async (instrumentIds) => {
     return fetch(`${redOrigin}/api/PublicMessages/GetInstruments`, {
@@ -1069,7 +1097,84 @@ const searchOptionContractInfos = async (symbol) => {
 
 }
 
-const getInstrumentInfoBySymbol = async (instrumentName)=>{
+
+const getInstrumentInfoBySymbol = async (instrumentNames) => {
+    // اگر ورودی رشته باشد، به آرایه تبدیل می‌کنیم
+    const names = Array.isArray(instrumentNames) ? instrumentNames : [instrumentNames];
+    
+    if (names.length === 0) {
+        return Array.isArray(instrumentNames) ? [] : null;
+    }
+    
+    // مرحله 1: دریافت ID همه سهم‌ها به صورت موازی
+    const searchPromises = names.map(async (name) => {
+        try {
+            const instrumentNameObj = await searchOptionContractInfos(name);
+            if (!instrumentNameObj) return null;
+            
+            return {
+                name: name,
+                instrumentId: instrumentNameObj.instrumentId,
+                isOption: isInstrumentNameOfOption(name)
+            };
+        } catch (error) {
+            console.error(`Error searching ${name}:`, error);
+            return null;
+        }
+    });
+    
+    const searchResults = await Promise.all(searchPromises);
+    const validResults = searchResults.filter(result => result !== null);
+    
+    if (validResults.length === 0) {
+        return Array.isArray(instrumentNames) ? [] : null;
+    }
+    
+    // تفکیک ID های آپشن و سهام
+    const optionIds = validResults
+        .filter(item => item.isOption)
+        .map(item => item.instrumentId);
+    
+    const stockIds = validResults
+        .filter(item => !item.isOption)
+        .map(item => item.instrumentId);
+    
+    // مرحله 2: دریافت اطلاعات با یک ریکویست برای هر نوع
+    const [optionInfos, stockInfos] = await Promise.all([
+        optionIds.length > 0 ? getOptionContractInfos(optionIds) : [],
+        stockIds.length > 0 ? getStockInfos(stockIds) : []
+    ]);
+    
+    // ساخت مپ از id به اطلاعات برای دسترسی سریع
+    const infoMap = new Map();
+
+    const baseInstrumentId = optionInfos[0].baseInstrumentId;
+
+
+    const [stockPriceInfoOfOption] = await getStockPricesData([baseInstrumentId]);
+    
+    optionInfos.forEach(info => {
+        const searchResult = validResults.find(validResult=>validResult.instrumentId===info.instrumentId);
+        const stockPrice = stockPriceInfoOfOption.pDrCotVal;
+        infoMap.set(info.instrumentId, {...info,instrumentName:searchResult.name,stockPrice});
+    });
+    
+    stockInfos.forEach(info => {
+        const searchResult = validResults.find(validResult=>validResult.instrumentId===info.instrumentId);
+        const stockPrice = stockPriceInfoOfOption.pDrCotVal;
+        infoMap.set(info.instrumentId, {...info,instrumentName:searchResult.name,stockPrice});
+    });
+    
+    // مرحله 3: ساخت نتیجه نهایی به ترتیب ورودی
+    const results = validResults
+        .map(item => infoMap.get(item.instrumentId) || null)
+        .filter(info => info !== null);
+    
+    // اگر ورودی تکی بود، همان شیء را برگردانید
+    return Array.isArray(instrumentNames) ? results : (results[0] || null);
+};
+
+const getInstrumentInfoBySymbol2 = async (instrumentName)=>{
 
      const instrumentNameObj = await searchOptionContractInfos(instrumentName);
 
@@ -3975,11 +4080,13 @@ const fillCurrentStockPriceByStrikes = (strategyPositions)=>{
 
     const greaterThanStrikes = Math.max(...strategyPositions.map(sp=>sp.strikePrice)) * 1.2;
 
+    const stockPrice = instrumentExtraDataMap[strategyPositions[0].instrumentName]?.stockPrice || greaterThanStrikes;
+
 
     const baseInstrumentPriceInputEl = domContextWindow.document.querySelector('.current-stock-price');
 
 
-    baseInstrumentPriceInputEl.value = greaterThanStrikes
+    baseInstrumentPriceInputEl.value = stockPrice
 
 
 
@@ -3989,34 +4096,43 @@ const  instrumentExtraDataMap = {};
 
 const getAndSetInstrumentData = async (strategyPositions)=>{
 
-    const strategyPositionWithInstrumentInfo = async (strategyPosition) => {
+    const strategyPositionWithInstrumentInfo = async (strategyPositions) => {
 
-        const instrumentInfo = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getInstrumentInfoBySymbol(strategyPosition.instrumentName);
-        const optionID = instrumentInfo.instrumentId;
-        const instrumentId = instrumentInfo.instrumentId;
-        const cSize = instrumentInfo.cSize
+        const instIdInfoMap = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getInstrumentInfoBySymbol(strategyPositions.map(stP=>stP.instrumentName));
 
-        const daysLeftToSettlement = Math.ceil((new Date(instrumentInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000))
+        instIdInfoMap.forEach(instIdInfo=>{
+    
+            const daysLeftToSettlement = Math.ceil((new Date(instIdInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000))
+    
+            instrumentExtraDataMap[instIdInfo.instrumentName] = {
+                optionID : instIdInfo.instrumentId,
+                instrumentId: instIdInfo.instrumentId,
+                cSize: instIdInfo.cSize,
+                stockPrice:instIdInfo.stockPrice,
+                daysLeftToSettlement
+            }
 
-        instrumentExtraDataMap[strategyPosition.instrumentName] = {
-            optionID,
-            instrumentId,
-            cSize,
-            daysLeftToSettlement
-        }
+        });
+        
 
-        return strategyPosition
+
+        return strategyPositions
 
     }
 
-    const _strategyPositions = await Promise.all(
-        strategyPositions.map(async (strategyPosition) => {
+    const options = strategyPositions.filter(stP=>stP.isOption);
 
-            return await strategyPositionWithInstrumentInfo(strategyPosition);
-        })
-    );
 
-    return _strategyPositions
+    await strategyPositionWithInstrumentInfo(options);
+
+    // const _strategyPositions = await Promise.all(
+    //     strategyPositions.map(async (strategyPosition) => {
+
+    //         return await strategyPositionWithInstrumentInfo(strategyPosition);
+    //     })
+    // );
+
+    return strategyPositions
 
 }
 
@@ -4395,7 +4511,7 @@ const Run = async (_window = window) => {
 
     stopDraggingWrongOfOrdersModals();
 
-    fillCurrentStockPriceByStrikes(strategyPositions);
+    
 
     setTradeModalQuantityOfAllTradeModals();
 
@@ -4404,7 +4520,12 @@ const Run = async (_window = window) => {
 
     initLoggers();
     preventWhellScrollOnChart();
+    fillCurrentStockPriceByStrikes(strategyPositions);
     strategyPositions = await getAndSetInstrumentData(strategyPositions);
+
+    fillCurrentStockPriceByStrikes(strategyPositions);
+
+
 
     
     console.log(strategyPositions)
