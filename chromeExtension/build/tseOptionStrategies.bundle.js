@@ -14515,14 +14515,13 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
                 if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
                     return option
 
-                const putListWithHigherStrike = optionListOfSameDate.filter(_option => {
+                const putList = optionListOfSameDate.filter(_option => {
 
                
 
                     if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') || _option.vol < minVol)
                         return false
-                    if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
-                        return false
+                   
 
 
                     return true
@@ -14530,7 +14529,7 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
                 }
                 );
 
-                let allPossibleStrategies = putListWithHigherStrike.reduce( (_allPossibleStrategies, _option) => {
+                let allPossibleStrategies = putList.reduce( (_allPossibleStrategies, _option) => {
 
 
 
@@ -14566,7 +14565,8 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
                         })
                     });
 
-                    const offsetPrice = (option.strikePrice + _option.strikePrice)/2;
+                    // const offsetPrice = (option.strikePrice + _option.strikePrice)/2;
+                    const offsetPrice = _option.optionDetails.stockSymbolDetails.last;
 
 
 
@@ -14654,6 +14654,7 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
     }
 
 }
+
 
 const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPerMonth, settlementGainChoosePriceType="MIN",
      strategySubName, callListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
