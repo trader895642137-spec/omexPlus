@@ -14566,8 +14566,7 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
                     });
 
                     // const offsetPrice = (option.strikePrice + _option.strikePrice)/2;
-                    const offsetPrice = _option.optionDetails.stockSymbolDetails.last;
-
+                    const offsetPrice = _option.optionDetails?.stockSymbolDetails?.close;
 
 
                     const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:offsetPrice});
