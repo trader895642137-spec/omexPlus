@@ -10238,18 +10238,44 @@ const calcBuyStockByPutStrategies = (list, {priceType, expectedProfitPerMonth,
                 });
 
                 if(optionPrice===0) return option
+
+                const strategyPositions = [
+                    {
+                        ...option,
+                        isBuy: false,
+                        getQuantity: () => 1,
+                        getRequiredMargin: () => {}
+                    },
+
+                ]
+
+               
                 
+                
+                const totalCost = totalCostCalculatorCommon({
+                    strategyPositions,
+                    getPrice: (strategyPosition) => getPriceOfAsset({
+                        asset: strategyPosition,
+                        priceType,
+                        sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                    })
+                });
+
+                const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE;
+                const buyStockOption = strategyPositions[0];
+                const buyingCostOfStock = -(buyStockOption.strikePrice + (buyStockOption.strikePrice * exerciseFee));
+
+                const currentStockPrice = option.optionDetails?.stockSymbolDetails?.close;
+                
+                const calculateBuyingPrice = Math.abs(buyingCostOfStock + totalCost);
+
+                const distanceCurrentPrice = (currentStockPrice / calculateBuyingPrice)-1;
 
 
-                const buyingPriceOfStock = option.optionDetails.strikePrice - optionPrice;
-
-                const currentStockPrice = option.optionDetails.stockSymbolDetails?.close;
-
-                const percentDifference = ((currentStockPrice - buyingPriceOfStock) / buyingPriceOfStock) * 100
-
-                if(percentDifference<-5 || percentDifference>5 ) return option
+                if(distanceCurrentPrice<-0.05 || distanceCurrentPrice>0.05 ) return option
 
 
+                
                 
 
                 const strategyObj = {
@@ -10264,7 +10290,7 @@ const calcBuyStockByPutStrategies = (list, {priceType, expectedProfitPerMonth,
                         expectedProfitPerMonth,
                         name: createStrategyName([option]),
                         isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(option),
-                        profitPercent : percentDifference/100
+                        profitPercent : distanceCurrentPrice
                     }
 
                 return {
