@@ -14554,6 +14554,22 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
                         },
                     ]
 
+                    const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__.findBreakevenList)({
+                        positions: strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    });
+                    if(breakevenList?.length){
+                        const lowBreakeven = Math.min(...breakevenList);
+                        const highBreakeven = Math.max(...breakevenList);
+
+                        if(highBreakeven/lowBreakeven > 1.1) return _allPossibleStrategies
+
+                    }
+
 
 
                     const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
