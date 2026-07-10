@@ -11063,37 +11063,7 @@ const createListFilterContetnByList=(list)=>{
         })(),
 
 
-
-        (()=>{
-
-            const min_time_to_settlement = 15 * 24 * 3600000;
-            const max_time_to_settlement = 40 * 24 * 3600000;
-            const minStockPriceDistanceFromSarBeSarInPercent = 0.20
-
-            return {
-                ...BUCSStrategies,
-                allStrategiesSorted: BUCSStrategies.allStrategiesSorted.filter(st => {
-                    if (st.settlementTimeDiff < min_time_to_settlement || st.settlementTimeDiff > max_time_to_settlement) return
-
-                    if (st.stockPriceToSarBeSarPercent < minStockPriceDistanceFromSarBeSarInPercent) return
-
-                    return true
-
-                }),
-
-                htmlTitle: configsToHtmlTitle({
-                    ...BUCSStrategies,
-                    min_time_to_settlement,
-                    max_time_to_settlement,
-                    customLabels: [ {
-                        label: "minToSar",
-                        value: `${((minStockPriceDistanceFromSarBeSarInPercent) * 100).toFixed(0)}%`
-                    }].filter(Boolean),
-                })
-
-            }
-
-        })(),
+        
 
          (()=>{
 
