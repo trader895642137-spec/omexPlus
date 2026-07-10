@@ -19524,6 +19524,12 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
                             const isButterFly = diffOfBUPS_Strikes === diffOfBEPS_Strikes &&  option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice
                             
 
+                            //  if(option.symbol==='طهرم5030' && option2.symbol==='طهرم5031' && option3.symbol==='طهرم5031' && option4.symbol==='طهرم5032'){
+
+                            //     console.log(24323);
+                                
+                            //  }
+
                             const strategyPositions = [
                                 {
                                     ...option,
@@ -19569,7 +19575,7 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
 
 
                             
-                            const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
+                            const priceThatCauseMaxLoss = Math.min(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))/ 1.2;
 
 
 
@@ -19577,6 +19583,8 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
 
 
                             const minProfitPercent = minProfitLossOfButterfly/Math.abs(totalCost);
+
+                           
 
                             
 
@@ -23939,9 +23947,9 @@ const createListFilterContetnByList=(list)=>{
                 return false
             }
             ,
-            minProfitLossRatio: .96,
+            minProfitLossRatio: .95,
             isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
-                return profitLossRatio >= .96
+                return profitLossRatio >= .95
             },
             expectedProfitNotif: true // minVol: 1000 * 1000 * 1000,
             // minStockPriceDistanceFromHigherStrikeInPercent: .22,
@@ -23966,9 +23974,9 @@ const createListFilterContetnByList=(list)=>{
                 return false
             }
             ,
-            minProfitLossRatio: .96,
+            minProfitLossRatio: .95,
             isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
-                return profitLossRatio >= .96
+                return profitLossRatio >= .95
             },
             expectedProfitNotif: true // minVol: 1000 * 1000 * 1000,
             // minStockPriceDistanceFromHigherStrikeInPercent: .22,
@@ -24083,7 +24091,7 @@ const createListFilterContetnByList=(list)=>{
         , {
             ...CALL_BUTT_CONDORStrategies,
             allStrategiesSorted: CALL_BUTT_CONDORStrategies.allStrategiesSorted.filter(st => st.isButterFly),
-            htmlTitle:CALL_BUTT_CONDORStrategies.htmlTitle.replace("CALL_BUTT_CONDOR","CALL_BUTTERFLY")
+            // htmlTitle:CALL_BUTT_CONDORStrategies.htmlTitle.replace("CALL_BUTT_CONDOR","CALL_BUTTERFLY")
         }
         , {
             ...CALL_BUTT_CONDORStrategies,
@@ -24100,7 +24108,7 @@ const createListFilterContetnByList=(list)=>{
          , {
             ...PUT_BUTT_CONDORStrategies,
             allStrategiesSorted: PUT_BUTT_CONDORStrategies.allStrategiesSorted.filter(st => st.isButterFly),
-            htmlTitle:PUT_BUTT_CONDORStrategies.htmlTitle.replace("PUT_BUTT_CONDOR","PUT_BUTTERFLY")
+            // htmlTitle:PUT_BUTT_CONDORStrategies.htmlTitle.replace("PUT_BUTT_CONDOR","PUT_BUTTERFLY")
         }
         , {
             ...PUT_BUTT_CONDORStrategies,
