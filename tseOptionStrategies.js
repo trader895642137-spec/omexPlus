@@ -9009,7 +9009,6 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
 const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
     settlementGainChoosePriceType="MIN", strategySubName,  
-    justIfWholeIsPofitable=false,
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceToSarBeSarPercent=-Infinity, maxStockPriceToSarBeSarPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -9177,7 +9176,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                         let profitPercent;
 
 
-                        if(justIfWholeIsPofitable && breakeven) return _allPossibleStrategies
+                        
                         let stockPriceToSarBeSarPercent;
                         if(breakeven){
 
@@ -9201,6 +9200,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                             expectedProfitNotif,
                             minProfitToFilter,
                             expectedProfitPerMonth,
+                            isWholePofitable: !breakeven,
                             stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingCall,sellingCallWithSameStrikeOfBuyingPut,buyingPut,sellingPut]),
                             profitPercent
@@ -9276,8 +9276,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
 const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, 
     settlementGainChoosePriceType="MIN", strategySubName,
-    minProfitToFilter,
-    justIfWholeIsPofitable=false,  
+    minProfitToFilter, 
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceToSarBeSarPercent=-Infinity, maxStockPriceToSarBeSarPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -9443,7 +9442,6 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
                         if(maxProfit<=0) return _allPossibleStrategies
 
-                        if(justIfWholeIsPofitable && breakeven) return _allPossibleStrategies
 
                         let stockPriceToSarBeSarPercent;
                         if(breakeven){
@@ -9474,6 +9472,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                             expectedProfitNotif,
                             expectedProfitPerMonth,
                             minProfitToFilter,
+                            isWholePofitable: !breakeven,
                             stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingPut,sellingPutWithSameStrikeOfBuyingCall,buyingCall,sellingCall]),
                             profitPercent
@@ -9549,7 +9548,6 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
 const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
-    justIfWholeIsPofitable=false,
     settlementGainChoosePriceType="MIN", strategySubName,  
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceToSarBeSarPercent=-Infinity, maxStockPriceToSarBeSarPercent=Infinity, 
@@ -9719,7 +9717,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                         
                         const currentPriceProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: sellingCall.optionDetails.stockSymbolDetails.last });
                         let profitPercent;
-                        if(justIfWholeIsPofitable && breakeven) return _allPossibleStrategies
+                    
 
                         let stockPriceToSarBeSarPercent;
                         if(breakeven){
@@ -9746,6 +9744,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                             expectedProfitNotif,
                             minProfitToFilter,
                             expectedProfitPerMonth,
+                            isWholePofitable: !breakeven,
                             stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingCall,sellingCall,sellingPut,buyingPutWithSameStrikeOfSellingCall]),
                             profitPercent
@@ -9820,7 +9819,6 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
 
 const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, 
-    justIfWholeIsPofitable=false,
     minProfitToFilter,
     settlementGainChoosePriceType="MIN", strategySubName,  min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceToSarBeSarPercent=-Infinity, maxStockPriceToSarBeSarPercent=Infinity, 
@@ -9989,7 +9987,6 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                         const currentPriceProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: sellingCall.optionDetails.stockSymbolDetails.last });
                         let profitPercent;
                         
-                        if(justIfWholeIsPofitable && breakeven) return _allPossibleStrategies
                         let stockPriceToSarBeSarPercent;
                         if(breakeven){
 
@@ -10013,6 +10010,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                             expectedProfitNotif,
                             minProfitToFilter,
                             expectedProfitPerMonth,
+                            isWholePofitable:!breakeven,
                             stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingPut,sellingPut,sellingCall,buyingCallWithSameStrikeOfSellingPut]),
                             profitPercent
@@ -10572,7 +10570,30 @@ const createListFilterContetnByList=(list)=>{
             // minStockPriceDistanceFromHigherStrikeInPercent: .22,
             // minStockPriceDistanceFromSarBeSarInPercent: .15,
             expectedProfitNotif: true
-        })
+        });
+
+
+        const BES_With_BUCS_BEPSStrategies = calcBES_With_BUCS_BEPSStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            expectedProfitNotif: true,
+        });
+
+
+        const BES_With_BUPS_BECSStrategies = calcBES_With_BUPS_BECSStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            expectedProfitNotif: true,
+        });
+
+
+        const BUS_With_BUCS_BEPSStrategies = calcBUS_With_BUCS_BEPSStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            expectedProfitNotif: true,
+        });
+
+        const BUS_With_BUPS_BECSStrategies=  calcBUS_With_BUPS_BECSStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            expectedProfitNotif: true,
+        });
   
 
     const strategyMapList = [
@@ -11165,50 +11186,228 @@ const createListFilterContetnByList=(list)=>{
         })(),
 
 
-        calcBUS_With_BUCS_BEPSStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            minStockPriceToSarBeSarPercent: .2,
-            expectedProfitNotif: true,
-        }),
-        calcBUS_With_BUCS_BEPSStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            justIfWholeIsPofitable: true,
-            // expectedProfitNotif: true,
-        }),
+        (()=>{
 
-        calcBUS_With_BUPS_BECSStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            minStockPriceToSarBeSarPercent: .2,
-            expectedProfitNotif: true,
-        }),
-        calcBUS_With_BUPS_BECSStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            justIfWholeIsPofitable: true,
-            // expectedProfitNotif: true,
-        }),
+            const minStockPriceToSarBeSarPercent = .2;
 
-        calcBES_With_BUCS_BEPSStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            maxStockPriceToSarBeSarPercent: -.2,
-            expectedProfitNotif: true,
-        }),
-        calcBES_With_BUCS_BEPSStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            justIfWholeIsPofitable: true,
-            // expectedProfitNotif: true,
-        }),
+            return {
+                ...BUS_With_BUCS_BEPSStrategies,
+                allStrategiesSorted: BUS_With_BUCS_BEPSStrategies.allStrategiesSorted.filter(st => {
+                    if (st.stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent) return
+
+
+                    return true
+
+                }),
+
+                htmlTitle: configsToHtmlTitle({
+                    ...BUS_With_BUCS_BEPSStrategies,
+                    customLabels: [{
+                        label: "minToSar",
+                        value: `${((minStockPriceToSarBeSarPercent) * 100).toFixed(0)}%`
+                    },].filter(Boolean),
+
+                })
+
+            }
+
+        })(),
+
+
+         (()=>{
+
+
+            return {
+                ...BUS_With_BUCS_BEPSStrategies,
+                allStrategiesSorted: BUS_With_BUCS_BEPSStrategies.allStrategiesSorted.filter(st => {
+                    if (!st.isWholePofitable) return
+
+
+                    return true
+
+                }),
+
+            }
+
+        })(),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        (()=>{
+
+            const minStockPriceToSarBeSarPercent= .2;
+
+            return {
+                ...BUS_With_BUPS_BECSStrategies,
+                allStrategiesSorted: BUS_With_BUPS_BECSStrategies.allStrategiesSorted.filter(st => {
+                    if (st.stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent) return
+
+
+                    return true
+
+                }),
+
+                htmlTitle: configsToHtmlTitle({
+                    ...BUS_With_BUPS_BECSStrategies,
+                    customLabels: [{
+                        label: "minToSar",
+                        value: `${((minStockPriceToSarBeSarPercent) * 100).toFixed(0)}%`
+                    },].filter(Boolean),
+
+                })
+
+            }
+
+        })(),
+
+
+         (()=>{
+
+
+            return {
+                ...BUS_With_BUPS_BECSStrategies,
+                allStrategiesSorted: BUS_With_BUPS_BECSStrategies.allStrategiesSorted.filter(st => {
+                    if (!st.isWholePofitable) return
+
+
+                    return true
+
+                }),
+
+            }
+
+        })(),
+
         
-        calcBES_With_BUPS_BECSStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            maxStockPriceToSarBeSarPercent: -.2,
-            expectedProfitNotif: true,
-        }),
-        calcBES_With_BUPS_BECSStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            justIfWholeIsPofitable: true,
-            // expectedProfitNotif: true,
-        }),
 
+
+        
+        (()=>{
+
+            const maxStockPriceToSarBeSarPercent = -.2;
+
+            return {
+                ...BES_With_BUCS_BEPSStrategies,
+                allStrategiesSorted: BES_With_BUCS_BEPSStrategies.allStrategiesSorted.filter(st => {
+                    if (st.stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent) return
+
+
+                    return true
+
+                }),
+
+                htmlTitle: configsToHtmlTitle({
+                    ...BES_With_BUCS_BEPSStrategies,
+                    customLabels: [{
+                        label: "maxToSar",
+                        value: `${((maxStockPriceToSarBeSarPercent) * 100).toFixed(0)}%`
+                    },].filter(Boolean),
+
+                })
+
+            }
+
+        })(),
+
+
+         (()=>{
+
+
+            return {
+                ...BES_With_BUCS_BEPSStrategies,
+                allStrategiesSorted: BES_With_BUCS_BEPSStrategies.allStrategiesSorted.filter(st => {
+                    if (!st.isWholePofitable) return
+
+
+                    return true
+
+                }),
+
+            }
+
+        })(),
+
+
+        
+
+
+
+
+        (()=>{
+
+            const maxStockPriceToSarBeSarPercent = -.2;
+
+            return {
+                ...BES_With_BUPS_BECSStrategies,
+                allStrategiesSorted: BES_With_BUPS_BECSStrategies.allStrategiesSorted.filter(st => {
+                    if (st.stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent) return
+
+                    return true
+
+                }),
+
+                htmlTitle: configsToHtmlTitle({
+                    ...BES_With_BUPS_BECSStrategies,
+                    customLabels: [{
+                        label: "maxToSar",
+                        value: `${((maxStockPriceToSarBeSarPercent) * 100).toFixed(0)}%`
+                    },].filter(Boolean),
+
+                })
+
+            }
+
+        })(),
+
+
+         (()=>{
+
+
+            return {
+                ...BES_With_BUPS_BECSStrategies,
+                allStrategiesSorted: BES_With_BUPS_BECSStrategies.allStrategiesSorted.filter(st => {
+                    if (!st.isWholePofitable) return
+
+
+                    return true
+
+                }),
+
+            }
+
+        })(),
+
+        
 
 
         calcBUPSStrategies(list, {
