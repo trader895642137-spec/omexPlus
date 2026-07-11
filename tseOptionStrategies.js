@@ -267,7 +267,7 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
 
 
         const { hasFilter: hasToSarBeSarFilter, isPass: isSarBeSarPass } = sarBeSarFilterCheck({ ignoreStrategyObj, strategy });
-        if (hasToSarBeSarFilter && !isSarBeSarPass) return true
+        if (hasToSarBeSarFilter && !isSarBeSarPass &&  !strategy.isWholeProfitable) return true
 
 
 
@@ -9200,7 +9200,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                             expectedProfitNotif,
                             minProfitToFilter,
                             expectedProfitPerMonth,
-                            isWholePofitable: !breakeven,
+                            isWholeProfitable: !breakeven,
                             stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingCall,sellingCallWithSameStrikeOfBuyingPut,buyingPut,sellingPut]),
                             profitPercent
@@ -9472,7 +9472,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                             expectedProfitNotif,
                             expectedProfitPerMonth,
                             minProfitToFilter,
-                            isWholePofitable: !breakeven,
+                            isWholeProfitable: !breakeven,
                             stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingPut,sellingPutWithSameStrikeOfBuyingCall,buyingCall,sellingCall]),
                             profitPercent
@@ -9744,7 +9744,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                             expectedProfitNotif,
                             minProfitToFilter,
                             expectedProfitPerMonth,
-                            isWholePofitable: !breakeven,
+                            isWholeProfitable: !breakeven,
                             stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingCall,sellingCall,sellingPut,buyingPutWithSameStrikeOfSellingCall]),
                             profitPercent
@@ -10010,7 +10010,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                             expectedProfitNotif,
                             minProfitToFilter,
                             expectedProfitPerMonth,
-                            isWholePofitable:!breakeven,
+                            isWholeProfitable:!breakeven,
                             stockPriceToSarBeSarPercent,
                             name: createStrategyName([buyingPut,sellingPut,sellingCall,buyingCallWithSameStrikeOfSellingPut]),
                             profitPercent
@@ -11196,6 +11196,8 @@ const createListFilterContetnByList=(list)=>{
                     if (st.stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent) return
 
 
+                    if (st.isWholeProfitable) return
+
                     return true
 
                 }),
@@ -11220,7 +11222,7 @@ const createListFilterContetnByList=(list)=>{
             return {
                 ...BUS_With_BUCS_BEPSStrategies,
                 allStrategiesSorted: BUS_With_BUCS_BEPSStrategies.allStrategiesSorted.filter(st => {
-                    if (!st.isWholePofitable) return
+                    if (!st.isWholeProfitable) return
 
 
                     return true
@@ -11272,6 +11274,7 @@ const createListFilterContetnByList=(list)=>{
                 allStrategiesSorted: BUS_With_BUPS_BECSStrategies.allStrategiesSorted.filter(st => {
                     if (st.stockPriceToSarBeSarPercent < minStockPriceToSarBeSarPercent) return
 
+                    if (st.isWholeProfitable) return
 
                     return true
 
@@ -11297,7 +11300,7 @@ const createListFilterContetnByList=(list)=>{
             return {
                 ...BUS_With_BUPS_BECSStrategies,
                 allStrategiesSorted: BUS_With_BUPS_BECSStrategies.allStrategiesSorted.filter(st => {
-                    if (!st.isWholePofitable) return
+                    if (!st.isWholeProfitable) return
 
 
                     return true
@@ -11321,6 +11324,7 @@ const createListFilterContetnByList=(list)=>{
                 allStrategiesSorted: BES_With_BUCS_BEPSStrategies.allStrategiesSorted.filter(st => {
                     if (st.stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent) return
 
+                    if (st.isWholeProfitable) return
 
                     return true
 
@@ -11346,12 +11350,17 @@ const createListFilterContetnByList=(list)=>{
             return {
                 ...BES_With_BUCS_BEPSStrategies,
                 allStrategiesSorted: BES_With_BUCS_BEPSStrategies.allStrategiesSorted.filter(st => {
-                    if (!st.isWholePofitable) return
+                    if (!st.isWholeProfitable) return
 
 
                     return true
 
                 }),
+                htmlTitle: configsToHtmlTitle({
+                    ...BES_With_BUCS_BEPSStrategies,
+                    customLabels: [{label: "تمام سود"}].filter(Boolean),
+
+                })
 
             }
 
@@ -11371,6 +11380,9 @@ const createListFilterContetnByList=(list)=>{
                 ...BES_With_BUPS_BECSStrategies,
                 allStrategiesSorted: BES_With_BUPS_BECSStrategies.allStrategiesSorted.filter(st => {
                     if (st.stockPriceToSarBeSarPercent > maxStockPriceToSarBeSarPercent) return
+
+
+                    if (st.isWholeProfitable) return
 
                     return true
 
@@ -11396,7 +11408,7 @@ const createListFilterContetnByList=(list)=>{
             return {
                 ...BES_With_BUPS_BECSStrategies,
                 allStrategiesSorted: BES_With_BUPS_BECSStrategies.allStrategiesSorted.filter(st => {
-                    if (!st.isWholePofitable) return
+                    if (!st.isWholeProfitable) return
 
 
                     return true
