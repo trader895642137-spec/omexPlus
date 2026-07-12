@@ -1991,6 +1991,7 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                         minProfitToFilter,
                         expectedProfitPerMonth,
                         stockPriceToSarBeSarPercent,
+                        settlementTimeDiff : moment(date, 'jYYYY/jMM/jDD').diff(Date.now()),
                         name: createStrategyName([option, _option]),
                         profitPercent
                     }
@@ -10497,6 +10498,46 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
+const filterStrategiesByConfig = ({
+    strategies,
+    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity,
+    minStockPriceDistanceFromSarBeSarInPercent=-Infinity,
+    minProfitToFilter }) => {
+
+
+
+    let allStrategiesSorted = strategies.allStrategiesSorted.filter(strategy => {
+        if (strategy.settlementTimeDiff < min_time_to_settlement || strategy.settlementTimeDiff > max_time_to_settlement) return
+
+        if (strategy.stockPriceToSarBeSarPercent < minStockPriceDistanceFromSarBeSarInPercent && !strategy.isWholeProfitable) return
+
+        return true
+
+    });
+
+    if (minProfitToFilter != null) {
+        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, minProfitToFilter }))
+    }
+
+
+
+    return {
+        ...strategies,
+        allStrategiesSorted ,
+
+        htmlTitle: configsToHtmlTitle({
+            ...strategies,
+            min_time_to_settlement,
+            max_time_to_settlement,
+            customLabels: [{
+                label: "minToSar",
+                value: `${((minStockPriceDistanceFromSarBeSarInPercent) * 100).toFixed(0)}%`
+            }].filter(Boolean),
+        })
+
+    }
+}
+
 
 
 
@@ -10568,6 +10609,15 @@ const createListFilterContetnByList=(list)=>{
             // min_time_to_settlement: 15 * 24 * 3600000,
             // max_time_to_settlement: 40 * 24 * 3600000,
             // minStockPriceDistanceFromHigherStrikeInPercent: .22,
+            // minStockPriceDistanceFromSarBeSarInPercent: .15,
+            expectedProfitNotif: true
+        });
+
+
+        const BUPSStrategies = calcBUPSStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            // min_time_to_settlement: 15 * 24 * 3600000,
+            // max_time_to_settlement: 40 * 24 * 3600000,
             // minStockPriceDistanceFromSarBeSarInPercent: .15,
             expectedProfitNotif: true
         });
@@ -11419,44 +11469,38 @@ const createListFilterContetnByList=(list)=>{
 
         })(),
 
-        
 
-
-        calcBUPSStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        filterStrategiesByConfig({
+            strategies: BUPSStrategies,
             min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 40 * 24 * 3600000,
-            minStockPriceDistanceFromSarBeSarInPercent: .15,
-            expectedProfitNotif: true
-        }), 
-        calcBUPSStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            min_time_to_settlement: 15 * 24 * 3600000,
-            max_time_to_settlement: 40 * 24 * 3600000,
-            minStockPriceDistanceFromSarBeSarInPercent: 0.2,
+            minStockPriceDistanceFromSarBeSarInPercent: .15
         }),
-        calcBUPSStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+
+             
+
+        filterStrategiesByConfig({
+            strategies: BUPSStrategies,
+            min_time_to_settlement: 6 * 24 * 3600000,
             max_time_to_settlement: 15 * 24 * 3600000,
-            // minStockPriceDistanceInPercent: .15,
-            minStockPriceDistanceFromSarBeSarInPercent: 0.12,
-            expectedProfitNotif: true
+            minStockPriceDistanceFromSarBeSarInPercent: .12
         }),
-        calcBUPSStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+       
+
+        filterStrategiesByConfig({
+            strategies: BUPSStrategies,
+            min_time_to_settlement: 1 * 24 * 3600000,
             max_time_to_settlement: 6 * 24 * 3600000,
             minStockPriceDistanceFromSarBeSarInPercent: .05,
-            expectedProfitNotif: true
         }),
-
-        calcBUPSStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+      
+        filterStrategiesByConfig({
+            strategies: BUPSStrategies,
             max_time_to_settlement: 1 * 3 * 3600000,
-            minProfitToFilter: 0.01,
-            settlementGainChoosePriceType: "MIN",
-            // minStockPriceDistanceFromSarBeSarInPercent: .05,
-            expectedProfitNotif: true
+            minProfitToFilter: 0.01
         }),
+       
+        
 
         , calcBUPS_COLLARStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
