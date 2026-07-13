@@ -6285,8 +6285,9 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
 
 }
 
-const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFactorOfBUCS=0.6, 
-    maxQuantityFactorOfBUCS=2, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
+const calcBUCSRatioStrategies = (list, {priceType, strategySubName,
+    minQuantityFactorOfBUCS=0.5,  maxQuantityFactorOfBUCS=3, 
+    BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     minProfitToFilter,
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceToSarBeSarPercent=-Infinity,maxStockPriceToSarBeSarPercent=-.15,
@@ -6410,17 +6411,18 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
 
 
 
+
                         const strategyPositionsOfBUCS_RATIO = [
                             {
                                 ...buyingCall,
                                 isBuy: true,
-                                getQuantity: () => 1*quantityFactorOfBUCS,
+                                getQuantity: () => 1*quantityFactorOfBUCS/1.3,
                                 getRequiredMargin() { }
                             },
                             {
                                 ...sellingCall,
                                 isSell: true,
-                                getQuantity: () => 1*quantityFactorOfBUCS,
+                                getQuantity: () => 1*quantityFactorOfBUCS/1.3,
                                 getRequiredMargin() { }
                             },
                             {
@@ -6452,14 +6454,19 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
 
                         const priceThatCauseMaxLossOfBUCS_RATIO = Math.max(...strategyPositionsOfBUCS_RATIO.map(strategyPosition=>strategyPosition.strikePrice)) * 1.3;
                         const priceThatCauseMaxProfitOfBUCS_RATIO = anotherSellingCall.optionDetails.strikePrice;
+                        const priceThatCauseMinProfitOfBUCS_RATIO = Math.min(...strategyPositionsOfBUCS_RATIO.map(strategyPosition=>strategyPosition.strikePrice)) / 1.3;
 
 
+
+                      
 
                         const maxLossOfBUCS_RATIO = totalCostOfBUCS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUCS_RATIO, stockPrice:priceThatCauseMaxLossOfBUCS_RATIO});
                         const maxProfitOfBUCS_RATIO = totalCostOfBUCS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUCS_RATIO, stockPrice:priceThatCauseMaxProfitOfBUCS_RATIO});
+                        const minProfitOfBUCS_RATIO = totalCostOfBUCS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUCS_RATIO, stockPrice:priceThatCauseMinProfitOfBUCS_RATIO});
 
 
                         const maxProfitPercentOfBUCS_RATIO = maxProfitOfBUCS_RATIO / Math.abs(totalCostOfBUCS_RATIO);
+                        const minProfitPercentOfBUCS_RATIO = minProfitOfBUCS_RATIO / Math.abs(totalCostOfBUCS_RATIO);
 
                         const breakevenList = findBreakevenList({
                             positions:strategyPositionsOfBUCS_RATIO, 
@@ -6499,9 +6506,10 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,minQuantityFa
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
+                            isWholeProfitable:isFullBodyProfitable,
                             name: createStrategyName([buyingCall, sellingCall, anotherSellingCall]),
                             // profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
-                            profitPercent: isFullBodyProfitable ? 10: maxProfitPercentOfBUCS_RATIO 
+                            profitPercent: isFullBodyProfitable ? 10: minProfitPercentOfBUCS_RATIO 
                         }])
                     }
                     , []);
@@ -11557,8 +11565,8 @@ const createListFilterContetnByList=(list)=>{
                 if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
                     return true
                 return false
-            }
-            ,
+            },
+            minProfitToFilter: 0.01,
             // minStockPriceDistanceInPercent: -.2,
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
