@@ -248,6 +248,23 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
 
     }
 
+     const allProfitFilterCheck = ({ ignoreStrategyObj, strategy }) => {
+
+        const hasFilter = ignoreStrategyObj.allProfit != null;
+
+        let isPass = null;
+        if (hasFilter) {
+            isPass = strategy.isWholeProfitable;
+        }
+        
+
+        return {
+            isPass,
+            hasFilter 
+        }
+
+    }
+
 
 
 
@@ -271,7 +288,11 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
 
 
 
-        const hasAnyFilter = hasProfitFilter || hasToSarBeSarFilter;
+        const { hasFilter: hasAllProfitFilter, isPass: isAllProfitPass } = allProfitFilterCheck({ ignoreStrategyObj, strategy });
+        if (hasAllProfitFilter && !isAllProfitPass) return true
+
+
+        const hasAnyFilter = hasProfitFilter || hasToSarBeSarFilter || hasAllProfitFilter;
 
         return !hasAnyFilter
 
@@ -6458,6 +6479,12 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,
 
 
 
+                        //  if(buyingCall.symbol==='ضملت5031' && sellingCall.symbol==='ضملت5033' && anotherSellingCall.symbol==='ضملت5032'){
+
+                        //     console.log(23423);
+                            
+                        // }
+
                       
 
                         const maxLossOfBUCS_RATIO = totalCostOfBUCS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUCS_RATIO, stockPrice:priceThatCauseMaxLossOfBUCS_RATIO});
@@ -12167,6 +12194,7 @@ const getIgnoreStrategyNames = () => {
             isMinStrike: null,
             profitPercent: null,
             toSarBeSar:null,
+            allProfit:null,
             raw: ignoreStrategyName
         };
         if (!filterParts?.length)
@@ -12175,10 +12203,7 @@ const getIgnoreStrategyNames = () => {
         result.type = filterParts[0];
 
         filterParts.slice(1).forEach((filterPart, index) => {
-            if(index===0 && !filterPart?.includes(':')){
-                result.name = filterPart;
-                return result
-            }
+            
 
             if (filterPart?.includes(':')) {
                 const [ruleName, ruleValue] = filterPart.split(':');
@@ -12194,7 +12219,13 @@ const getIgnoreStrategyNames = () => {
                 }
                 
 
+            } else if (filterPart === 'allProfit') {
+                result.allProfit = true;
+            }else{
+
+                result.name = filterPart;
             }
+
 
 
             return result;
