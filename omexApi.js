@@ -395,7 +395,7 @@ const formatDate = (date) => {
         return `${year}-${month}-${day}`;
 };
 
-const getOrders = async (instrumentId,daysAgo = 30)=>{
+const getOrders = async (instrumentId,daysAgo = 120)=>{
 
     const today = new Date();
     const fromDateObj = new Date(today);
@@ -435,7 +435,7 @@ const calcAveragePrice = async (instrumentId)=>{
 
     const averageInfo  = calcAveragePriceByExecutedOrders(orders);
 
-    return  averageInfo.averagePrice
+    return  averageInfo
 
 }
 

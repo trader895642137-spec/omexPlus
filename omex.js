@@ -2197,13 +2197,19 @@ export const getAvgPrices =async ()=>{
 
     const requests = strategyPositions.map(async (strategyPosition) => {
         const instrumentID = strategyPosition.getInstrumentID();
-        const avgPrice = await OMEXApi.calcAveragePrice(instrumentID);
-        console.log(strategyPosition.instrumentName, avgPrice);
+        const averageInfo = await OMEXApi.calcAveragePrice(instrumentID);
+        const avgPrice = averageInfo.averagePrice;
+        console.log({[
+            strategyPosition.instrumentName]:avgPrice,
+            quantity:averageInfo.quantity
+        });
         return {
             instrumentName: strategyPosition.instrumentName,
             instrumentID: instrumentID,
-            avgPrice: avgPrice,
-            strategyPosition: strategyPosition
+            quantity: averageInfo.quantity,
+            avgPrice,
+            strategyPosition: strategyPosition,
+            
         };
     });
 
@@ -2217,7 +2223,7 @@ export const getAvgPrices =async ()=>{
 }
 
 const getRecentCalculatedAvgPrices = ({instrumentId,instrumentName})=>{
-    if (!lastCalculatedAvgPrices.results || !lastCalculatedAvgPrices.time || (Date.now() - lastCalculatedAvgPrices.time) > 60000) return null
+    if (!lastCalculatedAvgPrices.results || !lastCalculatedAvgPrices.time || (Date.now() - lastCalculatedAvgPrices.time) > (60000 * 3)) return null
     if(!lastCalculatedAvgPrices.results.length) return 
     return lastCalculatedAvgPrices.results.find(avgInfo=>avgInfo.instrumentName===instrumentName)
 

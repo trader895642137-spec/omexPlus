@@ -799,7 +799,7 @@ const calcAveragePriceByExecutedOrders = (orders)=>{
     };
     
     return {
-        position: position,
+        quantity: position,
         averagePrice: to3Decimal(averagePrice),
         totalValue: to3Decimal(Math.abs(position) * averagePrice),
         side: position > 0 ? "Long" : (position < 0 ? "Short" : "Neutral")
@@ -1223,7 +1223,7 @@ const formatDate = (date) => {
         return `${year}-${month}-${day}`;
 };
 
-const getOrders = async (instrumentId,daysAgo = 30)=>{
+const getOrders = async (instrumentId,daysAgo = 120)=>{
 
     const today = new Date();
     const fromDateObj = new Date(today);
@@ -1263,7 +1263,7 @@ const calcAveragePrice = async (instrumentId)=>{
 
     const averageInfo  = (0,_common__WEBPACK_IMPORTED_MODULE_0__.calcAveragePriceByExecutedOrders)(orders);
 
-    return  averageInfo.averagePrice
+    return  averageInfo
 
 }
 
@@ -4143,13 +4143,19 @@ const getAvgPrices =async ()=>{
 
     const requests = strategyPositions.map(async (strategyPosition) => {
         const instrumentID = strategyPosition.getInstrumentID();
-        const avgPrice = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calcAveragePrice(instrumentID);
-        console.log(strategyPosition.instrumentName, avgPrice);
+        const averageInfo = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calcAveragePrice(instrumentID);
+        const avgPrice = averageInfo.averagePrice;
+        console.log({[
+            strategyPosition.instrumentName]:avgPrice,
+            quantity:averageInfo.quantity
+        });
         return {
             instrumentName: strategyPosition.instrumentName,
             instrumentID: instrumentID,
-            avgPrice: avgPrice,
-            strategyPosition: strategyPosition
+            quantity: averageInfo.quantity,
+            avgPrice,
+            strategyPosition: strategyPosition,
+            
         };
     });
 
@@ -4163,7 +4169,7 @@ const getAvgPrices =async ()=>{
 }
 
 const getRecentCalculatedAvgPrices = ({instrumentId,instrumentName})=>{
-    if (!lastCalculatedAvgPrices.results || !lastCalculatedAvgPrices.time || (Date.now() - lastCalculatedAvgPrices.time) > 60000) return null
+    if (!lastCalculatedAvgPrices.results || !lastCalculatedAvgPrices.time || (Date.now() - lastCalculatedAvgPrices.time) > (60000 * 3)) return null
     if(!lastCalculatedAvgPrices.results.length) return 
     return lastCalculatedAvgPrices.results.find(avgInfo=>avgInfo.instrumentName===instrumentName)
 

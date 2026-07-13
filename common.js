@@ -763,7 +763,7 @@ export const calcAveragePriceByExecutedOrders = (orders)=>{
     };
     
     return {
-        position: position,
+        quantity: position,
         averagePrice: to3Decimal(averagePrice),
         totalValue: to3Decimal(Math.abs(position) * averagePrice),
         side: position > 0 ? "Long" : (position < 0 ? "Short" : "Neutral")
