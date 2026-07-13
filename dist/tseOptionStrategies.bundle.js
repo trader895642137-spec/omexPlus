@@ -19899,11 +19899,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,
 
 
 
-                        //  if(buyingCall.symbol==='ضملت5031' && sellingCall.symbol==='ضملت5033' && anotherSellingCall.symbol==='ضملت5032'){
-
-                        //     console.log(23423);
-                            
-                        // }
+                        
 
                       
 
