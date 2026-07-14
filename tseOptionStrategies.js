@@ -6310,6 +6310,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,
     minQuantityFactorOfBUCS=0.5,  maxQuantityFactorOfBUCS=3, 
     BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     minProfitToFilter,
+    isProfitEnoughFn,
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceToSarBeSarPercent=-Infinity,maxStockPriceToSarBeSarPercent=-.15,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -6530,6 +6531,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
                             isWholeProfitable:isFullBodyProfitable,
+                            isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBUCS_RATIO),
                             name: createStrategyName([buyingCall, sellingCall, anotherSellingCall]),
                             // profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
                             profitPercent: isFullBodyProfitable ? 10: minProfitPercentOfBUCS_RATIO 
@@ -6594,6 +6596,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
     minStockPriceToSarBeSarPercent=-Infinity,
     maxStockPriceToSarBeSarPercent=-.15,
     minProfitToFilter,
+    isProfitEnoughFn,
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
@@ -6737,13 +6740,13 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             {
                                 ...buyingPut,
                                 isBuy: true,
-                                getQuantity: () => 1*quantityFactorOfBUPS,
+                                getQuantity: () => 1*quantityFactorOfBUPS/1.3,
                                 getRequiredMargin() { }
                             },
                             {
                                 ...sellingPut,
                                 isSell: true,
-                                getQuantity: () => 1*quantityFactorOfBUPS,
+                                getQuantity: () => 1*quantityFactorOfBUPS/1.3,
                                 getRequiredMargin: () => diffOfBUPS_Strikes
                             },
                             {
@@ -6773,12 +6776,15 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
                         const priceThatCauseMaxLossOfBUPS_RATIO = Math.max(...strategyPositionsOfBUPS_RATIO.map(strategyPosition=>strategyPosition.strikePrice)) * 1.3;
                         const priceThatCauseMaxProfitOfBUPS_RATIO = sellingCall.optionDetails.strikePrice;
+                        const priceThatCauseMinProfitOfBUPS_RATIO = Math.min(...strategyPositionsOfBUPS_RATIO.map(strategyPosition=>strategyPosition.strikePrice)) / 1.3;
 
 
                         const maxLossOfBUPS_RATIO = totalCostOfBUPS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUPS_RATIO, stockPrice:priceThatCauseMaxLossOfBUPS_RATIO});
                         const maxProfitOfBUPS_RATIO = totalCostOfBUPS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUPS_RATIO, stockPrice:priceThatCauseMaxProfitOfBUPS_RATIO});
+                        const minProfitOfBUPS_RATIO = totalCostOfBUPS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUPS_RATIO, stockPrice:priceThatCauseMinProfitOfBUPS_RATIO});
 
                         const maxProfitPercentOfBUPS_RATIO = maxProfitOfBUPS_RATIO / Math.abs(totalCostOfBUPS_RATIO);
+                        const minProfitPercentOfBUPS_RATIO = minProfitOfBUPS_RATIO / Math.abs(totalCostOfBUPS_RATIO);
 
                         const breakevenList = findBreakevenList({
                             positions:strategyPositionsOfBUPS_RATIO, 
@@ -6817,8 +6823,9 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
+                            isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBUPS_RATIO),
                             name: createStrategyName([buyingPut, sellingPut, sellingCall]),
-                            profitPercent: isFullBodyProfitable ? 10 : maxProfitPercentOfBUPS_RATIO
+                            profitPercent: isFullBodyProfitable ? 10 : minProfitPercentOfBUPS_RATIO
                             // profitPercent: isFullBodyProfitable ? 1 : -stockPriceToSarBeSarPercent
                         }])
                     }
@@ -6880,6 +6887,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBECS=0.6, 
     minStockPriceToSarBeSarPercent=0.2,
     minProfitToFilter,
+    isProfitEnoughFn,
     maxStockPriceToSarBeSarPercent=Infinity,
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -7027,13 +7035,13 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             {
                                 ...buyingCall,
                                 isBuy: true,
-                                getQuantity: () => 1*quantityFactorOfBECS,
+                                getQuantity: () => 1*quantityFactorOfBECS/1.3,
                                 getRequiredMargin() { }
                             },
                             {
                                 ...sellingCall,
                                 isSell: true,
-                                getQuantity: () => 1*quantityFactorOfBECS,
+                                getQuantity: () => 1*quantityFactorOfBECS/1.3,
                                 getRequiredMargin: () => diffOfBECS_Strikes
                             },
                             {
@@ -7074,6 +7082,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
                         const priceThatCauseMaxLossOfBECS_RATIO = Math.min(...strategyPositionsOfBECS_RATIO.map(strategyPosition=>strategyPosition.strikePrice)) / 1.2;
                         const priceThatCauseMaxProfitOfBECS_RATIO = sellingCall.optionDetails.strikePrice;
+                        const priceThatCauseMinProfitOfBECS_RATIO = Math.max(...strategyPositionsOfBECS_RATIO.map(strategyPosition=>strategyPosition.strikePrice)) * 1.3;
 
 
                         
@@ -7081,9 +7090,11 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                         const maxLossOfBECS_RATIO = totalCostOfBECS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBECS_RATIO, stockPrice:priceThatCauseMaxLossOfBECS_RATIO});
 
                         const maxProfitOfBECS_RATIO = totalCostOfBECS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBECS_RATIO, stockPrice:priceThatCauseMaxProfitOfBECS_RATIO});
+                        const minProfitOfBECS_RATIO = totalCostOfBECS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBECS_RATIO, stockPrice:priceThatCauseMinProfitOfBECS_RATIO});
 
 
                         const maxProfitPercentOfBECS_RATIO = maxProfitOfBECS_RATIO / Math.abs(totalCostOfBECS_RATIO);
+                        const minProfitPercentOfBECS_RATIO = minProfitOfBECS_RATIO / Math.abs(totalCostOfBECS_RATIO);
 
 
                         const breakeven = breakevenList[0];
@@ -7111,9 +7122,10 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             minProfitToFilter,
                             expectedProfitNotif,
                             stockPriceToSarBeSarPercent,
+                            isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBECS_RATIO),
                             name: createStrategyName([buyingCall, sellingCall, sellingPut]),
                             // profitPercent: isFullBodyProfitable? 1: stockPriceToSarBeSarPercent
-                            profitPercent: isFullBodyProfitable? 10: maxProfitPercentOfBECS_RATIO
+                            profitPercent: isFullBodyProfitable? 10: minProfitPercentOfBECS_RATIO
                         }])
                     }
                     , []);
@@ -7170,8 +7182,9 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
 
 const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBEPS=0.6, 
-    minStockPriceToSarBeSarPercent=0.2,
+    minStockPriceToSarBeSarPercent=0.15,
     minProfitToFilter,
+    isProfitEnoughFn,
     maxStockPriceToSarBeSarPercent=Infinity,
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -7307,13 +7320,13 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             {
                                 ...buyingPut,
                                 isBuy: true,
-                                getQuantity: () => 1*quantityFactorOfBEPS,
+                                getQuantity: () => 1*quantityFactorOfBEPS/1.3,
                                 getRequiredMargin() { }
                             },
                             {
                                 ...sellingPut,
                                 isSell: true,
-                                getQuantity: () => 1*quantityFactorOfBEPS,
+                                getQuantity: () => 1*quantityFactorOfBEPS/1.3,
                                 getRequiredMargin() { }
                             },
                             {
@@ -7349,16 +7362,24 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
                         const priceThatCauseMaxLossOfBEPS_RATIO = Math.min(...strategyPositionsOfBEPS_RATIO.map(strategyPosition=>strategyPosition.strikePrice)) / 1.2;
                         const priceThatCauseMaxProfitOfBEPS_RATIO = sellingPut.optionDetails.strikePrice;
+                        const priceThatCauseMinProfitOfBEPS_RATIO = Math.max(...strategyPositionsOfBEPS_RATIO.map(strategyPosition=>strategyPosition.strikePrice)) * 1.3;
 
 
                         
 
+                        if(buyingPut.symbol==='طستا5046' && sellingPut.symbol==='طستا5045' && anotherSellingPut.symbol==='طستا5045'){
+                            console.log(23423);
+                            
+                        }
+
 
                         const maxLossOfBEPS_RATIO = totalCostOfBEPS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBEPS_RATIO, stockPrice:priceThatCauseMaxLossOfBEPS_RATIO});
                         const maxProfitOfBEPS_RATIO = totalCostOfBEPS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBEPS_RATIO, stockPrice:priceThatCauseMaxProfitOfBEPS_RATIO});
+                        const minProfitOfBEPS_RATIO = totalCostOfBEPS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBEPS_RATIO, stockPrice:priceThatCauseMinProfitOfBEPS_RATIO});
 
 
                         const maxProfitPercentOfBEPS_RATIO = maxProfitOfBEPS_RATIO / Math.abs(totalCostOfBEPS_RATIO);
+                        const minProfitPercentOfBEPS_RATIO = minProfitOfBEPS_RATIO / Math.abs(totalCostOfBEPS_RATIO);
 
                         const breakevenList = findBreakevenList({
                             positions:strategyPositionsOfBEPS_RATIO, 
@@ -7401,8 +7422,9 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
+                            isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBEPS_RATIO),
                             name: createStrategyName([buyingPut, sellingPut, anotherSellingPut]),
-                            profitPercent: isFullBodyProfitable ? 10 : maxProfitPercentOfBEPS_RATIO
+                            profitPercent: isFullBodyProfitable ? 10 : minProfitPercentOfBEPS_RATIO
                             // profitPercent: isFullBodyProfitable ? 1 : stockPriceToSarBeSarPercent
                         }])
                     }
@@ -11589,7 +11611,9 @@ const createListFilterContetnByList=(list)=>{
                     return true
                 return false
             },
-            minProfitToFilter: 0.01,
+            isProfitEnoughFn(profit){
+                return profit>=0.01
+            },
             // minStockPriceDistanceInPercent: -.2,
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
@@ -11597,18 +11621,29 @@ const createListFilterContetnByList=(list)=>{
         })
         , calcBUPSRatioStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            isProfitEnoughFn(profit){
+                return profit>=0.01
+            },
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 35 * 24 * 3600000,
-        })
-        , calcBECSRatioStrategies(list, {
+        }),
+
+        calcBECSRatioStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            isProfitEnoughFn(profit){
+                return profit>=0.01
+            },
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 35 * 24 * 3600000,
-        })
-        , calcBEPSRatioStrategies(list, {
+        }),
+
+        calcBEPSRatioStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            isProfitEnoughFn(profit){
+                return profit>=0.01
+            },
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 35 * 24 * 3600000,
