@@ -2485,6 +2485,12 @@ const getRecentExactDecimalPricesOfPortFolio = ({instrumentId,instrumentName}) =
 
     if (!currentPortfolioPosition) return null
 
+    console.log({
+        instrumentName,
+        executedPrice:currentPortfolioPosition.executedPrice,
+        breakEvenPrice: currentPortfolioPosition.breakEvenPrice
+    });
+
     if(!currentPortfolioPosition.executedPrice || !currentPortfolioPosition.breakEvenPrice){
         showToast('قیمت دقیق در پرتفوی موجود نمی باشد');
         return null
