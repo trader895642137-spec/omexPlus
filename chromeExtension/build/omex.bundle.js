@@ -3146,6 +3146,7 @@ const observeInputBoxInRowOfStrategy = () => {
         strategyPositionObj.observers.filter(observerInfoObj => ['rowPriceLockTypeSelector', 'rowPriceInput'].includes(observerInfoObj.key)).forEach(observerInfoObj => observerInfoObj.observer.disconnect())
 
         const onChangeCb = () => {
+            
             setTimeout(() => {
                 calcProfitOfStrategy(strategyPositions, unChekcedPositions);
                 checkStrategyInProfit(strategyPositions);
@@ -3161,10 +3162,16 @@ const observeInputBoxInRowOfStrategy = () => {
         const rowPriceLockTypeSelector = strategyPositionObj.optionRowEl.querySelector('.o-price-group client-option-strategy-estimation-main-ui-lock');
 
         rowInputPrice.addEventListener('input', onChangeCb)
+        rowPriceLockTypeSelector.addEventListener('click', onChangeCb)
 
         const inputObserver = {
             disconnect() {
                 rowInputPrice.removeEventListener('input', onChangeCb)
+            }
+        }
+        const rowPriceLockTypeSelectorClickObserver = {
+            disconnect() {
+                rowInputPrice.removeEventListener('click', onChangeCb)
             }
         }
 
@@ -3183,6 +3190,10 @@ const observeInputBoxInRowOfStrategy = () => {
         observers.push({
             key: 'rowPriceLockTypeSelector',
             observer
+        });
+        observers.push({
+            key: 'rowPriceLockTypeSelectorClickObserver',
+            observer : rowPriceLockTypeSelectorClickObserver
         });
 
         return {
