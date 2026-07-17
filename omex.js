@@ -1105,7 +1105,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
 
 
-const orderModalInputQuantityUnbalanceInformer = () => {
+const orderModalInputCheckAndInformer = () => {
 
 
     setTimeout(() => {
@@ -1133,6 +1133,26 @@ const orderModalInputQuantityUnbalanceInformer = () => {
                 strategyPosition.ordersModal.querySelector('.o-inModalWrapper').style.border='';
             }
         });
+
+
+        higherQuantityOfInsertedOrderInformer({
+            orderModalQuantityGetter: (strategyPosition) => convertStringToInt(strategyPosition.getOrderModalQuantityInputElement()?.value),
+            informer: (strategyPosition) => {
+                if (!strategyPosition.ordersModal) return
+
+                strategyPosition.ordersModal.querySelector('.o-quantityContainer footer').style.border = '10px solid yellow';
+                const issueMessage = 'تعداد بیشتر از دارایی است'
+                showToast(issueMessage,3000,'error');
+            },
+            informCleaner: (strategyPosition) => {
+                if (!strategyPosition.ordersModal) return
+                strategyPosition.ordersModal.querySelector('.o-quantityContainer footer').style.border = '';
+            }
+        });
+
+
+
+        
     }, 100);
     
 
@@ -1148,14 +1168,14 @@ const observeInputQuantityOfOrderModal = () => {
         const ordersModal = strategyPositionObj.ordersModal;
 
         const eventNames = ['input', 'change', 'click'];
-        eventNames.forEach(eventName => inputQuantityOfOrderModal.removeEventListener(eventName, orderModalInputQuantityUnbalanceInformer));
-        eventNames.forEach(eventName => inputQuantityOfOrderModal.addEventListener(eventName, orderModalInputQuantityUnbalanceInformer));
+        eventNames.forEach(eventName => inputQuantityOfOrderModal.removeEventListener(eventName, orderModalInputCheckAndInformer));
+        eventNames.forEach(eventName => inputQuantityOfOrderModal.addEventListener(eventName, orderModalInputCheckAndInformer));
 
 
         const eventNamesOnOrderModal =['click','mousedown','mouseup']
 
-        eventNamesOnOrderModal.forEach(eventName => ordersModal.removeEventListener(eventName, orderModalInputQuantityUnbalanceInformer));
-        eventNamesOnOrderModal.forEach(eventName => ordersModal.addEventListener(eventName, orderModalInputQuantityUnbalanceInformer));
+        eventNamesOnOrderModal.forEach(eventName => ordersModal.removeEventListener(eventName, orderModalInputCheckAndInformer));
+        eventNamesOnOrderModal.forEach(eventName => ordersModal.addEventListener(eventName, orderModalInputCheckAndInformer));
         
 
         let lastClickTime = 0;
@@ -1165,7 +1185,7 @@ const observeInputQuantityOfOrderModal = () => {
             if ((currentTime - lastClickTime) < minInterval)
                 return
             lastClickTime = currentTime;
-            orderModalInputQuantityUnbalanceInformer();
+            orderModalInputCheckAndInformer();
 
         }
 
@@ -1177,8 +1197,8 @@ const observeInputQuantityOfOrderModal = () => {
 
         const inputObserver = {
             disconnect() {
-                eventNames.forEach(eventName => inputQuantityOfOrderModal.removeEventListener(eventName, orderModalInputQuantityUnbalanceInformer));
-                ordersModal.removeEventListener('click', orderModalInputQuantityUnbalanceInformer)
+                eventNames.forEach(eventName => inputQuantityOfOrderModal.removeEventListener(eventName, orderModalInputCheckAndInformer));
+                ordersModal.removeEventListener('click', orderModalInputCheckAndInformer)
                 ordersModal.removeEventListener('mousemove ', mousemoveEventHandler)
             }
         }
@@ -1898,6 +1918,33 @@ export const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositio
     return isProfitable
 }
 
+
+const higherQuantityOfInsertedOrderInformer = ({ orderModalQuantityGetter, informer, informCleaner })=>{
+    if (!strategyPositions[0].ordersModal) return
+
+
+    strategyPositions.forEach(strategyPosition=>{
+        if (!strategyPosition?.ordersModal) return true
+
+        const insertedQuantity = orderModalQuantityGetter(strategyPosition);
+        const currentPortFolioQuantity = (strategyPosition.getCurrentPositionQuantity()/strategyPosition.cSize);
+
+        const isOrderModalInBuyingTab =  strategyPosition.ordersModal.querySelector('.-is-frontView.-is-buy');
+        const isOrderModalInSellingTab =  strategyPosition.ordersModal.querySelector('.-is-frontView.-is-sell');
+
+        if(strategyPosition.isBuy && isOrderModalInSellingTab && insertedQuantity>currentPortFolioQuantity){
+            informer(strategyPosition);
+        }else if(!strategyPosition.isBuy && isOrderModalInBuyingTab && insertedQuantity>currentPortFolioQuantity){
+            informer(strategyPosition);
+        }else{
+            informCleaner(strategyPosition);
+        }
+        
+
+    });
+}
+
+
 const highSumValueOfInsertedOrderInformer = ({ orderModalQuantityGetter,orderModalPriceGetter, informer, informCleaner })=>{
     if (!strategyPositions[0].ordersModal) return
 
@@ -1910,7 +1957,7 @@ const highSumValueOfInsertedOrderInformer = ({ orderModalQuantityGetter,orderMod
 
         const cSize = strategyPosition.getCSize()
         
-        if(positionModalQuantity*positionModalPrice * cSize > 500000000){
+        if(positionModalQuantity*positionModalPrice * cSize > 1000000000){
             informer(strategyPosition);
         }else{
             informCleaner(strategyPosition);
