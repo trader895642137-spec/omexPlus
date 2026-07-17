@@ -844,6 +844,68 @@ export const calculateSumOfMoneyAndAssets  = async ()=>{
     
 }
 
+export const cacheItemsTemporarily = async (item)=>{
+    localStorage.setItem(
+        'tempCachedItems',
+        JSON.stringify(item)
+    );
+}
+
+
+export const findDuplicationsInGroups = async ()=>{
+    const groups = await getGroups();
+    const optionPortfolioList = await getOptionPortfolioList();
+
+
+    cacheItemsTemporarily({groups,optionPortfolioList});
+
+
+    const duplicateMap = new Map();
+
+    for (const group of groups) {
+        for (const instrumentId of group.instrumentIds) {
+            if (!duplicateMap.has(instrumentId)) {
+                duplicateMap.set(instrumentId, {
+                    count: 0,
+                    groups: []
+                });
+            }
+
+            const item = duplicateMap.get(instrumentId);
+            item.count++;
+            item.groups.push({
+                id: group.id,
+                name: group.name
+            });
+        }
+    }
+
+    const instrumentNameMap = new Map(
+        optionPortfolioList.map(item => [
+            item.instrumentId,
+            item.instrumentName
+        ])
+    );
+
+    const duplicates = [...duplicateMap.entries()]
+        .filter(([_, value]) => value.count > 1)
+        .map(([instrumentId, value]) => ({
+            instrumentId,
+            instrumentName: instrumentNameMap.get(instrumentId) ?? 'نامشخص',
+            count: value.count,
+            groups: value.groups
+        }));
+
+    console.log(duplicates);
+
+    duplicates.forEach(item => {
+        console.log(
+            `${item.instrumentName} (${item.instrumentId}) در ${item.count} گروه استفاده شده:`,
+            item.groups.map(group => group.name).join("، ")
+        );
+    });
+}
+
 
 
 export const OMEXApi = {
@@ -860,5 +922,6 @@ export const OMEXApi = {
     createGroup,
     createStrategyListForAllGroups,
     calculateSumOfMoneyAndAssets,
-    calcAveragePrice
+    calcAveragePrice,
+    findDuplicationsInGroups
 }

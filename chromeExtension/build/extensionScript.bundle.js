@@ -206,6 +206,34 @@ document.getElementById('createGroup').addEventListener('click', () => {
 
 
 
+
+document.getElementById('findDuplicationsInGroups').addEventListener('click', () => {
+
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+
+        chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            files: [],
+            world: "MAIN"
+        }, async () => {
+
+            // await new Promise(r => setTimeout(r, 3000)); 
+            chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                func: (actionName) => {
+                    window.omexLib.OMEXApi.findDuplicationsInGroups();
+                },
+                args: ['CREATE-GROUP'],
+                world: "MAIN"
+            });
+        });
+    });
+
+
+});
+
+
 document.getElementById('createFilterWatcher').addEventListener('click', () => {
 
 

@@ -814,10 +814,12 @@ const calcAveragePriceByExecutedOrders = (orders)=>{
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   OMEXApi: () => (/* binding */ OMEXApi),
+/* harmony export */   cacheItemsTemporarily: () => (/* binding */ cacheItemsTemporarily),
 /* harmony export */   calculateSumOfMoneyAndAssets: () => (/* binding */ calculateSumOfMoneyAndAssets),
 /* harmony export */   createGroup: () => (/* binding */ createGroup),
 /* harmony export */   createStrategyListForAllGroups: () => (/* binding */ createStrategyListForAllGroups),
 /* harmony export */   fillEstimationPanelByStrategyName: () => (/* binding */ fillEstimationPanelByStrategyName),
+/* harmony export */   findDuplicationsInGroups: () => (/* binding */ findDuplicationsInGroups),
 /* harmony export */   getBlockedAmount: () => (/* binding */ getBlockedAmount),
 /* harmony export */   getOptionPortfolioList: () => (/* binding */ getOptionPortfolioList),
 /* harmony export */   getStockPortfolioList: () => (/* binding */ getStockPortfolioList),
@@ -1672,6 +1674,68 @@ const calculateSumOfMoneyAndAssets  = async ()=>{
     
 }
 
+const cacheItemsTemporarily = async (item)=>{
+    localStorage.setItem(
+        'tempCachedItems',
+        JSON.stringify(item)
+    );
+}
+
+
+const findDuplicationsInGroups = async ()=>{
+    const groups = await getGroups();
+    const optionPortfolioList = await getOptionPortfolioList();
+
+
+    cacheItemsTemporarily({groups,optionPortfolioList});
+
+
+    const duplicateMap = new Map();
+
+    for (const group of groups) {
+        for (const instrumentId of group.instrumentIds) {
+            if (!duplicateMap.has(instrumentId)) {
+                duplicateMap.set(instrumentId, {
+                    count: 0,
+                    groups: []
+                });
+            }
+
+            const item = duplicateMap.get(instrumentId);
+            item.count++;
+            item.groups.push({
+                id: group.id,
+                name: group.name
+            });
+        }
+    }
+
+    const instrumentNameMap = new Map(
+        optionPortfolioList.map(item => [
+            item.instrumentId,
+            item.instrumentName
+        ])
+    );
+
+    const duplicates = [...duplicateMap.entries()]
+        .filter(([_, value]) => value.count > 1)
+        .map(([instrumentId, value]) => ({
+            instrumentId,
+            instrumentName: instrumentNameMap.get(instrumentId) ?? 'نامشخص',
+            count: value.count,
+            groups: value.groups
+        }));
+
+    console.log(duplicates);
+
+    duplicates.forEach(item => {
+        console.log(
+            `${item.instrumentName} (${item.instrumentId}) در ${item.count} گروه استفاده شده:`,
+            item.groups.map(group => group.name).join("، ")
+        );
+    });
+}
+
 
 
 const OMEXApi = {
@@ -1688,7 +1752,8 @@ const OMEXApi = {
     createGroup,
     createStrategyListForAllGroups,
     calculateSumOfMoneyAndAssets,
-    calcAveragePrice
+    calcAveragePrice,
+    findDuplicationsInGroups
 }
 
 /***/ }),
