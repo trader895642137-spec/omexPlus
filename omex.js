@@ -2210,14 +2210,14 @@ const getAndSetInstrumentData = async (strategyPositions)=>{
 const lastCalculatedAvgPrices={}
 
 
-export const getAvgPrices =async ()=>{
+export const calcAvgPricesByExecutenList =async ()=>{
 
     const requests = strategyPositions.map(async (strategyPosition) => {
         const instrumentID = strategyPosition.getInstrumentID();
         const averageInfo = await OMEXApi.calcAveragePrice(instrumentID);
         const avgPrice = averageInfo.averagePrice;
-        console.log({[
-            strategyPosition.instrumentName]:avgPrice,
+        console.log({
+            [strategyPosition.instrumentName]:avgPrice,
             quantity:averageInfo.quantity
         });
         return {
@@ -2236,6 +2236,19 @@ export const getAvgPrices =async ()=>{
     lastCalculatedAvgPrices.results= results;
     lastCalculatedAvgPrices.time = Date.now();
     console.log('همه نتایج:', results);
+    console.log('strategyPosition:', strategyPositions);
+    strategyPositions.some(strategyPosition=>{
+        const foundCalcAvgPrice = results.find(result=>result.instrumentName===strategyPosition.instrumentName);
+
+        const calcQuantity = Math.abs(foundCalcAvgPrice.quantity);
+        const currentPositionQuantity = strategyPosition.getCurrentPositionQuantity()/strategyPosition.cSize;
+        if(calcQuantity!==currentPositionQuantity){
+            const issueMessage = 'تعداد محاسبه شده یکی نیست'
+            showToast(issueMessage,10000,'error');
+        }
+    });
+
+
 
 }
 

@@ -1932,13 +1932,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   OMEXApi: () => (/* reexport safe */ _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi),
 /* harmony export */   Run: () => (/* binding */ Run),
 /* harmony export */   STRATEGY_NAME_PROFIT_CALCULATOR: () => (/* binding */ STRATEGY_NAME_PROFIT_CALCULATOR),
+/* harmony export */   calcAvgPricesByExecutenList: () => (/* binding */ calcAvgPricesByExecutenList),
 /* harmony export */   calcOffsetProfitOfStrategy: () => (/* binding */ calcOffsetProfitOfStrategy),
 /* harmony export */   calcProfitOfStrategy: () => (/* binding */ calcProfitOfStrategy),
 /* harmony export */   checkSumOfMoneyAndAssets: () => (/* binding */ checkSumOfMoneyAndAssets),
 /* harmony export */   configs: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.configs),
 /* harmony export */   createGroupOfCurrentStrategy: () => (/* binding */ createGroupOfCurrentStrategy),
 /* harmony export */   expectedProfit: () => (/* binding */ expectedProfit),
-/* harmony export */   getAvgPrices: () => (/* binding */ getAvgPrices),
 /* harmony export */   getSummaryNameOfStrategy: () => (/* binding */ getSummaryNameOfStrategy),
 /* harmony export */   groupLogger: () => (/* binding */ groupLogger),
 /* harmony export */   openAllGroupsInNewTabs: () => (/* binding */ openAllGroupsInNewTabs),
@@ -4156,14 +4156,14 @@ const getAndSetInstrumentData = async (strategyPositions)=>{
 const lastCalculatedAvgPrices={}
 
 
-const getAvgPrices =async ()=>{
+const calcAvgPricesByExecutenList =async ()=>{
 
     const requests = strategyPositions.map(async (strategyPosition) => {
         const instrumentID = strategyPosition.getInstrumentID();
         const averageInfo = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calcAveragePrice(instrumentID);
         const avgPrice = averageInfo.averagePrice;
-        console.log({[
-            strategyPosition.instrumentName]:avgPrice,
+        console.log({
+            [strategyPosition.instrumentName]:avgPrice,
             quantity:averageInfo.quantity
         });
         return {
@@ -4182,6 +4182,19 @@ const getAvgPrices =async ()=>{
     lastCalculatedAvgPrices.results= results;
     lastCalculatedAvgPrices.time = Date.now();
     console.log('همه نتایج:', results);
+    console.log('strategyPosition:', strategyPositions);
+    strategyPositions.some(strategyPosition=>{
+        const foundCalcAvgPrice = results.find(result=>result.instrumentName===strategyPosition.instrumentName);
+
+        const calcQuantity = Math.abs(foundCalcAvgPrice.quantity);
+        const currentPositionQuantity = strategyPosition.getCurrentPositionQuantity()/strategyPosition.cSize;
+        if(calcQuantity!==currentPositionQuantity){
+            const issueMessage = 'تعداد محاسبه شده یکی نیست'
+            showToast(issueMessage,10000,'error');
+        }
+    });
+
+
 
 }
 

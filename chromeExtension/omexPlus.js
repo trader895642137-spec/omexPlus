@@ -269,7 +269,7 @@ document.getElementById('calculateSumOfMoneyAndAssets').addEventListener('click'
 
 
 });
-document.getElementById('getAvgPrices').addEventListener('click', () => {
+document.getElementById('calcAvgPricesByExecutenList').addEventListener('click', () => {
 
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -284,7 +284,7 @@ document.getElementById('getAvgPrices').addEventListener('click', () => {
             chrome.scripting.executeScript({
                 target: { tabId: tabs[0].id },
                 func: (actionName) => {
-                    window.omexLib.getAvgPrices();
+                    window.omexLib.calcAvgPricesByExecutenList();
                 },
                 args: ['GET-AVG-PRICES'],
                 world: "MAIN"
