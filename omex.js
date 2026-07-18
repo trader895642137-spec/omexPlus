@@ -2717,6 +2717,9 @@ export const Run = async (_window = window) => {
     fillCurrentStockPriceByStrikes(strategyPositions);
 
 
+    calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+
+
 
     
     console.log(strategyPositions)
