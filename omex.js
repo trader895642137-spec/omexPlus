@@ -320,7 +320,7 @@ const MARGIN_CALC_TYPE = {
     BY_GIVEN_PRICE: "BY_GIVEN_PRICE"
 }
 
-let lastCheckProfitByExactDecimalPricesOfPortFolio={
+const lastCheckProfitByExactDecimalPricesOfPortFolio={
 };
 
 
@@ -332,6 +332,19 @@ const calcProfitLossByExactDecimalPricesOfPortFolio = async (_strategyPositions)
     lastCheckProfitByExactDecimalPricesOfPortFolio.stockPortfolioList = stockPortfolioList;
 
     showToast('پرتفوی دریافت شد');
+
+
+    const currentPortfolioPositions = _strategyPositions.map(({instrumentId,instrumentName})=>{
+        const positionInPortfolio = findPositionInfoByGivenPortfolio({instrumentId,instrumentName}, [...lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList, ...lastCheckProfitByExactDecimalPricesOfPortFolio.stockPortfolioList]);
+        return {
+            ...positionInPortfolio,
+            instrumentName
+        }
+    }).map(({instrumentName,executedPrice,breakEvenPrice})=>({instrumentName,executedPrice,breakEvenPrice})) ;
+
+    lastCheckProfitByExactDecimalPricesOfPortFolio.currentPortfolioPositions = currentPortfolioPositions;
+    console.log(currentPortfolioPositions);
+    
 
     const totalCostOfChunkOfEstimationQuantity = totalCostCalculatorForPriceTypes(_strategyPositions).totalCostOfChunkOfEstimationQuantity;
 
@@ -1955,7 +1968,6 @@ const higherQuantityOfInsertedOrderInformer = ({ orderModalQuantityGetter, infor
 
         const isOrderModalInBuyingTab =  strategyPosition.ordersModal.querySelector('.-is-frontView.-is-buy');
         const isOrderModalInSellingTab =  strategyPosition.ordersModal.querySelector('.-is-frontView.-is-sell');
-        console.log(currentPortFolioQuantity);
         
         if(!currentPortFolioQuantity){
             return informCleaner(strategyPosition);
