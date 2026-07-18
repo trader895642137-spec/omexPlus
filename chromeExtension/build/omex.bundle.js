@@ -2550,11 +2550,7 @@ const getRecentExactDecimalPricesOfPortFolio = ({instrumentId,instrumentName}) =
 
     if (!currentPortfolioPosition) return null
 
-    console.log({
-        instrumentName,
-        executedPrice:currentPortfolioPosition.executedPrice,
-        breakEvenPrice: currentPortfolioPosition.breakEvenPrice
-    });
+   
 
     if(!currentPortfolioPosition.executedPrice || !currentPortfolioPosition.breakEvenPrice){
         showToast('قیمت دقیق در پرتفوی موجود نمی باشد');
@@ -3118,18 +3114,24 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
 const orderModalInputCheckAndInformer = () => {
 
-
     setTimeout(() => {
         
         quantityUnbalanceInformer({
             orderModalQuantityGetter: (strategyPosition) => convertStringToInt(strategyPosition.getOrderModalQuantityInputElement()?.value),
             informer: (strategyPosition) => { 
                 if(!strategyPosition.getOrderModalQuantityInputElement()) return 
-                strategyPosition.getOrderModalQuantityInputElement().style.cssText = "border: 5px solid red" 
+                const quantityInput = strategyPosition.getOrderModalQuantityInputElement();
+                if (quantityInput) {
+                    quantityInput.classList.add('inserted-quantity-unbalance-error'); 
+                }
             },
             informCleaner: (strategyPosition) => { 
                 if(!strategyPosition.getOrderModalQuantityInputElement()) return 
-                strategyPosition.getOrderModalQuantityInputElement().style.border = '' 
+
+                const quantityInput = strategyPosition.getOrderModalQuantityInputElement();
+                if (quantityInput) {
+                    quantityInput.classList.remove('inserted-quantity-unbalance-error'); 
+                }
             }
         });
         highSumValueOfInsertedOrderInformer({
@@ -3137,30 +3139,44 @@ const orderModalInputCheckAndInformer = () => {
             orderModalPriceGetter: (strategyPosition) => convertStringToInt(strategyPosition.getOrderModalPriceInputElement()?.value),
             informer: (strategyPosition) => { 
                 if(!strategyPosition.ordersModal) return 
-                strategyPosition.ordersModal.querySelector('.o-inModalWrapper').style.border='10px solid red';
+
+                const inModalWrapper = strategyPosition.ordersModal.querySelector('.o-inModalWrapper');
+                if (inModalWrapper) {
+                    inModalWrapper.classList.add('inserted-high-sum-value-error'); 
+                }
             },
             informCleaner: (strategyPosition) => { 
                 if(!strategyPosition.ordersModal) return 
-                strategyPosition.ordersModal.querySelector('.o-inModalWrapper').style.border='';
+
+                const inModalWrapper = strategyPosition.ordersModal.querySelector('.o-inModalWrapper');
+                if (inModalWrapper) {
+                    inModalWrapper.classList.remove('inserted-high-sum-value-error'); 
+                }
             }
         });
-
 
         higherQuantityOfInsertedOrderInformer({
             orderModalQuantityGetter: (strategyPosition) => convertStringToInt(strategyPosition.getOrderModalQuantityInputElement()?.value),
             informer: (strategyPosition) => {
                 if (!strategyPosition.ordersModal) return
 
-                strategyPosition.ordersModal.querySelector('.o-quantityContainer footer').style.border = '10px solid yellow';
-                const issueMessage = 'تعداد بیشتر از دارایی است'
-                showToast(issueMessage,3000,'error');
+                const footer = strategyPosition.ordersModal.querySelector('.o-quantityContainer footer');
+                if (footer) {
+                    footer.classList.add('higher-than-portfolio'); 
+                }
+
+                const issueMessage = 'تعداد بیشتر از دارایی است';
+                showToast(issueMessage, 3000, 'error');
             },
             informCleaner: (strategyPosition) => {
                 if (!strategyPosition.ordersModal) return
-                strategyPosition.ordersModal.querySelector('.o-quantityContainer footer').style.border = '';
+
+                const footer = strategyPosition.ordersModal.querySelector('.o-quantityContainer footer');
+                if (footer) {
+                    footer.classList.remove('higher-than-portfolio'); 
+                }
             }
         });
-
 
 
         
@@ -3303,12 +3319,20 @@ const currentPositionQuantityUnbalanceCheckAndNotif = () => {
         orderModalQuantityGetter: (strategyPosition) => strategyPosition.getOrderModalPortfolioQuantity(),
         informer: (strategyPosition) => {
             if (!strategyPosition?.getOrderModalQuantityFooterElement()) return
-            strategyPosition.getOrderModalQuantityFooterElement().style.cssText = "border-bottom: 2px solid red";
+
+            const quantityFooter = strategyPosition.getOrderModalQuantityFooterElement();
+            if (quantityFooter) {
+                quantityFooter.classList.add('current-position-quantity-unbalance-error'); 
+            }
 
         },
         informCleaner: (strategyPosition) => {
             if (!strategyPosition?.getOrderModalQuantityFooterElement()) return
-            strategyPosition.getOrderModalQuantityFooterElement().style.cssText = ''
+
+            const quantityFooter = strategyPosition.getOrderModalQuantityFooterElement();
+            if (quantityFooter) {
+                quantityFooter.classList.remove('current-position-quantity-unbalance-error'); 
+            }
         }
     }).hasIssue;
 
@@ -3942,6 +3966,11 @@ const higherQuantityOfInsertedOrderInformer = ({ orderModalQuantityGetter, infor
 
         const isOrderModalInBuyingTab =  strategyPosition.ordersModal.querySelector('.-is-frontView.-is-buy');
         const isOrderModalInSellingTab =  strategyPosition.ordersModal.querySelector('.-is-frontView.-is-sell');
+        console.log(currentPortFolioQuantity);
+        
+        if(!currentPortFolioQuantity){
+            return informCleaner(strategyPosition);
+        }
 
         if(strategyPosition.isBuy && isOrderModalInSellingTab && insertedQuantity>currentPortFolioQuantity){
             informer(strategyPosition);
@@ -4197,6 +4226,19 @@ const injectStyles = () => {
             }
             client-trade-ui-input-price-advance-compact .o-rangeButtonsContainer{
                 display:none;
+            }
+
+            .higher-than-portfolio{
+                border: 5px solid yellow !important;
+            }
+            .inserted-high-sum-value-error{
+                border: 10px solid red !important;
+            }
+            .inserted-quantity-unbalance-error{
+                border: 5px solid red !important;
+            }
+            .current-position-quantity-unbalance-error{
+                border-bottom: 2px solid red !important;
             }
         `;
 
