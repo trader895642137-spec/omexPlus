@@ -8328,6 +8328,7 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minProfitToFilter,
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
+    minStockPriceDistanceFromSarBeSarInPercent=-Infinity, maxStockPriceDistanceFromSarBeSarInPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
@@ -8348,6 +8349,9 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
             if (!option.optionDetails?.stockSymbolDetails)
                 return option
 
+            if (!option.symbol.startsWith('ض') || option.vol < minVol)
+                return option
+
             const sellingOptionPrice = getPriceOfAsset({
                 asset: option,
                 priceType,
@@ -8358,10 +8362,14 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
 
             if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
 
-            const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
-            if (!option.symbol.startsWith('ض') || option.vol < minVol || stockPriceStrikeRatio < minStockPriceDistanceInPercent || stockPriceStrikeRatio > maxStockPriceDistanceInPercent)
+            const breakeven = option.optionDetails.stockSymbolDetails.last - sellingOptionPrice;
+            const stockPriceToSarBeSarPercent = (option.optionDetails.stockSymbolDetails.last / breakeven) - 1;
+
+
+            if (stockPriceToSarBeSarPercent < minStockPriceDistanceFromSarBeSarInPercent || stockPriceToSarBeSarPercent > maxStockPriceDistanceFromSarBeSarInPercent) {
                 return option
+            }
 
             const totalCostWithSign = totalCostCalculator({
                 buyStocks: [option.optionDetails?.stockSymbolDetails],
@@ -8379,8 +8387,7 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
 
             const profitPercent = profit / Math.abs(totalCostWithSign);
 
-            const breakeven = option.optionDetails.stockSymbolDetails.last - sellingOptionPrice;
-            const stockPriceToSarBeSarPercent = (option.optionDetails.stockSymbolDetails.last / breakeven) - 1;
+            
 
 
            
@@ -8395,6 +8402,7 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
                 expectedProfitNotif,
                 expectedProfitPerMonth,
                 stockPriceToSarBeSarPercent,
+                settlementTimeDiff : moment(option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now()),
                 name: createStrategyName([option.optionDetails?.stockSymbolDetails, option]),
                 profitPercent
             }
@@ -10712,6 +10720,12 @@ const createListFilterContetnByList=(list)=>{
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             expectedProfitNotif: true,
         });
+
+
+        const COVEREDStrategies = calcCOVEREDStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            expectedProfitNotif: true
+        });
   
 
     const strategyMapList = [
@@ -11711,31 +11725,35 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitNotif: true
         }),
 
-        calcCOVEREDStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        filterStrategiesByConfig({
+            strategies: COVEREDStrategies,
+            min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 38 * 24 * 3600000,
-            minStockPriceDistanceInPercent: 0.2,
-            expectedProfitNotif: true
+            minStockPriceDistanceFromSarBeSarInPercent: 0.2,
         }),
-        calcCOVEREDStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+
+        filterStrategiesByConfig({
+            strategies: COVEREDStrategies,
+            min_time_to_settlement: 6 * 24 * 3600000,
             max_time_to_settlement: 15 * 24 * 3600000,
-            minStockPriceDistanceInPercent: 0.12,
-            expectedProfitNotif: true
+            minStockPriceDistanceFromSarBeSarInPercent: 0.12,
         }),
-        calcCOVEREDStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+       
+        filterStrategiesByConfig({
+            strategies: COVEREDStrategies,
+            min_time_to_settlement: 1 * 3 * 3600000,
             max_time_to_settlement: 6 * 24 * 3600000,
-            minStockPriceDistanceInPercent: 0.05,
-            expectedProfitNotif: true
+            minStockPriceDistanceFromSarBeSarInPercent: 0.05,
         }),
-        calcCOVEREDStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+
+        // TODO: settlementGainChoosePriceType: "MIN",
+        filterStrategiesByConfig({
+            strategies: COVEREDStrategies,
             max_time_to_settlement: 1 * 3 * 3600000,
-            expectedProfitNotif: true,
             minProfitToFilter: 0.01,
-            settlementGainChoosePriceType: "MIN",
         }),
+       
+        
         , calcCOVERED_COLLAR_Strategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             expectedProfitPerMonth: 1.03,
