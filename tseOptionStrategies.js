@@ -109,8 +109,8 @@ import { findBreakevenList } from './findBreakevens.js';
 )('HackTimerWorker.min.js');
 
 // TODO: place in CONSTS
-const quantitySizeMultiplier =1000;
-const baseQuantity = 10 * quantitySizeMultiplier;
+const cSize =1000;
+const baseQuantity = 10 * cSize;
 
 const CONSTS = {
 
@@ -8824,6 +8824,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
                         minProfitToFilter,
                         expectedProfitNotif,
                         expectedProfitPerMonth,
+                        stockPriceToSarBeSarPercent,
                         name: createStrategyName([option, _option]),
                         profitPercent
                     }
@@ -9003,6 +9004,7 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
                         strategyTypeTitle: "BECS",
                         expectedProfitNotif,
                         expectedProfitPerMonth,
+                        stockPriceToSarBeSarPercent,
                         name: createStrategyName([option, _option]),
                         profitPercent
                     }

@@ -22244,6 +22244,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
                         minProfitToFilter,
                         expectedProfitNotif,
                         expectedProfitPerMonth,
+                        stockPriceToSarBeSarPercent,
                         name: createStrategyName([option, _option]),
                         profitPercent
                     }
@@ -22423,6 +22424,7 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
                         strategyTypeTitle: "BECS",
                         expectedProfitNotif,
                         expectedProfitPerMonth,
+                        stockPriceToSarBeSarPercent,
                         name: createStrategyName([option, _option]),
                         profitPercent
                     }
