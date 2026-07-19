@@ -7372,10 +7372,10 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
                         
 
-                        if(buyingPut.symbol==='طستا5046' && sellingPut.symbol==='طستا5045' && anotherSellingPut.symbol==='طستا5045'){
-                            console.log(23423);
+                        // if(buyingPut.symbol==='طستا5046' && sellingPut.symbol==='طستا5045' && anotherSellingPut.symbol==='طستا5045'){
+                        //     console.log(23423);
                             
-                        }
+                        // }
 
 
                         const maxLossOfBEPS_RATIO = totalCostOfBEPS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBEPS_RATIO, stockPrice:priceThatCauseMaxLossOfBEPS_RATIO});
@@ -8378,6 +8378,13 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
             const profit = totalCostWithSign + totalOffsetGainWithSign;
 
             const profitPercent = profit / Math.abs(totalCostWithSign);
+
+            const breakeven = option.optionDetails.stockSymbolDetails.last - sellingOptionPrice;
+            const stockPriceToSarBeSarPercent = (option.optionDetails.stockSymbolDetails.last / breakeven) - 1;
+
+
+           
+
             const strategyObj = {
                 option: {
                     ...option
@@ -8387,6 +8394,7 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
                 minProfitToFilter,
                 expectedProfitNotif,
                 expectedProfitPerMonth,
+                stockPriceToSarBeSarPercent,
                 name: createStrategyName([option.optionDetails?.stockSymbolDetails, option]),
                 profitPercent
             }
