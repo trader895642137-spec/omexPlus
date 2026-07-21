@@ -1663,10 +1663,15 @@ const calculateSumOfMoneyAndAssets  = async ()=>{
     }));
 
 
+    const calculatedBlockedAmount = optionPortfolioList.filter(position=>position.blockedAmount).reduce((sum,position)=>sum+position.blockedAmount,0);
+
+
+
     return {
         sumOfMoneyAndAssets,
         sumCostWithoutMarginOfOptions,
         blockedAmount,
+        calculatedBlockedAmount,
         customerOptionPurchasePowerT2,
         sumCostOfAssetsWithoutFreeRiskETF
     }
@@ -2386,17 +2391,33 @@ const checkSumOfMoneyAndAssets = async (isForce)=>{
     // const prevSumOfMoneyAndAssets = localStorage.getItem(localstorageKey);
 
 
-    const {sumOfMoneyAndAssets,blockedAmount}= await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calculateSumOfMoneyAndAssets();
+    const {sumOfMoneyAndAssets,blockedAmount,calculatedBlockedAmount}= await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calculateSumOfMoneyAndAssets();
 
-    showToast(sumOfMoneyAndAssets.toLocaleString('en-US', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }),5000);
+
+
+    if((0,_common_js__WEBPACK_IMPORTED_MODULE_0__.hasGreaterRatio)({num1:blockedAmount,num2:calculatedBlockedAmount,properRatio:1.05})){
+        showToast('مارجین محاسباتی با مارجین سرور تفاوت دارد',7000,'error');
+    }else{
+
+        showToast(sumOfMoneyAndAssets.toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }),5000);
+    }
+
 
     console.log('مارجین',  blockedAmount.toLocaleString('en-US', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
-    }))
+    }));
+    console.log('مارجین محاسباتی',  calculatedBlockedAmount.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }));
+    console.log('کل',  sumOfMoneyAndAssets.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }));
 
     
 
@@ -2566,7 +2587,7 @@ const getRecentExactDecimalPricesOfPortFolio = ({instrumentId,instrumentName}) =
    
 
     if(!currentPortfolioPosition.executedPrice || !currentPortfolioPosition.breakEvenPrice){
-        showToast('قیمت دقیق در پرتفوی موجود نمی باشد');
+        showToast('قیمت دقیق در پرتفوی موجود نمی باشد',2000,'error');
         return null
     }
 

@@ -833,10 +833,15 @@ export const calculateSumOfMoneyAndAssets  = async ()=>{
     }));
 
 
+    const calculatedBlockedAmount = optionPortfolioList.filter(position=>position.blockedAmount).reduce((sum,position)=>sum+position.blockedAmount,0);
+
+
+
     return {
         sumOfMoneyAndAssets,
         sumCostWithoutMarginOfOptions,
         blockedAmount,
+        calculatedBlockedAmount,
         customerOptionPurchasePowerT2,
         sumCostOfAssetsWithoutFreeRiskETF
     }

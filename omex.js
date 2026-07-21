@@ -8,7 +8,8 @@ import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalc
     waitForElement,
     takeScreenshot,
     isETF,
-    hasBreakevenExecutedPriceDiffIssue} from './common.js';
+    hasBreakevenExecutedPriceDiffIssue,
+    hasGreaterRatio} from './common.js';
 import { isInstrumentNameOfOption,  OMEXApi } from './omexApi.js';
 
 
@@ -375,17 +376,33 @@ export const checkSumOfMoneyAndAssets = async (isForce)=>{
     // const prevSumOfMoneyAndAssets = localStorage.getItem(localstorageKey);
 
 
-    const {sumOfMoneyAndAssets,blockedAmount}= await OMEXApi.calculateSumOfMoneyAndAssets();
+    const {sumOfMoneyAndAssets,blockedAmount,calculatedBlockedAmount}= await OMEXApi.calculateSumOfMoneyAndAssets();
 
-    showToast(sumOfMoneyAndAssets.toLocaleString('en-US', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    }),5000);
+
+
+    if(hasGreaterRatio({num1:blockedAmount,num2:calculatedBlockedAmount,properRatio:1.05})){
+        showToast('مارجین محاسباتی با مارجین سرور تفاوت دارد',7000,'error');
+    }else{
+
+        showToast(sumOfMoneyAndAssets.toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }),5000);
+    }
+
 
     console.log('مارجین',  blockedAmount.toLocaleString('en-US', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
-    }))
+    }));
+    console.log('مارجین محاسباتی',  calculatedBlockedAmount.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }));
+    console.log('کل',  sumOfMoneyAndAssets.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }));
 
     
 
@@ -555,7 +572,7 @@ const getRecentExactDecimalPricesOfPortFolio = ({instrumentId,instrumentName}) =
    
 
     if(!currentPortfolioPosition.executedPrice || !currentPortfolioPosition.breakEvenPrice){
-        showToast('قیمت دقیق در پرتفوی موجود نمی باشد');
+        showToast('قیمت دقیق در پرتفوی موجود نمی باشد',2000,'error');
         return null
     }
 
