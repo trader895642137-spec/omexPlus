@@ -8269,6 +8269,7 @@ const calcBECS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
                         expectedProfitNotif,
                         minProfitToFilter,
                         expectedProfitPerMonth,
+                        isWholeProfitable: profit>=0,
                         name: createStrategyName([option, buyingCall,putWithSameStrikeOfSellingCall]),
                         profitPercent
                     }
@@ -8980,15 +8981,24 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
                         })
                     });
 
+
                     const breakeven = breakevenList[0];
 
 
+                    let stockPriceToSarBeSarPercent;
+                    if (breakeven) {
 
-                    const stockPriceToSarBeSarPercent = (breakeven /option.optionDetails.stockSymbolDetails.last ) - 1;
+                        stockPriceToSarBeSarPercent = (breakeven / option.optionDetails.stockSymbolDetails.last) - 1;
 
-                    if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSar || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSar) {
-                        return _allPossibleStrategies
+                        if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSar || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSar) {
+                            return _allPossibleStrategies
+                        }
+                    } else {
+
                     }
+
+
+                   
 
 
 
@@ -9026,6 +9036,7 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
                         expectedProfitNotif,
                         expectedProfitPerMonth,
                         stockPriceToSarBeSarPercent,
+                        isWholeProfitable: !breakeven,
                         name: createStrategyName([option, _option]),
                         profitPercent
                     }
@@ -10773,6 +10784,7 @@ const createListFilterContetnByList=(list)=>{
 
         const BECS_COLLAR_Strategies = calcBECS_COLLAR_Strategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+
             expectedProfitPerMonth: 1.03,
             expectedProfitNotif: true 
         });
