@@ -14229,6 +14229,7 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth,
                         expectedProfitNotif,
                         minProfitToFilter,
                         expectedProfitPerMonth,
+                        isWholeProfitable:profit>=0, 
                         settlementTimeDiff : (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(date, 'jYYYY/jMM/jDD').diff(Date.now()),
                         name: createStrategyName([option, higherStrikeOption]),
                         profitPercent
@@ -14449,6 +14450,7 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth,
                         expectedProfitNotif,
                         minProfitToFilter,
                         expectedProfitPerMonth,
+                        isWholeProfitable:profit>=0, 
                         name: createStrategyName([option, higherStrikeOption]),
                         profitPercent
                     }
@@ -15210,6 +15212,7 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                         minProfitToFilter,
                         expectedProfitPerMonth,
                         stockPriceToSarBeSarPercent,
+                        isWholeProfitable:!breakeven,
                         settlementTimeDiff : (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(date, 'jYYYY/jMM/jDD').diff(Date.now()),
                         name: createStrategyName([option, _option]),
                         profitPercent
@@ -15434,6 +15437,7 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                         minProfitToFilter,
                         expectedProfitPerMonth,
                         stockPriceToSarBeSarPercent,
+                        isWholeProfitable:!breakeven,
                         settlementTimeDiff : (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(date, 'jYYYY/jMM/jDD').diff(Date.now()),
                         name: createStrategyName([option, _option]),
                         profitPercent
@@ -15668,6 +15672,7 @@ const calcSyntheticCoveredCallStrategies = (list,
                         expectedProfitNotif,
                         minProfitToFilter,
                         stockPriceToSarBeSarPercent,
+                        isWholeProfitable:!breakeven,
                         name: createStrategyName([buyingCall, sameStrikePut, sellingCall]),
                         profitPercent: profitPercent,
                         // percentToShow: stockPriceToSarBeSarPercent
@@ -16296,6 +16301,7 @@ const calcCALL_BUTTERFLYStrategies = (list, {
                             strategyTypeTitle: "CALL_BUTTERFLY",
                             minProfitToFilter,
                             expectedProfitNotif,
+                            isWholeProfitable:minProfitLossOfButterfly>=0,
                             name: createStrategyName([option, option2, option3, option4]),
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn({minProfitPercent,profitLossRatio}),
                             profitPercent: totalCost>=0 ? 1 : minProfitPercent
@@ -16602,6 +16608,7 @@ const calcCALL_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTy
                                 strategyTypeTitle: "CALL_CONDOR",
                                 expectedProfitNotif,
                                 minProfitToFilter,
+                                isWholeProfitable:minProfitLossOfButterfly>=0,
                                 name: createStrategyName([option, option2, option3, option4]),
                                 isProfitEnough : isProfitEnoughFn && isProfitEnoughFn({minProfitPercent,profitLossRatio}),
                                 profitPercent: totalCost>=0 ? 1 : minProfitPercent
@@ -16923,6 +16930,7 @@ const calcPUT_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePrice
                             strategyTypeTitle: "PUT_BUTTERFLY",
                             expectedProfitNotif,
                             minProfitToFilter,
+                            isWholeProfitable:minProfitLossOfButterfly>=0,
                             name: createStrategyName([option, option2, option3, option4]),
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn({minProfitPercent,profitLossRatio}),
                             profitPercent: totalCost>=0 ? 1 : minProfitPercent
@@ -17243,6 +17251,7 @@ const calcPUT_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTyp
                                 strategyTypeTitle: "PUT_CONDOR",
                                 expectedProfitNotif,
                                 minProfitToFilter,
+                                isWholeProfitable:minProfitLossOfButterfly>=0,
                                 name: createStrategyName([option, option2, option3, option4]),
                                 isProfitEnough : isProfitEnoughFn && isProfitEnoughFn({minProfitPercent,profitLossRatio}),
                                 profitPercent: totalCost>=0 ? 1 : minProfitPercent
@@ -18425,6 +18434,7 @@ const IRON_BUTTERFLY_BUPS_strategyObjCreator = (option, option2, option3, option
         strategyTypeTitle: "IRON_BUTTERFLY_BUPS",
         expectedProfitNotif,
         minProfitToFilter,
+        isWholeProfitable:minProfitLossOfButterfly>=0,
         name: createStrategyName([option, option2, option3, option4]),
         isProfitEnough : isProfitEnoughFn && isProfitEnoughFn({minProfitPercent,profitLossRatio}),
         profitPercent: totalCost>=0 ? 1 : minProfitPercent
@@ -18987,6 +18997,7 @@ const calcIRON_CONDOR_BUPS_Strategies = (list, {priceType,
                                 positions:[option, option2, option3, option4],
                                 strategyTypeTitle: "IRON_CONDOR_BUPS",
                                 expectedProfitNotif,
+                                isWholeProfitable:minProfitLossOfButterfly>=0,
                                 name: createStrategyName([option, option2, option3, option4]),
                                 isProfitEnough : isProfitEnoughFn && isProfitEnoughFn({minProfitPercent,profitLossRatio}),
                                 profitPercent: totalCost>=0 ? 1 : minProfitPercent
@@ -20253,6 +20264,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
+                            isWholeProfitable:isFullBodyProfitable,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBUPS_RATIO),
                             name: createStrategyName([buyingPut, sellingPut, sellingCall]),
                             profitPercent: isFullBodyProfitable ? 10 : minProfitPercentOfBUPS_RATIO
@@ -20552,6 +20564,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             minProfitToFilter,
                             expectedProfitNotif,
                             stockPriceToSarBeSarPercent,
+                            isWholeProfitable:isFullBodyProfitable,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBECS_RATIO),
                             name: createStrategyName([buyingCall, sellingCall, sellingPut]),
                             // profitPercent: isFullBodyProfitable? 1: stockPriceToSarBeSarPercent
@@ -20852,6 +20865,7 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
+                            isWholeProfitable:isFullBodyProfitable,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBEPS_RATIO),
                             name: createStrategyName([buyingPut, sellingPut, anotherSellingPut]),
                             profitPercent: isFullBodyProfitable ? 10 : minProfitPercentOfBEPS_RATIO
@@ -21082,6 +21096,7 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
                         expectedProfitNotif,
                         minProfitToFilter,
                         expectedProfitPerMonth,
+                        isWholeProfitable : profit>=0,
                         name: createStrategyName([option, _option,callOptionWithSameStrike]),
                         profitPercent
                     }
@@ -21267,6 +21282,7 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
                         expectedProfitNotif,
                         minProfitToFilter,
                         expectedProfitPerMonth,
+                        isWholeProfitable : profit>=0,
                         name: createStrategyName([option, _option,putOptionWithSameStrike]),
                         profitPercent
                     }
@@ -21476,6 +21492,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
                         expectedProfitNotif,
                         minProfitToFilter,
                         expectedProfitPerMonth,
+                        isWholeProfitable : profit>=0,
                         name: createStrategyName([option, buyingPut,callWithSameStrikeOfSellingPut]),
                         profitPercent
                     }
@@ -21956,6 +21973,7 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
                 strategyTypeTitle: "CONVERSION",
                 expectedProfitNotif,
                 expectedProfitPerMonth,
+                isWholeProfitable : profit>=0,
                 name: createStrategyName([option.optionDetails?.stockSymbolDetails, option]),
                 profitPercent
             }
@@ -22098,6 +22116,7 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
                     expectedProfitNotif,
                     minProfitToFilter,
                     expectedProfitPerMonth,
+                    isWholeProfitable : minProfit>=0,
                     name: createStrategyName([option.optionDetails?.stockSymbolDetails, option, putOptionWithLowerStrike]),
                     profitPercent: minProfitPercent
                 }
@@ -22266,6 +22285,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
                         minProfitToFilter,
                         expectedProfitNotif,
                         expectedProfitPerMonth,
+                        isWholeProfitable: !breakeven,
                         stockPriceToSarBeSarPercent,
                         name: createStrategyName([option, _option]),
                         profitPercent
