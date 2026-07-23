@@ -11103,8 +11103,6 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: BECS_COLLAR_Strategies,
-            max_time_to_settlement: 1 * 3 * 3600000,
-            minProfitToFilter: 0.01
         }),
        
 
