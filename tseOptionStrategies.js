@@ -6613,7 +6613,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,
 
 
 
-const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBUPS=0.6, 
+const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBUPS=0.5, 
     minStockPriceToSarBeSar=-Infinity,
     maxStockPriceToSarBeSar=Infinity,
     minProfitToFilter,
@@ -6906,7 +6906,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
 
 // Jade Lizard
-const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBECS=0.6, 
+const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBECS=0.5, 
     minStockPriceToSarBeSar=-Infinity,
     maxStockPriceToSarBeSar=Infinity,
     minProfitToFilter,
@@ -7204,7 +7204,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 }
 
 
-const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBEPS=0.6, 
+const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBEPS=0.5, 
     minStockPriceToSarBeSar=-Infinity,
     maxStockPriceToSarBeSar=Infinity,
     minProfitToFilter,
