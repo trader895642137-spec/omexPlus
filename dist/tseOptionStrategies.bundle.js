@@ -24234,7 +24234,8 @@ const createListFilterContetnByList=(list)=>{
         calcARBITRAGE_PUTStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             expectedProfitNotif: true,
-            minProfitToFilter: 0.01,
+            minProfitToFilter: 0.005,
+            expectedProfitPerMonth: 1.025,
             
         }),
          
