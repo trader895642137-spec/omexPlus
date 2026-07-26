@@ -13535,7 +13535,7 @@ const baseQuantity = 10 * cSize;
 const CONSTS = {
 
     DEFAULTS: {
-        MIN_VOL: 50 * 1000 * 1000,
+        MIN_VOL: 10 * 1000 * 1000,
     },
 
     COMMISSION_FACTOR: {
@@ -14120,7 +14120,7 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth,
 
                 if(optionPrice===0) return option
 
-                const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => _option.symbol !== option.symbol && _option.symbol.startsWith('ض') && _option.vol > minVol && _option.optionDetails?.strikePrice > option.optionDetails?.strikePrice);
+                const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => _option.symbol !== option.symbol && _option.symbol.startsWith('ض')  && _option.optionDetails?.strikePrice > option.optionDetails?.strikePrice);
 
                 let allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (_allPossibleStrategies, higherStrikeOption) => {
 
@@ -14135,12 +14135,14 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth,
                     if(higherStrikeOptionPrice===0) return _allPossibleStrategies
 
 
-                    const sameLowStrikePut = optionListOfSameDate.find(__option => __option.symbol === option.symbol.replace('ض', 'ط') && (__option.last > 10 ? __option.vol > minVol : true) && __option.bestBuy);
-                    const sameHighStrikePut = optionListOfSameDate.find(__option => __option.symbol === higherStrikeOption.symbol.replace('ض', 'ط') && (__option.last > 10 ? __option.vol > minVol : true) && __option.bestSell);
+                    const sameLowStrikePut = optionListOfSameDate.find(__option => __option.symbol === option.symbol.replace('ض', 'ط')  && __option.bestBuy);
+                    const sameHighStrikePut = optionListOfSameDate.find(__option => __option.symbol === higherStrikeOption.symbol.replace('ض', 'ط')  && __option.bestSell);
+
+                  
 
                     if (!sameLowStrikePut || !sameHighStrikePut)
                         return _allPossibleStrategies
-
+                   
 
                     const sameLowStrikePutPrice = getPriceOfAsset({
                         asset: sameLowStrikePut,
@@ -14329,7 +14331,7 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth,
 
                 if(optionPrice===0) return option
 
-                const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => _option.symbol !== option.symbol && _option.symbol.startsWith('ط') && _option.vol > minVol && _option.optionDetails?.strikePrice > option.optionDetails?.strikePrice);
+                const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => _option.symbol !== option.symbol && _option.symbol.startsWith('ط')  && _option.optionDetails?.strikePrice > option.optionDetails?.strikePrice);
 
                 let allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (_allPossibleStrategies, higherStrikeOption) => {
 
@@ -14342,8 +14344,8 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth,
 
                     if(higherStrikeOptionPrice===0) return _allPossibleStrategies
 
-                    const sameLowStrikeCall = optionListOfSameDate.find(__option => __option.symbol === option.symbol.replace('ط', 'ض') && (__option.last > 10 ? __option.vol > minVol : true) && __option.bestBuy);
-                    const sameHighStrikeCall = optionListOfSameDate.find(__option => __option.symbol === higherStrikeOption.symbol.replace('ط', 'ض') && (__option.last > 10 ? __option.vol > minVol : true) && __option.bestSell);
+                    const sameLowStrikeCall = optionListOfSameDate.find(__option => __option.symbol === option.symbol.replace('ط', 'ض')  && __option.bestBuy);
+                    const sameHighStrikeCall = optionListOfSameDate.find(__option => __option.symbol === higherStrikeOption.symbol.replace('ط', 'ض')  && __option.bestSell);
                     
                     if (!sameLowStrikeCall || !sameHighStrikeCall)
                         return _allPossibleStrategies
@@ -15542,7 +15544,7 @@ const calcSyntheticCoveredCallStrategies = (list,
                 if(buyingCallPrice===0) return buyingCall
 
 
-                const sameStrikePut = optionListOfSameDate.find(__option => __option.symbol === buyingCall.symbol.replace('ض', 'ط') && (__option.last > 10 ? __option.vol > minVol : true));
+                const sameStrikePut = optionListOfSameDate.find(__option => __option.symbol === buyingCall.symbol.replace('ض', 'ط') );
                 if(!sameStrikePut) return buyingCall
                 const sameStrikePutPrice = getPriceOfAsset({
                     asset: sameStrikePut,
@@ -21923,7 +21925,7 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
 
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
-            if (!option.symbol.startsWith('ض') || option.vol < minVol || stockPriceStrikeRatio < minStockPriceDistanceInPercent || stockPriceStrikeRatio > maxStockPriceDistanceInPercent)
+            if (!option.symbol.startsWith('ض')  || stockPriceStrikeRatio < minStockPriceDistanceInPercent || stockPriceStrikeRatio > maxStockPriceDistanceInPercent)
                 return option
 
             const putOptionWithSameStrike = optionListOfStock.find(optionOfStock => {
@@ -22051,7 +22053,7 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
 
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
-            if (!option.symbol.startsWith('ض') || option.vol < minVol || stockPriceStrikeRatio < minStockPriceDistanceInPercent || stockPriceStrikeRatio > maxStockPriceDistanceInPercent)
+            if (!option.symbol.startsWith('ض')  || stockPriceStrikeRatio < minStockPriceDistanceInPercent || stockPriceStrikeRatio > maxStockPriceDistanceInPercent)
                 return option
 
 
@@ -22630,7 +22632,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
                         if(buyingPutPrice===0) return _allPossibleStrategies
 
-                        const sellingCallWithSameStrikeOfBuyingPut = optionListOfSameDate.find(_option=> _option.isCall && _option.vol > minVol && ( _option.optionDetails?.strikePrice === buyingPut.optionDetails?.strikePrice));
+                        const sellingCallWithSameStrikeOfBuyingPut = optionListOfSameDate.find(_option=> _option.isCall &&  ( _option.optionDetails?.strikePrice === buyingPut.optionDetails?.strikePrice));
 
 
                         if(!sellingCallWithSameStrikeOfBuyingPut) return _allPossibleStrategies
@@ -22898,7 +22900,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
                         if(buyingCallPrice===0) return _allPossibleStrategies
 
-                        const sellingPutWithSameStrikeOfBuyingCall = optionListOfSameDate.find(_option=> _option.isPut && _option.vol > minVol && ( _option.optionDetails?.strikePrice === buyingCall.optionDetails?.strikePrice));
+                        const sellingPutWithSameStrikeOfBuyingCall = optionListOfSameDate.find(_option=> _option.isPut  && ( _option.optionDetails?.strikePrice === buyingCall.optionDetails?.strikePrice));
 
 
                         if(!sellingPutWithSameStrikeOfBuyingCall) return _allPossibleStrategies
@@ -23142,7 +23144,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                     if(sellingCallPrice===0) return _allPossibleStrategies
 
 
-                    const buyingPutWithSameStrikeOfSellingCall = optionListOfSameDate.find(_option=> _option.isPut && _option.vol > minVol && ( _option.optionDetails?.strikePrice === sellingCall.optionDetails?.strikePrice));
+                    const buyingPutWithSameStrikeOfSellingCall = optionListOfSameDate.find(_option=> _option.isPut  && ( _option.optionDetails?.strikePrice === sellingCall.optionDetails?.strikePrice));
 
                     if(!buyingPutWithSameStrikeOfSellingCall) return _allPossibleStrategies
 
@@ -23413,7 +23415,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                     if(sellingPutPrice===0) return _allPossibleStrategies
 
 
-                    const buyingCallWithSameStrikeOfSellingPut = optionListOfSameDate.find(_option=> _option.isCall && _option.vol > minVol && ( _option.optionDetails?.strikePrice === sellingPut.optionDetails?.strikePrice));
+                    const buyingCallWithSameStrikeOfSellingPut = optionListOfSameDate.find(_option=> _option.isCall  && ( _option.optionDetails?.strikePrice === sellingPut.optionDetails?.strikePrice));
 
                     if(!buyingCallWithSameStrikeOfSellingPut) return _allPossibleStrategies
 
