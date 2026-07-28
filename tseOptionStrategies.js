@@ -10700,9 +10700,9 @@ const createListFilterContetnByList=(list)=>{
                 return false
             }
             ,
-            minProfitLossRatio: .95,
+            minProfitLossRatio: .92,
             isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
-                return profitLossRatio >= .95
+                return profitLossRatio >= .92
             },
             expectedProfitNotif: true // minVol: 1000 * 1000 * 1000,
             // minStockPriceDistanceFromHigherStrikeInPercent: .22,
@@ -10727,9 +10727,9 @@ const createListFilterContetnByList=(list)=>{
                 return false
             }
             ,
-            minProfitLossRatio: .95,
+            minProfitLossRatio: .92,
             isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
-                return profitLossRatio >= .95
+                return profitLossRatio >= .92
             },
             expectedProfitNotif: true // minVol: 1000 * 1000 * 1000,
             // minStockPriceDistanceFromHigherStrikeInPercent: .22,
