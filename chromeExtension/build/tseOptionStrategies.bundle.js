@@ -24432,7 +24432,8 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: BUCSStrategies,
-            max_time_to_settlement : 1 * 3 * 3600000,
+            max_time_to_settlement : 1 * 27 * 3600000,
+            maxStockPriceToSarBeSar: -.05,
             minProfitToFilter : 0.01
         }),
 
