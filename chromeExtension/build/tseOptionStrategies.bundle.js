@@ -24316,24 +24316,38 @@ const createListFilterContetnByList=(list)=>{
             minStockPriceToLowBreakevenPercent: .15,
             maxStockPriceToHighBreakevenPercent: -.15
             // expectedProfitNotif: true
-        })
+        }),
 
-        , {
-            ...CALL_BUTT_CONDORStrategies,
-            allStrategiesSorted: CALL_BUTT_CONDORStrategies.allStrategiesSorted.filter(st => st.isButterFly),
-            // htmlTitle:CALL_BUTT_CONDORStrategies.htmlTitle.replace("CALL_BUTT_CONDOR","CALL_BUTTERFLY")
-        }
+        (()=>{
+            const strategyName = "CALL_BUTTERFLY";
+
+            return {
+                ...CALL_BUTT_CONDORStrategies,
+                strategyName,
+                htmlTitle: CALL_BUTT_CONDORStrategies.htmlTitle.replace("CALL_BUTT_CONDOR",strategyName),
+                allStrategiesSorted: CALL_BUTT_CONDORStrategies.allStrategiesSorted.filter(st => st.isButterFly).map(strategy=>({...strategy,strategyTypeTitle:strategyName})),
+            }
+        })()
         , {
             ...CALL_BUTT_CONDORStrategies,
             allStrategiesSorted: CALL_BUTT_CONDORStrategies.allStrategiesSorted.filter(st => !st.isButterFly)
-        }
+        },
 
 
-         , {
-            ...PUT_BUTT_CONDORStrategies,
-            allStrategiesSorted: PUT_BUTT_CONDORStrategies.allStrategiesSorted.filter(st => st.isButterFly),
-            // htmlTitle:PUT_BUTT_CONDORStrategies.htmlTitle.replace("PUT_BUTT_CONDOR","PUT_BUTTERFLY")
-        }
+
+        (()=>{
+            const strategyName = "PUT_BUTTERFLY";
+
+            return {
+                ...PUT_BUTT_CONDORStrategies,
+                strategyName,
+                htmlTitle: PUT_BUTT_CONDORStrategies.htmlTitle.replace("PUT_BUTT_CONDOR",strategyName),
+                allStrategiesSorted: PUT_BUTT_CONDORStrategies.allStrategiesSorted.filter(st => st.isButterFly).map(strategy=>({...strategy,strategyTypeTitle:strategyName})),
+            }
+        })()
+
+
+
         , {
             ...PUT_BUTT_CONDORStrategies,
             allStrategiesSorted: PUT_BUTT_CONDORStrategies.allStrategiesSorted.filter(st => !st.isButterFly)
