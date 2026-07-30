@@ -13580,14 +13580,14 @@ let generalConfig = {
     expectedProfitPerMonth: 1.04,
     minProfitToFilter: 0.035,
     BUCSSOptionListIgnorer: ({option, minVol}) => {
-        return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol )
+        return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض')  )
     }
     ,
     BECSSOptionListIgnorer: ({option, minVol}) => {
-        return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
+        return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
     },
     BUPSOptionListIgnorer: ({option, minVol}) => {
-        return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط') || option.vol < minVol )
+        return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط')  )
     }
 }
 
@@ -14108,7 +14108,7 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth,
 
             const _enrichedList = optionListOfSameDate.map(option => {
 
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
                     return option
 
 
@@ -14319,7 +14319,7 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth,
 
             const _enrichedList = optionListOfSameDate.map(option => {
 
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط') || option.vol < minVol)
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط'))
                     return option
 
 
@@ -14538,14 +14538,14 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
             const _enrichedList = optionListOfSameDate.map(option => {
 
                
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
                     return option
 
                 const putList = optionListOfSameDate.filter(_option => {
 
                
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') )
                         return false
                    
 
@@ -14735,7 +14735,7 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
                         return false
 
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') )
                         return false
                     if (_option.optionDetails?.strikePrice <= _option.optionDetails.stockSymbolDetails.last)
                         return false
@@ -14925,7 +14925,7 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
                     if (!_option.optionDetails?.stockSymbolDetails?.last)
                         return false
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') )
                         return false
                     if (_option.optionDetails?.strikePrice >= _option.optionDetails.stockSymbolDetails.last)
                         return false
@@ -15116,7 +15116,7 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                     if (!_option.optionDetails?.stockSymbolDetails?.last)
                         return false
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') )
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -15331,8 +15331,7 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
-                    if (_option.vol < minVol)
-                        return false
+                    
                     return true
 
                 }
@@ -15530,7 +15529,7 @@ const calcSyntheticCoveredCallStrategies = (list,
 
             const _enrichedList = optionListOfSameDate.map(buyingCall => {
 
-                if (!buyingCall.optionDetails?.stockSymbolDetails || !buyingCall.isCall || buyingCall.vol < minVol)
+                if (!buyingCall.optionDetails?.stockSymbolDetails || !buyingCall.isCall )
                 return buyingCall
 
                
@@ -15555,7 +15554,7 @@ const calcSyntheticCoveredCallStrategies = (list,
 
 
                 const sellingCallList = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === buyingCall.symbol || !_option.isCall || _option.vol < minVol)
+                    if (_option.symbol === buyingCall.symbol || !_option.isCall )
                         return false
 
                     if (!_option.optionDetails?.stockSymbolDetails?.last)
@@ -15787,7 +15786,7 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
 
                 const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') )
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -16119,7 +16118,7 @@ const calcCALL_BUTTERFLYStrategies = (list, {
 
                 const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.isCall || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.isCall)
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -16421,7 +16420,7 @@ const calcCALL_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTy
 
                 const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.isCall || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.isCall)
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -16733,7 +16732,7 @@ const calcPUT_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePrice
 
                 const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.isPut || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.isPut)
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -17054,7 +17053,7 @@ const calcPUT_CONDORStrategies = (list, {priceType, settlementGainChoosePriceTyp
 
                 const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.isPut || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.isPut)
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -17594,7 +17593,7 @@ const calcIRON_BUTTERFLY_BUCS_Strategies = (list, {priceType,
 
                 const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.isCall || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.isCall)
                         return false
                     if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                         return false
@@ -17630,7 +17629,7 @@ const calcIRON_BUTTERFLY_BUCS_Strategies = (list, {priceType,
 
                     const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                        if ( !_option.isPut || _option.vol < minVol)
+                        if ( !_option.isPut )
                             return false
                         if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                             return false
@@ -17880,7 +17879,7 @@ const calcIRON_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainChooseP
 
                 const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض'))
                         return false
                     if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                         return false
@@ -17916,7 +17915,7 @@ const calcIRON_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainChooseP
 
                     const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                        if ( _option.isCall || _option.vol < minVol)
+                        if ( _option.isCall )
                             return false
                         if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                             return false
@@ -18121,7 +18120,7 @@ const calcIRON_BUTT_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainCh
 
                 const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') )
                         return false
                     if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                         return false
@@ -18157,7 +18156,7 @@ const calcIRON_BUTT_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainCh
 
                     const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                        if ( _option.isCall || _option.vol < minVol)
+                        if ( _option.isCall)
                             return false
                         if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                             return false
@@ -18483,7 +18482,7 @@ const calcIRON_BUTTERFLY_BUPS_Strategies = (list, { priceType,
                 // }))
                 //     return option
 
-                if (!option.optionDetails?.stockSymbolDetails || !option.isPut || option.vol < minVol)
+                if (!option.optionDetails?.stockSymbolDetails || !option.isPut)
                     return option
 
                 const priceOfOptionWithLowStrike = getPriceOfAsset({
@@ -18496,7 +18495,7 @@ const calcIRON_BUTTERFLY_BUPS_Strategies = (list, { priceType,
 
                 const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.isPut || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.isPut )
                         return false
                     if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                         return false
@@ -18532,7 +18531,7 @@ const calcIRON_BUTTERFLY_BUPS_Strategies = (list, { priceType,
 
                     const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                        if (_option.isPut || _option.vol < minVol)
+                        if (_option.isPut)
                             return false
                         if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                             return false
@@ -18769,7 +18768,7 @@ const calcIRON_CONDOR_BUPS_Strategies = (list, {priceType,
                 // }))
                 //     return option
 
-                if (!option.optionDetails?.stockSymbolDetails || !option.isPut || option.vol < minVol)
+                if (!option.optionDetails?.stockSymbolDetails || !option.isPut )
                     return option
 
                 const priceOfOptionWithLowStrike = getPriceOfAsset({
@@ -18782,7 +18781,7 @@ const calcIRON_CONDOR_BUPS_Strategies = (list, {priceType,
 
                 const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.isPut || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.isPut )
                         return false
                     if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                         return false
@@ -18818,7 +18817,7 @@ const calcIRON_CONDOR_BUPS_Strategies = (list, {priceType,
 
                     const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                        if ( _option.isPut || _option.vol < minVol)
+                        if ( _option.isPut)
                             return false
                         if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                             return false
@@ -19111,7 +19110,7 @@ const calcIRON_BUTT_CONDOR_BUPS_Strategies = (list, {priceType,
                 // }))
                 //     return option
 
-                if (!option.optionDetails?.stockSymbolDetails || !option.isPut || option.vol < minVol)
+                if (!option.optionDetails?.stockSymbolDetails || !option.isPut )
                     return option
 
                 const priceOfOptionWithLowStrike = getPriceOfAsset({
@@ -19124,7 +19123,7 @@ const calcIRON_BUTT_CONDOR_BUPS_Strategies = (list, {priceType,
 
                 const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.isPut || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.isPut )
                         return false
                     if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                         return false
@@ -19160,7 +19159,7 @@ const calcIRON_BUTT_CONDOR_BUPS_Strategies = (list, {priceType,
 
                     const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                        if ( _option.isPut || _option.vol < minVol)
+                        if ( _option.isPut)
                             return false
                         if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                             return false
@@ -19450,7 +19449,7 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
 
                 const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') )
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -19791,7 +19790,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,
                 if(buyingCallPrice===0) return buyingCall
 
                 const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === buyingCall.symbol || !_option.isCall || _option.vol < minVol)
+                    if (_option.symbol === buyingCall.symbol || !_option.isCall )
                         return false
                     if (_option.optionDetails?.strikePrice <= buyingCall.optionDetails?.strikePrice)
                         return false
@@ -20059,7 +20058,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
         let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
 
             const _enrichedList = optionListOfSameDate.map(buyingPut => {
-                if (!buyingPut.optionDetails?.stockSymbolDetails || !buyingPut.isPut || buyingPut.vol < minVol){
+                if (!buyingPut.optionDetails?.stockSymbolDetails || !buyingPut.isPut){
                     return buyingPut
                 }
 
@@ -20073,7 +20072,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
               
                 const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === buyingPut.symbol || !_option.isPut || _option.vol < minVol)
+                    if (_option.symbol === buyingPut.symbol || !_option.isPut )
                         return
                     if (_option.optionDetails?.strikePrice < buyingPut.optionDetails?.strikePrice)
                         return
@@ -20090,7 +20089,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                 );
 
                 const callListHigherStrikeThanBuyingPut = optionListOfSameDate.filter(_option => {
-                    if (!_option.isCall || _option.vol < minVol)
+                    if (!_option.isCall )
                         return false
                     if (_option.optionDetails?.strikePrice < buyingPut.optionDetails?.strikePrice)
                         return false
@@ -20352,7 +20351,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
         let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
 
             const _enrichedList = optionListOfSameDate.map(buyingCall => {
-                if (!buyingCall.optionDetails?.stockSymbolDetails || !buyingCall.isCall || buyingCall.vol < minVol){
+                if (!buyingCall.optionDetails?.stockSymbolDetails || !buyingCall.isCall ){
                     return buyingCall
                 }
 
@@ -20366,7 +20365,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
               
                 const callListWithLowerStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === buyingCall.symbol || !_option.isCall || _option.vol < minVol)
+                    if (_option.symbol === buyingCall.symbol || !_option.isCall )
                         return
                     if (_option.optionDetails?.strikePrice >= buyingCall.optionDetails?.strikePrice)
                         return
@@ -20383,7 +20382,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                 );
 
                 const putListLowerStrikeThanBuyingCall = optionListOfSameDate.filter(_option => {
-                    if (!_option.isPut || _option.vol < minVol)
+                    if (!_option.isPut )
                         return false
                     if (_option.optionDetails?.strikePrice > buyingCall.optionDetails?.strikePrice)
                         return false
@@ -20650,7 +20649,7 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
         let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
 
             const _enrichedList = optionListOfSameDate.map(buyingPut => {
-                if (!buyingPut.optionDetails?.stockSymbolDetails || !buyingPut.isPut || buyingPut.vol < minVol){
+                if (!buyingPut.optionDetails?.stockSymbolDetails || !buyingPut.isPut ){
                     return buyingPut
                 }
 
@@ -20664,7 +20663,7 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
               
                 const putListWithLowerStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === buyingPut.symbol || !_option.isPut || _option.vol < minVol)
+                    if (_option.symbol === buyingPut.symbol || !_option.isPut )
                         return
                     if (_option.optionDetails?.strikePrice >= buyingPut.optionDetails?.strikePrice)
                         return
@@ -20977,8 +20976,7 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
-                    if (_option.vol < minVol)
-                        return false
+                    
                     return true
 
                 }
@@ -21190,7 +21188,7 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
                     return option
 
                 const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') )
                         return
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return
@@ -21369,7 +21367,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
             const _enrichedList = optionListOfSameDate.map(option => {
 
-                if (!option.isPut || option.vol < minVol)
+                if (!option.isPut )
                     return option
 
 
@@ -21382,7 +21380,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
                 if(optionPrice===0) return option
 
                 const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === option.symbol || !_option.isPut || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.isPut )
                         return
                     if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                         return
@@ -21581,7 +21579,7 @@ const calcBECS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
             const _enrichedList = optionListOfSameDate.map(option => {
 
-                if (!option.isCall || option.vol < minVol)
+                if (!option.isCall )
                     return option
 
 
@@ -21594,7 +21592,7 @@ const calcBECS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
                 if(optionPrice===0) return option
 
                 const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === option.symbol || !_option.isCall || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.isCall )
                         return
                     if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                         return
@@ -21794,7 +21792,7 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
             if (!option.optionDetails?.stockSymbolDetails)
                 return option
 
-            if (!option.symbol.startsWith('ض') || option.vol < minVol)
+            if (!option.symbol.startsWith('ض'))
                 return option
 
             const sellingOptionPrice = getPriceOfAsset({
@@ -22189,7 +22187,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
 
             const _enrichedList = optionListOfSameDate.map(option => {
 
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط') || option.vol < minVol || option.optionDetails.stockSymbolDetails.last > option.optionDetails.strikePrice) {
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط')  || option.optionDetails.stockSymbolDetails.last > option.optionDetails.strikePrice) {
                     return option
                 }
                 const stockPriceLowerStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
@@ -22199,7 +22197,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
                 }
 
                 const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') || _option.vol < minVol)
+                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط'))
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -22385,8 +22383,7 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
-                    if (_option.vol < minVol)
-                        return false
+                   
                     return true
 
                 }
@@ -22566,7 +22563,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
             const _enrichedList = optionListOfSameDate.map(buyingCall => {
 
-                if (!buyingCall.isCall ||  buyingCall.vol < minVol)
+                if (!buyingCall.isCall )
                         return buyingCall
 
 
@@ -22582,7 +22579,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                 const eligiblePutsForBEPS =   optionListOfSameDate.filter(_option => {
                     let isEligible = true;
 
-                    if (_option.symbol === buyingCall.symbol || !_option.symbol.startsWith('ط') ||  _option.vol < minVol)
+                    if (_option.symbol === buyingCall.symbol || !_option.symbol.startsWith('ط') )
                         return false
                     if (_option.optionDetails?.strikePrice <= buyingCall.optionDetails?.strikePrice)
                         return false
@@ -22611,7 +22608,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
                     const higherStrikePuts = optionListOfSameDate.filter(_option => {
 
-                        if (_option.symbol === sellingPut.symbol || !_option.symbol.startsWith('ط') || _option.vol < minVol)
+                        if (_option.symbol === sellingPut.symbol || !_option.symbol.startsWith('ط'))
                             return false
                         if (_option.optionDetails?.strikePrice <= sellingPut.optionDetails?.strikePrice)
                             return false
@@ -22834,7 +22831,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
             const _enrichedList = optionListOfSameDate.map(buyingPut => {
 
-                if (!buyingPut.isPut ||  buyingPut.vol < minVol)
+                if (!buyingPut.isPut)
                         return buyingPut
 
 
@@ -22850,7 +22847,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                 const eligibleCallsForBECS =   optionListOfSameDate.filter(_option => {
                     let isEligible = true;
 
-                    if (_option.symbol === buyingPut.symbol || !_option.isCall ||  _option.vol < minVol)
+                    if (_option.symbol === buyingPut.symbol || !_option.isCall )
                         return false
                     if (_option.optionDetails?.strikePrice <= buyingPut.optionDetails?.strikePrice)
                         return false
@@ -22879,7 +22876,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
                     const higherStrikeCalls = optionListOfSameDate.filter(_option => {
 
-                        if (_option.symbol === sellingCall.symbol || !_option.isCall || _option.vol < minVol)
+                        if (_option.symbol === sellingCall.symbol || !_option.isCall )
                             return false
                         if (_option.optionDetails?.strikePrice <= sellingCall.optionDetails?.strikePrice)
                             return false
@@ -23106,7 +23103,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
             const _enrichedList = optionListOfSameDate.map(buyingCall => {
 
-                if (!buyingCall.isCall ||  buyingCall.vol < minVol)
+                if (!buyingCall.isCall )
                         return buyingCall
 
 
@@ -23120,7 +23117,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
                 
 
                 const higherStrikeCalls =   optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === buyingCall.symbol || !_option.isCall ||  _option.vol < minVol)
+                    if (_option.symbol === buyingCall.symbol || !_option.isCall )
                         return false
                     if (_option.optionDetails?.strikePrice <= buyingCall.optionDetails?.strikePrice)
                         return false
@@ -23160,7 +23157,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
                     const lowerStrikePuts = optionListOfSameDate.filter(_option => {
 
-                        if (_option.symbol === buyingPutWithSameStrikeOfSellingCall.symbol || !_option.isPut || _option.vol < minVol)
+                        if (_option.symbol === buyingPutWithSameStrikeOfSellingCall.symbol || !_option.isPut )
                             return false
 
                        
@@ -23377,7 +23374,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
             const _enrichedList = optionListOfSameDate.map(buyingPut => {
 
-                if (!buyingPut.isPut ||  buyingPut.vol < minVol)
+                if (!buyingPut.isPut)
                         return buyingPut
 
 
@@ -23391,7 +23388,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                 
 
                 const higherStrikePuts =   optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === buyingPut.symbol || !_option.isPut ||  _option.vol < minVol)
+                    if (_option.symbol === buyingPut.symbol || !_option.isPut )
                         return false
                     if (_option.optionDetails?.strikePrice <= buyingPut.optionDetails?.strikePrice)
                         return false
@@ -23431,7 +23428,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
                     const lowerStrikeCalls = optionListOfSameDate.filter(_option => {
 
-                        if (_option.symbol === buyingCallWithSameStrikeOfSellingPut.symbol || !_option.isCall || _option.vol < minVol)
+                        if (_option.symbol === buyingCallWithSameStrikeOfSellingPut.symbol || !_option.isCall )
                             return false
 
                         
@@ -23925,7 +23922,7 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
                 return option
 
 
-            if (!option.isPut || option.vol < minVol)
+            if (!option.isPut )
                 return option
 
 
@@ -24111,7 +24108,7 @@ const createListFilterContetnByList=(list)=>{
             // minStockMiddleDistanceInPercent:-0.06,
             // maxStockMiddleDistanceInPercent:0.06,
             BUCSSOptionListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
                     return true
 
                 // const stockStrikeDistanceInPercent = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
@@ -24138,7 +24135,7 @@ const createListFilterContetnByList=(list)=>{
             // minStockMiddleDistanceInPercent:-0.06,
             // maxStockMiddleDistanceInPercent:0.06,
             BUCSSOptionListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط') || option.vol < minVol)
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط'))
                     return true
 
                 // const stockStrikeDistanceInPercent = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
@@ -24273,7 +24270,7 @@ const createListFilterContetnByList=(list)=>{
         calcShortGUTSStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             callListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol || option.optionDetails?.strikePrice >= option.optionDetails.stockSymbolDetails.last)
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض')  || option.optionDetails?.strikePrice >= option.optionDetails.stockSymbolDetails.last)
                     return true
                 return false
             }
@@ -24288,7 +24285,7 @@ const createListFilterContetnByList=(list)=>{
         calcShortSTRANGLEStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             callListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol || option.optionDetails?.strikePrice <= option.optionDetails.stockSymbolDetails.last)
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.optionDetails?.strikePrice <= option.optionDetails.stockSymbolDetails.last)
                     return true
 
                 return false
@@ -24305,7 +24302,7 @@ const createListFilterContetnByList=(list)=>{
         calcShortSTRANGLEStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             callListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol || option.optionDetails?.strikePrice <= option.optionDetails.stockSymbolDetails.last)
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض')  || option.optionDetails?.strikePrice <= option.optionDetails.stockSymbolDetails.last)
                     return true
 
                 return false
@@ -24365,7 +24362,7 @@ const createListFilterContetnByList=(list)=>{
             // maxStockMiddleDistanceInPercent:0.06,
             // TODO: ignorer of option1
             BUCSSOptionListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
                     return true
 
                 const stockStrikeDistanceInPercent = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
@@ -24579,7 +24576,7 @@ const createListFilterContetnByList=(list)=>{
         , calcBUCSRatioStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             BUCSSOptionListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.vol < minVol)
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
                     return true
                 return false
             },
