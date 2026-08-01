@@ -2290,14 +2290,15 @@ const getAndSetInstrumentData = async (strategyPositions)=>{
         const instIdInfoMap = await OMEXApi.getInstrumentInfoBySymbol(strategyPositions.map(stP=>stP.instrumentName));
 
         instIdInfoMap.forEach(instIdInfo=>{
+            const strategyPosition = strategyPositions.find(stP=>stP.instrumentName===instIdInfo.instrumentName);
     
-            const daysLeftToSettlement = Math.ceil((new Date(instIdInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000))
+            const daysLeftToSettlement = strategyPosition.isOption ? Math.ceil((new Date(instIdInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000)): null;
     
             instrumentExtraDataMap[instIdInfo.instrumentName] = {
-                optionID : instIdInfo.instrumentId,
+                optionID : strategyPosition.isOption ?  instIdInfo.instrumentId: null,
                 instrumentId: instIdInfo.instrumentId,
-                cSize: instIdInfo.cSize,
-                stockPrice:instIdInfo.stockPrice,
+                cSize: strategyPosition.isOption ? instIdInfo.cSize: null,
+                stockPrice:strategyPosition.isOption ? instIdInfo.stockPrice: null,
                 daysLeftToSettlement
             }
 
@@ -2309,10 +2310,10 @@ const getAndSetInstrumentData = async (strategyPositions)=>{
 
     }
 
-    const options = strategyPositions.filter(stP=>stP.isOption);
+    // const options = strategyPositions.filter(stP=>stP.isOption);
 
 
-    await strategyPositionWithInstrumentInfo(options);
+    await strategyPositionWithInstrumentInfo(strategyPositions);
 
     // const _strategyPositions = await Promise.all(
     //     strategyPositions.map(async (strategyPosition) => {
