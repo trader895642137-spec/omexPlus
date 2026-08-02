@@ -227,18 +227,44 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
 
     const sarBeSarFilterCheck = ({ ignoreStrategyObj, strategy }) => {
 
-        const hasFilter = ignoreStrategyObj.toSarBeSar != null;
+        const hasToSarBeSarFilter = ignoreStrategyObj.toSarBeSar != null;
+        const hasToHighSarBeSarFilter = ignoreStrategyObj.toHighSarBeSar != null;
+        const hasToLowSarBeSarFilter = ignoreStrategyObj.toLowSarBeSar != null;
 
-        let isPass = null;
-        if (hasFilter) {
-            if (strategy.stockPriceToSarBeSarPercent == null) {
-                isPass = true;
-            } else if (ignoreStrategyObj.toSarBeSar < 0) {
-                isPass = strategy.stockPriceToSarBeSarPercent <= ignoreStrategyObj.toSarBeSar;
-            } else {
-                isPass = strategy.stockPriceToSarBeSarPercent >= ignoreStrategyObj.toSarBeSar;
+        const hasFilter = hasToSarBeSarFilter || hasToHighSarBeSarFilter || hasToLowSarBeSarFilter;
+
+        let isPass = true;
+
+
+        const check = (value, filterValue) => {
+            if (value == null) {
+                return true;
             }
+
+            return filterValue < 0
+                ? value <= filterValue
+                : value >= filterValue;
+        };
+        
+
+        if (hasToSarBeSarFilter &&
+            !check(strategy.stockPriceToSarBeSarPercent, ignoreStrategyObj.toSarBeSar)) {
+            isPass = false;
         }
+
+
+        if (hasToHighSarBeSarFilter &&
+            !check(strategy.stockPriceToHighSarBeSarPercent, ignoreStrategyObj.toHighSarBeSar)) {
+            isPass = false;
+        }
+
+        
+
+        if (hasToLowSarBeSarFilter &&
+            !check(strategy.stockPriceToLowSarBeSarPercent, ignoreStrategyObj.toLowSarBeSar)) {
+            isPass = false;
+        }
+        
         
 
         return {
@@ -1168,13 +1194,15 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
                             sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
                         })
                     });
+                    let stockPriceToHighSarBeSarPercent,stockPriceToLowSarBeSarPercent;
                     if(breakevenList?.length){
                         const lowBreakeven = Math.min(...breakevenList);
                         const highBreakeven = Math.max(...breakevenList);
-
-                        if(highBreakeven/lowBreakeven > 1.1) return _allPossibleStrategies
+                        stockPriceToLowSarBeSarPercent = (lowBreakeven / option.optionDetails.stockSymbolDetails.last) - 1;
+                        stockPriceToHighSarBeSarPercent = (highBreakeven / option.optionDetails.stockSymbolDetails.last) - 1;
 
                     }
+
 
 
 
@@ -1208,6 +1236,8 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
                         minProfitToFilter,
                         expectedProfitPerMonth,
                         isWholeProfitable : !breakevenList?.length,
+                        stockPriceToLowSarBeSarPercent,
+                        stockPriceToHighSarBeSarPercent,
                         name: createStrategyName([option, _option]),
                         profitPercent
                     }
@@ -1747,7 +1777,7 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
 
 
 
-                    const stockPriceToSarBeSarPercent = (option.optionDetails.stockSymbolDetails.last / breakeven) - 1;
+                    const stockPriceToSarBeSarPercent = (breakeven / option.optionDetails.stockSymbolDetails.last) - 1;
 
                     if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSar || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSar) {
                         return _allPossibleStrategies
@@ -11769,8 +11799,10 @@ const getIgnoreStrategyNames = () => {
             name: null,
             isMinStrike: null,
             profitPercent: null,
-            toSarBeSar:null,
-            allProfit:null,
+            toSarBeSar: null,
+            toHighSarBeSar: null,
+            toLowSarBeSar :null,
+            allProfit: null,
             raw: ignoreStrategyName
         };
         if (!filterParts?.length)
@@ -11785,6 +11817,12 @@ const getIgnoreStrategyNames = () => {
                 const [ruleName, ruleValue] = filterPart.split(':');
                 if(ruleName=='toSar'){
                     result.toSarBeSar = ruleValue ? parseFloat(ruleValue) : null;
+                }
+                if(ruleName=='toSarH'){
+                    result.toHighSarBeSar = ruleValue ? parseFloat(ruleValue) : null;
+                }
+                if(ruleName=='toSarL'){
+                    result.toLowSarBeSar = ruleValue ? parseFloat(ruleValue) : null;
                 }
                 if(ruleName=='profit'){
                     result.profitPercent = ruleValue ? parseFloat(ruleValue) / 100 : null;
