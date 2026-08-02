@@ -779,7 +779,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         const isPut = isOption && instrumentName && instrumentName.charAt(0) === 'ط';
 
         const isCall = isOption && instrumentName && instrumentName.charAt(0) === 'ض';
-        let cSize = defaultCSize;
+        let cSize = isOption ? defaultCSize : 1;
         let daysLeftToSettlement = defaultDaysLeftToSettlement;
 
         const ordersModal = Array.from(domContextWindow.document.querySelectorAll('client-option-modal-trade-layout')).find(modal => {
@@ -804,7 +804,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         }
 
         const getQuantity = () => {
-            cSize = getCSize();
+            const cSize = getCSize();
             const quantity = convertStringToInt(optionRowEl.querySelector('[formcontrolname="quantity"] input').value);
             const quantityMultiplier = isOption ? cSize : 1;
             return quantity * quantityMultiplier;
@@ -831,7 +831,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         const getCurrentPositionQuantity = () => {
 
             optionID = getOptionID();
-            cSize = getCSize();
+            const cSize = getCSize();
 
 
             cachedCurrentPositionQuantityElement = domContextWindow.document.body.contains(cachedCurrentPositionQuantityElement) ? cachedCurrentPositionQuantityElement : domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy ? 'buyCount' : 'sellCount'}"]`);
@@ -928,7 +928,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         const getRequiredMargin = () => {
 
             const isMarginRequired = optionRowEl.querySelector('input[formcontrolname="requiredMarginIsSelected"]')?.checked;
-            cSize = getCSize()
+            const cSize = getCSize()
 
             if (!isMarginRequired)
                 return 0
@@ -1981,7 +1981,7 @@ const higherQuantityOfInsertedOrderInformer = ({ orderModalQuantityGetter, infor
         if (!strategyPosition?.ordersModal) return true
 
         const insertedQuantity = orderModalQuantityGetter(strategyPosition);
-        const currentPortFolioQuantity = (strategyPosition.getCurrentPositionQuantity()/strategyPosition.cSize);
+        const currentPortFolioQuantity = (strategyPosition.getCurrentPositionQuantity()/strategyPosition.getCSize());
 
         const isOrderModalInBuyingTab =  strategyPosition.ordersModal.querySelector('.-is-frontView.-is-buy');
         const isOrderModalInSellingTab =  strategyPosition.ordersModal.querySelector('.-is-frontView.-is-sell');
@@ -2297,7 +2297,7 @@ const getAndSetInstrumentData = async (strategyPositions)=>{
             instrumentExtraDataMap[instIdInfo.instrumentName] = {
                 optionID : strategyPosition.isOption ?  instIdInfo.instrumentId: null,
                 instrumentId: instIdInfo.instrumentId,
-                cSize: strategyPosition.isOption ? instIdInfo.cSize: null,
+                cSize: strategyPosition.isOption ? instIdInfo.cSize: 1,
                 stockPrice:strategyPosition.isOption ? instIdInfo.stockPrice: null,
                 daysLeftToSettlement
             }
@@ -2360,7 +2360,7 @@ export const calcAvgPricesByExecutenList =async ()=>{
         const foundCalcAvgPrice = results.find(result=>result.instrumentName===strategyPosition.instrumentName);
 
         const calcQuantity = Math.abs(foundCalcAvgPrice.quantity);
-        const currentPositionQuantity = strategyPosition.getCurrentPositionQuantity()/strategyPosition.cSize;
+        const currentPositionQuantity = strategyPosition.getCurrentPositionQuantity()/strategyPosition.getCSize();
         if(calcQuantity!==currentPositionQuantity){
             const issueMessage = 'تعداد محاسبه شده یکی نیست'
             showToast(issueMessage,10000,'error');
