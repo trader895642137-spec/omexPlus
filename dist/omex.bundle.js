@@ -2008,6 +2008,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   checkSumOfMoneyAndAssets: () => (/* binding */ checkSumOfMoneyAndAssets),
 /* harmony export */   configs: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.configs),
 /* harmony export */   createGroupOfCurrentStrategy: () => (/* binding */ createGroupOfCurrentStrategy),
+/* harmony export */   doJob: () => (/* binding */ doJob),
 /* harmony export */   expectedProfit: () => (/* binding */ expectedProfit),
 /* harmony export */   getSummaryNameOfStrategy: () => (/* binding */ getSummaryNameOfStrategy),
 /* harmony export */   groupLogger: () => (/* binding */ groupLogger),
@@ -2062,6 +2063,12 @@ const initLoggers = () => {
 
         
     } catch (error) { }
+
+}
+
+
+const doJob=()=>{
+    console.log('DON')
 
 }
 
@@ -4755,7 +4762,8 @@ const Run = async (_window = window) => {
 
 
     
-    console.log(strategyPositions)
+    console.log(strategyPositions);
+
 
 }
 

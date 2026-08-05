@@ -21,5 +21,18 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
       port.postMessage(msg.payload);
     }
   }
+  if (msg.type === "CHECK_JOB") {
+    const tabId = msg.tabId;
+
+    chrome.scripting.executeScript({
+      target: { tabId },
+      world: "MAIN",
+      func: () => {
+        window.omexLib.doJob();
+      }
+    });
+    
+  }
+
 });
 

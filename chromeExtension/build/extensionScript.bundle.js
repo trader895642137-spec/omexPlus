@@ -10,6 +10,11 @@ document.getElementById('mainButton').addEventListener('click', () => {
             world: "MAIN"
         }, async () => {
 
+            chrome.runtime.sendMessage({
+                type: "CHECK_JOB",
+                tabId: tabs[0].id
+            });
+
             // await new Promise(r => setTimeout(r, 3000)); 
             chrome.scripting.executeScript({
                 target: { tabId: tabs[0].id },

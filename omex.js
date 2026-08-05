@@ -50,6 +50,12 @@ const initLoggers = () => {
 
 }
 
+
+export const doJob=()=>{
+    console.log('DON')
+
+}
+
 // FIXME:expectedProfitPerMonth is factor but minExpectedProfitOfStrategy is percent
 export let expectedProfit = {
     expectedProfitPerMonth: 1.04,
@@ -2740,7 +2746,8 @@ export const Run = async (_window = window) => {
 
 
     
-    console.log(strategyPositions)
+    console.log(strategyPositions);
+
 
 }
 
