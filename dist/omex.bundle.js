@@ -9,6 +9,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   COMMISSION_FACTOR: () => (/* binding */ COMMISSION_FACTOR),
 /* harmony export */   ETF_LIST: () => (/* binding */ ETF_LIST),
+/* harmony export */   QueueScenario: () => (/* binding */ QueueScenario),
 /* harmony export */   TAX_FREE_SYMBOLS: () => (/* binding */ TAX_FREE_SYMBOLS),
 /* harmony export */   calcAveragePriceByExecutedOrders: () => (/* binding */ calcAveragePriceByExecutedOrders),
 /* harmony export */   calculateOptionMargin: () => (/* binding */ calculateOptionMargin),
@@ -57,7 +58,8 @@ const COMMISSION_FACTOR = {
 }
 
 const configs = {
-  stockPriceAdjustFactor: 1.001
+  stockPriceAdjustFactor: 1.001,
+  jarimehNokoolFactor : 0.01
 }
 
 
@@ -310,7 +312,7 @@ const profitPercentCalculator = ({ costWithSign, gainWithSign }) => {
 const someOfNokoolGainCalculator = ({nokoolQuantity=1,stockPrice , strikePrice})=>{
 
   const nokool = stockPrice > strikePrice ?  (nokoolQuantity * (stockPrice - strikePrice)) : 0;
-  const jarimehNokool = nokoolQuantity * stockPrice * 0.01;
+  const jarimehNokool = nokoolQuantity * stockPrice * configs.jarimehNokoolFactor;
 
   return nokool + jarimehNokool
 }
@@ -495,47 +497,111 @@ const mainTotalOffsetGainCalculator = ({ strategyPositions, getBestPriceCb, getQ
 }
 
 
-const getNearSettlementPrice = ({ strategyPosition, stockPrice, stockPriceAdjustFactor = configs.stockPriceAdjustFactor }) => {
-
-
-  const tradeFee = strategyPosition.isBuy ? COMMISSION_FACTOR.OPTION.BUY : COMMISSION_FACTOR.OPTION.SELL;
-  const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE
-  // const tax = isTaxFree(strategyPosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
-
-  const isBuy = strategyPosition.isBuy;
-
-  function calculateCallPrice(stockPrice, strikePrice) {
-    
-    const adjustedStockPrice = isBuy ?  stockPrice / stockPriceAdjustFactor : stockPrice * stockPriceAdjustFactor;
-    if (adjustedStockPrice <= strikePrice) return 0
-    
-    let optionPremium = (adjustedStockPrice - (strikePrice * (1 + exerciseFee))) / (1 + tradeFee);
-
-    return optionPremium;
-  }
-
-  function calculatePutPrice(stockPrice, strikePrice) {
-    
-    
-    const adjustedStockPrice = isBuy? stockPrice * stockPriceAdjustFactor : stockPrice / stockPriceAdjustFactor;
-    if (adjustedStockPrice >= strikePrice) return 0
-   
-  
-    let optionPremium = (strikePrice * (1 - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
-    return optionPremium;
-    //  return (strikePrice * (1 - tax - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
-  }
-
-  let price = strategyPosition.isOption?  strategyPosition.isCall ? calculateCallPrice(stockPrice, strategyPosition.strikePrice) : calculatePutPrice(stockPrice, strategyPosition.strikePrice) : stockPrice;
-
-
-  price = isBuy
-    ? Math.floor(price)
-    : Math.ceil(price);
-
-  return Math.max(price, 0);
+const QueueScenario = {
+    normal: "normal",
+    buyQueue: "buyQueue",
+    sellQueue: "sellQueue"
 }
+const getNearSettlementPrice = ({ strategyPosition, stockPrice, stockPriceAdjustFactor = configs.stockPriceAdjustFactor, scenario = QueueScenario.normal }) => {
 
+
+    const tradeFee = strategyPosition.isBuy ? COMMISSION_FACTOR.OPTION.BUY : COMMISSION_FACTOR.OPTION.SELL;
+    const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE;
+
+
+    // const tax = isTaxFree(strategyPosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
+
+    const isBuy = strategyPosition.isBuy;
+
+    const calculatePremiumAfterFees = (isCall, adjustedStockPrice, strikePrice) => {
+        if (isCall) {
+            return (adjustedStockPrice - (strikePrice * (1 + exerciseFee))) / (1 + tradeFee);
+
+        } else {
+            return (strikePrice * (1 - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
+
+        }
+
+    }
+
+    function calculateConservativeCallPremium(stockPrice, strikePrice) {
+
+        const adjustedStockPrice = isBuy ? stockPrice / stockPriceAdjustFactor : stockPrice * stockPriceAdjustFactor;
+        if (adjustedStockPrice <= strikePrice) return 0
+
+        let optionPremium = calculatePremiumAfterFees(true, adjustedStockPrice, strikePrice);
+
+        return optionPremium;
+    }
+
+    function calculateBuyQueueCallPremium(stockPrice, strikePrice) {
+        let optionPremium = calculatePremiumAfterFees(true, stockPrice, strikePrice);
+        return optionPremium + (stockPrice * configs.jarimehNokoolFactor)
+
+    }
+    function calculateBuyQueuePutPremium(stockPrice, strikePrice) {
+        const adjustedStockPrice = stockPrice * 1.1;
+        let optionPremium = calculatePremiumAfterFees(false, adjustedStockPrice, strikePrice);
+        return optionPremium
+
+    }
+
+    function calculateConservativePutPrice(stockPrice, strikePrice) {
+
+
+        const adjustedStockPrice = isBuy ? stockPrice * stockPriceAdjustFactor : stockPrice / stockPriceAdjustFactor;
+        if (adjustedStockPrice >= strikePrice) return 0
+
+
+        let optionPremium = calculatePremiumAfterFees(false, adjustedStockPrice, strikePrice);
+
+        return optionPremium;
+        //  return (strikePrice * (1 - tax - exerciseFee) - adjustedStockPrice) / (1 + tradeFee);
+    }
+
+
+    const calculateConservativePremium = (stockPrice, strategyPosition) => {
+        if (strategyPosition.isCall) {
+            return calculateConservativeCallPremium(stockPrice, strategyPosition.strikePrice)
+        } else {
+            return calculateConservativePutPrice(stockPrice, strategyPosition.strikePrice)
+        }
+
+    }
+    const calculateBuyQueuePremium = (stockPrice, strategyPosition) => {
+        if (strategyPosition.isCall) {
+            return calculateBuyQueueCallPremium(stockPrice, strategyPosition.strikePrice)
+        } else {
+            return calculateBuyQueuePutPremium(stockPrice, strategyPosition.strikePrice)
+        }
+
+    }
+
+    let price
+
+
+    const calculators = {
+        [QueueScenario.normal]: calculateConservativePremium,
+        [QueueScenario.buyQueue]: calculateBuyQueuePremium,
+    };
+
+    if (strategyPosition.isOption) {
+        price = calculators[scenario](stockPrice, strategyPosition);
+
+
+
+    } else {
+        price = stockPrice;
+    }
+
+
+
+    price = isBuy
+        ? Math.floor(price)
+        : Math.ceil(price);
+
+    return Math.max(price, 0);
+}
 
 
 
@@ -2236,17 +2302,30 @@ const settlementCommissionFactor = (_strategyPosition) => {
 
 const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions }) => {
 
-    const getBestPriceCb = (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getNearSettlementPrice)({strategyPosition: _strategyPosition, stockPrice:getBaseInstrumentPriceOfOption()});
+    const getBestPriceCbNormalQueue = (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getNearSettlementPrice)({strategyPosition: _strategyPosition, stockPrice:getBaseInstrumentPriceOfOption(),scenario : _common_js__WEBPACK_IMPORTED_MODULE_0__.QueueScenario.normal});
+    const getBestPriceCbBuyQueue = (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getNearSettlementPrice)({strategyPosition: _strategyPosition, stockPrice:getBaseInstrumentPriceOfOption(),scenario : _common_js__WEBPACK_IMPORTED_MODULE_0__.QueueScenario.buyQueue});
 
-    const totalOffsetGainNearSettlement = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
-        strategyPositions,
-        getBestPriceCb,
-        getReservedMargin: _strategyPosition => {
-            return (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getReservedMarginOfEstimationQuantity)(_strategyPosition)
-        }
-    });
+    
+    return {
 
-    return totalOffsetGainNearSettlement
+        defaultQueue: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
+            strategyPositions,
+            getBestPriceCb: getBestPriceCbNormalQueue,
+            getReservedMargin: _strategyPosition => {
+                return (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getReservedMarginOfEstimationQuantity)(_strategyPosition)
+            }
+        }),
+        buyQueue: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
+            strategyPositions,
+            getBestPriceCb: getBestPriceCbBuyQueue,
+            getReservedMargin: _strategyPosition => {
+                return (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getReservedMarginOfEstimationQuantity)(_strategyPosition)
+            }
+        }),
+       
+
+    }
+
 }
 
 const sumOfQuantityOfSamePosition = (position,strategyPositions)=>{
@@ -3865,14 +3944,30 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
 
     let statusCnt = getStrategyExpectedProfitCnt();
 
+    let daysLeftToSettlement = _strategyPositions.find(_strategyPosition =>{
+        _strategyPosition.daysLeftToSettlement = _strategyPosition.getDaysLeftToSettlement()
+        return _strategyPosition.daysLeftToSettlement
+    })?.daysLeftToSettlement || defaultDaysLeftToSettlement;
+    daysLeftToSettlement = daysLeftToSettlement>=1 ? daysLeftToSettlement : 1;
+
+    
+
     statusCnt.innerHTML = `
         <div style="display:flex;flex-direction: column;row-gap: 13px;">
-            <div style="display:flex;background: #f6faf3;border:1px solid ; padding: 3px;color:${profitPercentByBestPrices >= 0 ? 'green' : 'red'}">
+            <div style="display:flex;background: #f6faf3;border:1px solid ; padding: 3px;color:${profitPercentByBestPrices.defaultQueue >= 0 ? 'green' : 'red'}">
                 <div>
-                            سرخط ${profitPercentByBestPrices.toLocaleString('en-US', {
+                    <div>
+                            سرخط ${profitPercentByBestPrices.defaultQueue.toLocaleString('en-US', {
                             minimumFractionDigits: 1,
                             maximumFractionDigits: 1
                         })}
+                    </div>
+                    ${daysLeftToSettlement< 7 ?`<div style="font-size: 11px;color:${profitPercentByBestPrices.buyQueue >= 0 ? 'green' : 'red'}">
+                            ص خرید ${profitPercentByBestPrices.buyQueue.toLocaleString('en-US', {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1
+                        })}
+                    </div>`:''}
                 </div>
                 ${settlementProfitByBestPrices ? `<div style="margin-right:auto;font-size: small; color:${settlementProfitByBestPrices >= 0 ? 'green' : '#db4848'}">
                         اعمال ${settlementProfitByBestPrices.toLocaleString('en-US', {
@@ -3881,13 +3976,21 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
                     })}
                 </div>`:''}
              </div>
-            <div style="display:flex; font-size: 85%;color:${profitPercentByInsertedPrices >= 0 ? 'green' : 'red'}">
+            <div style="display:flex; font-size: 85%;color:${profitPercentByInsertedPrices.defaultQueue >= 0 ? 'green' : 'red'}">
 
                 <div>
-                        اینپوت ${profitPercentByInsertedPrices.toLocaleString('en-US', {
-                        minimumFractionDigits: 1,
-                        maximumFractionDigits: 1
-                    })}
+                    <div>
+                            اینپوت ${profitPercentByInsertedPrices.defaultQueue.toLocaleString('en-US', {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1
+                        })}
+                    </div>
+                    ${daysLeftToSettlement< 7 ?`<div style="font-size: 11px;color:${profitPercentByInsertedPrices.buyQueue >= 0 ? 'green' : 'red'}">
+                            ص خرید ${profitPercentByInsertedPrices.buyQueue.toLocaleString('en-US', {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1
+                        })}
+                    </div>`:''}
                 </div>
                 ${settlementProfitByInsertedPrices ? `<div style="margin-right:auto;font-size: small;color:${settlementProfitByInsertedPrices >= 0 ? 'green' : '#db4848'}">
                         اعمال ${settlementProfitByInsertedPrices.toLocaleString('en-US', {
@@ -3901,23 +4004,19 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
 
 
 
-    let daysLeftToSettlement = _strategyPositions.find(_strategyPosition =>{
-        _strategyPosition.daysLeftToSettlement = _strategyPosition.getDaysLeftToSettlement()
-        return _strategyPosition.daysLeftToSettlement
-    })?.daysLeftToSettlement || defaultDaysLeftToSettlement;
-    daysLeftToSettlement = daysLeftToSettlement>=1 ? daysLeftToSettlement : 1;
     
-    const percentPerDay = Math.pow((1 + (profitPercentByBestPrices / 100)), 1 / daysLeftToSettlement);
+    
+    const percentPerDay = Math.pow((1 + (profitPercentByBestPrices.defaultQueue / 100)), 1 / daysLeftToSettlement);
     const percentPerMonth = Math.pow(percentPerDay, 30);
 
 
     let isProfit=false;
-    if (isProfitEnough({ totalProfitPercent: profitPercentByBestPrices, percentPerMonth })) {
+    if (isProfitEnough({ totalProfitPercent: profitPercentByBestPrices.defaultQueue, percentPerMonth })) {
 
         isProfit =true;
         informExtremeOrderPrice(_strategyPositions, 'openMore');
         (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
-            title: `سود %${profitPercentByBestPrices.toFixed()}`,
+            title: `سود %${profitPercentByBestPrices.defaultQueue.toFixed()}`,
             body: `${_strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
             tag: `${_strategyPositions[0].instrumentName}-expectedProfitPrecent`
         });
@@ -3939,18 +4038,31 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
         const totalCostObj = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculatorForPriceTypes)(_strategyPositions);
 
 
-        const totalOffsetGain = totalOffsetGainNearSettlementOfEstimationPanel({
+        const totalOffsetGainInfo = totalOffsetGainNearSettlementOfEstimationPanel({
             strategyPositions: _strategyPositions
         });
 
-        const profitPercentByBestPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({
-            costWithSign: totalCostObj.totalCostByBestPrices,
-            gainWithSign: totalOffsetGain
-        });
-        const profitPercentByInsertedPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({
-            costWithSign: totalCostObj.totalCostByInsertedPrices,
-            gainWithSign: totalOffsetGain
-        });
+        const profitPercentByBestPrices = {
+            defaultQueue: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({
+                costWithSign: totalCostObj.totalCostByBestPrices,
+                gainWithSign: totalOffsetGainInfo.defaultQueue
+            }),
+            buyQueue: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({
+                costWithSign: totalCostObj.totalCostByBestPrices,
+                gainWithSign: totalOffsetGainInfo.buyQueue
+            })
+        } 
+
+        const profitPercentByInsertedPrices ={
+            defaultQueue: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({
+                costWithSign: totalCostObj.totalCostByInsertedPrices,
+                gainWithSign: totalOffsetGainInfo.defaultQueue
+            }),
+            buyQueue: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({
+                costWithSign: totalCostObj.totalCostByInsertedPrices,
+                gainWithSign: totalOffsetGainInfo.buyQueue
+            })
+        } 
 
 
 
@@ -3984,7 +4096,11 @@ const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositions) => 
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const { profitPercentByBestPrices, profitPercentByInsertedPrices,settlementProfitByBestPrices,settlementProfitByInsertedPrices } = profitCalculator(_strategyPositions, _unChekcedPositions);
+    const { 
+        profitPercentByBestPrices, 
+        profitPercentByInsertedPrices,
+        settlementProfitByBestPrices,
+        settlementProfitByInsertedPrices } = profitCalculator(_strategyPositions, _unChekcedPositions);
 
     const isProfitable = informForExpectedProfitOnStrategy({
         _strategyPositions,

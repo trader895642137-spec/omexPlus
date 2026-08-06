@@ -9,7 +9,8 @@ import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalc
     takeScreenshot,
     isETF,
     hasBreakevenExecutedPriceDiffIssue,
-    hasGreaterRatio} from './common.js';
+    hasGreaterRatio,
+    QueueScenario} from './common.js';
 import { isInstrumentNameOfOption,  OMEXApi } from './omexApi.js';
 
 
@@ -209,17 +210,30 @@ const settlementCommissionFactor = (_strategyPosition) => {
 
 const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions }) => {
 
-    const getBestPriceCb = (_strategyPosition) => getNearSettlementPrice({strategyPosition: _strategyPosition, stockPrice:getBaseInstrumentPriceOfOption()});
+    const getBestPriceCbNormalQueue = (_strategyPosition) => getNearSettlementPrice({strategyPosition: _strategyPosition, stockPrice:getBaseInstrumentPriceOfOption(),scenario : QueueScenario.normal});
+    const getBestPriceCbBuyQueue = (_strategyPosition) => getNearSettlementPrice({strategyPosition: _strategyPosition, stockPrice:getBaseInstrumentPriceOfOption(),scenario : QueueScenario.buyQueue});
 
-    const totalOffsetGainNearSettlement = mainTotalOffsetGainCalculator({
-        strategyPositions,
-        getBestPriceCb,
-        getReservedMargin: _strategyPosition => {
-            return getReservedMarginOfEstimationQuantity(_strategyPosition)
-        }
-    });
+    
+    return {
 
-    return totalOffsetGainNearSettlement
+        defaultQueue: mainTotalOffsetGainCalculator({
+            strategyPositions,
+            getBestPriceCb: getBestPriceCbNormalQueue,
+            getReservedMargin: _strategyPosition => {
+                return getReservedMarginOfEstimationQuantity(_strategyPosition)
+            }
+        }),
+        buyQueue: mainTotalOffsetGainCalculator({
+            strategyPositions,
+            getBestPriceCb: getBestPriceCbBuyQueue,
+            getReservedMargin: _strategyPosition => {
+                return getReservedMarginOfEstimationQuantity(_strategyPosition)
+            }
+        }),
+       
+
+    }
+
 }
 
 const sumOfQuantityOfSamePosition = (position,strategyPositions)=>{
@@ -1838,14 +1852,30 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
 
     let statusCnt = getStrategyExpectedProfitCnt();
 
+    let daysLeftToSettlement = _strategyPositions.find(_strategyPosition =>{
+        _strategyPosition.daysLeftToSettlement = _strategyPosition.getDaysLeftToSettlement()
+        return _strategyPosition.daysLeftToSettlement
+    })?.daysLeftToSettlement || defaultDaysLeftToSettlement;
+    daysLeftToSettlement = daysLeftToSettlement>=1 ? daysLeftToSettlement : 1;
+
+    
+
     statusCnt.innerHTML = `
         <div style="display:flex;flex-direction: column;row-gap: 13px;">
-            <div style="display:flex;background: #f6faf3;border:1px solid ; padding: 3px;color:${profitPercentByBestPrices >= 0 ? 'green' : 'red'}">
+            <div style="display:flex;background: #f6faf3;border:1px solid ; padding: 3px;color:${profitPercentByBestPrices.defaultQueue >= 0 ? 'green' : 'red'}">
                 <div>
-                            سرخط ${profitPercentByBestPrices.toLocaleString('en-US', {
+                    <div>
+                            سرخط ${profitPercentByBestPrices.defaultQueue.toLocaleString('en-US', {
                             minimumFractionDigits: 1,
                             maximumFractionDigits: 1
                         })}
+                    </div>
+                    ${daysLeftToSettlement< 7 ?`<div style="font-size: 11px;color:${profitPercentByBestPrices.buyQueue >= 0 ? 'green' : 'red'}">
+                            ص خرید ${profitPercentByBestPrices.buyQueue.toLocaleString('en-US', {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1
+                        })}
+                    </div>`:''}
                 </div>
                 ${settlementProfitByBestPrices ? `<div style="margin-right:auto;font-size: small; color:${settlementProfitByBestPrices >= 0 ? 'green' : '#db4848'}">
                         اعمال ${settlementProfitByBestPrices.toLocaleString('en-US', {
@@ -1854,13 +1884,21 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
                     })}
                 </div>`:''}
              </div>
-            <div style="display:flex; font-size: 85%;color:${profitPercentByInsertedPrices >= 0 ? 'green' : 'red'}">
+            <div style="display:flex; font-size: 85%;color:${profitPercentByInsertedPrices.defaultQueue >= 0 ? 'green' : 'red'}">
 
                 <div>
-                        اینپوت ${profitPercentByInsertedPrices.toLocaleString('en-US', {
-                        minimumFractionDigits: 1,
-                        maximumFractionDigits: 1
-                    })}
+                    <div>
+                            اینپوت ${profitPercentByInsertedPrices.defaultQueue.toLocaleString('en-US', {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1
+                        })}
+                    </div>
+                    ${daysLeftToSettlement< 7 ?`<div style="font-size: 11px;color:${profitPercentByInsertedPrices.buyQueue >= 0 ? 'green' : 'red'}">
+                            ص خرید ${profitPercentByInsertedPrices.buyQueue.toLocaleString('en-US', {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1
+                        })}
+                    </div>`:''}
                 </div>
                 ${settlementProfitByInsertedPrices ? `<div style="margin-right:auto;font-size: small;color:${settlementProfitByInsertedPrices >= 0 ? 'green' : '#db4848'}">
                         اعمال ${settlementProfitByInsertedPrices.toLocaleString('en-US', {
@@ -1874,23 +1912,19 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
 
 
 
-    let daysLeftToSettlement = _strategyPositions.find(_strategyPosition =>{
-        _strategyPosition.daysLeftToSettlement = _strategyPosition.getDaysLeftToSettlement()
-        return _strategyPosition.daysLeftToSettlement
-    })?.daysLeftToSettlement || defaultDaysLeftToSettlement;
-    daysLeftToSettlement = daysLeftToSettlement>=1 ? daysLeftToSettlement : 1;
     
-    const percentPerDay = Math.pow((1 + (profitPercentByBestPrices / 100)), 1 / daysLeftToSettlement);
+    
+    const percentPerDay = Math.pow((1 + (profitPercentByBestPrices.defaultQueue / 100)), 1 / daysLeftToSettlement);
     const percentPerMonth = Math.pow(percentPerDay, 30);
 
 
     let isProfit=false;
-    if (isProfitEnough({ totalProfitPercent: profitPercentByBestPrices, percentPerMonth })) {
+    if (isProfitEnough({ totalProfitPercent: profitPercentByBestPrices.defaultQueue, percentPerMonth })) {
 
         isProfit =true;
         informExtremeOrderPrice(_strategyPositions, 'openMore');
         showNotification({
-            title: `سود %${profitPercentByBestPrices.toFixed()}`,
+            title: `سود %${profitPercentByBestPrices.defaultQueue.toFixed()}`,
             body: `${_strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
             tag: `${_strategyPositions[0].instrumentName}-expectedProfitPrecent`
         });
@@ -1912,18 +1946,31 @@ export const STRATEGY_NAME_PROFIT_CALCULATOR = {
         const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
 
 
-        const totalOffsetGain = totalOffsetGainNearSettlementOfEstimationPanel({
+        const totalOffsetGainInfo = totalOffsetGainNearSettlementOfEstimationPanel({
             strategyPositions: _strategyPositions
         });
 
-        const profitPercentByBestPrices = profitPercentCalculator({
-            costWithSign: totalCostObj.totalCostByBestPrices,
-            gainWithSign: totalOffsetGain
-        });
-        const profitPercentByInsertedPrices = profitPercentCalculator({
-            costWithSign: totalCostObj.totalCostByInsertedPrices,
-            gainWithSign: totalOffsetGain
-        });
+        const profitPercentByBestPrices = {
+            defaultQueue: profitPercentCalculator({
+                costWithSign: totalCostObj.totalCostByBestPrices,
+                gainWithSign: totalOffsetGainInfo.defaultQueue
+            }),
+            buyQueue: profitPercentCalculator({
+                costWithSign: totalCostObj.totalCostByBestPrices,
+                gainWithSign: totalOffsetGainInfo.buyQueue
+            })
+        } 
+
+        const profitPercentByInsertedPrices ={
+            defaultQueue: profitPercentCalculator({
+                costWithSign: totalCostObj.totalCostByInsertedPrices,
+                gainWithSign: totalOffsetGainInfo.defaultQueue
+            }),
+            buyQueue: profitPercentCalculator({
+                costWithSign: totalCostObj.totalCostByInsertedPrices,
+                gainWithSign: totalOffsetGainInfo.buyQueue
+            })
+        } 
 
 
 
@@ -1957,7 +2004,11 @@ export const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositio
 
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const { profitPercentByBestPrices, profitPercentByInsertedPrices,settlementProfitByBestPrices,settlementProfitByInsertedPrices } = profitCalculator(_strategyPositions, _unChekcedPositions);
+    const { 
+        profitPercentByBestPrices, 
+        profitPercentByInsertedPrices,
+        settlementProfitByBestPrices,
+        settlementProfitByInsertedPrices } = profitCalculator(_strategyPositions, _unChekcedPositions);
 
     const isProfitable = informForExpectedProfitOnStrategy({
         _strategyPositions,
