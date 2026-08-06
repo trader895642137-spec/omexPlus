@@ -15115,6 +15115,7 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
     minStockPriceToSarBeSar=0, maxStockPriceToSarBeSar=Infinity, 
+    
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
@@ -15224,6 +15225,19 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
 
 
 
+                    const priceThatCauseMaxProfit = Math.max(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) * 1.3;
+                    const priceThatCauseMaxLoss = Math.min(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) / 1.3;
+
+
+
+                    const maxProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxProfit });
+                    const maxLoss = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxLoss });
+
+
+                    const profitLossRatio = maxProfit / (maxProfit - maxLoss);
+
+                   
+
                     const profitPercent = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.profitPercentCalculator)(
                         {
                             costWithSign:totalCost, 
@@ -15245,6 +15259,7 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                         expectedProfitPerMonth,
                         stockPriceToSarBeSarPercent,
                         isWholeProfitable:!breakeven,
+                        profitLossRatio,
                         settlementTimeDiff : (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(date, 'jYYYY/jMM/jDD').diff(Date.now()),
                         name: createStrategyName([option, _option]),
                         profitPercent
@@ -24064,7 +24079,10 @@ const filterStrategiesByConfig = ({
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity,
     minStockPriceToSarBeSar=-Infinity,
     maxStockPriceToSarBeSar=Infinity,
+    minProfitLossRatio,
     isWholeProfitable,
+    isProfitEnoughFn,
+    expectedProfitNotif,
     minProfitToFilter }) => {
 
 
@@ -24081,12 +24099,26 @@ const filterStrategiesByConfig = ({
         if (isWholeProfitable ===true && !strategy.isWholeProfitable) return
         if (isWholeProfitable ===false && strategy.isWholeProfitable) return
 
+       
+        
+        if(minProfitLossRatio!=null && strategy.profitLossRatio < minProfitLossRatio) {
+            return
+        } 
+
         return true
 
     });
 
     if (minProfitToFilter != null) {
         allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, minProfitToFilter }))
+    }
+    if (isProfitEnoughFn != null) {
+        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, isProfitEnough: isProfitEnoughFn(strategy) }))
+    }
+    if (expectedProfitNotif === false) {
+        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, expectedProfitNotif }));
+
+        strategies.expectedProfitNotif = expectedProfitNotif;
     }
 
 
@@ -24465,6 +24497,17 @@ const createListFilterContetnByList=(list)=>{
             max_time_to_settlement : 1 * 27 * 3600000,
             maxStockPriceToSarBeSar: -.05,
             minProfitToFilter : 0.01
+        }),
+
+
+
+        filterStrategiesByConfig({
+            strategies: BUCSStrategies,
+            minProfitLossRatio: 0.95,
+            isProfitEnoughFn(strategy){
+                return true
+            },
+            expectedProfitNotif:false
         }),
 
 
