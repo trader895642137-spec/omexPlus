@@ -15631,6 +15631,18 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
 
 
 
+                    const priceThatCauseMaxProfit = Math.max(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) * 1.3;
+                    const priceThatCauseMaxLoss = Math.min(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) / 1.3;
+
+
+
+                    const maxProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxProfit });
+                    const maxLoss = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxLoss });
+
+
+                    const profitLossRatio = maxProfit / (maxProfit - maxLoss);
+
+
 
 
                      const profitPercent = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.profitPercentCalculator)(
@@ -15653,6 +15665,7 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                         expectedProfitPerMonth,
                         stockPriceToSarBeSarPercent,
                         isWholeProfitable:!breakeven,
+                        profitLossRatio,
                         settlementTimeDiff : (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(date, 'jYYYY/jMM/jDD').diff(Date.now()),
                         name: createStrategyName([option, _option]),
                         profitPercent
@@ -22467,6 +22480,19 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
+                    const priceThatCauseMaxProfit = Math.min(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) / 1.3;
+                    const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) * 1.3;
+
+
+
+                    const maxProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxProfit });
+                    const maxLoss = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxLoss });
+
+
+                    const profitLossRatio = maxProfit / (maxProfit - maxLoss);
+
+
+
 
                     const profitPercent = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.profitPercentCalculator)(
                         {
@@ -22487,6 +22513,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
                         expectedProfitPerMonth,
                         isWholeProfitable: !breakeven,
                         stockPriceToSarBeSarPercent,
+                        profitLossRatio,
                         name: createStrategyName([option, _option]),
                         profitPercent
                     }
@@ -22655,6 +22682,18 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
                     const offsetPrice = settlementOn === "OPTION" ? option.strikePrice/1.2 : option.optionDetails.stockSymbolDetails.last;
 
 
+                     const priceThatCauseMaxProfit = Math.min(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) / 1.3;
+                    const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) * 1.3;
+
+
+
+                    const maxProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxProfit });
+                    const maxLoss = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxLoss });
+
+
+                    const profitLossRatio = maxProfit / (maxProfit - maxLoss);
+
+
 
 
 
@@ -22675,6 +22714,7 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
                         expectedProfitNotif,
                         expectedProfitPerMonth,
                         stockPriceToSarBeSarPercent,
+                        profitLossRatio,
                         isWholeProfitable: !breakeven,
                         name: createStrategyName([option, _option]),
                         profitPercent
@@ -24780,6 +24820,17 @@ const createListFilterContetnByList=(list)=>{
             max_time_to_settlement: 1 * 3 * 3600000,
             minProfitToFilter: 0.01
         }),
+
+        
+        filterStrategiesByConfig({
+            strategies: BUPSStrategies,
+            minProfitLossRatio: 0.95,
+            isProfitEnoughFn(strategy){
+                return true
+            },
+            expectedProfitNotif:false,
+            strategyTypeTitle:"BUPS_goodPL"
+        }),
        
         
 
@@ -24886,6 +24937,19 @@ const createListFilterContetnByList=(list)=>{
             minProfitToFilter: 0.01,
         }),
 
+         filterStrategiesByConfig({
+            strategies: BECSStrategies,
+            minProfitLossRatio: 0.95,
+            isProfitEnoughFn(strategy){
+                return true
+            },
+            expectedProfitNotif:false,
+            strategyTypeTitle:"BECS_goodPL"
+        }),
+
+
+
+
 
         
 
@@ -24962,6 +25026,16 @@ const createListFilterContetnByList=(list)=>{
             strategies: BEPSStrategies,
             max_time_to_settlement: 1 * 3 * 3600000,
             minProfitToFilter: 0.006,
+        }),
+
+        filterStrategiesByConfig({
+            strategies: BEPSStrategies,
+            minProfitLossRatio: 0.95,
+            isProfitEnoughFn(strategy){
+                return true
+            },
+            expectedProfitNotif:false,
+            strategyTypeTitle:"BEPS_goodPL"
         }),
         
         
