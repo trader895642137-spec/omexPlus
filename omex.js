@@ -1851,6 +1851,7 @@ const isProfitEnough = ({ totalProfitPercent, percentPerMonth }) => {
 const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentByBestPrices, profitPercentByInsertedPrices,settlementProfitByBestPrices,settlementProfitByInsertedPrices }) => {
 
     let statusCnt = getStrategyExpectedProfitCnt();
+    const maxDaysToShowQueueSenarioProfits = 4;
 
     let daysLeftToSettlement = _strategyPositions.find(_strategyPosition =>{
         _strategyPosition.daysLeftToSettlement = _strategyPosition.getDaysLeftToSettlement()
@@ -1870,7 +1871,7 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
                             maximumFractionDigits: 1
                         })}
                     </div>
-                    ${daysLeftToSettlement< 7 ?`<div style="font-size: 11px;color:${profitPercentByBestPrices.buyQueue >= 0 ? 'green' : 'red'}">
+                    ${daysLeftToSettlement< maxDaysToShowQueueSenarioProfits ?`<div style="font-size: 11px;color:${profitPercentByBestPrices.buyQueue >= 0 ? 'green' : 'red'}">
                             ص خرید ${profitPercentByBestPrices.buyQueue.toLocaleString('en-US', {
                             minimumFractionDigits: 1,
                             maximumFractionDigits: 1
@@ -1893,7 +1894,7 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
                             maximumFractionDigits: 1
                         })}
                     </div>
-                    ${daysLeftToSettlement< 7 ?`<div style="font-size: 11px;color:${profitPercentByInsertedPrices.buyQueue >= 0 ? 'green' : 'red'}">
+                    ${daysLeftToSettlement< maxDaysToShowQueueSenarioProfits ?`<div style="font-size: 11px;color:${profitPercentByInsertedPrices.buyQueue >= 0 ? 'green' : 'red'}">
                             ص خرید ${profitPercentByInsertedPrices.buyQueue.toLocaleString('en-US', {
                             minimumFractionDigits: 1,
                             maximumFractionDigits: 1
