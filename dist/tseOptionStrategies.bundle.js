@@ -13424,6 +13424,94 @@ function findBreakevenList({positions,getPrice}) {
 
 // console.log(findBreakevenList({positions:examplePositions, getPrice:(p)=>p.getPrice()}));
 
+/***/ }),
+/* 10 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   parseIgnoreStrategies: () => (/* binding */ parseIgnoreStrategies)
+/* harmony export */ });
+const RULE_NAME_MAP = {
+    toSar: 'toSarBeSar',
+    toLSar: 'toLowSarBeSar',
+    toHSar: 'toHighSarBeSar',
+    profit: 'profitPercent',
+};
+
+const parseRuleConfigs = (configs) => {
+    return configs.reduce((result, config) => {
+        const equalIndex = config.indexOf('=');
+
+        if (equalIndex === -1) {
+            result.val = Number(config);
+            return result;
+        }
+
+        const key = config.slice(0, equalIndex);
+        const value = config.slice(equalIndex + 1);
+
+        result[key] = Number(value);
+
+        return result;
+    }, {});
+};
+
+
+const parseIgnoreStrategy = (ignoreStrategyName) => {
+    const result = {
+        type: null,
+        name: null,
+        profitPercent: null,
+        toSarBeSar: null,
+        toLowSarBeSar: null,
+        toHighSarBeSar: null,
+        allProfit: null,
+        raw: ignoreStrategyName
+    };
+
+    const [type, ...parts] = ignoreStrategyName.split('@');
+
+    result.type = type;
+
+    parts.forEach(part => {
+        if (part === 'allProfit') {
+            result.allProfit = true;
+            return;
+        }
+
+        const colonIndex = part.indexOf(':');
+
+        if (colonIndex === -1) {
+            result.name = part;
+            return;
+        }
+
+        const ruleName = part.slice(0, colonIndex);
+        const configs = part.slice(colonIndex + 1).split(':');
+
+        const resultKey = RULE_NAME_MAP[ruleName];
+
+        if (resultKey) {
+            result[resultKey] = parseRuleConfigs(configs);
+        }
+    });
+
+    return result;
+};
+
+
+
+
+
+const parseIgnoreStrategies = (text) => {
+    return text
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .map(parseIgnoreStrategy);
+};
+
 /***/ })
 /******/ 	]);
 /************************************************************************/
@@ -13495,6 +13583,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
 /* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(1);
 /* harmony import */ var _findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(9);
+/* harmony import */ var _ignoreRuleParser_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(10);
+
 
 
 
@@ -13852,6 +13942,25 @@ const calcOffsetGainOfPositions = ({ strategyPositions, stockPrice }) => {
 }
 
 
+
+const getIgnoreStrategyNames = ()=>{
+
+     const privateIgnoreListText =
+            document.querySelector(
+                '.amin-filter-cnt textarea.amin-ignoreList.amin-ignoreList--private'
+            )?.value || '';
+    
+        const generalIgnoreListText = getGeneralIgnoreText() || '';
+    
+        const ignoreListText = `${privateIgnoreListText} ${generalIgnoreListText}`.trim();
+    
+        if (!ignoreListText) {
+            return [];
+        }
+
+
+        return (0,_ignoreRuleParser_js__WEBPACK_IMPORTED_MODULE_5__.parseIgnoreStrategies)(ignoreListText)
+}
 
 
 
@@ -25313,76 +25422,11 @@ const handleMultipleIgnoreRuleConfig = ({ rulConfigs }) => {
 
 }
 
-const getIgnoreStrategyNames = () => {
-    const privateIgnoreListText = document.querySelector('.amin-filter-cnt textarea.amin-ignoreList.amin-ignoreList--private').value;
-    const generalIgnoreListText = getGeneralIgnoreText();
-    const ignoreListText = `${privateIgnoreListText} ${generalIgnoreListText} `
-    if (!ignoreListText)
-        return []
-
-    const ignoreListTextWithoutSpaces = ignoreListText.replace(/\s+/g, '*');
-    if (!ignoreListTextWithoutSpaces)
-        return []
-    let ignoreStrategyNames = ignoreListTextWithoutSpaces.split('*');
-    if (!ignoreStrategyNames?.length)
-        return []
-    ignoreStrategyNames = ignoreStrategyNames.filter(Boolean);
-    return ignoreStrategyNames.map(ignoreStrategyName => {
-        const filterParts = ignoreStrategyName.split('@');
-        const result = {
-            type: null,
-            name: null,
-            profitPercent: null,
-            toSarBeSar: null,
-            toLowSarBeSar: null,
-            toHighSarBeSar: null,
-            allProfit: null,
-            raw: ignoreStrategyName
-        };
-        if (!filterParts?.length)
-            return result
-
-        result.type = filterParts[0];
-
-        filterParts.slice(1).forEach((filterPart, index) => {
-            
-
-            if (filterPart?.includes(':')) {
-                const [ruleName, ...rulConfigs] = filterPart.split(':');
-                if(ruleName=='toSar'){
-                    result.toSarBeSar = handleMultipleIgnoreRuleConfig({rulConfigs});
-                }
-                if(ruleName=='toLSar'){
-                    result.toLowSarBeSar = handleMultipleIgnoreRuleConfig({rulConfigs});
-                }
-                if(ruleName=='toHSar'){
-                    result.toHighSarBeSar = handleMultipleIgnoreRuleConfig({rulConfigs});
-                }
-                
-                
-                if(ruleName=='profit'){
-                    result.profitPercent = handleMultipleIgnoreRuleConfig({rulConfigs});
-                }
-                
-
-            } else if (filterPart === 'allProfit') {
-                result.allProfit = true;
-            }else{
-
-                result.name = filterPart;
-            }
 
 
 
-            return result;
-        });
 
 
-        
-        return result
-    }
-    );
-}
 
 const getFilterSymbols = () => {
     const ignoreListText = document.querySelector('.amin-filter-cnt textarea.amin-filterList').value;

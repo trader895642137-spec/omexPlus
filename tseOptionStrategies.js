@@ -6,6 +6,7 @@ import './desktopNotificationCheck.js'
 
 import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator, showNotification, someOfNokoolGainCalculator, isHourMinGreaterThan, profitPercentCalculator, ETF_LIST } from './common.js';
 import { findBreakevenList } from './findBreakevens.js';
+import { parseIgnoreStrategies } from './ignoreRuleParser.js';
 
 
 
@@ -355,6 +356,25 @@ const calcOffsetGainOfPositions = ({ strategyPositions, stockPrice }) => {
 }
 
 
+
+const getIgnoreStrategyNames = ()=>{
+
+     const privateIgnoreListText =
+            document.querySelector(
+                '.amin-filter-cnt textarea.amin-ignoreList.amin-ignoreList--private'
+            )?.value || '';
+    
+        const generalIgnoreListText = getGeneralIgnoreText() || '';
+    
+        const ignoreListText = `${privateIgnoreListText} ${generalIgnoreListText}`.trim();
+    
+        if (!ignoreListText) {
+            return [];
+        }
+
+
+        return parseIgnoreStrategies(ignoreListText)
+}
 
 
 
@@ -11815,76 +11835,11 @@ const handleMultipleIgnoreRuleConfig = ({ rulConfigs }) => {
 
 }
 
-const getIgnoreStrategyNames = () => {
-    const privateIgnoreListText = document.querySelector('.amin-filter-cnt textarea.amin-ignoreList.amin-ignoreList--private').value;
-    const generalIgnoreListText = getGeneralIgnoreText();
-    const ignoreListText = `${privateIgnoreListText} ${generalIgnoreListText} `
-    if (!ignoreListText)
-        return []
-
-    const ignoreListTextWithoutSpaces = ignoreListText.replace(/\s+/g, '*');
-    if (!ignoreListTextWithoutSpaces)
-        return []
-    let ignoreStrategyNames = ignoreListTextWithoutSpaces.split('*');
-    if (!ignoreStrategyNames?.length)
-        return []
-    ignoreStrategyNames = ignoreStrategyNames.filter(Boolean);
-    return ignoreStrategyNames.map(ignoreStrategyName => {
-        const filterParts = ignoreStrategyName.split('@');
-        const result = {
-            type: null,
-            name: null,
-            profitPercent: null,
-            toSarBeSar: null,
-            toLowSarBeSar: null,
-            toHighSarBeSar: null,
-            allProfit: null,
-            raw: ignoreStrategyName
-        };
-        if (!filterParts?.length)
-            return result
-
-        result.type = filterParts[0];
-
-        filterParts.slice(1).forEach((filterPart, index) => {
-            
-
-            if (filterPart?.includes(':')) {
-                const [ruleName, ...rulConfigs] = filterPart.split(':');
-                if(ruleName=='toSar'){
-                    result.toSarBeSar = handleMultipleIgnoreRuleConfig({rulConfigs});
-                }
-                if(ruleName=='toLSar'){
-                    result.toLowSarBeSar = handleMultipleIgnoreRuleConfig({rulConfigs});
-                }
-                if(ruleName=='toHSar'){
-                    result.toHighSarBeSar = handleMultipleIgnoreRuleConfig({rulConfigs});
-                }
-                
-                
-                if(ruleName=='profit'){
-                    result.profitPercent = handleMultipleIgnoreRuleConfig({rulConfigs});
-                }
-                
-
-            } else if (filterPart === 'allProfit') {
-                result.allProfit = true;
-            }else{
-
-                result.name = filterPart;
-            }
 
 
 
-            return result;
-        });
 
 
-        
-        return result
-    }
-    );
-}
 
 const getFilterSymbols = () => {
     const ignoreListText = document.querySelector('.amin-filter-cnt textarea.amin-filterList').value;
