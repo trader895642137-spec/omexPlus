@@ -13682,31 +13682,13 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
         if (!ignoreStrategyObj.name) return true
 
         const ignoreStrategyName = ignoreStrategyObj.name.replaceAll('ي', 'ی');
-        if (!ignoreStrategyObj.isMinStrike) {
-            if (ignoreStrategyName === strategyFullSymbolNames) return true
-            if (strategySymbols.some(symbol => symbol.includes(ignoreStrategyName))) return true
-        } else {
-
-
-            const symbolInPositions = strategy.positions.find(position=>position.symbol===ignoreStrategyObj.name);
-            if(!symbolInPositions) return false
-
-            return isMinimumStrike({positions: strategy.positions,strikePrice: symbolInPositions.strikePrice})
-
-        }
+        if (ignoreStrategyName === strategyFullSymbolNames) return true
+        if (strategySymbols.some(symbol => symbol.includes(ignoreStrategyName))) return true
+       
 
     }
 
-    function isMinimumStrike({positions,strikePrice}) {
-        for (let i = 0; i < positions.length; i++) {
-            if (strikePrice > positions[i].strikePrice) {
-                return false;  // اگر عددی کوچیک‌تر از num پیدا شد، پس num مینیموم نیست
-            }
-        }
-        return true;  // اگر از همه کوچیک‌تر یا مساوی بود
-    }
-
-
+   
 
     const profitFilterCheck = ({ignoreStrategyObj,strategy})=>{
 
@@ -13714,7 +13696,7 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
         const hasFilter = ignoreStrategyObj.profitPercent != null;
 
         return {
-            isPass: hasFilter ? strategy.profitPercent >= ignoreStrategyObj.profitPercent : null,
+            isPass: hasFilter ? strategy.profitPercent >= ignoreStrategyObj.profitPercent.val : null,
             hasFilter
         }
 
@@ -13728,48 +13710,49 @@ const isStrategyIgnored = (strategy,ignoreStrategyList) => {
         const hasToHighSarBeSarFilter = ignoreStrategyObj.toHighSarBeSar != null;
         const hasToLowSarBeSarFilter = ignoreStrategyObj.toLowSarBeSar != null;
 
-        const hasFilter = hasToSarBeSarFilter || hasToHighSarBeSarFilter || hasToLowSarBeSarFilter;
+        const hasFilter =
+            hasToSarBeSarFilter ||
+            hasToHighSarBeSarFilter ||
+            hasToLowSarBeSarFilter;
 
-        let isPass = true;
-
-
-        const check = (value, filterValue) => {
+        const check = (value, filter) => {
             if (value == null) {
                 return true;
             }
 
-            return filterValue < 0
-                ? value <= filterValue
-                : value >= filterValue;
+            if (filter.min != null && value < filter.min) {
+                return false;
+            }
+
+            if (filter.max != null && value > filter.max) {
+                return false;
+            }
+
+            return true;
         };
-        
 
-        if (hasToSarBeSarFilter &&
-            !check(strategy.stockPriceToSarBeSarPercent, ignoreStrategyObj.toSarBeSar)) {
-            isPass = false;
-        }
-
-
-        if (hasToHighSarBeSarFilter &&
-            !check(strategy.stockPriceToHighSarBeSarPercent, ignoreStrategyObj.toHighSarBeSar)) {
-            isPass = false;
-        }
-
-        
-
-        if (hasToLowSarBeSarFilter &&
-            !check(strategy.stockPriceToLowSarBeSarPercent, ignoreStrategyObj.toLowSarBeSar)) {
-            isPass = false;
-        }
-        
-        
+        const isPass =
+            (!hasToSarBeSarFilter ||
+                check(
+                    strategy.stockPriceToSarBeSarPercent,
+                    ignoreStrategyObj.toSarBeSar
+                )) &&
+            (!hasToHighSarBeSarFilter ||
+                check(
+                    strategy.stockPriceToHighSarBeSarPercent,
+                    ignoreStrategyObj.toHighSarBeSar
+                )) &&
+            (!hasToLowSarBeSarFilter ||
+                check(
+                    strategy.stockPriceToLowSarBeSarPercent,
+                    ignoreStrategyObj.toLowSarBeSar
+                ));
 
         return {
             isPass,
-            hasFilter 
-        }
-
-    }
+            hasFilter
+        };
+    };
 
      const allProfitFilterCheck = ({ ignoreStrategyObj, strategy }) => {
 
@@ -16092,11 +16075,6 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
 
                             const maxStrike = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice));
                             const stockPrice = option.optionDetails.stockSymbolDetails.last;
-
-                            // filter little profits
-                            if(minProfitPercent > 0 && (stockPrice > (maxStrike* 1.1)) &&    minProfitPercent < 0.02){
-                                return ___allPossibleStrategies
-                            }
 
 
                           
@@ -19689,11 +19667,6 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
                             const isButterFly = diffOfBUPS_Strikes === diffOfBEPS_Strikes &&  option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice
                             
 
-                            //  if(option.symbol==='طهرم5030' && option2.symbol==='طهرم5031' && option3.symbol==='طهرم5031' && option4.symbol==='طهرم5032'){
-
-                            //     console.log(24323);
-                                
-                            //  }
 
                             const strategyPositions = [
                                 {
@@ -20933,10 +20906,6 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
                         
 
-                        // if(buyingPut.symbol==='طستا5046' && sellingPut.symbol==='طستا5045' && anotherSellingPut.symbol==='طستا5045'){
-                        //     console.log(23423);
-                            
-                        // }
 
 
                         const maxLossOfBEPS_RATIO = totalCostOfBEPS_RATIO + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBEPS_RATIO, stockPrice:priceThatCauseMaxLossOfBEPS_RATIO});
@@ -24153,6 +24122,7 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
 
 const filterStrategiesByConfig = ({
     strategies,
+    strategyTypeTitle,
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity,
     minStockPriceToSarBeSar=-Infinity,
     maxStockPriceToSarBeSar=Infinity,
@@ -24192,20 +24162,28 @@ const filterStrategiesByConfig = ({
     if (isProfitEnoughFn != null) {
         allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, isProfitEnough: isProfitEnoughFn(strategy) }))
     }
-    if (expectedProfitNotif === false) {
+    if (expectedProfitNotif != null) {
         allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, expectedProfitNotif }));
 
-        strategies.expectedProfitNotif = expectedProfitNotif;
     }
+    
+    if (strategyTypeTitle != null) {
+        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, strategyTypeTitle }));
+
+    }
+
+
 
 
 
     return {
         ...strategies,
+        strategyName : strategyTypeTitle || strategies.strategyName,
+        expectedProfitNotif : expectedProfitNotif!=null ? expectedProfitNotif : strategies.expectedProfitNotif,
         allStrategiesSorted ,
-
         htmlTitle: configsToHtmlTitle({
             ...strategies,
+            strategyName : strategyTypeTitle || strategies.strategyName,
             min_time_to_settlement,
             max_time_to_settlement,
             customLabels: [
@@ -24584,7 +24562,8 @@ const createListFilterContetnByList=(list)=>{
             isProfitEnoughFn(strategy){
                 return true
             },
-            expectedProfitNotif:false
+            expectedProfitNotif:false,
+            strategyTypeTitle:"BUCS_goodPL"
         }),
 
 
@@ -25319,6 +25298,21 @@ const setFiltersContent = (htmlContent) => {
 const getGeneralIgnoreText = ()=> document.querySelector('.amin-filter-cnt textarea.amin-ignoreList.amin-ignoreList--general').value
 const setGeneralIgnoreText = (value)=> document.querySelector('.amin-filter-cnt textarea.amin-ignoreList.amin-ignoreList--general').value = value;
 
+
+const handleMultipleIgnoreRuleConfig = ({ rulConfigs }) => {
+
+    return  rulConfigs.reduce((ruleConfigObj, rulConfig) => {
+        if (rulConfig?.includes('=')) {
+            const [configName, configValue] = rulConfig.split('=');
+            ruleConfigObj[configName] = configValue != null ? parseFloat(configValue) : null;
+        }else {
+            ruleConfigObj.val = rulConfig != null ? parseFloat(rulConfig) : null;
+        }
+        return ruleConfigObj
+    }, {});
+
+}
+
 const getIgnoreStrategyNames = () => {
     const privateIgnoreListText = document.querySelector('.amin-filter-cnt textarea.amin-ignoreList.amin-ignoreList--private').value;
     const generalIgnoreListText = getGeneralIgnoreText();
@@ -25338,11 +25332,10 @@ const getIgnoreStrategyNames = () => {
         const result = {
             type: null,
             name: null,
-            isMinStrike: null,
             profitPercent: null,
             toSarBeSar: null,
+            toLowSarBeSar: null,
             toHighSarBeSar: null,
-            toLowSarBeSar :null,
             allProfit: null,
             raw: ignoreStrategyName
         };
@@ -25355,22 +25348,20 @@ const getIgnoreStrategyNames = () => {
             
 
             if (filterPart?.includes(':')) {
-                const [ruleName, ruleValue] = filterPart.split(':');
+                const [ruleName, ...rulConfigs] = filterPart.split(':');
                 if(ruleName=='toSar'){
-                    result.toSarBeSar = ruleValue ? parseFloat(ruleValue) : null;
+                    result.toSarBeSar = handleMultipleIgnoreRuleConfig({rulConfigs});
                 }
-                if(ruleName=='toSarH'){
-                    result.toHighSarBeSar = ruleValue ? parseFloat(ruleValue) : null;
+                if(ruleName=='toLSar'){
+                    result.toLowSarBeSar = handleMultipleIgnoreRuleConfig({rulConfigs});
                 }
-                if(ruleName=='toSarL'){
-                    result.toLowSarBeSar = ruleValue ? parseFloat(ruleValue) : null;
+                if(ruleName=='toHSar'){
+                    result.toHighSarBeSar = handleMultipleIgnoreRuleConfig({rulConfigs});
                 }
+                
+                
                 if(ruleName=='profit'){
-                    result.profitPercent = ruleValue ? parseFloat(ruleValue) / 100 : null;
-                }
-                if(ruleName=='minStrike'){
-                    result.name = ruleValue;
-                    result.isMinStrike = true;
+                    result.profitPercent = handleMultipleIgnoreRuleConfig({rulConfigs});
                 }
                 
 
