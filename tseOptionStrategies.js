@@ -2144,7 +2144,7 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
 
 
 const calcSyntheticCoveredCallStrategies = (list, 
-    {priceType, strategySubName,minQuantityFactorOfBUCS=0.6, 
+    {priceType, strategySubName, 
         minProfitToFilter,
         minStockPriceToSarBeSar=-Infinity,
         maxStockPriceToSarBeSar=Infinity,
@@ -6379,8 +6379,8 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
 
 }
 
-const calcBUCSRatioStrategies = (list, {priceType, strategySubName,
-    minQuantityFactorOfBUCS=0.5,  maxQuantityFactorOfBUCS=3, 
+const calcBUCSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBUCS=0.6,  
+    maxQuantityFactorOfBUCS=3, 
     BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     minProfitToFilter,
     isProfitEnoughFn,
@@ -6665,7 +6665,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName,
 
 
 
-const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBUPS=0.5, 
+const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBUPS=0.6, 
     minStockPriceToSarBeSar=-Infinity,
     maxStockPriceToSarBeSar=Infinity,
     minProfitToFilter,
@@ -6958,7 +6958,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
 
 // Jade Lizard
-const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBECS=0.5, 
+const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBECS=0.6, 
     minStockPriceToSarBeSar=-Infinity,
     maxStockPriceToSarBeSar=Infinity,
     minProfitToFilter,
@@ -7256,7 +7256,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 }
 
 
-const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBEPS=0.5, 
+const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityFactorOfBEPS=0.6, 
     minStockPriceToSarBeSar=-Infinity,
     maxStockPriceToSarBeSar=Infinity,
     minProfitToFilter,
