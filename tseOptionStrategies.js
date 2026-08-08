@@ -348,7 +348,7 @@ const isProfitEnough = ({strategy,profitPercent})=>{
 const calcOffsetGainOfPositions = ({ strategyPositions, stockPrice }) => {
     return mainTotalOffsetGainCalculator({
         strategyPositions,
-        getBestPriceCb: (_strategyPosition) => getNearSettlementPrice({ strategyPosition: _strategyPosition, stockPrice }),
+        getBestPriceCb: (_strategyPosition) => getNearSettlementPrice({ strategyPositions,strategyPosition: _strategyPosition, stockPrice }),
         getReservedMargin: _strategyPosition => {
             return (_strategyPosition.getRequiredMargin ? (_strategyPosition.getRequiredMargin() * _strategyPosition.getQuantity()):0) || 0;
         }

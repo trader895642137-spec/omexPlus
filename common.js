@@ -465,11 +465,16 @@ export const QueueScenario = {
     buyQueue: "buyQueue",
     sellQueue: "sellQueue"
 }
-export const getNearSettlementPrice = ({ strategyPosition, stockPrice, stockPriceAdjustFactor = configs.stockPriceAdjustFactor, scenario = QueueScenario.normal }) => {
+export const getNearSettlementPrice = ({strategyPositions, strategyPosition, stockPrice, stockPriceAdjustFactor = configs.stockPriceAdjustFactor, scenario = QueueScenario.normal }) => {
 
 
     const tradeFee = strategyPosition.isBuy ? COMMISSION_FACTOR.OPTION.BUY : COMMISSION_FACTOR.OPTION.SELL;
     const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE;
+
+    if(strategyPositions.length>2){
+       stockPriceAdjustFactor =stockPriceAdjustFactor-1;
+       stockPriceAdjustFactor = (stockPriceAdjustFactor/2)  + 1
+    }
 
 
     // const tax = isTaxFree(strategyPosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
