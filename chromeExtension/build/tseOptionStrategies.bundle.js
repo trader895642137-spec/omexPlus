@@ -502,11 +502,16 @@ const QueueScenario = {
     buyQueue: "buyQueue",
     sellQueue: "sellQueue"
 }
-const getNearSettlementPrice = ({ strategyPosition, stockPrice, stockPriceAdjustFactor = configs.stockPriceAdjustFactor, scenario = QueueScenario.normal }) => {
+const getNearSettlementPrice = ({strategyPositions, strategyPosition, stockPrice, stockPriceAdjustFactor = configs.stockPriceAdjustFactor, scenario = QueueScenario.normal }) => {
 
 
     const tradeFee = strategyPosition.isBuy ? COMMISSION_FACTOR.OPTION.BUY : COMMISSION_FACTOR.OPTION.SELL;
     const exerciseFee = COMMISSION_FACTOR.OPTION.SETTLEMENT.EXERCISE_FEE;
+
+    if(strategyPositions.length>2){
+       stockPriceAdjustFactor =stockPriceAdjustFactor-1;
+       stockPriceAdjustFactor = (stockPriceAdjustFactor/2)  + 1
+    }
 
 
     // const tax = isTaxFree(strategyPosition) ? 0 : COMMISSION_FACTOR.OPTION.SETTLEMENT.SELL_TAX;
@@ -13934,7 +13939,7 @@ const isProfitEnough = ({strategy,profitPercent})=>{
 const calcOffsetGainOfPositions = ({ strategyPositions, stockPrice }) => {
     return (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.mainTotalOffsetGainCalculator)({
         strategyPositions,
-        getBestPriceCb: (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.getNearSettlementPrice)({ strategyPosition: _strategyPosition, stockPrice }),
+        getBestPriceCb: (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.getNearSettlementPrice)({ strategyPositions,strategyPosition: _strategyPosition, stockPrice }),
         getReservedMargin: _strategyPosition => {
             return (_strategyPosition.getRequiredMargin ? (_strategyPosition.getRequiredMargin() * _strategyPosition.getQuantity()):0) || 0;
         }
