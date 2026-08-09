@@ -20,6 +20,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getReservedMarginOfEstimationQuantity: () => (/* binding */ getReservedMarginOfEstimationQuantity),
 /* harmony export */   hasBreakevenExecutedPriceDiffIssue: () => (/* binding */ hasBreakevenExecutedPriceDiffIssue),
 /* harmony export */   hasGreaterRatio: () => (/* binding */ hasGreaterRatio),
+/* harmony export */   isBuyQueue: () => (/* binding */ isBuyQueue),
 /* harmony export */   isETF: () => (/* binding */ isETF),
 /* harmony export */   isHourMinGreaterThan: () => (/* binding */ isHourMinGreaterThan),
 /* harmony export */   isTaxFree: () => (/* binding */ isTaxFree),
@@ -886,6 +887,16 @@ const calcAveragePriceByExecutedOrders = (orders)=>{
         totalValue: to3Decimal(Math.abs(position) * averagePrice),
         side: position > 0 ? "Long" : (position < 0 ? "Short" : "Neutral")
     };
+
+}
+
+
+
+const isBuyQueue = (stock) => {
+  if(!stock?.bestBuy || !stock.beforeTodayPrice || !stock.bestBuyQ) return 
+  const isPriceNearCeil = stock.bestBuy / stock.beforeTodayPrice > 1.026;
+  const isQueue = stock.bestBuyQ * stock.bestBuy > 100000000;
+  return isPriceNearCeil && isQueue
 
 }
 

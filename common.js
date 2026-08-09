@@ -851,3 +851,13 @@ export const calcAveragePriceByExecutedOrders = (orders)=>{
     };
 
 }
+
+
+
+export const isBuyQueue = (stock) => {
+  if(!stock?.bestBuy || !stock.beforeTodayPrice || !stock.bestBuyQ) return 
+  const isPriceNearCeil = stock.bestBuy / stock.beforeTodayPrice > 1.026;
+  const isQueue = stock.bestBuyQ * stock.bestBuy > 100000000;
+  return isPriceNearCeil && isQueue
+
+}

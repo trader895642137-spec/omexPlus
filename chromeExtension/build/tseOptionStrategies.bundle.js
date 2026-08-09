@@ -20,6 +20,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getReservedMarginOfEstimationQuantity: () => (/* binding */ getReservedMarginOfEstimationQuantity),
 /* harmony export */   hasBreakevenExecutedPriceDiffIssue: () => (/* binding */ hasBreakevenExecutedPriceDiffIssue),
 /* harmony export */   hasGreaterRatio: () => (/* binding */ hasGreaterRatio),
+/* harmony export */   isBuyQueue: () => (/* binding */ isBuyQueue),
 /* harmony export */   isETF: () => (/* binding */ isETF),
 /* harmony export */   isHourMinGreaterThan: () => (/* binding */ isHourMinGreaterThan),
 /* harmony export */   isTaxFree: () => (/* binding */ isTaxFree),
@@ -886,6 +887,16 @@ const calcAveragePriceByExecutedOrders = (orders)=>{
         totalValue: to3Decimal(Math.abs(position) * averagePrice),
         side: position > 0 ? "Long" : (position < 0 ? "Short" : "Neutral")
     };
+
+}
+
+
+
+const isBuyQueue = (stock) => {
+  if(!stock?.bestBuy || !stock.beforeTodayPrice || !stock.bestBuyQ) return 
+  const isPriceNearCeil = stock.bestBuy / stock.beforeTodayPrice > 1.026;
+  const isQueue = stock.bestBuyQ * stock.bestBuy > 100000000;
+  return isPriceNearCeil && isQueue
 
 }
 
@@ -24179,7 +24190,19 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
 
             if (optionPrice === 0) return option
 
+            if(option.optionDetails?.stockSymbolDetails.symbol==='اخابر'){
+                console.log(24234);
+
+                const s = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails);
+                
+
+            }
+
             if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
+
+            
+
+            if(!(0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
 
 
             const strategyPositions = [
@@ -25158,6 +25181,10 @@ const createList = ()=>{
         }
 
 
+
+        if(symbol=='اخابر'){
+    console.log(4234234)
+}
         
 
         const assetInfo ={
@@ -25173,12 +25200,13 @@ const createList = ()=>{
             strikePrice,
             optionDetails,
             vol: parseStringToNumber(cells[4].querySelector('div').innerHTML),
+            beforeTodayPrice: convertStringToInt(cells[5].innerHTML),
             last: convertStringToInt(cells[7].innerHTML),
             close: convertStringToInt(cells[10].innerHTML),
-            bestBuyQ: convertStringToInt(cells[18].querySelector('div').innerHTML),
+            bestBuyQ: parseStringToNumber(cells[18].querySelector('div').innerHTML),
             bestBuy: convertStringToInt(cells[19].innerHTML),
             bestSell: convertStringToInt(cells[20].innerHTML),
-            bestSellQ: convertStringToInt(cells[21].querySelector('div').innerHTML)
+            bestSellQ: parseStringToNumber(cells[21].querySelector('div').innerHTML)
         }
         return assetInfo
     }

@@ -4,7 +4,7 @@ import './hookFetch.js'
 import './desktopNotificationCheck.js'
 
 
-import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator, showNotification, someOfNokoolGainCalculator, isHourMinGreaterThan, profitPercentCalculator, ETF_LIST } from './common.js';
+import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator, showNotification, someOfNokoolGainCalculator, isHourMinGreaterThan, profitPercentCalculator, ETF_LIST, isBuyQueue } from './common.js';
 import { findBreakevenList } from './findBreakevens.js';
 import { parseIgnoreStrategies } from './ignoreRuleParser.js';
 
@@ -8432,6 +8432,8 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
 
             if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
 
+            if(isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
+
 
             const breakeven = option.optionDetails.stockSymbolDetails.last - sellingOptionPrice;
             const stockPriceToSarBeSarPercent = (breakeven /option.optionDetails.stockSymbolDetails.last ) - 1;
@@ -8547,6 +8549,8 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
             if (sellingOptionPrice === 0) return option
 
             if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
+
+            if(isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
 
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
@@ -8675,6 +8679,8 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
             if (sellingOptionPrice === 0) return option
 
             if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
+
+            if(isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
 
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
@@ -10588,7 +10594,11 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
 
             if (optionPrice === 0) return option
 
+
             if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
+            
+
+            if(isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
 
 
             const strategyPositions = [
@@ -11567,7 +11577,7 @@ const createList = ()=>{
         }
 
 
-        
+
 
         const assetInfo ={
             symbol,
@@ -11582,12 +11592,13 @@ const createList = ()=>{
             strikePrice,
             optionDetails,
             vol: parseStringToNumber(cells[4].querySelector('div').innerHTML),
+            beforeTodayPrice: convertStringToInt(cells[5].innerHTML),
             last: convertStringToInt(cells[7].innerHTML),
             close: convertStringToInt(cells[10].innerHTML),
-            bestBuyQ: convertStringToInt(cells[18].querySelector('div').innerHTML),
+            bestBuyQ: parseStringToNumber(cells[18].querySelector('div').innerHTML),
             bestBuy: convertStringToInt(cells[19].innerHTML),
             bestSell: convertStringToInt(cells[20].innerHTML),
-            bestSellQ: convertStringToInt(cells[21].querySelector('div').innerHTML)
+            bestSellQ: parseStringToNumber(cells[21].querySelector('div').innerHTML)
         }
         return assetInfo
     }
