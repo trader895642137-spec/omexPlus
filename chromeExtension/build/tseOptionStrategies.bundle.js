@@ -22034,6 +22034,8 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
 
             if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
 
+            if((0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
+
 
             const breakeven = option.optionDetails.stockSymbolDetails.last - sellingOptionPrice;
             const stockPriceToSarBeSarPercent = (breakeven /option.optionDetails.stockSymbolDetails.last ) - 1;
@@ -22149,6 +22151,8 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
             if (sellingOptionPrice === 0) return option
 
             if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
+
+            if((0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
 
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
@@ -22277,6 +22281,8 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
             if (sellingOptionPrice === 0) return option
 
             if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
+
+            if((0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
 
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
@@ -24190,19 +24196,11 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
 
             if (optionPrice === 0) return option
 
-            if(option.optionDetails?.stockSymbolDetails.symbol==='اخابر'){
-                console.log(24234);
-
-                const s = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails);
-                
-
-            }
 
             if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
-
             
 
-            if(!(0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
+            if((0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
 
 
             const strategyPositions = [
@@ -25182,10 +25180,6 @@ const createList = ()=>{
 
 
 
-        if(symbol=='اخابر'){
-    console.log(4234234)
-}
-        
 
         const assetInfo ={
             symbol,
