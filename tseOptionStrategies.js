@@ -10510,6 +10510,7 @@ const calcBuyStockByPutStrategies = (list, {priceType, expectedProfitPerMonth,
                         expectedProfitNotif,
                         minProfitToFilter,
                         expectedProfitPerMonth,
+                        stockPriceToSarBeSarPercent:distanceCurrentPrice,
                         name: createStrategyName([option]),
                         isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(option),
                         profitPercent : distanceCurrentPrice

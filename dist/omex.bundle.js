@@ -2169,7 +2169,7 @@ const doJob=()=>{
 let expectedProfit = {
     expectedProfitPerMonth: 1.04,
     minExpectedProfitOfStrategy: 3.9,
-    currentPositions: 1.4
+    currentPositions: 1
 }
 
 
