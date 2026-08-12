@@ -2429,6 +2429,16 @@ export const calcAvgPricesByExecutenList =async ()=>{
 
 }
 
+export const showVariableMargin = async () => {
+
+    const { variableMargin } = await OMEXApi.getVariableMargin();
+
+    showToast(variableMargin.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }), 5000);
+}
+
 const getRecentCalculatedAvgPrices = ({instrumentId,instrumentName})=>{
     if (!lastCalculatedAvgPrices.results || !lastCalculatedAvgPrices.time || (Date.now() - lastCalculatedAvgPrices.time) > (60000 * 3)) return null
     if(!lastCalculatedAvgPrices.results.length) return 

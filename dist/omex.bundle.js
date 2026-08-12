@@ -1416,6 +1416,33 @@ const getCustomerOptionStrategyEstimationWithItems = async () => {
 
 
 
+const getOptionStrategies = async () => {
+    return fetch(`${redOrigin}/api/OptionStrategies/Get`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "sec-ch-ua": "\"Not=A?Brand\";v=\"99\", \"Google Chrome\";v=\"151\", \"Chromium\";v=\"151\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": "https://khobregan.tsetab.ir/",
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const optionStrategies = res.response.data;
+        return optionStrategies
+    });
+}
+
+
+
 const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
 
     const groupPositions = group.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId));
@@ -1834,6 +1861,114 @@ const findDuplicationsInGroups = async ()=>{
     });
 }
 
+const FIXED_MARGIN_STRATEGIES = new Set([
+  "BearCallSpread",
+  "BullPutSpread",
+]);
+
+
+
+
+const calculateFixedMargin = async () => {
+
+
+    const positions = await getOptionPortfolioList();
+    const strategies = await getOptionStrategies();
+    const positionMap = new Map(
+        positions.map(p => [p.instrumentId, p])
+    );
+
+    let totalFixedDMargin = 0;
+
+    const details = [];
+
+    for (const strategy of strategies) {
+
+        // فعلاً Butterfly را جداگانه مدیریت می‌کنیم
+        if (!FIXED_MARGIN_STRATEGIES.has(strategy.type)) {
+            continue;
+        }
+
+        const p1 = positionMap.get(strategy.baseStrategyInstrumentId);
+        const p2 = positionMap.get(strategy.strategyInstrumentId);
+
+        if (!p1 || !p2) {
+            console.warn(
+                "Position not found for strategy:",
+                strategy.type,
+                strategy.id,
+                strategy.baseStrategyInstrumentName,
+                strategy.strategyInstrumentName
+            );
+
+            continue;
+        }
+
+        const strike1 = Number(p1.strikePrice);
+        const strike2 = Number(p2.strikePrice);
+
+        const contractSize = Number(p1.cSize);
+
+        // تعداد واقعی Spread
+        const quantity = Number(
+            strategy.quantity
+        );
+
+        const strikeDifference = Math.abs(strike1 - strike2);
+
+        const margin =
+            strikeDifference *
+            contractSize *
+            quantity;
+
+        totalFixedDMargin += margin;
+
+        details.push({
+            strategyId: strategy.id,
+            type: strategy.type,
+
+            instrument1: p1.instrumentName,
+            instrument2: p2.instrumentName,
+
+            strike1,
+            strike2,
+            strikeDifference,
+
+            contractSize,
+            quantity,
+
+            margin
+        });
+    }
+
+    console.log({ totalFixedDMargin, details });
+
+
+    return {
+        totalFixedDMargin,
+        details
+    };
+}
+
+
+const getVariableMargin = async()=>{
+
+    const {totalFixedDMargin} = await calculateFixedMargin();
+    const {calculatedBlockedAmount} = await calculateSumOfMoneyAndAssets();
+    const variableMargin = calculatedBlockedAmount - totalFixedDMargin;
+
+    console.log({calculatedBlockedAmount,totalFixedDMargin,variableMargin})
+
+
+    return {
+        calculatedBlockedAmount,
+        totalFixedDMargin,
+        variableMargin
+    }
+
+}
+
+
 
 
 const OMEXApi = {
@@ -1851,7 +1986,8 @@ const OMEXApi = {
     createStrategyListForAllGroups,
     calculateSumOfMoneyAndAssets,
     calcAveragePrice,
-    findDuplicationsInGroups
+    findDuplicationsInGroups,
+    getVariableMargin
 }
 
 /***/ }),
@@ -2109,6 +2245,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   openGroupInNewTab: () => (/* binding */ openGroupInNewTab),
 /* harmony export */   portfolioLogger: () => (/* binding */ portfolioLogger),
 /* harmony export */   showToast: () => (/* binding */ showToast),
+/* harmony export */   showVariableMargin: () => (/* binding */ showVariableMargin),
 /* harmony export */   silentNotificationForMoment: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.silentNotificationForMoment),
 /* harmony export */   strategyPositions: () => (/* binding */ strategyPositions),
 /* harmony export */   unChekcedPositions: () => (/* binding */ unChekcedPositions)
@@ -4535,6 +4672,16 @@ const calcAvgPricesByExecutenList =async ()=>{
 
 
 
+}
+
+const showVariableMargin = async () => {
+
+    const { variableMargin } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getVariableMargin();
+
+    showToast(variableMargin.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }), 5000);
 }
 
 const getRecentCalculatedAvgPrices = ({instrumentId,instrumentName})=>{
