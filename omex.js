@@ -286,10 +286,15 @@ const totalOffsetGainOfCurrentPositionsCalculator = ({ strategyPositions }) => {
         getReservedMargin
     });
 
+    const totalOffsetGainNearSettlement =totalOffsetGainNearSettlementOfEstimationPanel({
+            strategyPositions
+    });
+
     return {
         byOffsetOrderPrices: totalOffsetGainByOffsetOrderPrices,
         byOpenMoreOrderPrices: totalOffsetGainByOpenMoreOrderPrices,
         byInsertedPrices: totalOffsetGainByInsertedPrices,
+        byNearSettlementPrices: totalOffsetGainNearSettlement,
     }
 }
 
@@ -474,9 +479,10 @@ const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositio
 }
 
 const showCurrentStrategyPositionState = ({totalCurrentPositionCost,totalOffsetGainOfCurrentPositionObj,
-    profitLossByOffsetOrdersPercent,profitLossByInsertedPricesPercent,unreliableTotalCostOfCurrentPositions})=>{
+    profitLossByOffsetOrdersPercent,profitLossByInsertedPricesPercent,unreliableTotalCostOfCurrentPositions,profitPercentOfCurrentPositionsByNearSettlementPrices})=>{
 
 
+        
     let statusCnt = getStatusCnt();
 
     statusCnt.innerHTML = `
@@ -529,6 +535,15 @@ const showCurrentStrategyPositionState = ({totalCurrentPositionCost,totalOffsetG
                 <div style="
                     width: max-content;
                 "> 
+                    
+                  ${ typeof profitPercentOfCurrentPositionsByNearSettlementPrices === 'number' && !Number.isNaN(profitPercentOfCurrentPositionsByNearSettlementPrices) ? `<span style="
+                        color:${(profitPercentOfCurrentPositionsByNearSettlementPrices) >= 0 ? 'green' : 'red'};
+                        display: inline-block;
+                        direction: ltr !important;
+                    "> ${(profitPercentOfCurrentPositionsByNearSettlementPrices).toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    })}</span>`:''} 
                     <span> سرمایه درگیر</span>
                     <span style="
                         color:${(totalCurrentPositionCost || unreliableTotalCostOfCurrentPositions) >= 0 ? 'green' : ''};
@@ -563,15 +578,16 @@ const checkStrategyInProfit = async (_strategyPositions)=>{
         totalOffsetGainOfCurrentPositionObj,
         profitLossByOffsetOrdersPercent,
         profitLossByInsertedPricesPercent,
-        unreliableTotalCostOfCurrentPositions } = calcOffsetProfitOfStrategy(_strategyPositions);
+        unreliableTotalCostOfCurrentPositions, profitPercentOfCurrentPositionsByNearSettlementPrices } = calcOffsetProfitOfStrategy(_strategyPositions);
 
-       
-        
+
+
 
     showCurrentStrategyPositionState({
-        totalCurrentPositionCost,totalOffsetGainOfCurrentPositionObj,
-        profitLossByOffsetOrdersPercent,profitLossByInsertedPricesPercent,
-        unreliableTotalCostOfCurrentPositions});
+        totalCurrentPositionCost, totalOffsetGainOfCurrentPositionObj,
+        profitLossByOffsetOrdersPercent, profitLossByInsertedPricesPercent,
+        unreliableTotalCostOfCurrentPositions, profitPercentOfCurrentPositionsByNearSettlementPrices
+    });
     
 
     let hasProfit = await checkProfitPercentAndInform({strategyPositions:_strategyPositions,profitLossByOffsetOrdersPercent});
@@ -634,13 +650,20 @@ export const calcOffsetProfitOfStrategy = (_strategyPositions) => {
         gainWithSign: totalOffsetGainOfChunkOfEstimation.byInsertedPrices
     });
 
+    let profitPercentOfCurrentPositionsByNearSettlementPrices = profitPercentCalculator({
+        costWithSign: totalCostOfChunkOfEstimationQuantity,
+        gainWithSign: totalOffsetGainOfCurrentPositionObj?.byNearSettlementPrices?.defaultQueue
+    });
+
 
     return {
         totalCurrentPositionCost,
         totalOffsetGainOfCurrentPositionObj,
         profitLossByOffsetOrdersPercent,
         profitLossByInsertedPricesPercent,
-        unreliableTotalCostOfCurrentPositions
+        profitPercentOfCurrentPositionsByNearSettlementPrices,
+        unreliableTotalCostOfCurrentPositions,
+        
 
     }
 
