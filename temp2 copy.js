@@ -42,7 +42,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
             const _enrichedList = optionListOfSameDate.map(buyingPut => {
 
-                if (!buyingPut.isCall )
+                if (!buyingPut.isPut )
                         return buyingPut
 
 
@@ -100,7 +100,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
 
                     const higherStrikeCallsLowerThanSellingPut = optionListOfSameDate.filter(_option => {
-                        if ( !_option.isPut)
+                        if ( !_option.isCall)
                             return false
                         if (_option.optionDetails?.strikePrice <= sellingCallWithSameStrikeOfBuyingPut.optionDetails?.strikePrice)
                             return false
@@ -126,23 +126,31 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
                         if(buyingCallPrice===0) return _allPossibleStrategies
 
-                        const strategyObj = createAndCalcBusStrategyByBUCS_BEPS({
+                        const strategyObj = createAndCalcBusStrategy({
                             buyingPut,
                             sellingPut,
                             buyingCall,
-                            sellingCall:sellingCallWithSameStrikeOfBuyingPut
+                            sellingCall:sellingCallWithSameStrikeOfBuyingPut,
+                            priceType,
+                            minStockPriceToSarBeSar,maxStockPriceToSarBeSar
                         });
 
                         if (!strategyObj || Number.isNaN(strategyObj.profitPercent))
                             return _allPossibleStrategies
 
-                        return _allPossibleStrategies.concat([strategyObj])
+                        return _allPossibleStrategies.concat([{
+                            ...strategyObj,
+                            strategyTypeTitle: "BUS_With_BUCS_BEPS",
+                            expectedProfitNotif,
+                            minProfitToFilter,
+                            expectedProfitPerMonth,
+                        }])
 
                     },[]);
 
 
 
-                    const buyingCallWithSameStrikeOfSellingPut = optionListOfSameDate.find(_option=> _option.isPut &&  ( _option.optionDetails?.strikePrice === sellingPut.optionDetails?.strikePrice));
+                    const buyingCallWithSameStrikeOfSellingPut = optionListOfSameDate.find(_option=> _option.isCall &&  ( _option.optionDetails?.strikePrice === sellingPut.optionDetails?.strikePrice));
 
 
                     if(!buyingCallWithSameStrikeOfSellingPut) return _allPossibleStrategies
@@ -158,7 +166,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
 
                     const lowerCallsHigherThanBuyingPut = optionListOfSameDate.filter(_option => {
-                        if ( !_option.isPut)
+                        if ( !_option.isCall)
                             return false
                         if (_option.optionDetails?.strikePrice >= buyingCallWithSameStrikeOfSellingPut.optionDetails?.strikePrice)
                             return false
@@ -183,17 +191,24 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
                         if(sellingCallPrice===0) return _allPossibleStrategies
 
-                        const strategyObj = createAndCalcBusStrategyByBUCS_BEPS({
+                        const strategyObj = createAndCalcBusStrategy({
                             buyingPut,
                             sellingPut,
                             buyingCall:buyingCallWithSameStrikeOfSellingPut,
-                            sellingCall
-                        });
+                            sellingCall,
+                            priceType,
+                            minStockPriceToSarBeSar,maxStockPriceToSarBeSar                        });
 
                         if (!strategyObj || Number.isNaN(strategyObj.profitPercent))
                             return _allPossibleStrategies
 
-                        return _allPossibleStrategies.concat([strategyObj])
+                        return _allPossibleStrategies.concat([{
+                            ...strategyObj,
+                            strategyTypeTitle: "BUS_With_BUCS_BEPS",
+                            expectedProfitNotif,
+                            minProfitToFilter,
+                            expectedProfitPerMonth,
+                        }])
 
                     },[]);
 
