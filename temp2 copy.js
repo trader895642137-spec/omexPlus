@@ -1,18 +1,4 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, 
+const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
     settlementGainChoosePriceType="MIN", strategySubName,  
     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
@@ -21,7 +7,6 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
 
    
-
     
 
     const filteredList = list.filter(item => {
@@ -40,25 +25,25 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
         let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
 
-            const _enrichedList = optionListOfSameDate.map(buyingPut => {
+            const _enrichedList = optionListOfSameDate.map(buyingCall => {
 
-                if (!buyingPut.isPut )
-                        return buyingPut
+                if (!buyingCall.isCall )
+                        return buyingCall
 
 
-                const buyingPutPrice = getPriceOfAsset({
-                        asset: buyingPut,
+                const buyingCallPrice = getPriceOfAsset({
+                        asset: buyingCall,
                         priceType,
                         sideType: 'BUY'
                 });
 
-                if(buyingPutPrice===0) return buyingPut
+                if(buyingCallPrice===0) return buyingCall
 
 
-                const eligibleSellingPuts =   optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === buyingPut.symbol || !_option.isPut )
+                const eligibleSellingCalls =   optionListOfSameDate.filter(_option => {
+                    if (_option.symbol === buyingCall.symbol || !_option.isCall )
                         return false
-                    if (_option.optionDetails?.strikePrice <= buyingPut.optionDetails?.strikePrice)
+                    if (_option.optionDetails?.strikePrice <= buyingCall.optionDetails?.strikePrice)
                         return false
 
                     if(!_option.optionDetails.stockSymbolDetails) return false
@@ -73,39 +58,39 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                 
               
 
-                let allPossibleStrategies = eligibleSellingPuts.reduce( (_allPossibleStrategies, sellingPut) => {
+                let allPossibleStrategies = eligibleSellingCalls.reduce( (_allPossibleStrategies, sellingCall) => {
 
 
-                    const sellingPutPrice = getPriceOfAsset({
-                        asset: sellingPut,
+                    const sellingCallPrice = getPriceOfAsset({
+                        asset: sellingCall,
                         priceType,
                         sideType: 'SELL'
                     });
 
-                    if(sellingPutPrice===0) return _allPossibleStrategies
+                    if(sellingCallPrice===0) return _allPossibleStrategies
 
-                    const sellingCallWithSameStrikeOfBuyingPut = optionListOfSameDate.find(_option=> _option.isCall &&  ( _option.optionDetails?.strikePrice === buyingPut.optionDetails?.strikePrice));
-
-
-                    if(!sellingCallWithSameStrikeOfBuyingPut) return _allPossibleStrategies
+                    const sellingPutWithSameStrikeOfBuyingCall = optionListOfSameDate.find(_option=> _option.isPut &&  ( _option.optionDetails?.strikePrice === buyingCall.optionDetails?.strikePrice));
 
 
-                    const sellingCallWithSameStrikeOfBuyingPutPrice = getPriceOfAsset({
-                        asset: sellingCallWithSameStrikeOfBuyingPut,
+                    if(!sellingPutWithSameStrikeOfBuyingCall) return _allPossibleStrategies
+
+
+                    const sellingPutWithSameStrikeOfBuyingCallPrice = getPriceOfAsset({
+                        asset: sellingPutWithSameStrikeOfBuyingCall,
                         priceType,
                         sideType: 'SELL'
                     });
 
-                    if(sellingCallWithSameStrikeOfBuyingPutPrice===0) return _allPossibleStrategies
+                    if(sellingPutWithSameStrikeOfBuyingCallPrice===0) return _allPossibleStrategies
 
 
-                    const higherStrikeCallsLowerThanSellingPut = optionListOfSameDate.filter(_option => {
-                        if ( !_option.isCall)
+                    const higherStrikePutsHigherThanSellingCall = optionListOfSameDate.filter(_option => {
+                        if ( !_option.isPut)
                             return false
-                        if (_option.optionDetails?.strikePrice <= sellingCallWithSameStrikeOfBuyingPut.optionDetails?.strikePrice)
+                        if (_option.optionDetails?.strikePrice <= sellingPutWithSameStrikeOfBuyingCall.optionDetails?.strikePrice)
                             return false
 
-                         if (_option.optionDetails?.strikePrice >= sellingPut.optionDetails?.strikePrice)
+                         if (_option.optionDetails?.strikePrice <= sellingCall.optionDetails?.strikePrice)
                             return false
 
                         if (!_option.optionDetails.stockSymbolDetails) return false
@@ -115,22 +100,22 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                     );
                    
 
-                    const allPossibleStrategies1 = higherStrikeCallsLowerThanSellingPut.reduce((_allPossibleStrategies, buyingCall) => {
+                    const allPossibleStrategies1 = higherStrikePutsHigherThanSellingCall.reduce((_allPossibleStrategies, buyingPut) => {
 
 
-                        const buyingCallPrice = getPriceOfAsset({
-                            asset: buyingCall,
+                        const buyingPutPrice = getPriceOfAsset({
+                            asset: buyingPut,
                             priceType,
                             sideType: 'BUY'
                         });
 
-                        if(buyingCallPrice===0) return _allPossibleStrategies
+                        if(buyingPutPrice===0) return _allPossibleStrategies
 
                         const strategyObj = createAndCalcBusStrategy({
-                            buyingPut,
-                            sellingPut,
                             buyingCall,
-                            sellingCall:sellingCallWithSameStrikeOfBuyingPut,
+                            sellingCall,
+                            buyingPut,
+                            sellingPut:sellingPutWithSameStrikeOfBuyingCall,
                             priceType,
                             minStockPriceToSarBeSar,maxStockPriceToSarBeSar
                         });
@@ -138,9 +123,10 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                         if (!strategyObj || Number.isNaN(strategyObj.profitPercent))
                             return _allPossibleStrategies
 
+
                         return _allPossibleStrategies.concat([{
                             ...strategyObj,
-                            strategyTypeTitle: "BUS_With_BUCS_BEPS",
+                            strategyTypeTitle: "BES_With_BUCS_BEPS",
                             expectedProfitNotif,
                             minProfitToFilter,
                             expectedProfitPerMonth,
@@ -150,28 +136,28 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
 
 
-                    const buyingCallWithSameStrikeOfSellingPut = optionListOfSameDate.find(_option=> _option.isCall &&  ( _option.optionDetails?.strikePrice === sellingPut.optionDetails?.strikePrice));
+                    const buyingPutWithSameStrikeOfSellingCall = optionListOfSameDate.find(_option=> _option.isPut &&  ( _option.optionDetails?.strikePrice === sellingCall.optionDetails?.strikePrice));
 
 
-                    if(!buyingCallWithSameStrikeOfSellingPut) return _allPossibleStrategies
+                    if(!buyingPutWithSameStrikeOfSellingCall) return _allPossibleStrategies
 
 
-                    const buyingCallWithSameStrikeOfSellingPutPrice = getPriceOfAsset({
-                        asset: buyingCallWithSameStrikeOfSellingPut,
+                    const buyingPutWithSameStrikeOfSellingCallPrice = getPriceOfAsset({
+                        asset: buyingPutWithSameStrikeOfSellingCall,
                         priceType,
                         sideType: 'BUY'
                     });
 
-                    if(buyingCallWithSameStrikeOfSellingPutPrice===0) return _allPossibleStrategies
+                    if(buyingPutWithSameStrikeOfSellingCallPrice===0) return _allPossibleStrategies
 
 
-                    const lowerCallsHigherThanBuyingPut = optionListOfSameDate.filter(_option => {
-                        if ( !_option.isCall)
+                    const lowerPutsLowerThanBuyingCall = optionListOfSameDate.filter(_option => {
+                        if ( !_option.isPut)
                             return false
-                        if (_option.optionDetails?.strikePrice >= buyingCallWithSameStrikeOfSellingPut.optionDetails?.strikePrice)
+                        if (_option.optionDetails?.strikePrice >= buyingPutWithSameStrikeOfSellingCall.optionDetails?.strikePrice)
                             return false
 
-                         if (_option.optionDetails?.strikePrice <= buyingPut.optionDetails?.strikePrice)
+                         if (_option.optionDetails?.strikePrice >= buyingCall.optionDetails?.strikePrice)
                             return false
 
                         if (!_option.optionDetails.stockSymbolDetails) return false
@@ -180,31 +166,32 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                     }
                     );
 
-                     const allPossibleStrategies2 = lowerCallsHigherThanBuyingPut.reduce((_allPossibleStrategies, sellingCall) => {
+                     const allPossibleStrategies2 = lowerPutsLowerThanBuyingCall.reduce((_allPossibleStrategies, sellingPut) => {
 
 
-                        const sellingCallPrice = getPriceOfAsset({
-                            asset: sellingCall,
+                        const sellingPutPrice = getPriceOfAsset({
+                            asset: sellingPut,
                             priceType,
                             sideType: 'SELL'
                         });
 
-                        if(sellingCallPrice===0) return _allPossibleStrategies
+                        if(sellingPutPrice===0) return _allPossibleStrategies
 
                         const strategyObj = createAndCalcBusStrategy({
-                            buyingPut,
-                            sellingPut,
-                            buyingCall:buyingCallWithSameStrikeOfSellingPut,
+                            buyingCall,
                             sellingCall,
+                            buyingPut:buyingPutWithSameStrikeOfSellingCall,
+                            sellingPut,
                             priceType,
-                            minStockPriceToSarBeSar,maxStockPriceToSarBeSar                        });
+                            minStockPriceToSarBeSar,maxStockPriceToSarBeSar
+                        });
 
                         if (!strategyObj || Number.isNaN(strategyObj.profitPercent))
                             return _allPossibleStrategies
 
                         return _allPossibleStrategies.concat([{
                             ...strategyObj,
-                            strategyTypeTitle: "BUS_With_BUCS_BEPS",
+                            strategyTypeTitle: "BES_With_BUCS_BEPS",
                             expectedProfitNotif,
                             minProfitToFilter,
                             expectedProfitPerMonth,
@@ -224,7 +211,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
                 , []);
 
                 return {
-                    ...buyingPut,
+                    ...buyingCall,
                     allPossibleStrategies
                 }
 
@@ -245,7 +232,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
     return {
         enrichedList,
         allStrategiesSorted: sortedStrategies,
-        strategyName: "BUS_With_BUPS_BECS",
+        strategyName: "BES_With_BUCS_BEPS",
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
@@ -256,7 +243,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
         expectedProfitPerMonth,
         ...restConfig,
         htmlTitle: configsToHtmlTitle({
-            strategyName: "BUS_With_BUPS_BECS",
+            strategyName: "BES_With_BUCS_BEPS",
             strategySubName,
             priceType,
             min_time_to_settlement,
