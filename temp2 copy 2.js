@@ -1,8 +1,4 @@
-
-
-
-
-const createAndCalcBusStrategy = ({ buyingCall, sellingCall, buyingPut, sellingPut ,priceType,minStockPriceToSarBeSar,maxStockPriceToSarBeSar}) => {
+const createAndCalcBusStrategy = ({ buyingCall, sellingCall, buyingPut, sellingPut ,priceType,minStockPriceToSarBeSar,maxStockPriceToSarBeSar,priceThatCauseMaxProfitFn}) => {
 
 
 
@@ -59,7 +55,7 @@ const createAndCalcBusStrategy = ({ buyingCall, sellingCall, buyingPut, sellingP
 
     const breakeven = breakevenList[0];
 
-    const priceThatCauseMaxProfit = Math.max(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) * 1.2;
+    const priceThatCauseMaxProfit = priceThatCauseMaxProfitFn(strategyPositions);
     const maxProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxProfit });
 
 
