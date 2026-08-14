@@ -13760,8 +13760,8 @@ const isETF = (symbol) => _common_js__WEBPACK_IMPORTED_MODULE_3__.ETF_LIST.some(
 let prevListSymbolMap = {};
 
 let generalConfig = {
-    expectedProfitPerMonth: 1.02,
-    minProfitToFilter: 0.02,
+    expectedProfitPerMonth: 1.04,
+    minProfitToFilter: 0.035,
     BUCSSOptionListIgnorer: ({option, minVol}) => {
         return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض')  )
     }
@@ -24932,6 +24932,7 @@ const createListFilterContetnByList=(list)=>{
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 35 * 24 * 3600000,
+            expectedProfitNotif: true,
         })
         , calcBUPSRatioStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
@@ -24941,6 +24942,7 @@ const createListFilterContetnByList=(list)=>{
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 35 * 24 * 3600000,
+            expectedProfitNotif: true,
         }),
 
         calcBECSRatioStrategies(list, {
@@ -24951,6 +24953,7 @@ const createListFilterContetnByList=(list)=>{
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 35 * 24 * 3600000,
+            expectedProfitNotif: true,
         }),
 
         calcBEPSRatioStrategies(list, {
@@ -24961,6 +24964,7 @@ const createListFilterContetnByList=(list)=>{
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 35 * 24 * 3600000,
+            expectedProfitNotif: true,
         }),
 
 
