@@ -22811,7 +22811,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
 
-        const createAndCalcBusStrategy = ({ buyingCall, sellingCall, buyingPut, sellingPut }) => {
+    const createAndCalcBusStrategyByBUCS_BEPS = ({ buyingCall, sellingCall, buyingPut, sellingPut }) => {
 
         const diffOfBEPS_Strikes = buyingPut.optionDetails?.strikePrice - sellingPut.optionDetails?.strikePrice;
 
@@ -23014,7 +23014,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
                         if(buyingPutPrice===0) return _allPossibleStrategies
 
-                        const strategyObj = createAndCalcBusStrategy({
+                        const strategyObj = createAndCalcBusStrategyByBUCS_BEPS({
                             buyingCall,
                             sellingCall,
                             buyingPut,
@@ -23071,7 +23071,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
                         if(sellingPutPrice===0) return _allPossibleStrategies
 
-                        const strategyObj = createAndCalcBusStrategy({
+                        const strategyObj = createAndCalcBusStrategyByBUCS_BEPS({
                             buyingCall,
                             sellingCall,
                             buyingPut:buyingPutWithSameStrikeOfSellingCall,
