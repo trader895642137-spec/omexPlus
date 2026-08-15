@@ -22819,7 +22819,8 @@ const createAndCalcBUS_BES_Strategy = ({ buyingCall, sellingCall, buyingPut, sel
 
 
     const diffOfPuts_Strikes = sellingPut.optionDetails?.strikePrice - buyingPut.optionDetails?.strikePrice;
-    const diffOfCalls_Strikes = buyingCall.optionDetails?.strikePrice - sellingCall.optionDetails?.strikePrice
+    const diffOfCalls_Strikes = buyingCall.optionDetails?.strikePrice - sellingCall.optionDetails?.strikePrice;
+    const isBUCS = diffOfCalls_Strikes<0;
 
     const strategyPositions = [
         {
@@ -22905,10 +22906,10 @@ const createAndCalcBUS_BES_Strategy = ({ buyingCall, sellingCall, buyingPut, sel
         option: {
             ...buyingCall
         },
-        positions: [buyingPut, sellingPut, buyingCall, sellingCall],
+        positions: isBUCS ? [ buyingCall, sellingCall,buyingPut, sellingPut]:[buyingPut, sellingPut,buyingCall, sellingCall],
         isWholeProfitable: !breakeven,
         stockPriceToSarBeSarPercent,
-        name: createStrategyName([buyingPut, sellingPut, buyingCall, sellingCall]),
+        name: createStrategyName(isBUCS ? [ buyingCall, sellingCall,buyingPut, sellingPut]:[buyingPut, sellingPut,buyingCall, sellingCall]),
         profitPercent
     }
 
@@ -23327,7 +23328,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
                         return _allPossibleStrategies.concat([{
                             ...strategyObj,
-                            strategyTypeTitle: "BUS_With_BUCS_BEPS",
+                            strategyTypeTitle: "BUS_With_BUPS_BECS",
                             expectedProfitNotif,
                             minProfitToFilter,
                             expectedProfitPerMonth,
@@ -23392,7 +23393,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
                         return _allPossibleStrategies.concat([{
                             ...strategyObj,
-                            strategyTypeTitle: "BUS_With_BUCS_BEPS",
+                            strategyTypeTitle: "BUS_With_BUPS_BECS",
                             expectedProfitNotif,
                             minProfitToFilter,
                             expectedProfitPerMonth,
@@ -24824,7 +24825,7 @@ const createListFilterContetnByList=(list)=>{
             strategies: BUCSStrategies,
             min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 40 * 24 * 3600000,
-             minProfitToFilter : 0.03
+            minProfitToFilter : 0.03
         }),
 
 
@@ -24835,7 +24836,7 @@ const createListFilterContetnByList=(list)=>{
             strategies: BUCSStrategies,
             min_time_to_settlement : 6 * 24 * 3600000,
             max_time_to_settlement : 15 * 24 * 3600000,
-             minProfitToFilter : 0.02
+            minProfitToFilter : 0.02
         }),
 
         
@@ -24844,7 +24845,7 @@ const createListFilterContetnByList=(list)=>{
             strategies: BUCSStrategies,
             min_time_to_settlement : 1 * 24 * 3600000,
             max_time_to_settlement :  6 * 24 * 3600000,
-             minProfitToFilter : 0.01
+            minProfitToFilter : 0.01
         }),
 
      
@@ -24929,7 +24930,7 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: BES_With_BUPS_BECSStrategies,
-            minStockPriceToSarBeSar : .15,
+            minStockPriceToSarBeSar : .20,
             isWholeProfitable:false
         }),
 
