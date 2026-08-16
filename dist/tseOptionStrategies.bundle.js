@@ -31,6 +31,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   showNotification: () => (/* binding */ showNotification),
 /* harmony export */   silentNotificationForMoment: () => (/* binding */ silentNotificationForMoment),
 /* harmony export */   someOfNokoolGainCalculator: () => (/* binding */ someOfNokoolGainCalculator),
+/* harmony export */   startMarketCountdown: () => (/* binding */ startMarketCountdown),
 /* harmony export */   takeScreenshot: () => (/* binding */ takeScreenshot),
 /* harmony export */   totalCostCalculator: () => (/* binding */ totalCostCalculator),
 /* harmony export */   totalCostCalculatorForPriceTypes: () => (/* binding */ totalCostCalculatorForPriceTypes),
@@ -898,6 +899,117 @@ const isBuyQueue = (stock) => {
   const isQueue = stock.bestBuyQ * stock.bestBuy > 100000000;
   return isPriceNearCeil && isQueue
 
+}
+
+
+const  startMarketCountdown = ({
+    targetHour = 12,
+    targetMinute = 30,
+    showFromSeconds = 60,
+    warningSeconds = 15,
+    containerId = 'market-countdown'
+} = {}) => {
+
+    let container = document.getElementById(containerId);
+
+    if (!container) {
+        container = document.createElement('div');
+        container.id = containerId;
+
+        Object.assign(container.style, {
+            position: 'fixed',
+            bottom: '2px',
+            left: '2px',
+            zIndex: '999999',
+            padding: '5px 5px',
+            borderRadius: '10px',
+            background: '#111',
+            color: '#fff',
+            fontSize: '22px',
+            fontWeight: 'bold',
+            fontFamily: 'monospace',
+            boxShadow: '0 4px 15px rgba(0,0,0,.3)',
+            display: 'none',
+            transition: 'all .15s'
+        });
+
+        document.body.appendChild(container);
+    }
+
+    // CSS مربوط به حالت هشدار
+    if (!document.getElementById('market-countdown-style')) {
+        const style = document.createElement('style');
+        style.id = 'market-countdown-style';
+
+        style.textContent = `
+            @keyframes marketCountdownBlink {
+                0%, 100% {
+                    opacity: 1;
+                    transform: scale(1);
+                }
+                50% {
+                    opacity: .45;
+                    transform: scale(1.08);
+                }
+            }
+
+            #market-countdown.warning {
+                background: #d50000 !important;
+                color: #fff !important;
+                animation: marketCountdownBlink .5s infinite;
+                box-shadow: 0 0 20px rgba(255, 0, 0, .8);
+            }
+        `;
+
+        document.head.appendChild(style);
+    }
+
+    function update() {
+        const now = new Date();
+
+        const target = new Date(now);
+        target.setHours(targetHour, targetMinute, 0, 0);
+
+        const diff = target - now;
+
+        // هنوز زمان نمایش نرسیده
+        if (diff > showFromSeconds * 1000) {
+            container.style.display = 'none';
+            container.classList.remove('warning');
+            return;
+        }
+
+        // پایان بازار
+        if (diff <= 0) {
+            container.textContent = '⏰ پایان بازار';
+            container.style.display = 'none';
+            container.classList.remove('warning');
+
+            clearInterval(timer);
+            return;
+        }
+
+        const totalSeconds = Math.ceil(diff / 1000);
+
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+
+        container.textContent =
+            `⏳ پایان بازار: ${minutes}:${String(seconds).padStart(2, '0')}`;
+
+        container.style.display = 'block';
+
+        // 15 ثانیه آخر
+        if (totalSeconds <= warningSeconds) {
+            container.classList.add('warning');
+        } else {
+            container.classList.remove('warning');
+        }
+    }
+
+    update();
+
+    const timer = setInterval(update, 250);
 }
 
 /***/ }),

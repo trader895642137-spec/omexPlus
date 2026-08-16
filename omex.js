@@ -10,7 +10,8 @@ import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalc
     isETF,
     hasBreakevenExecutedPriceDiffIssue,
     hasGreaterRatio,
-    QueueScenario} from './common.js';
+    QueueScenario,
+    startMarketCountdown} from './common.js';
 import { isInstrumentNameOfOption,  OMEXApi } from './omexApi.js';
 
 
@@ -61,7 +62,8 @@ export const doJob=()=>{
 export let expectedProfit = {
     expectedProfitPerMonth: 1.04,
     minExpectedProfitOfStrategy: 3.9,
-    currentPositions: 1
+    currentPositions: 1,
+    // strategy:3
 }
 
 
@@ -2828,6 +2830,8 @@ export const Run = async (_window = window) => {
 
     calcProfitOfStrategy(strategyPositions, unChekcedPositions);
 
+
+    startMarketCountdown();
 
 
     
