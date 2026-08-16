@@ -1620,7 +1620,10 @@ const selectStrategy =async (documentOfWindow)=>{
 
     // console.log(foundStrategy);
 
-    return {_document,strategyRowLength:foundStrategy.rowLength}
+    return {
+        strategyTitle:foundStrategy.title,
+        _document,
+        strategyRowLength:foundStrategy.rowLength}
     
 
 }
@@ -4848,7 +4851,7 @@ const openModalOfAllPositionsRows = async (documentOfWindow=document) => {
 const openWindowAndSelectGroup = (groupTitle,_origin=origin) => {
 
     const { promise, resolve, reject } = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.createDeferredPromise)();
-    const newWindow = window.open(`${_origin}/#/stock/derivative/main/strategy-estimation`);
+    const newWindow = window.open(`${_origin}/#/stock/derivative/main/strategy-estimation?groupTitle=${groupTitle}`);
 
     if (!newWindow) {
         alert('پنجره توسط مرورگر مسدود شد!');
@@ -4909,7 +4912,28 @@ const openGroupInNewTab = async (groupName,_origin) => {
     const childWindow = await openWindowAndSelectGroup(groupName,_origin);
     
 
-    const { strategyRowLength } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.selectStrategy(childWindow.document);
+    const { strategyRowLength,strategyTitle } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.selectStrategy(childWindow.document);
+
+    if (strategyTitle) {
+
+        const hash = childWindow.location.hash;
+
+        const [route, query = ''] = hash.split('?');
+
+        const params = new URLSearchParams(query);
+        params.set('groupTitle', strategyTitle);
+
+        childWindow.history.replaceState(
+            null,
+            '',
+            childWindow.location.pathname +
+            childWindow.location.search +
+            '#' +
+            route +
+            '?' +
+            params.toString().replace(/%40/g, '@')
+        );
+    }
 
 
     await (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.waitForElement)(childWindow.document, () => {

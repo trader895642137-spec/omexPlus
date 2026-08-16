@@ -585,7 +585,10 @@ const selectStrategy =async (documentOfWindow)=>{
 
     // console.log(foundStrategy);
 
-    return {_document,strategyRowLength:foundStrategy.rowLength}
+    return {
+        strategyTitle:foundStrategy.title,
+        _document,
+        strategyRowLength:foundStrategy.rowLength}
     
 
 }

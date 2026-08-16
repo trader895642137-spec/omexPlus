@@ -2492,7 +2492,7 @@ const openModalOfAllPositionsRows = async (documentOfWindow=document) => {
 const openWindowAndSelectGroup = (groupTitle,_origin=origin) => {
 
     const { promise, resolve, reject } = createDeferredPromise();
-    const newWindow = window.open(`${_origin}/#/stock/derivative/main/strategy-estimation`);
+    const newWindow = window.open(`${_origin}/#/stock/derivative/main/strategy-estimation?groupTitle=${groupTitle}`);
 
     if (!newWindow) {
         alert('پنجره توسط مرورگر مسدود شد!');
@@ -2553,7 +2553,28 @@ export const openGroupInNewTab = async (groupName,_origin) => {
     const childWindow = await openWindowAndSelectGroup(groupName,_origin);
     
 
-    const { strategyRowLength } = await OMEXApi.selectStrategy(childWindow.document);
+    const { strategyRowLength,strategyTitle } = await OMEXApi.selectStrategy(childWindow.document);
+
+    if (strategyTitle) {
+
+        const hash = childWindow.location.hash;
+
+        const [route, query = ''] = hash.split('?');
+
+        const params = new URLSearchParams(query);
+        params.set('groupTitle', strategyTitle);
+
+        childWindow.history.replaceState(
+            null,
+            '',
+            childWindow.location.pathname +
+            childWindow.location.search +
+            '#' +
+            route +
+            '?' +
+            params.toString().replace(/%40/g, '@')
+        );
+    }
 
 
     await waitForElement(childWindow.document, () => {
