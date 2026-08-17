@@ -4851,7 +4851,7 @@ const openModalOfAllPositionsRows = async (documentOfWindow=document) => {
 const openWindowAndSelectGroup = (groupTitle,_origin=origin) => {
 
     const { promise, resolve, reject } = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.createDeferredPromise)();
-    const newWindow = window.open(`${_origin}/#/stock/derivative/main/strategy-estimation?groupTitle=${groupTitle}`);
+    const newWindow = window.open(`${_origin}/#/stock/derivative/main/strategy-estimation?GSTitle=${groupTitle}`);
 
     if (!newWindow) {
         alert('پنجره توسط مرورگر مسدود شد!');
@@ -4921,17 +4921,16 @@ const openGroupInNewTab = async (groupName,_origin) => {
         const [route, query = ''] = hash.split('?');
 
         const params = new URLSearchParams(query);
-        params.set('groupTitle', strategyTitle);
+        params.set('GSTitle', strategyTitle);
 
         childWindow.history.replaceState(
             null,
             '',
             childWindow.location.pathname +
             childWindow.location.search +
-            '#' +
             route +
             '?' +
-            params.toString().replace(/%40/g, '@')
+            params.toString()
         );
     }
 
