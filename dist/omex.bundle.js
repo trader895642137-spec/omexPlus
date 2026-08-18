@@ -4700,6 +4700,13 @@ const injectStyles = () => {
             .current-position-quantity-unbalance-error{
                 border-bottom: 2px solid red !important;
             }
+
+            client-option-instruments-favorites-item-header  main span{
+                display: inline-block !important;; 
+                word-wrap: break-word !important;; 
+                white-space: normal !important;;   
+                max-width: 100% !important;;    
+            }
         `;
 
     const style = domContextWindow.document.createElement("style");
