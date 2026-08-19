@@ -24866,7 +24866,7 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBUCS_Long_Put),
                             name: createStrategyName([buyingCall, sellingCall, buyingPut]),
                             // profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
-                            profitPercent: isFullBodyProfitable ? 10: minProfitPercentOfBUCS_Long_Put 
+                            profitPercent: minProfitPercentOfBUCS_Long_Put 
                         }])
                     }
                     , []);
@@ -25127,7 +25127,7 @@ const calcBECS_Long_CallStrategies = (list, {priceType, strategySubName,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBECS_Long_Call),
                             name: createStrategyName([buyingCall, sellingCall, anotherBuyingCall]),
                             // profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
-                            profitPercent: isFullBodyProfitable ? 10: minProfitPercentOfBECS_Long_Call 
+                            profitPercent: minProfitPercentOfBECS_Long_Call 
                         }])
                     }
                     , []);
@@ -25386,7 +25386,7 @@ const calcBEPS_Long_CallStrategies = (list, {priceType, strategySubName,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBEPS_Long_Call),
                             name: createStrategyName([buyingPut, sellingPut, buyingCall]),
                             // profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
-                            profitPercent: isFullBodyProfitable ? 10: minProfitPercentOfBEPS_Long_Call 
+                            profitPercent:  minProfitPercentOfBEPS_Long_Call 
                         }])
                     }
                     , []);
@@ -25647,7 +25647,7 @@ const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBUPS_Long_Put),
                             name: createStrategyName([buyingPut, sellingPut, anotherBuyingPut]),
                             // profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
-                            profitPercent: isFullBodyProfitable ? 10: minProfitPercentOfBUPS_Long_Put 
+                            profitPercent: minProfitPercentOfBUPS_Long_Put 
                         }])
                     }
                     , []);
