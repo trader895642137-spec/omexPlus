@@ -2541,7 +2541,7 @@ const setTradeModalUiPositions = () => {
 
     let left = 1200;
     const top = 55;
-    Array.from(document.querySelectorAll('client-modal-main client-option-modal-trade-layout')).forEach((tradeModal,i) => {
+    Array.from(domContextWindow.document.querySelectorAll('client-modal-main client-option-modal-trade-layout')).forEach((tradeModal,i) => {
         tradeModal.style.left =`${left}px`;
         tradeModal.style.top =`${top}px`;
 
@@ -2550,6 +2550,39 @@ const setTradeModalUiPositions = () => {
         i===1 &&  (left-=330)
 
     });
+}
+
+const getStrategyName = ()=>{
+    return domContextWindow.document.querySelector('client-option-strategy-estimation-header c-k-input-text input')?.value
+}
+
+const setStrategyTitleOnUrl = ({strategyTitle,_window=domContextWindow}) => {
+    if (!strategyTitle) return
+
+    const hash = _window.location.hash;
+
+    const [route, query = ''] = hash.split('?');
+
+    const params = new URLSearchParams(query);
+    params.set('GSTitle', strategyTitle);
+
+    _window.history.replaceState(
+        null,
+        '',
+        _window.location.pathname +
+        _window.location.search +
+        route +
+        '?' +
+        params.toString()
+    );
+
+}
+
+const getAndSetStrategyTitleOnUrl = ()=>{
+
+    const strategyTitle = getStrategyName();
+    console.log(strategyTitle)
+    setStrategyTitleOnUrl({strategyTitle});
 }
 
 
@@ -2562,25 +2595,7 @@ export const openGroupInNewTab = async (groupName,_origin) => {
 
     const { strategyRowLength,strategyTitle } = await OMEXApi.selectStrategy(childWindow.document);
 
-    if (strategyTitle) {
-
-        const hash = childWindow.location.hash;
-
-        const [route, query = ''] = hash.split('?');
-
-        const params = new URLSearchParams(query);
-        params.set('GSTitle', strategyTitle);
-
-        childWindow.history.replaceState(
-            null,
-            '',
-            childWindow.location.pathname +
-            childWindow.location.search +
-            route +
-            '?' +
-            params.toString()
-        );
-    }
+    setStrategyTitleOnUrl({strategyTitle,_window:childWindow});
 
 
     await waitForElement(childWindow.document, () => {
@@ -2859,6 +2874,9 @@ export const Run = async (_window = window) => {
 
 
     startMarketCountdown();
+
+
+    getAndSetStrategyTitleOnUrl();
 
 
     

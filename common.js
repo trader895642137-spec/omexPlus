@@ -872,6 +872,7 @@ export const  startMarketCountdown = ({
 } = {}) => {
 
     let container = document.getElementById(containerId);
+    let timer;
 
     if (!container) {
         container = document.createElement('div');
@@ -970,5 +971,5 @@ export const  startMarketCountdown = ({
 
     update();
 
-    const timer = setInterval(update, 250);
+    timer = setInterval(update, 250);
 }
