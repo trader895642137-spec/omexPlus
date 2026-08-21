@@ -13873,6 +13873,7 @@ const isETF = (symbol) => _common_js__WEBPACK_IMPORTED_MODULE_3__.ETF_LIST.some(
 let prevListSymbolMap = {};
 
 let generalConfig = {
+    max_time_to_settlement: 60 * 24 * 3600000,
     expectedProfitPerMonth: 1.04,
     minProfitToFilter: 0.035,
     BUCSSOptionListIgnorer: ({option, minVol}) => {
@@ -14410,7 +14411,7 @@ const totalSettlementGain = (positionInfoList) => {
 
 
 const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth,
-     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
      minVol=CONSTS.DEFAULTS.MIN_VOL,
      minProfitToFilter, 
      expectedProfitNotif=false, ...restConfig}) => {
@@ -14624,7 +14625,7 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth,
 
 const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth,
     minProfitToFilter, 
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -14836,7 +14837,7 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth,
 const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
     settlementGainChoosePriceType="MIN", strategySubName, 
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
     minStockPriceToSarBeSar=0, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -15028,7 +15029,7 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
 
 
 const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPerMonth, settlementGainChoosePriceType="MIN",
-     strategySubName, callListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+     strategySubName, callListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
      minStockPriceToLowBreakevenPercent=0, maxStockPriceToLowBreakevenPercent=Infinity, 
      minStockPriceToHighBreakevenPercent=-Infinity, maxStockPriceToHighBreakevenPercent=0, 
      minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -15220,7 +15221,7 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
 
 }
 const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", 
-    strategySubName, callListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    strategySubName, callListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToLowBreakevenPercent=0, maxStockPriceToLowBreakevenPercent=Infinity, 
     minStockPriceToHighBreakevenPercent=-Infinity, maxStockPriceToHighBreakevenPercent=0, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -15411,7 +15412,7 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
 }
 
 const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     
@@ -15633,7 +15634,7 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
 
 const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", 
     strategySubName, BUPSOptionListIgnorer=generalConfig.BUPSOptionListIgnorer, 
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -15866,7 +15867,7 @@ const calcSyntheticCoveredCallStrategies = (list,
         minStockPriceToSarBeSar=-Infinity,
         maxStockPriceToSarBeSar=Infinity,
         BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, 
-        max_time_to_settlement=Infinity, 
+        max_time_to_settlement=generalConfig.max_time_to_settlement, 
         minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
@@ -16107,7 +16108,7 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
     priceType, settlementGainChoosePriceType="MIN", strategySubName, 
     isProfitEnoughFn,
     BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, MIN_BUCS_BECS_diffStrikesRatio=0, MAX_BUCS_BECS_diffStrikesRatio=Infinity, minStockStrike4DistanceInPercent=-Infinity, maxStockStrike4DistanceInPercent=Infinity, minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, MIN_BUCS_BECS_diffStrikesRatio=0, MAX_BUCS_BECS_diffStrikesRatio=Infinity, minStockStrike4DistanceInPercent=-Infinity, maxStockStrike4DistanceInPercent=Infinity, minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -16420,1267 +16421,18 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
 }
 
 
-const calcCALL_BUTTERFLYStrategies = (list, {
-    priceType, settlementGainChoosePriceType="MIN", strategySubName,
-    hasBrokenWing=true,
-    minProfitToFilter,
-    isProfitEnoughFn, 
-    BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
-    min_time_to_settlement=-Infinity, 
-    max_time_to_settlement=Infinity, 
-    minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, 
-    maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
-    minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
-    MIN_BUCS_BECS_diffStrikesRatio=0, MAX_BUCS_BECS_diffStrikesRatio=Infinity, 
-    minStockStrike4DistanceInPercent=-Infinity, maxStockStrike4DistanceInPercent=Infinity, 
-    minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, 
-    minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
 
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
 
-    let enrichedList = [];
-    for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
-        const optionsGroupedByDate = Object.groupBy(optionList, ({optionDetails}) => optionDetails.date);
 
-        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
 
-            const _enrichedList = optionListOfSameDate.map(option => {
 
-                if (BUCSSOptionListIgnorer({
-                    option,
-                    minVol
-                }))
-                    return option
 
 
-                const priceOfOptionWithLowStrike = getPriceOfAsset({
-                    asset: option,
-                    priceType,
-                    sideType: 'BUY'
-                });
 
-                if(priceOfOptionWithLowStrike===0) return option
 
-                const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.isCall)
-                        return false
-                    if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
-                        return false
 
-                    if (!_option.optionDetails?.stockSymbolDetails?.last)
-                        return false
-
-
-                    return true
-
-                }
-                );
-
-                let allPossibleStrategies = callListWithHigherStrikePrice.reduce( (_allPossibleStrategies, option2) => {
-
-
-                    const option2Price = getPriceOfAsset({
-                        asset: option2,
-                        priceType,
-                        sideType: 'SELL'
-                    });
-                    if(option2Price===0) return _allPossibleStrategies
-
-                    
-
-                    
-
-                    let option3 = option2;
-
-
-                    const callListWithHigherStrikePriceThanO3 = callListWithHigherStrikePrice.filter(o => {
-                            if (o.symbol === option2.symbol || o.symbol === option3.symbol)
-                                return false
-
-                            if (o.optionDetails?.strikePrice <= option3.optionDetails?.strikePrice)
-                                return false
-
-                            return true
-
-                        }
-                        );
-                    let strategies = callListWithHigherStrikePriceThanO3.reduce( (___allPossibleStrategies, option4) => {
-
-                        
-
-
-                        const option4Price = getPriceOfAsset({
-                            asset: option4,
-                            priceType,
-                            sideType: 'BUY'
-                        });
-                        if(option4Price===0) return ___allPossibleStrategies
-
-
-
-
-                        const diffOfBUCS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
-                        const diffOfBECS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
-
-                        const BUCS_BECS_diffStrikesRatio = diffOfBUCS_Strikes / diffOfBECS_Strikes;
-
-
-
-                        const isBalancedButterFly = diffOfBUCS_Strikes === diffOfBECS_Strikes
-
-                        if(!hasBrokenWing &&  !isBalancedButterFly) return ___allPossibleStrategies
-
-
-
-                        const middlePrice = option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice ? option2.optionDetails?.strikePrice : (option3.optionDetails?.strikePrice + option2.optionDetails?.strikePrice) / 2;
-
-                        const stockPriceMiddleRatio = (option4.optionDetails.stockSymbolDetails.last / middlePrice) - 1;
-                        if (stockPriceMiddleRatio > maxStockMiddleDistanceInPercent || stockPriceMiddleRatio < minStockMiddleDistanceInPercent)
-                            return ___allPossibleStrategies
-
-                        const stockPriceStrike4Ratio = (option4.optionDetails.stockSymbolDetails.last / option4.optionDetails?.strikePrice) - 1;
-
-                        if (stockPriceStrike4Ratio > maxStockStrike4DistanceInPercent || stockPriceStrike4Ratio < minStockStrike4DistanceInPercent)
-                            return ___allPossibleStrategies
-
-                        // if (option.optionDetails.stockSymbolDetails.last  > option4.optionDetails?.strikePrice) return ___allPossibleStrategies
-                        if (option4.optionDetails?.strikePrice < option2.optionDetails?.strikePrice)
-                            return ___allPossibleStrategies
-
-
-
-                        
-
-                        if (BUCS_BECS_diffStrikesRatio < MIN_BUCS_BECS_diffStrikesRatio || BUCS_BECS_diffStrikesRatio > MAX_BUCS_BECS_diffStrikesRatio)
-                            return ___allPossibleStrategies
-
-                        const isButterFly = diffOfBUCS_Strikes === diffOfBECS_Strikes &&  option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice;
-                        const strategyPositions = [
-                            {
-                                ...option,
-                                isBuy: true,
-                                getQuantity: () => baseQuantity,
-                                getRequiredMargin() { }
-                            },
-                            {
-                                ...option2,
-                                isSell: true,
-                                getQuantity: () => baseQuantity,
-                                getRequiredMargin() { }
-                            },
-                            {
-                                ...option3,
-                                isSell: true,
-                                getQuantity: () => baseQuantity * BUCS_BECS_diffStrikesRatio,
-                                getRequiredMargin: () => isButterFly ? 0 : diffOfBECS_Strikes
-                            },
-                            {
-                                ...option4,
-                                isBuy: true,
-                                getQuantity: () => baseQuantity * BUCS_BECS_diffStrikesRatio,
-                                getRequiredMargin() { }
-                            }
-                        ]
-
-
-
-                        const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
-                            strategyPositions,
-                            getPrice: (strategyPosition) => getPriceOfAsset({
-                                asset: strategyPosition,
-                                priceType,
-                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                            })
-                        });
-
-
-
-
-
-
-
-
-
-                       
-                         const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
-
-
-
-                        const minProfitLossOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxLoss});
-
-
-
-                        let priceThatCauseMaxProfit
-                        if (BUCS_BECS_diffStrikesRatio > 1) {
-                            priceThatCauseMaxProfit = option3.optionDetails?.strikePrice;
-
-                        } else {
-                            priceThatCauseMaxProfit = option2.optionDetails?.strikePrice;
-
-                        }
-                        let maxGainOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
-
-                        let profitLossRatio
-
-                        if (minProfitLossOfButterfly > 0) {
-                            profitLossRatio = 1
-                        } else {
-
-                            profitLossRatio = Math.abs(maxGainOfButterfly) / (Math.abs(maxGainOfButterfly) + Math.abs(minProfitLossOfButterfly))
-                        }
-
-                        if (profitLossRatio < minProfitLossRatio)
-                            return ___allPossibleStrategies
-
-
-                        const minProfitPercent = minProfitLossOfButterfly/Math.abs(totalCost);
-
-                        
-
-
-                        const strategyObj = {
-                            option: {
-                                ...option
-                            },
-                            positions:[option, option2, option3, option4],
-                            strategyTypeTitle: "CALL_BUTTERFLY",
-                            minProfitToFilter,
-                            expectedProfitNotif,
-                            isWholeProfitable:minProfitLossOfButterfly>=0,
-                            name: createStrategyName([option, option2, option3, option4]),
-                            isProfitEnough : isProfitEnoughFn && isProfitEnoughFn({minProfitPercent,profitLossRatio}),
-                            profitPercent: totalCost>=0 ? 1 : minProfitPercent
-                        }
-
-                        return ___allPossibleStrategies.concat([strategyObj])
-
-                    }
-                    , []);
-
-                  
-
-                    return _allPossibleStrategies.concat(strategies)
-
-                }
-                , []);
-
-                return {
-                    ...option,
-                    allPossibleStrategies
-                }
-
-            }
-            );
-
-            return _enrichedList
-
-        }
-        )
-
-        enrichedList = enrichedList.concat(enrichedListOfStock)
-
-    }
-
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
-
-    return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
-        strategyName: "CALL_BUTTERFLY",
-        priceType,
-        min_time_to_settlement,
-        max_time_to_settlement,
-        minStockPriceDistanceFromHigherStrikeInPercent,
-        maxStockPriceDistanceFromHigherStrikeInPercent,
-        minVol,
-        expectedProfitNotif,
-        ...restConfig,
-        htmlTitle: configsToHtmlTitle({
-            strategyName: "CALL_BUTTERFLY",
-            strategySubName,
-            priceType,
-            min_time_to_settlement,
-            max_time_to_settlement,
-            customLabels: [typeof minStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && minStockPriceDistanceFromHigherStrikeInPercent !== null && minStockPriceDistanceFromHigherStrikeInPercent !== -Infinity && {
-                label: "minToHigh",
-                value: `${((minStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && maxStockPriceDistanceFromHigherStrikeInPercent !== null && maxStockPriceDistanceFromHigherStrikeInPercent !== Infinity && {
-                label: "maxToHigh",
-                value: `${((maxStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof minStockPriceToSarBeSar !== 'undefined' && minStockPriceToSarBeSar !== null && minStockPriceToSarBeSar !== 0 && {
-                label: "minToSar",
-                value: `${((minStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceToSarBeSar !== 'undefined' && maxStockPriceToSarBeSar !== null && maxStockPriceToSarBeSar !== Infinity && {
-                label: "maxToSar",
-                value: `${((maxStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, ].filter(Boolean),
-            minVol
-        })
-    }
-
-}
-
-
-
-const calcCALL_CONDORStrategies = (list, {priceType, settlementGainChoosePriceType="MIN", 
-    minProfitToFilter,
-    strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
-    isProfitEnoughFn,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
-    minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, MIN_BUCS_BECS_diffStrikesRatio=0, MAX_BUCS_BECS_diffStrikesRatio=Infinity, minStockStrike4DistanceInPercent=-Infinity, maxStockStrike4DistanceInPercent=Infinity, minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
-
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
-
-    let enrichedList = [];
-    for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
-        const optionsGroupedByDate = Object.groupBy(optionList, ({optionDetails}) => optionDetails.date);
-
-        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
-
-            const _enrichedList = optionListOfSameDate.map(option => {
-
-                if (BUCSSOptionListIgnorer({
-                    option,
-                    minVol
-                }))
-                    return option
-
-
-                const priceOfOptionWithLowStrike = getPriceOfAsset({
-                    asset: option,
-                    priceType,
-                    sideType: 'BUY'
-                });
-
-                if(priceOfOptionWithLowStrike===0) return option
-
-                const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-
-                    if (_option.symbol === option.symbol || !_option.isCall)
-                        return false
-                    if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
-                        return false
-
-                    if (!_option.optionDetails?.stockSymbolDetails?.last)
-                        return false
-
-                    const stockPriceHigherStrikeRatio = (_option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
-
-                    if (stockPriceHigherStrikeRatio > minStockPriceDistanceFromHigherStrikeInPercent && stockPriceHigherStrikeRatio < maxStockPriceDistanceFromHigherStrikeInPercent) {} else {
-                        return false
-                    }
-
-                    
-                    const highStrikePrice = getPriceOfAsset({
-                        asset: _option,
-                        priceType,
-                        sideType: 'SELL'
-                    });
-                    
-
-                     // TODO: use breakeven function 
-                    const sarBeSar = option.optionDetails?.strikePrice + (priceOfOptionWithLowStrike - highStrikePrice);
-
-                    
-
-                    const stockPriceSarBeSarRatio = (_option.optionDetails.stockSymbolDetails.last / sarBeSar) - 1;
-
-                    if (stockPriceSarBeSarRatio > minStockPriceToSarBeSar && stockPriceSarBeSarRatio < maxStockPriceToSarBeSar) {} else {
-                        return false
-                    }
-
-                    return true
-
-                }
-                );
-
-                let allPossibleStrategies = callListWithHigherStrikePrice.reduce( (_allPossibleStrategies, option2) => {
-
-
-                    const option2Price = getPriceOfAsset({
-                        asset: option2,
-                        priceType,
-                        sideType: 'SELL'
-                    });
-                    if(option2Price===0) return _allPossibleStrategies
-
-                    
-
-                    let __allPossibleStrategies = callListWithHigherStrikePrice.reduce( (___allPossibleStrategies, option3) => {
-
-                        if(option3.symbol===option2.symbol) return ___allPossibleStrategies
-
-                        const option3Price = getPriceOfAsset({
-                            asset: option3,
-                            priceType,
-                            sideType: 'SELL'
-                        });
-                        if(option3Price===0) return ___allPossibleStrategies
-
-                        const callListWithHigherStrikePriceThanO3 = callListWithHigherStrikePrice.filter(o => {
-                            if (o.symbol === option2.symbol || o.symbol === option3.symbol)
-                                return false
-
-                            if (o.optionDetails?.strikePrice <= option3.optionDetails?.strikePrice)
-                                return false
-
-                            return true
-
-                        }
-                        );
-                        let strategies = callListWithHigherStrikePriceThanO3.reduce( (___allPossibleStrategies, option4) => {
-
-                           
-
-
-                            const option4Price = getPriceOfAsset({
-                                asset: option4,
-                                priceType,
-                                sideType: 'BUY'
-                            });
-                            if(option4Price===0) return ___allPossibleStrategies
-                            const middlePrice = option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice ? option2.optionDetails?.strikePrice : (option3.optionDetails?.strikePrice + option2.optionDetails?.strikePrice) / 2;
-
-                            const stockPriceMiddleRatio = (option4.optionDetails.stockSymbolDetails.last / middlePrice) - 1;
-                            if (stockPriceMiddleRatio > maxStockMiddleDistanceInPercent || stockPriceMiddleRatio < minStockMiddleDistanceInPercent)
-                                return ___allPossibleStrategies
-
-                            const stockPriceStrike4Ratio = (option4.optionDetails.stockSymbolDetails.last / option4.optionDetails?.strikePrice) - 1;
-
-                            if (stockPriceStrike4Ratio > maxStockStrike4DistanceInPercent || stockPriceStrike4Ratio < minStockStrike4DistanceInPercent)
-                                return ___allPossibleStrategies
-
-                            // if (option.optionDetails.stockSymbolDetails.last  > option4.optionDetails?.strikePrice) return ___allPossibleStrategies
-                            if (option4.optionDetails?.strikePrice < option2.optionDetails?.strikePrice)
-                                return ___allPossibleStrategies
-
-
-
-                           
-
-                            const diffOfBUCS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
-                            const diffOfBECS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
-
-                            const BUCS_BECS_diffStrikesRatio = diffOfBUCS_Strikes / diffOfBECS_Strikes;
-
-                            if (BUCS_BECS_diffStrikesRatio < MIN_BUCS_BECS_diffStrikesRatio || BUCS_BECS_diffStrikesRatio > MAX_BUCS_BECS_diffStrikesRatio)
-                                return ___allPossibleStrategies
-
-
-                            const isButterFly = diffOfBUCS_Strikes === diffOfBECS_Strikes &&  option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice;
-                            const strategyPositions = [
-                                {
-                                    ...option,
-                                    isBuy: true,
-                                    getQuantity: () => baseQuantity,
-                                    getRequiredMargin() { }
-                                },
-                                {
-                                    ...option2,
-                                    isSell: true,
-                                    getQuantity: () => baseQuantity,
-                                    getRequiredMargin() { }
-                                },
-                                {
-                                    ...option3,
-                                    isSell: true,
-                                    getQuantity: () => baseQuantity * BUCS_BECS_diffStrikesRatio,
-                                    getRequiredMargin: () => isButterFly ? 0 :  diffOfBECS_Strikes
-                                },
-                                {
-                                    ...option4,
-                                    isBuy: true,
-                                    getQuantity: () => baseQuantity * BUCS_BECS_diffStrikesRatio,
-                                    getRequiredMargin() { }
-                                }
-                            ]
-
-                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
-                                strategyPositions,
-                                getPrice: (strategyPosition) => getPriceOfAsset({
-                                    asset: strategyPosition,
-                                    priceType,
-                                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                                })
-                            });
-
-
-
-                            
-                             const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
-
-
-
-                            const minProfitLossOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxLoss});
-
-
-                            let priceThatCauseMaxProfit
-                            if (BUCS_BECS_diffStrikesRatio > 1) {
-                                priceThatCauseMaxProfit = option3.optionDetails?.strikePrice;
-
-                            } else {
-                                priceThatCauseMaxProfit = option2.optionDetails?.strikePrice;
-
-                            }
-                            let maxGainOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
-
-                            let profitLossRatio
-
-                            if (minProfitLossOfButterfly > 0) {
-                                profitLossRatio = 1
-                            } else {
-
-                                profitLossRatio = Math.abs(maxGainOfButterfly) / (Math.abs(maxGainOfButterfly) + Math.abs(minProfitLossOfButterfly))
-                            }
-
-                            const minProfitPercent = minProfitLossOfButterfly/Math.abs(totalCost);
-
-                            if (profitLossRatio < minProfitLossRatio)
-                                return ___allPossibleStrategies
-                            const strategyObj = {
-                                option: {
-                                    ...option
-                                },
-                                positions:[option, option2, option3, option4],
-                                strategyTypeTitle: "CALL_CONDOR",
-                                expectedProfitNotif,
-                                minProfitToFilter,
-                                isWholeProfitable:minProfitLossOfButterfly>=0,
-                                name: createStrategyName([option, option2, option3, option4]),
-                                isProfitEnough : isProfitEnoughFn && isProfitEnoughFn({minProfitPercent,profitLossRatio}),
-                                profitPercent: totalCost>=0 ? 1 : minProfitPercent
-                            }
-
-                            return ___allPossibleStrategies.concat([strategyObj])
-
-                        }
-                        , []);
-
-                        return ___allPossibleStrategies.concat(strategies)
-
-                    }
-                    , []);
-
-                    return _allPossibleStrategies.concat(__allPossibleStrategies)
-
-                }
-                , []);
-
-                return {
-                    ...option,
-                    allPossibleStrategies
-                }
-
-            }
-            );
-
-            return _enrichedList
-
-        }
-        )
-
-        enrichedList = enrichedList.concat(enrichedListOfStock)
-
-    }
-
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
-
-    return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
-        strategyName: "CALL_CONDOR",
-        priceType,
-        min_time_to_settlement,
-        max_time_to_settlement,
-        minStockPriceDistanceFromHigherStrikeInPercent,
-        maxStockPriceDistanceFromHigherStrikeInPercent,
-        minVol,
-        expectedProfitNotif,
-        ...restConfig,
-        htmlTitle: configsToHtmlTitle({
-            strategyName: "CALL_CONDOR",
-            strategySubName,
-            priceType,
-            min_time_to_settlement,
-            max_time_to_settlement,
-            customLabels: [typeof minStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && minStockPriceDistanceFromHigherStrikeInPercent !== null && minStockPriceDistanceFromHigherStrikeInPercent !== -Infinity && {
-                label: "minToHigh",
-                value: `${((minStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && maxStockPriceDistanceFromHigherStrikeInPercent !== null && maxStockPriceDistanceFromHigherStrikeInPercent !== Infinity && {
-                label: "maxToHigh",
-                value: `${((maxStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof minStockPriceToSarBeSar !== 'undefined' && minStockPriceToSarBeSar !== null && minStockPriceToSarBeSar !== 0 && {
-                label: "minToSar",
-                value: `${((minStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceToSarBeSar !== 'undefined' && maxStockPriceToSarBeSar !== null && maxStockPriceToSarBeSar !== Infinity && {
-                label: "maxToSar",
-                value: `${((maxStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, ].filter(Boolean),
-            minVol
-        })
-    }
-
-}
-
-
-
-const calcPUT_BUTTERFLYStrategies = (list, {priceType, settlementGainChoosePriceType="MIN", 
-    hasBrokenWing=true,
-    minProfitToFilter,
-    strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
-    isProfitEnoughFn,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
-    minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
-    minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
-    MIN_BUPS_BEPS_diffStrikesRatio=0, MAX_BUPS_BEPS_diffStrikesRatio=Infinity, minStockStrike4DistanceInPercent=-Infinity, maxStockStrike4DistanceInPercent=Infinity, minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
-
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
-
-    let enrichedList = [];
-    for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
-        const optionsGroupedByDate = Object.groupBy(optionList, ({optionDetails}) => optionDetails.date);
-
-        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
-
-            const _enrichedList = optionListOfSameDate.map(option => {
-
-                if (BUCSSOptionListIgnorer({
-                    option,
-                    minVol
-                }))
-                    return option
-
-                const optionPrice = getPriceOfAsset({
-                        asset: option,
-                        priceType,
-                        sideType: 'BUY'
-                });
-
-                if(optionPrice===0) return option
-
-                const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-
-                    if (_option.symbol === option.symbol || !_option.isPut)
-                        return false
-                    if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
-                        return false
-
-                    if (!_option.optionDetails?.stockSymbolDetails?.last)
-                        return false
-
-                    const stockPriceHigherStrikeRatio = (_option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
-
-                    if (stockPriceHigherStrikeRatio > minStockPriceDistanceFromHigherStrikeInPercent && stockPriceHigherStrikeRatio < maxStockPriceDistanceFromHigherStrikeInPercent) {} else {
-                        return false
-                    }
-
-                    const lowStrikePrice = getPriceOfAsset({
-                        asset: option,
-                        priceType,
-                        sideType: 'BUY'
-                    });
-                    const highStrikePrice = getPriceOfAsset({
-                        asset: _option,
-                        priceType,
-                        sideType: 'SELL'
-                    });
-
-                     // TODO: use breakeven function 
-                    const sarBeSar = option.optionDetails?.strikePrice + (lowStrikePrice - highStrikePrice);
-
-                    if (!_option.optionDetails?.stockSymbolDetails?.last)
-                        return false
-
-                    const stockPriceSarBeSarRatio = (_option.optionDetails.stockSymbolDetails.last / sarBeSar) - 1;
-
-                    if (stockPriceSarBeSarRatio > minStockPriceToSarBeSar && stockPriceSarBeSarRatio < maxStockPriceToSarBeSar) {} else {
-                        return false
-                    }
-
-                    return true
-
-                }
-                );
-
-                let allPossibleStrategies = putListWithHigherStrikePrice.reduce( (_allPossibleStrategies, option2) => {
-
-
-                    const option2Price = getPriceOfAsset({
-                        asset: option2,
-                        priceType,
-                        sideType: 'SELL'
-                    });
-
-                    if(option2Price===0) return _allPossibleStrategies
-                    
-
-                    
-
-                    let option3 = option2;
-
-                    const putListWithHigherStrikePriceThanO3 = putListWithHigherStrikePrice.filter(o => {
-                        if (o.symbol === option2.symbol || o.symbol === option3.symbol)
-                            return false
-
-                        if (o.optionDetails?.strikePrice <= option3.optionDetails?.strikePrice)
-                            return false
-
-                        return true
-
-                    }
-                    );
-
-                    let strategies = putListWithHigherStrikePriceThanO3.reduce( (___allPossibleStrategies, option4) => {
-
-                        const option4Price = getPriceOfAsset({
-                            asset: option4,
-                            priceType,
-                            sideType: 'BUY'
-                        });
-
-                        if(option4Price===0) return ___allPossibleStrategies;
-
-
-                        const diffOfBUPS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
-                        const diffOfBEPS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
-
-                        const BUPS_BEPS_diffStrikesRatio = diffOfBUPS_Strikes / diffOfBEPS_Strikes;
-
-
-                        const isBalancedButterFly = diffOfBUPS_Strikes === diffOfBEPS_Strikes
-
-                        if(!hasBrokenWing &&  !isBalancedButterFly) return ___allPossibleStrategies
-
-                        
-
-                        const middlePrice = option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice ? option2.optionDetails?.strikePrice : (option3.optionDetails?.strikePrice + option2.optionDetails?.strikePrice) / 2;
-
-                        const stockPriceMiddleRatio = (option4.optionDetails.stockSymbolDetails.last / middlePrice) - 1;
-                        if (stockPriceMiddleRatio > maxStockMiddleDistanceInPercent || stockPriceMiddleRatio < minStockMiddleDistanceInPercent)
-                            return ___allPossibleStrategies
-
-                        const stockPriceStrike4Ratio = (option4.optionDetails.stockSymbolDetails.last / option4.optionDetails?.strikePrice) - 1;
-
-                        if (stockPriceStrike4Ratio > maxStockStrike4DistanceInPercent || stockPriceStrike4Ratio < minStockStrike4DistanceInPercent)
-                            return ___allPossibleStrategies
-
-                        // if (option.optionDetails.stockSymbolDetails.last  > option4.optionDetails?.strikePrice) return ___allPossibleStrategies
-                        if (option4.optionDetails?.strikePrice < option2.optionDetails?.strikePrice)
-                            return ___allPossibleStrategies
-
-
-
-                        
-
-
-                        if (BUPS_BEPS_diffStrikesRatio < MIN_BUPS_BEPS_diffStrikesRatio || BUPS_BEPS_diffStrikesRatio > MAX_BUPS_BEPS_diffStrikesRatio)
-                            return ___allPossibleStrategies
-
-
-
-                        const isButterFly = diffOfBUPS_Strikes === diffOfBEPS_Strikes &&  option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice
-
-                        const strategyPositions = [
-                            {
-                                ...option,
-                                isBuy: true,
-                                getQuantity: () => baseQuantity,
-                                getRequiredMargin() { }
-                            },
-                            {
-                                ...option2,
-                                isSell: true,
-                                getQuantity: () => baseQuantity,
-                                getRequiredMargin: () => isButterFly ? 0 : diffOfBUPS_Strikes
-                            },
-                            {
-                                ...option3,
-                                isSell: true,
-                                getQuantity: () => baseQuantity * BUPS_BEPS_diffStrikesRatio,
-                                getRequiredMargin() { }
-                            },
-                            {
-                                ...option4,
-                                isBuy: true,
-                                getQuantity: () => baseQuantity * BUPS_BEPS_diffStrikesRatio,
-                                getRequiredMargin() { }
-                            }
-                        ]
-
-
-
-                        const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
-                            strategyPositions,
-                            getPrice: (strategyPosition) => getPriceOfAsset({
-                                asset: strategyPosition,
-                                priceType,
-                                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                            })
-                        });
-
-
-                        const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) * 1.2;
-
-
-                        const minProfitLossOfButterfly = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxLoss });
-
-                        
-
-
-                        let priceThatCauseMaxProfit
-                        if (BUPS_BEPS_diffStrikesRatio > 1) {
-                            priceThatCauseMaxProfit = option3.optionDetails?.strikePrice;
-
-                        } else {
-                            priceThatCauseMaxProfit = option2.optionDetails?.strikePrice;
-
-                        }
-                        let maxGainOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
-
-                        let profitLossRatio
-
-                        if (minProfitLossOfButterfly > 0) {
-                            profitLossRatio = 1
-                        } else {
-
-                            profitLossRatio = Math.abs(maxGainOfButterfly) / (Math.abs(maxGainOfButterfly) + Math.abs(minProfitLossOfButterfly))
-                        }
-
-                        if (profitLossRatio < minProfitLossRatio)
-                            return ___allPossibleStrategies
-
-                        const minProfitPercent = minProfitLossOfButterfly/Math.abs(totalCost);
-
-                        const strategyObj = {
-                            option: {
-                                ...option
-                            },
-                            positions:[option, option2, option3, option4],
-                            strategyTypeTitle: "PUT_BUTTERFLY",
-                            expectedProfitNotif,
-                            minProfitToFilter,
-                            isWholeProfitable:minProfitLossOfButterfly>=0,
-                            name: createStrategyName([option, option2, option3, option4]),
-                            isProfitEnough : isProfitEnoughFn && isProfitEnoughFn({minProfitPercent,profitLossRatio}),
-                            profitPercent: totalCost>=0 ? 1 : minProfitPercent
-                        }
-
-                        return ___allPossibleStrategies.concat([strategyObj])
-
-                    }
-                    , []);
-
-                    return _allPossibleStrategies.concat(strategies)
-
-
-                }
-                , []);
-
-                return {
-                    ...option,
-                    allPossibleStrategies
-                }
-
-            }
-            );
-
-            return _enrichedList
-
-        }
-        )
-
-        enrichedList = enrichedList.concat(enrichedListOfStock)
-
-    }
-
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
-
-    return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
-        strategyName: "PUT_BUTTERFLY",
-        priceType,
-        min_time_to_settlement,
-        max_time_to_settlement,
-        minStockPriceDistanceFromHigherStrikeInPercent,
-        maxStockPriceDistanceFromHigherStrikeInPercent,
-        minVol,
-        expectedProfitNotif,
-        ...restConfig,
-        htmlTitle: configsToHtmlTitle({
-            strategyName: "PUT_BUTTERFLY",
-            strategySubName,
-            priceType,
-            min_time_to_settlement,
-            max_time_to_settlement,
-            customLabels: [typeof minStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && minStockPriceDistanceFromHigherStrikeInPercent !== null && minStockPriceDistanceFromHigherStrikeInPercent !== -Infinity && {
-                label: "minToHigh",
-                value: `${((minStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && maxStockPriceDistanceFromHigherStrikeInPercent !== null && maxStockPriceDistanceFromHigherStrikeInPercent !== Infinity && {
-                label: "maxToHigh",
-                value: `${((maxStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof minStockPriceToSarBeSar !== 'undefined' && minStockPriceToSarBeSar !== null && minStockPriceToSarBeSar !== 0 && {
-                label: "minToSar",
-                value: `${((minStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceToSarBeSar !== 'undefined' && maxStockPriceToSarBeSar !== null && maxStockPriceToSarBeSar !== Infinity && {
-                label: "maxToSar",
-                value: `${((maxStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, ].filter(Boolean),
-            minVol
-        })
-    }
-
-}
-
-
-const calcPUT_CONDORStrategies = (list, {priceType, settlementGainChoosePriceType="MIN",
-    minProfitToFilter,
-     strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
-     isProfitEnoughFn,
-     min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
-     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, 
-     maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
-     minStockPriceToSarBeSar=-Infinity,
-      maxStockPriceToSarBeSar=Infinity, MIN_BUPS_BEPS_diffStrikesRatio=0, 
-      MAX_BUPS_BEPS_diffStrikesRatio=Infinity, minStockStrike4DistanceInPercent=-Infinity, 
-      maxStockStrike4DistanceInPercent=Infinity, minStockMiddleDistanceInPercent=-Infinity, 
-      maxStockMiddleDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, 
-      expectedProfitNotif=false, ...restConfig}) => {
-
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
-
-    let enrichedList = [];
-    for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
-        const optionsGroupedByDate = Object.groupBy(optionList, ({optionDetails}) => optionDetails.date);
-
-        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
-
-            const _enrichedList = optionListOfSameDate.map(option => {
-
-                if (BUCSSOptionListIgnorer({
-                    option,
-                    minVol
-                }))
-                    return option
-
-                const optionPrice = getPriceOfAsset({
-                        asset: option,
-                        priceType,
-                        sideType: 'BUY'
-                });
-
-                if(optionPrice===0) return option
-
-                const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-
-                    if (_option.symbol === option.symbol || !_option.isPut)
-                        return false
-                    if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
-                        return false
-
-                    if (!_option.optionDetails?.stockSymbolDetails?.last)
-                        return false
-
-                    const stockPriceHigherStrikeRatio = (_option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
-
-                    if (stockPriceHigherStrikeRatio > minStockPriceDistanceFromHigherStrikeInPercent && stockPriceHigherStrikeRatio < maxStockPriceDistanceFromHigherStrikeInPercent) {} else {
-                        return false
-                    }
-
-                    const lowStrikePrice = getPriceOfAsset({
-                        asset: option,
-                        priceType,
-                        sideType: 'BUY'
-                    });
-                    const highStrikePrice = getPriceOfAsset({
-                        asset: _option,
-                        priceType,
-                        sideType: 'SELL'
-                    });
-
-                     // TODO: use breakeven function 
-                    const sarBeSar = option.optionDetails?.strikePrice + (lowStrikePrice - highStrikePrice);
-
-                    if (!_option.optionDetails?.stockSymbolDetails?.last)
-                        return false
-
-                    const stockPriceSarBeSarRatio = (_option.optionDetails.stockSymbolDetails.last / sarBeSar) - 1;
-
-                    if (stockPriceSarBeSarRatio > minStockPriceToSarBeSar && stockPriceSarBeSarRatio < maxStockPriceToSarBeSar) {} else {
-                        return false
-                    }
-
-                    return true
-
-                }
-                );
-
-                let allPossibleStrategies = putListWithHigherStrikePrice.reduce( (_allPossibleStrategies, option2) => {
-
-
-                    const option2Price = getPriceOfAsset({
-                        asset: option2,
-                        priceType,
-                        sideType: 'SELL'
-                    });
-
-                    if(option2Price===0) return _allPossibleStrategies
-                    
-
-                    
-
-                    let __allPossibleStrategies = putListWithHigherStrikePrice.reduce( (___allPossibleStrategies, option3) => {
-
-                        if(option3.symbol===option2.symbol) return ___allPossibleStrategies
-
-                        const option3Price = getPriceOfAsset({
-                            asset: option3,
-                            priceType,
-                            sideType: 'SELL'
-                        });
-
-                        if(option3Price===0) return ___allPossibleStrategies
-
-                        const putListWithHigherStrikePriceThanO3 = putListWithHigherStrikePrice.filter(o => {
-                            if (o.symbol === option2.symbol || o.symbol === option3.symbol)
-                                return false
-
-                            if (o.optionDetails?.strikePrice <= option3.optionDetails?.strikePrice)
-                                return false
-
-                            return true
-
-                        }
-                        );
-                        let strategies = putListWithHigherStrikePriceThanO3.reduce( (___allPossibleStrategies, option4) => {
-
-                            const option4Price = getPriceOfAsset({
-                                asset: option4,
-                                priceType,
-                                sideType: 'BUY'
-                            });
-
-                            if(option4Price===0) return ___allPossibleStrategies
-
-                            const middlePrice = option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice ? option2.optionDetails?.strikePrice : (option3.optionDetails?.strikePrice + option2.optionDetails?.strikePrice) / 2;
-
-                            const stockPriceMiddleRatio = (option4.optionDetails.stockSymbolDetails.last / middlePrice) - 1;
-                            if (stockPriceMiddleRatio > maxStockMiddleDistanceInPercent || stockPriceMiddleRatio < minStockMiddleDistanceInPercent)
-                                return ___allPossibleStrategies
-
-                            const stockPriceStrike4Ratio = (option4.optionDetails.stockSymbolDetails.last / option4.optionDetails?.strikePrice) - 1;
-
-                            if (stockPriceStrike4Ratio > maxStockStrike4DistanceInPercent || stockPriceStrike4Ratio < minStockStrike4DistanceInPercent)
-                                return ___allPossibleStrategies
-
-                            // if (option.optionDetails.stockSymbolDetails.last  > option4.optionDetails?.strikePrice) return ___allPossibleStrategies
-                            if (option4.optionDetails?.strikePrice < option2.optionDetails?.strikePrice)
-                                return ___allPossibleStrategies
-
-
-                            
-
-                            const diffOfBUPS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
-                            const diffOfBEPS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
-
-                            const BUPS_BEPS_diffStrikesRatio = diffOfBUPS_Strikes / diffOfBEPS_Strikes;
-
-                            if (BUPS_BEPS_diffStrikesRatio < MIN_BUPS_BEPS_diffStrikesRatio || BUPS_BEPS_diffStrikesRatio > MAX_BUPS_BEPS_diffStrikesRatio)
-                                return ___allPossibleStrategies
-
-
-                            const isButterFly = diffOfBUPS_Strikes === diffOfBEPS_Strikes &&  option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice
-                            
-                            const strategyPositions = [
-                                {
-                                    ...option,
-                                    isBuy: true,
-                                    getQuantity: () => baseQuantity,
-                                    getRequiredMargin() { }
-                                },
-                                {
-                                    ...option2,
-                                    isSell: true,
-                                    getQuantity: () => baseQuantity,
-                                    getRequiredMargin: () => isButterFly ? 0 : diffOfBUPS_Strikes
-                                },
-                                {
-                                    ...option3,
-                                    isSell: true,
-                                    getQuantity: () => baseQuantity * BUPS_BEPS_diffStrikesRatio,
-                                    getRequiredMargin() { }
-                                },
-                                {
-                                    ...option4,
-                                    isBuy: true,
-                                    getQuantity: () => baseQuantity * BUPS_BEPS_diffStrikesRatio,
-                                    getRequiredMargin() { }
-                                }
-                            ]
-
-
-
-                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
-                                strategyPositions,
-                                getPrice: (strategyPosition) => getPriceOfAsset({
-                                    asset: strategyPosition,
-                                    priceType,
-                                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                                })
-                            });
-
-
-
-                             const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
-
-
-
-                            const minProfitLossOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxLoss});
-
-
-
-                            let priceThatCauseMaxProfit
-                            if (BUPS_BEPS_diffStrikesRatio > 1) {
-                                priceThatCauseMaxProfit = option3.optionDetails?.strikePrice;
-
-                            } else {
-                                priceThatCauseMaxProfit = option2.optionDetails?.strikePrice;
-
-                            }
-
-                            let maxGainOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
-
-                            let profitLossRatio
-
-                            if (minProfitLossOfButterfly > 0) {
-                                profitLossRatio = 1
-                            } else {
-
-                                profitLossRatio = Math.abs(maxGainOfButterfly) / (Math.abs(maxGainOfButterfly) + Math.abs(minProfitLossOfButterfly))
-                            }
-
-                            if (profitLossRatio < minProfitLossRatio)
-                                return ___allPossibleStrategies
-
-                            const minProfitPercent = minProfitLossOfButterfly/Math.abs(totalCost);
-
-                            const strategyObj = {
-                                option: {
-                                    ...option
-                                },
-                                positions:[option, option2, option3, option4],
-                                strategyTypeTitle: "PUT_CONDOR",
-                                expectedProfitNotif,
-                                minProfitToFilter,
-                                isWholeProfitable:minProfitLossOfButterfly>=0,
-                                name: createStrategyName([option, option2, option3, option4]),
-                                isProfitEnough : isProfitEnoughFn && isProfitEnoughFn({minProfitPercent,profitLossRatio}),
-                                profitPercent: totalCost>=0 ? 1 : minProfitPercent
-                            }
-
-                            return ___allPossibleStrategies.concat([strategyObj])
-
-                        }
-                        , []);
-
-                        return ___allPossibleStrategies.concat(strategies)
-
-                    }
-                    , []);
-
-                    return _allPossibleStrategies.concat(__allPossibleStrategies)
-
-                }
-                , []);
-
-                return {
-                    ...option,
-                    allPossibleStrategies
-                }
-
-            }
-            );
-
-            return _enrichedList
-
-        }
-        )
-
-        enrichedList = enrichedList.concat(enrichedListOfStock)
-
-    }
-
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
-
-    return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
-        strategyName: "PUT_CONDOR",
-        priceType,
-        min_time_to_settlement,
-        max_time_to_settlement,
-        minStockPriceDistanceFromHigherStrikeInPercent,
-        maxStockPriceDistanceFromHigherStrikeInPercent,
-        minVol,
-        expectedProfitNotif,
-        ...restConfig,
-        htmlTitle: configsToHtmlTitle({
-            strategyName: "PUT_CONDOR",
-            strategySubName,
-            priceType,
-            min_time_to_settlement,
-            max_time_to_settlement,
-            customLabels: [typeof minStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && minStockPriceDistanceFromHigherStrikeInPercent !== null && minStockPriceDistanceFromHigherStrikeInPercent !== -Infinity && {
-                label: "minToHigh",
-                value: `${((minStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && maxStockPriceDistanceFromHigherStrikeInPercent !== null && maxStockPriceDistanceFromHigherStrikeInPercent !== Infinity && {
-                label: "maxToHigh",
-                value: `${((maxStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof minStockPriceToSarBeSar !== 'undefined' && minStockPriceToSarBeSar !== null && minStockPriceToSarBeSar !== 0 && {
-                label: "minToSar",
-                value: `${((minStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceToSarBeSar !== 'undefined' && maxStockPriceToSarBeSar !== null && maxStockPriceToSarBeSar !== Infinity && {
-                label: "maxToSar",
-                value: `${((maxStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, ].filter(Boolean),
-            minVol
-        })
-    }
-
-}
 
 
 
@@ -17896,537 +16648,17 @@ const IRON_BUTTERFLY_CONDOR_BUCS_strategyObjCreator = (option, option2, option3,
 
 
 
-const calcIRON_BUTTERFLY_BUCS_Strategies = (list, {priceType, 
-    settlementGainChoosePriceType="MIN", showLeftRightProfitType="LEFT&RIGHT", strategySubName,
-    minProfitToFilter,
-     BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
-     isProfitEnoughFn,
-     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
-     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity,
-     minStockPriceDistanceFromOption2StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption2StrikeInPercent=Infinity, 
-     minStockPriceDistanceFromOption3StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption3StrikeInPercent=Infinity, 
-     minStockPriceDistanceFromOption4StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption4StrikeInPercent=Infinity, 
-     minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, 
-     MIN_BUCS_BEPS_diffStrikesRatio=0, MAX_BUCS_BEPS_diffStrikesRatio=Infinity, minProfitLossRatio=.7, 
-     BUCS_BEPS_COST_notProperRatio=15,
-     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
 
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
 
-    let enrichedList = [];
-    for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
-        const optionsGroupedByDate = Object.groupBy(optionList, ({optionDetails}) => optionDetails.date);
 
-        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
-
-            const _enrichedList = optionListOfSameDate.map(option => {
-
-                if (BUCSSOptionListIgnorer({
-                    option,
-                    minVol
-                }))
-                    return option
-
-
-                const priceOfOptionWithLowStrike = getPriceOfAsset({
-                    asset: option,
-                    priceType,
-                    sideType: 'BUY'
-                });
-
-                if(priceOfOptionWithLowStrike===0) return option
-
-                const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-
-                    if (_option.symbol === option.symbol || !_option.isCall)
-                        return false
-                    if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
-                        return false
-
-                    if (!_option.optionDetails?.stockSymbolDetails?.last)
-                        return false
-
-                    const stockPriceHigherStrikeRatio = (_option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
-
-                    if (stockPriceHigherStrikeRatio > minStockPriceDistanceFromOption2StrikeInPercent && stockPriceHigherStrikeRatio < maxStockPriceDistanceFromOption2StrikeInPercent) {} else {
-                        return false
-                    }
-
-                    return true
-
-                }
-                );
-
-                let allPossibleStrategies = callListWithHigherStrikePrice.reduce( (_allPossibleStrategies, option2) => {
-
-
-                    const option2Price = getPriceOfAsset({
-                        asset: option2,
-                        priceType,
-                        sideType: 'SELL'
-                    });
-
-                    if(option2Price===0) return _allPossibleStrategies
-
-                    
-
-                    // TODO: create lower/higher strike price filter function in utils to reuse 
-
-                    const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-
-                        if ( !_option.isPut )
-                            return false
-                        if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
-                            return false
-
-                        if (!_option.optionDetails?.stockSymbolDetails?.last)
-                            return false
-
-                        
-
-                        return true
-
-                    }
-                    );
-
-
-
-                    const optionListBetweenO1AndO2StrikePrice = putListWithHigherStrikePrice.filter(o => {
-                        if (o.optionDetails?.strikePrice > option2.optionDetails?.strikePrice)
-                            return false
-
-                        return true
-
-                    }
-                    );
-
-
-
-                     let strategies = optionListBetweenO1AndO2StrikePrice.reduce((__allPossibleStrategies, option3) => {
-
-                        const option3Price = getPriceOfAsset({
-                            asset: option3,
-                            priceType,
-                            sideType: 'SELL'
-                        });
-                        if(option3Price===0) return __allPossibleStrategies
-
-
-                        const stockPricePut1StrikeRatio = (option3.optionDetails.stockSymbolDetails.last / option3.optionDetails?.strikePrice) - 1;
-
-                        if (stockPricePut1StrikeRatio < minStockPriceDistanceFromOption3StrikeInPercent || stockPricePut1StrikeRatio > maxStockPriceDistanceFromOption3StrikeInPercent) {
-                            return __allPossibleStrategies
-                        }
-
-                        if (option3.optionDetails?.strikePrice < option2.optionDetails?.strikePrice) {
-                            let option4 = putListWithHigherStrikePrice.find(put => put.optionDetails?.strikePrice === option2.optionDetails?.strikePrice);
-                            if(!option4) return __allPossibleStrategies
-                            const option4Price = getPriceOfAsset({
-                                asset: option4,
-                                priceType,
-                                sideType: 'BUY'
-                            });
-                            if (option4Price === 0) return __allPossibleStrategies
-
-                            const strategyObj = IRON_BUTTERFLY_CONDOR_BUCS_strategyObjCreator(option, option2, option3, option4, {
-                                minStockMiddleDistanceInPercent, maxStockMiddleDistanceInPercent,
-                                minStockPriceDistanceFromOption4StrikeInPercent, maxStockPriceDistanceFromOption4StrikeInPercent,
-                                isProfitEnoughFn,
-                                MIN_BUCS_BEPS_diffStrikesRatio, MAX_BUCS_BEPS_diffStrikesRatio, expectedProfitNotif, priceType, 
-                                minProfitLossRatio,BUCS_BEPS_COST_notProperRatio,
-                                strategyTypeTitle:"IRON_BUTTERFLY_BUCS"
-                            });
-
-                            if (strategyObj) {
-
-                                return __allPossibleStrategies.concat([strategyObj])
-                            }else{
-                                return __allPossibleStrategies
-                            }
-
-                        } else if (option3.optionDetails?.strikePrice === option2.optionDetails?.strikePrice) {
-                            const optionListWithHigherStrikePriceThanO3 = putListWithHigherStrikePrice.filter(o => {
-                                if (o.symbol === option2.symbol || o.symbol === option3.symbol)
-                                    return false
-                                if (o.optionDetails?.strikePrice === option2.optionDetails?.strikePrice)
-                                    return false
-
-                                if (o.optionDetails?.strikePrice <= option3.optionDetails?.strikePrice)
-                                    return false
-
-                                return true
-
-                            }
-                            );
-
-
-
-                            let strategies = optionListWithHigherStrikePriceThanO3.reduce((___allPossibleStrategies, option4) => {
-
-
-
-
-                                const option4Price = getPriceOfAsset({
-                                    asset: option4,
-                                    priceType,
-                                    sideType: 'BUY'
-                                });
-                                if (option4Price === 0) return ___allPossibleStrategies
-
-
-                                const strategyObj = IRON_BUTTERFLY_CONDOR_BUCS_strategyObjCreator(option, option2, option3, option4, {
-                                    minStockMiddleDistanceInPercent, maxStockMiddleDistanceInPercent,
-                                    isProfitEnoughFn,
-                                    minProfitToFilter,
-                                    minStockPriceDistanceFromOption4StrikeInPercent, maxStockPriceDistanceFromOption4StrikeInPercent,
-                                    MIN_BUCS_BEPS_diffStrikesRatio, MAX_BUCS_BEPS_diffStrikesRatio, 
-                                    expectedProfitNotif, priceType, minProfitLossRatio,BUCS_BEPS_COST_notProperRatio,
-                                    strategyTypeTitle:"IRON_BUTTERFLY_BUCS"
-                                });
-                                if (strategyObj) {
-
-                                    return ___allPossibleStrategies.concat([strategyObj])
-                                }else{
-                                    return ___allPossibleStrategies
-                                }
-
-
-                            }
-                                , []);
-
-
-                            return __allPossibleStrategies.concat(strategies)
-
-                        } else {
-                            return __allPossibleStrategies
-                        }
-
-
-
-
-                    }, [])
-
-
-                  
-
-
-                    return _allPossibleStrategies.concat(strategies)
-
-
-
-                }
-                , []);
-
-                return {
-                    ...option,
-                    allPossibleStrategies
-                }
-
-            }
-            );
-
-            return _enrichedList
-
-        }
-        )
-
-        enrichedList = enrichedList.concat(enrichedListOfStock)
-
-    }
-
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
-
-    return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
-        strategyName: "IRON_BUTTERFLY_BUCS",
-        priceType,
-        min_time_to_settlement,
-        max_time_to_settlement,
-        minStockPriceDistanceFromHigherStrikeInPercent,
-        maxStockPriceDistanceFromHigherStrikeInPercent,
-        minVol,
-        expectedProfitNotif,
-        ...restConfig,
-        htmlTitle: configsToHtmlTitle({
-            strategyName: "IRON_BUTTERFLY_BUCS",
-            strategySubName,
-            priceType,
-            min_time_to_settlement,
-            max_time_to_settlement,
-            customLabels: [typeof minStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && minStockPriceDistanceFromHigherStrikeInPercent !== null && minStockPriceDistanceFromHigherStrikeInPercent !== -Infinity && {
-                label: "minToHigh",
-                value: `${((minStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && maxStockPriceDistanceFromHigherStrikeInPercent !== null && maxStockPriceDistanceFromHigherStrikeInPercent !== Infinity && {
-                label: "maxToHigh",
-                value: `${((maxStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof minStockPriceToSarBeSar !== 'undefined' && minStockPriceToSarBeSar !== null && minStockPriceToSarBeSar !== 0 && {
-                label: "minToSar",
-                value: `${((minStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceToSarBeSar !== 'undefined' && maxStockPriceToSarBeSar !== null && maxStockPriceToSarBeSar !== Infinity && {
-                label: "maxToSar",
-                value: `${((maxStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, ].filter(Boolean),
-            minVol
-        })
-    }
-
-}
-
-
-const calcIRON_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainChoosePriceType="MIN", showLeftRightProfitType="LEFT&RIGHT", strategySubName,
-    isProfitEnoughFn,
-    minProfitToFilter,
-     BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
-     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
-     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity,
-     minStockPriceDistanceFromOption2StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption2StrikeInPercent=Infinity, 
-     minStockPriceDistanceFromOption3StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption3StrikeInPercent=Infinity, 
-     minStockPriceDistanceFromOption4StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption4StrikeInPercent=Infinity, 
-     minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, 
-     MIN_BUCS_BEPS_diffStrikesRatio=0, MAX_BUCS_BEPS_diffStrikesRatio=Infinity, 
-     BUCS_BEPS_COST_notProperRatio=15,
-     minProfitLossRatio=.7, minVol=CONSTS.DEFAULTS.MIN_VOL, 
-     expectedProfitNotif=false, ...restConfig}) => {
-
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
-
-    let enrichedList = [];
-    for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
-        const optionsGroupedByDate = Object.groupBy(optionList, ({optionDetails}) => optionDetails.date);
-
-        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
-
-            const _enrichedList = optionListOfSameDate.map(option => {
-
-                if (BUCSSOptionListIgnorer({
-                    option,
-                    minVol
-                }))
-                    return option
-
-
-                const priceOfOptionWithLowStrike = getPriceOfAsset({
-                    asset: option,
-                    priceType,
-                    sideType: 'BUY'
-                });
-
-                if(priceOfOptionWithLowStrike===0) return option
-
-                const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض'))
-                        return false
-                    if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
-                        return false
-
-                    if (!_option.optionDetails?.stockSymbolDetails?.last)
-                        return false
-
-                    const stockPriceHigherStrikeRatio = (_option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
-
-                    if (stockPriceHigherStrikeRatio > minStockPriceDistanceFromOption2StrikeInPercent && stockPriceHigherStrikeRatio < maxStockPriceDistanceFromOption2StrikeInPercent) {} else {
-                        return false
-                    }
-
-                    return true
-
-                }
-                );
-
-                let allPossibleStrategies = callListWithHigherStrikePrice.reduce( (_allPossibleStrategies, option2) => {
-
-
-                    const option2Price = getPriceOfAsset({
-                        asset: option2,
-                        priceType,
-                        sideType: 'SELL'
-                    });
-
-                    if(option2Price===0) return _allPossibleStrategies
-
-                    
-
-                    // TODO: create lower/higher strike price filter function in utils to reuse 
-
-                    const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-
-                        if ( _option.isCall )
-                            return false
-                        if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
-                            return false
-
-                        if (!_option.optionDetails?.stockSymbolDetails?.last)
-                            return false
-
-                        
-
-                        return true
-
-                    }
-                    );
-
-                    let __allPossibleStrategies = putListWithHigherStrikePrice.reduce( (___allPossibleStrategies, option3) => {
-
-                        if(option3.optionDetails?.strikePrice===option2.optionDetails?.strikePrice) return ___allPossibleStrategies
-
-                        const option3Price = getPriceOfAsset({
-                            asset: option3,
-                            priceType,
-                            sideType: 'SELL'
-                        });
-                        if(option3Price===0) return ___allPossibleStrategies
-
-
-                        const stockPricePut1StrikeRatio = (option3.optionDetails.stockSymbolDetails.last / option3.optionDetails?.strikePrice) - 1;
-
-                        if (stockPricePut1StrikeRatio < minStockPriceDistanceFromOption3StrikeInPercent || stockPricePut1StrikeRatio > maxStockPriceDistanceFromOption3StrikeInPercent) {
-                            return ___allPossibleStrategies
-                        }
-
-                        const optionListWithHigherStrikePriceThanO3 = putListWithHigherStrikePrice.filter(o => {
-                            if (o.symbol === option2.symbol || o.symbol === option3.symbol)
-                                return false
-                            if (o.optionDetails?.strikePrice === option2.optionDetails?.strikePrice)
-                                return false
-
-                            if (o.optionDetails?.strikePrice <= option3.optionDetails?.strikePrice)
-                                return false
-
-                            return true
-
-                        }
-                        );
-
-
-
-
-                       
-
-                        let strategies = optionListWithHigherStrikePriceThanO3.reduce( (___allPossibleStrategies, option4) => {
-
-                           
-
-
-                            const option4Price = getPriceOfAsset({
-                                asset: option4,
-                                priceType,
-                                sideType: 'BUY'
-                            });
-                            if(option4Price===0) return ___allPossibleStrategies
-                           
-
-                            const strategyObj = IRON_BUTTERFLY_CONDOR_BUCS_strategyObjCreator(option, option2, option3, option4, {
-                                minStockMiddleDistanceInPercent, maxStockMiddleDistanceInPercent,
-                                isProfitEnoughFn,
-                                minProfitToFilter,
-                                minStockPriceDistanceFromOption4StrikeInPercent, maxStockPriceDistanceFromOption4StrikeInPercent,
-                                MIN_BUCS_BEPS_diffStrikesRatio, MAX_BUCS_BEPS_diffStrikesRatio, 
-                                expectedProfitNotif, priceType, minProfitLossRatio,BUCS_BEPS_COST_notProperRatio,
-                                strategyTypeTitle:"IRON_CONDOR_BUCS"
-                            });
-
-                            if (strategyObj) {
-
-                                return ___allPossibleStrategies.concat([strategyObj])
-                            }else{
-                                return ___allPossibleStrategies
-                            }
-
-
-
-                        }
-                        , []);
-
-                        return ___allPossibleStrategies.concat(strategies)
-
-                    }
-                    , []);
-
-                    return _allPossibleStrategies.concat(__allPossibleStrategies)
-
-                }
-                , []);
-
-                return {
-                    ...option,
-                    allPossibleStrategies
-                }
-
-            }
-            );
-
-            return _enrichedList
-
-        }
-        )
-
-        enrichedList = enrichedList.concat(enrichedListOfStock)
-
-    }
-
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
-
-    return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
-        strategyName: "IRON_CONDOR_BUCS",
-        priceType,
-        min_time_to_settlement,
-        max_time_to_settlement,
-        minStockPriceDistanceFromHigherStrikeInPercent,
-        maxStockPriceDistanceFromHigherStrikeInPercent,
-        minVol,
-        expectedProfitNotif,
-        ...restConfig,
-        htmlTitle: configsToHtmlTitle({
-            strategyName: "IRON_CONDOR_BUCS",
-            strategySubName,
-            priceType,
-            min_time_to_settlement,
-            max_time_to_settlement,
-            customLabels: [typeof minStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && minStockPriceDistanceFromHigherStrikeInPercent !== null && minStockPriceDistanceFromHigherStrikeInPercent !== -Infinity && {
-                label: "minToHigh",
-                value: `${((minStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && maxStockPriceDistanceFromHigherStrikeInPercent !== null && maxStockPriceDistanceFromHigherStrikeInPercent !== Infinity && {
-                label: "maxToHigh",
-                value: `${((maxStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof minStockPriceToSarBeSar !== 'undefined' && minStockPriceToSarBeSar !== null && minStockPriceToSarBeSar !== 0 && {
-                label: "minToSar",
-                value: `${((minStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceToSarBeSar !== 'undefined' && maxStockPriceToSarBeSar !== null && maxStockPriceToSarBeSar !== Infinity && {
-                label: "maxToSar",
-                value: `${((maxStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, ].filter(Boolean),
-            minVol
-        })
-    }
-
-}
 
 
 
 const calcIRON_BUTT_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainChoosePriceType="MIN", showLeftRightProfitType="LEFT&RIGHT", strategySubName,
     isProfitEnoughFn,
     minProfitToFilter,
-     BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+     BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
      minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
      minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity,
      minStockPriceDistanceFromOption2StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption2StrikeInPercent=Infinity, 
@@ -18657,782 +16889,21 @@ const calcIRON_BUTT_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainCh
 
 
 
-const IRON_BUTTERFLY_BUPS_strategyObjCreator = (option, option2, option3, option4,
-    { minStockMiddleDistanceInPercent, maxStockMiddleDistanceInPercent,
-        isProfitEnoughFn,
-        minProfitToFilter,
-        minStockPriceDistanceFromOption4StrikeInPercent, maxStockPriceDistanceFromOption4StrikeInPercent,
-        MIN_BUPS_BECS_diffStrikesRatio, MAX_BUPS_BECS_diffStrikesRatio, expectedProfitNotif, priceType, minProfitLossRatio
-    }) => {
 
-        if(!option?.optionDetails ||  !option2?.optionDetails || !option3?.optionDetails || !option4?.optionDetails){
-            return 
-        }
 
-       
 
-    const middlePrice = option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice ? option2.optionDetails?.strikePrice : (option3.optionDetails?.strikePrice + option2.optionDetails?.strikePrice) / 2;
 
-    const stockPriceMiddleRatio = (option4.optionDetails.stockSymbolDetails.last / middlePrice) - 1;
-    if (stockPriceMiddleRatio > maxStockMiddleDistanceInPercent || stockPriceMiddleRatio < minStockMiddleDistanceInPercent)
-        return
 
-    const stockPriceStrike4Ratio = (option4.optionDetails.stockSymbolDetails.last / option4.optionDetails?.strikePrice) - 1;
 
-    if (stockPriceStrike4Ratio > maxStockPriceDistanceFromOption4StrikeInPercent || stockPriceStrike4Ratio < minStockPriceDistanceFromOption4StrikeInPercent)
-        return
 
-    // if (option.optionDetails.stockSymbolDetails.last  > option4.optionDetails?.strikePrice) return 
-    if (option4.optionDetails?.strikePrice < option2.optionDetails?.strikePrice)
-        return
 
 
-  
-
-    const diffOfBUPS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
-    const diffOfBECS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
-
-    const BUPS_BECS_diffStrikesRatio = diffOfBUPS_Strikes / diffOfBECS_Strikes;
-
-    if (BUPS_BECS_diffStrikesRatio < MIN_BUPS_BECS_diffStrikesRatio || BUPS_BECS_diffStrikesRatio > MAX_BUPS_BECS_diffStrikesRatio)
-        return
-
-
-
-
-    
-
-
-    const strategyPositions = [
-        {
-            ...option,
-            isBuy: true,
-            getQuantity: () => baseQuantity,
-            getRequiredMargin() { }
-        },
-        {
-            ...option2,
-            isSell:true,
-            getQuantity:()=> baseQuantity,
-            getRequiredMargin:()=>diffOfBUPS_Strikes
-        },
-        {
-            ...option3,
-            isSell:true,
-            getQuantity:()=> baseQuantity * BUPS_BECS_diffStrikesRatio ,
-            getRequiredMargin:()=>diffOfBECS_Strikes
-        },
-        {
-            ...option4,
-            isBuy:true,
-            getQuantity:()=> baseQuantity * BUPS_BECS_diffStrikesRatio,
-            getRequiredMargin() { }
-        }
-    ]
-
-
-
-    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
-        strategyPositions, 
-        getPrice: (strategyPosition) => getPriceOfAsset({
-            asset: strategyPosition,
-            priceType,
-            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-        })
-    });
-
-
-    
-
-   
-
-
-
-
-    const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition=>strategyPosition.strikePrice))* 1.2;
-
-
-
-    const minProfitLossOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxLoss});
-
-
-
-    let priceThatCauseMaxProfit
-    if (diffOfBUPS_Strikes > diffOfBECS_Strikes) {
-        priceThatCauseMaxProfit = option3.optionDetails?.strikePrice;
-
-    } else {
-
-        priceThatCauseMaxProfit = option2.optionDetails?.strikePrice;
-
-    }
-    let maxGainOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit})
-    let profitLossRatio
-
-    if (minProfitLossOfButterfly > 0) {
-        profitLossRatio = 1
-    } else {
-
-        profitLossRatio = Math.abs(maxGainOfButterfly) / (Math.abs(maxGainOfButterfly) + Math.abs(minProfitLossOfButterfly))
-    }
-
-    const minProfitPercent = minProfitLossOfButterfly/Math.abs(totalCost);
-
-    if (profitLossRatio < minProfitLossRatio)
-        return
-    const strategyObj = {
-        option: {
-            ...option
-        },
-        positions: [option, option2, option3, option4],
-        strategyTypeTitle: "IRON_BUTTERFLY_BUPS",
-        expectedProfitNotif,
-        minProfitToFilter,
-        isWholeProfitable:minProfitLossOfButterfly>=0,
-        name: createStrategyName([option, option2, option3, option4]),
-        isProfitEnough : isProfitEnoughFn && isProfitEnoughFn({minProfitPercent,profitLossRatio}),
-        profitPercent: totalCost>=0 ? 1 : minProfitPercent
-    }
-
-    return strategyObj
-
-}
-
-
-
-const calcIRON_BUTTERFLY_BUPS_Strategies = (list, { priceType, 
-    isProfitEnoughFn,
-    minProfitToFilter,
-    settlementGainChoosePriceType = "MIN", showLeftRightProfitType = "LEFT&RIGHT", strategySubName,
-    BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement = Infinity,
-    minStockPriceDistanceFromHigherStrikeInPercent = -Infinity, maxStockPriceDistanceFromHigherStrikeInPercent = Infinity,
-    minStockPriceToSarBeSar = -Infinity, maxStockPriceToSarBeSar = Infinity,
-    minStockPriceDistanceFromOption2StrikeInPercent = -Infinity, maxStockPriceDistanceFromOption2StrikeInPercent = Infinity,
-    minStockPriceDistanceFromOption3StrikeInPercent = -Infinity, maxStockPriceDistanceFromOption3StrikeInPercent = Infinity,
-    minStockPriceDistanceFromOption4StrikeInPercent = -Infinity, maxStockPriceDistanceFromOption4StrikeInPercent = Infinity, minStockMiddleDistanceInPercent = -Infinity, maxStockMiddleDistanceInPercent = Infinity, MIN_BUPS_BECS_diffStrikesRatio = 0, MAX_BUPS_BECS_diffStrikesRatio = Infinity, minProfitLossRatio = .7, minVol = CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif = false, ...restConfig }) => {
-
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({ optionDetails }) => optionDetails.stockSymbol);
-
-    let enrichedList = [];
-    for (let [stockSymbol, optionList] of Object.entries(optionsGroupedByStock)) {
-        const optionsGroupedByDate = Object.groupBy(optionList, ({ optionDetails }) => optionDetails.date);
-
-        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap(([date, optionListOfSameDate]) => {
-
-            const _enrichedList = optionListOfSameDate.map(option => {
-
-                // if (BUCSSOptionListIgnorer({
-                //     option,
-                //     minVol
-                // }))
-                //     return option
-
-                if (!option.optionDetails?.stockSymbolDetails || !option.isPut)
-                    return option
-
-                const priceOfOptionWithLowStrike = getPriceOfAsset({
-                    asset: option,
-                    priceType,
-                    sideType: 'BUY'
-                });
-
-                if (priceOfOptionWithLowStrike === 0) return option
-
-                const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-
-                    if (_option.symbol === option.symbol || !_option.isPut )
-                        return false
-                    if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
-                        return false
-
-                    if (!_option.optionDetails?.stockSymbolDetails?.last)
-                        return false
-
-                    const stockPriceHigherStrikeRatio = (_option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
-
-                    if (stockPriceHigherStrikeRatio > minStockPriceDistanceFromOption2StrikeInPercent && stockPriceHigherStrikeRatio < maxStockPriceDistanceFromOption2StrikeInPercent) { } else {
-                        return false
-                    }
-
-                    return true
-
-                }
-                );
-
-                let allPossibleStrategies = putListWithHigherStrikePrice.reduce((_allPossibleStrategies, option2) => {
-
-
-                    const option2Price = getPriceOfAsset({
-                        asset: option2,
-                        priceType,
-                        sideType: 'SELL'
-                    });
-
-                    if (option2Price === 0) return _allPossibleStrategies
-
-
-
-                    // TODO: create lower/higher strike price filter function in utils to reuse 
-
-                    const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-
-                        if (_option.isPut)
-                            return false
-                        if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
-                            return false
-
-                        if (!_option.optionDetails?.stockSymbolDetails?.last)
-                            return false
-
-
-
-                        return true
-
-                    }
-                    );
-
-
-                    const optionListBetweenO1AndO2StrikePrice = callListWithHigherStrikePrice.filter(o => {
-                        if (o.optionDetails?.strikePrice > option2.optionDetails?.strikePrice)
-                            return false
-
-                        return true
-
-                    }
-                    );
-
-                    let strategies = optionListBetweenO1AndO2StrikePrice.reduce((__allPossibleStrategies, option3) => {
-
-                        const option3Price = getPriceOfAsset({
-                            asset: option3,
-                            priceType,
-                            sideType: 'SELL'
-                        });
-                        if (option3Price === 0) return __allPossibleStrategies
-
-                        const stockPricePut1StrikeRatio = (option3.optionDetails.stockSymbolDetails.last / option3.optionDetails?.strikePrice) - 1;
-
-                        if (stockPricePut1StrikeRatio < minStockPriceDistanceFromOption3StrikeInPercent || stockPricePut1StrikeRatio > maxStockPriceDistanceFromOption3StrikeInPercent) {
-                            return __allPossibleStrategies
-                        }
-
-                        if (option3.optionDetails?.strikePrice < option2.optionDetails?.strikePrice) {
-                            let option4 = callListWithHigherStrikePrice.find(call => call.optionDetails?.strikePrice === option2.optionDetails?.strikePrice);
-                            if(!option4) return __allPossibleStrategies
-                            const option4Price = getPriceOfAsset({
-                                asset: option4,
-                                priceType,
-                                sideType: 'BUY'
-                            });
-                            if (option4Price === 0) return __allPossibleStrategies
-
-                            const strategyObj = IRON_BUTTERFLY_BUPS_strategyObjCreator(option, option2, option3, option4, {
-                                minStockMiddleDistanceInPercent, maxStockMiddleDistanceInPercent,
-                                isProfitEnoughFn,
-                                minStockPriceDistanceFromOption4StrikeInPercent, maxStockPriceDistanceFromOption4StrikeInPercent,
-                                MIN_BUPS_BECS_diffStrikesRatio, MAX_BUPS_BECS_diffStrikesRatio, expectedProfitNotif, priceType, minProfitLossRatio
-                            });
-
-                            if (strategyObj) {
-
-                                return __allPossibleStrategies.concat([strategyObj])
-                            }else{
-                                return __allPossibleStrategies
-                            }
-
-                        } else if (option3.optionDetails?.strikePrice === option2.optionDetails?.strikePrice) {
-                            const optionListWithHigherStrikePriceThanO3 = callListWithHigherStrikePrice.filter(o => {
-                                if (o.symbol === option2.symbol || o.symbol === option3.symbol)
-                                    return false
-                                if (o.optionDetails?.strikePrice === option2.optionDetails?.strikePrice)
-                                    return false
-
-                                if (o.optionDetails?.strikePrice <= option3.optionDetails?.strikePrice)
-                                    return false
-
-                                return true
-
-                            }
-                            );
-
-
-
-                            let strategies = optionListWithHigherStrikePriceThanO3.reduce((___allPossibleStrategies, option4) => {
-
-
-
-
-                                const option4Price = getPriceOfAsset({
-                                    asset: option4,
-                                    priceType,
-                                    sideType: 'BUY'
-                                });
-                                if (option4Price === 0) return ___allPossibleStrategies
-
-
-
-                                const strategyObj = IRON_BUTTERFLY_BUPS_strategyObjCreator(option, option2, option3, option4, {
-                                    minStockMiddleDistanceInPercent, maxStockMiddleDistanceInPercent,
-                                    isProfitEnoughFn,
-                                    minProfitToFilter,
-                                    minStockPriceDistanceFromOption4StrikeInPercent, maxStockPriceDistanceFromOption4StrikeInPercent,
-                                    MIN_BUPS_BECS_diffStrikesRatio, MAX_BUPS_BECS_diffStrikesRatio, expectedProfitNotif, priceType, minProfitLossRatio
-                                });
-                                if(strategyObj){
-
-                                    return ___allPossibleStrategies.concat([strategyObj])
-                                }else{
-                                    return ___allPossibleStrategies
-                                }
-
-
-                            }
-                                , []);
-
-
-                            return __allPossibleStrategies.concat(strategies)
-
-                        } else {
-                            return __allPossibleStrategies
-                        }
-
-
-
-
-
-
-
-
-                    }, [])
-
-
-
-
-
-
-
-
-
-
-                    return _allPossibleStrategies.concat(strategies)
-
-
-                }
-                    , []);
-
-                return {
-                    ...option,
-                    allPossibleStrategies
-                }
-
-            }
-            );
-
-            return _enrichedList
-
-        }
-        )
-
-        enrichedList = enrichedList.concat(enrichedListOfStock)
-
-    }
-
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
-
-    return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
-        strategyName: "IRON_BUTTERFLY_BUPS",
-        priceType,
-        min_time_to_settlement,
-        max_time_to_settlement,
-        minStockPriceDistanceFromHigherStrikeInPercent,
-        maxStockPriceDistanceFromHigherStrikeInPercent,
-        minVol,
-        expectedProfitNotif,
-        ...restConfig,
-        htmlTitle: configsToHtmlTitle({
-            strategyName: "IRON_BUTTERFLY_BUPS",
-            strategySubName,
-            priceType,
-            min_time_to_settlement,
-            max_time_to_settlement,
-            customLabels: [typeof minStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && minStockPriceDistanceFromHigherStrikeInPercent !== null && minStockPriceDistanceFromHigherStrikeInPercent !== -Infinity && {
-                label: "minToHigh",
-                value: `${((minStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && maxStockPriceDistanceFromHigherStrikeInPercent !== null && maxStockPriceDistanceFromHigherStrikeInPercent !== Infinity && {
-                label: "maxToHigh",
-                value: `${((maxStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof minStockPriceToSarBeSar !== 'undefined' && minStockPriceToSarBeSar !== null && minStockPriceToSarBeSar !== 0 && {
-                label: "minToSar",
-                value: `${((minStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceToSarBeSar !== 'undefined' && maxStockPriceToSarBeSar !== null && maxStockPriceToSarBeSar !== Infinity && {
-                label: "maxToSar",
-                value: `${((maxStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            },].filter(Boolean),
-            minVol
-        })
-    }
-
-}
-
-
-
-const calcIRON_CONDOR_BUPS_Strategies = (list, {priceType, 
-    isProfitEnoughFn,
-    minProfitToFilter,
-    settlementGainChoosePriceType="MIN", showLeftRightProfitType="LEFT&RIGHT", strategySubName,
-     BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
-     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
-     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity,
-     minStockPriceDistanceFromOption2StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption2StrikeInPercent=Infinity, 
-     minStockPriceDistanceFromOption3StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption3StrikeInPercent=Infinity, 
-     minStockPriceDistanceFromOption4StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption4StrikeInPercent=Infinity, minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, MIN_BUPS_BECS_diffStrikesRatio=0, MAX_BUPS_BECS_diffStrikesRatio=Infinity, minProfitLossRatio=.7, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
-
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
-
-    let enrichedList = [];
-    for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
-        const optionsGroupedByDate = Object.groupBy(optionList, ({optionDetails}) => optionDetails.date);
-
-        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
-
-            const _enrichedList = optionListOfSameDate.map(option => {
-
-                // if (BUCSSOptionListIgnorer({
-                //     option,
-                //     minVol
-                // }))
-                //     return option
-
-                if (!option.optionDetails?.stockSymbolDetails || !option.isPut )
-                    return option
-
-                const priceOfOptionWithLowStrike = getPriceOfAsset({
-                    asset: option,
-                    priceType,
-                    sideType: 'BUY'
-                });
-
-                if(priceOfOptionWithLowStrike===0) return option
-
-                const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-
-                    if (_option.symbol === option.symbol || !_option.isPut )
-                        return false
-                    if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
-                        return false
-
-                    if (!_option.optionDetails?.stockSymbolDetails?.last)
-                        return false
-
-                    const stockPriceHigherStrikeRatio = (_option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
-
-                    if (stockPriceHigherStrikeRatio > minStockPriceDistanceFromOption2StrikeInPercent && stockPriceHigherStrikeRatio < maxStockPriceDistanceFromOption2StrikeInPercent) {} else {
-                        return false
-                    }
-
-                    return true
-
-                }
-                );
-
-                let allPossibleStrategies = putListWithHigherStrikePrice.reduce( (_allPossibleStrategies, option2) => {
-
-
-                    const option2Price = getPriceOfAsset({
-                        asset: option2,
-                        priceType,
-                        sideType: 'SELL'
-                    });
-
-                    if(option2Price===0) return _allPossibleStrategies
-
-                    
-
-                    // TODO: create lower/higher strike price filter function in utils to reuse 
-
-                    const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-
-                        if ( _option.isPut)
-                            return false
-                        if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
-                            return false
-
-                        if (!_option.optionDetails?.stockSymbolDetails?.last)
-                            return false
-
-                        
-
-                        return true
-
-                    }
-                    );
-
-                    let __allPossibleStrategies = callListWithHigherStrikePrice.reduce( (___allPossibleStrategies, option3) => {
-
-                        if(option3.optionDetails?.strikePrice === option2.optionDetails?.strikePrice) return ___allPossibleStrategies
-
-                        const option3Price = getPriceOfAsset({
-                            asset: option3,
-                            priceType,
-                            sideType: 'SELL'
-                        });
-                        if(option3Price===0) return ___allPossibleStrategies
-
-
-                        const stockPricePut1StrikeRatio = (option3.optionDetails.stockSymbolDetails.last / option3.optionDetails?.strikePrice) - 1;
-
-                        if (stockPricePut1StrikeRatio < minStockPriceDistanceFromOption3StrikeInPercent || stockPricePut1StrikeRatio > maxStockPriceDistanceFromOption3StrikeInPercent) {
-                            return ___allPossibleStrategies
-                        }
-
-                        const optionListWithHigherStrikePriceThanO3 = callListWithHigherStrikePrice.filter(o => {
-                            if (o.symbol === option2.symbol || o.symbol === option3.symbol)
-                                return false
-                            if (o.optionDetails?.strikePrice === option2.optionDetails?.strikePrice)
-                                return false
-
-                            if (o.optionDetails?.strikePrice <= option3.optionDetails?.strikePrice)
-                                return false
-
-                            return true
-
-                        }
-                        );
-
-
-
-
-                       
-
-                        let strategies = optionListWithHigherStrikePriceThanO3.reduce( (___allPossibleStrategies, option4) => {
-
-                           
-
-
-                            const option4Price = getPriceOfAsset({
-                                asset: option4,
-                                priceType,
-                                sideType: 'BUY'
-                            });
-                            if(option4Price===0) return ___allPossibleStrategies
-                            const middlePrice = option2.optionDetails?.strikePrice === option3.optionDetails?.strikePrice ? option2.optionDetails?.strikePrice : (option3.optionDetails?.strikePrice + option2.optionDetails?.strikePrice) / 2;
-
-                            const stockPriceMiddleRatio = (option4.optionDetails.stockSymbolDetails.last / middlePrice) - 1;
-                            if (stockPriceMiddleRatio > maxStockMiddleDistanceInPercent || stockPriceMiddleRatio < minStockMiddleDistanceInPercent)
-                                return ___allPossibleStrategies
-
-                            const stockPriceStrike4Ratio = (option4.optionDetails.stockSymbolDetails.last / option4.optionDetails?.strikePrice) - 1;
-
-                            if (stockPriceStrike4Ratio > maxStockPriceDistanceFromOption4StrikeInPercent || stockPriceStrike4Ratio < minStockPriceDistanceFromOption4StrikeInPercent)
-                                return ___allPossibleStrategies
-
-                            // if (option.optionDetails.stockSymbolDetails.last  > option4.optionDetails?.strikePrice) return ___allPossibleStrategies
-                            if (option4.optionDetails?.strikePrice < option2.optionDetails?.strikePrice)
-                                return ___allPossibleStrategies
-
-
-                            
-
-                            const diffOfBUPS_Strikes = option2.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
-                            const diffOfBECS_Strikes = option4.optionDetails?.strikePrice - option3.optionDetails?.strikePrice;
-
-                            const BUPS_BECS_diffStrikesRatio = diffOfBUPS_Strikes / diffOfBECS_Strikes;
-
-                            if (BUPS_BECS_diffStrikesRatio < MIN_BUPS_BECS_diffStrikesRatio || BUPS_BECS_diffStrikesRatio > MAX_BUPS_BECS_diffStrikesRatio)
-                                return ___allPossibleStrategies
-
-
-                           
-
-                            const strategyPositions = [
-                                {
-                                    ...option,
-                                    isBuy: true,
-                                    getQuantity: () => baseQuantity,
-                                    getRequiredMargin() { }
-                                },
-                                {
-                                    ...option2,
-                                    isSell: true,
-                                    getQuantity: () => baseQuantity,
-                                    getRequiredMargin: () => diffOfBUPS_Strikes
-                                },
-                                {
-                                    ...option3,
-                                    isSell: true,
-                                    getQuantity: () => baseQuantity * BUPS_BECS_diffStrikesRatio,
-                                    getRequiredMargin: () => diffOfBECS_Strikes
-                                },
-                                {
-                                    ...option4,
-                                    isBuy: true,
-                                    getQuantity: () => baseQuantity * BUPS_BECS_diffStrikesRatio,
-                                    getRequiredMargin() { }
-                                }
-                            ]
-
-
-
-
-
-
-
-
-                            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
-                                strategyPositions,
-                                getPrice: (strategyPosition) => getPriceOfAsset({
-                                    asset: strategyPosition,
-                                    priceType,
-                                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                                })
-                            });
-
-
-
-
-
-
-
-
-
-
-                            const priceThatCauseMaxLoss = Math.max(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) * 1.2;
-
-
-
-                            const minProfitLossOfButterfly = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxLoss });
-
-                            let priceThatCauseMaxProfit;
-                            if (diffOfBUPS_Strikes > diffOfBECS_Strikes) {
-                                priceThatCauseMaxProfit = option3.optionDetails?.strikePrice;
-                                
-
-                            } else {
-                                priceThatCauseMaxProfit = option2.optionDetails?.strikePrice;
-
-                            }
-
-                            let maxGainOfButterfly = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:priceThatCauseMaxProfit});
-
-                            let profitLossRatio
-
-                            if (minProfitLossOfButterfly > 0) {
-                                profitLossRatio = 1
-                            } else {
-
-                                profitLossRatio = Math.abs(maxGainOfButterfly) / (Math.abs(maxGainOfButterfly) + Math.abs(minProfitLossOfButterfly))
-                            }
-                            const minProfitPercent = minProfitLossOfButterfly/Math.abs(totalCost);
-                            if (profitLossRatio < minProfitLossRatio)
-                                return ___allPossibleStrategies
-                            const strategyObj = {
-                                option: {
-                                    ...option
-                                },
-                                minProfitToFilter,
-                                positions:[option, option2, option3, option4],
-                                strategyTypeTitle: "IRON_CONDOR_BUPS",
-                                expectedProfitNotif,
-                                isWholeProfitable:minProfitLossOfButterfly>=0,
-                                name: createStrategyName([option, option2, option3, option4]),
-                                isProfitEnough : isProfitEnoughFn && isProfitEnoughFn({minProfitPercent,profitLossRatio}),
-                                profitPercent: totalCost>=0 ? 1 : minProfitPercent
-                            }
-
-                            return ___allPossibleStrategies.concat([strategyObj])
-
-                        }
-                        , []);
-
-                        return ___allPossibleStrategies.concat(strategies)
-
-                    }
-                    , []);
-
-                    return _allPossibleStrategies.concat(__allPossibleStrategies)
-
-                }
-                , []);
-
-                return {
-                    ...option,
-                    allPossibleStrategies
-                }
-
-            }
-            );
-
-            return _enrichedList
-
-        }
-        )
-
-        enrichedList = enrichedList.concat(enrichedListOfStock)
-
-    }
-
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
-
-    return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
-        strategyName: "IRON_CONDOR_BUPS",
-        priceType,
-        min_time_to_settlement,
-        max_time_to_settlement,
-        minStockPriceDistanceFromHigherStrikeInPercent,
-        maxStockPriceDistanceFromHigherStrikeInPercent,
-        minVol,
-        expectedProfitNotif,
-        ...restConfig,
-        htmlTitle: configsToHtmlTitle({
-            strategyName: "IRON_CONDOR_BUPS",
-            strategySubName,
-            priceType,
-            min_time_to_settlement,
-            max_time_to_settlement,
-            customLabels: [typeof minStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && minStockPriceDistanceFromHigherStrikeInPercent !== null && minStockPriceDistanceFromHigherStrikeInPercent !== -Infinity && {
-                label: "minToHigh",
-                value: `${((minStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && maxStockPriceDistanceFromHigherStrikeInPercent !== null && maxStockPriceDistanceFromHigherStrikeInPercent !== Infinity && {
-                label: "maxToHigh",
-                value: `${((maxStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
-            }, typeof minStockPriceToSarBeSar !== 'undefined' && minStockPriceToSarBeSar !== null && minStockPriceToSarBeSar !== 0 && {
-                label: "minToSar",
-                value: `${((minStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, typeof maxStockPriceToSarBeSar !== 'undefined' && maxStockPriceToSarBeSar !== null && maxStockPriceToSarBeSar !== Infinity && {
-                label: "maxToSar",
-                value: `${((maxStockPriceToSarBeSar) * 100).toFixed(0)}%`
-            }, ].filter(Boolean),
-            minVol
-        })
-    }
-
-}
 
 const calcIRON_BUTT_CONDOR_BUPS_Strategies = (list, {priceType, 
     isProfitEnoughFn,
     minProfitToFilter,
     settlementGainChoosePriceType="MIN", showLeftRightProfitType="LEFT&RIGHT", strategySubName,
-     BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+     BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
      minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
      minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity,
      minStockPriceDistanceFromOption2StrikeInPercent=-Infinity, maxStockPriceDistanceFromOption2StrikeInPercent=Infinity, 
@@ -19760,7 +17231,7 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
     settlementGainChoosePriceType="MIN", strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     isProfitEnoughFn,
     minProfitToFilter,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     MIN_BUPS_BEPS_diffStrikesRatio=0, MAX_BUPS_BEPS_diffStrikesRatio=Infinity, 
@@ -20101,7 +17572,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
     BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     minProfitToFilter,
     isProfitEnoughFn,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity,maxStockPriceToSarBeSar=Infinity,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -20387,7 +17858,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
     maxStockPriceToSarBeSar=Infinity,
     minProfitToFilter,
     isProfitEnoughFn,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -20680,7 +18151,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
     maxStockPriceToSarBeSar=Infinity,
     minProfitToFilter,
     isProfitEnoughFn,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -20978,7 +18449,7 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
     maxStockPriceToSarBeSar=Infinity,
     minProfitToFilter,
     isProfitEnoughFn,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -21278,7 +18749,7 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
     settlementGainChoosePriceType="MIN", strategySubName, 
     BUPSOptionListIgnorer=generalConfig.BUPSOptionListIgnorer, 
     justIfWholeIsPofitable=false,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -21502,7 +18973,7 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
 const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, strategySubName, 
     BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     minProfitToFilter,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     justIfWholeIsPofitable=false,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -21687,7 +19158,7 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
 
 
 const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, 
-    strategySubName, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    strategySubName, min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minProfitToFilter,
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     justIfWholeIsPofitable=false,
@@ -21899,7 +19370,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
 
 const calcBECS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, 
-    strategySubName, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    strategySubName, min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minProfitToFilter,
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     justIfWholeIsPofitable=false,
@@ -22112,7 +19583,7 @@ const calcBECS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
 
 const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth, 
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minProfitToFilter,
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
@@ -22236,7 +19707,7 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
 
 const calcCOVERED_CONVERSION_Strategies = (list, {priceType, 
     minProfitToFilter,
-    expectedProfitPerMonth, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+    expectedProfitPerMonth, min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -22366,7 +19837,7 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
 
 const calcCOVERED_COLLAR_Strategies = (list, {priceType, 
     minProfitToFilter,
-    expectedProfitPerMonth, min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+    expectedProfitPerMonth, min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
         if (!item.isOption)
@@ -22515,7 +19986,7 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
 const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
     settlementGainChoosePriceType="MAX",
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -22711,7 +20182,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
 const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MAX", 
     minProfitToFilter,
     strategySubName, BECSSOptionListIgnorer=generalConfig.BECSSOptionListIgnorer, 
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity,  maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -23019,9 +20490,12 @@ const createAndCalcBUS_BES_Strategy = ({ buyingCall, sellingCall, buyingPut, sel
         option: {
             ...buyingCall
         },
+        strategyPositions,
         positions: isBUCS ? [ buyingCall, sellingCall,buyingPut, sellingPut]:[buyingPut, sellingPut,buyingCall, sellingCall],
         isWholeProfitable: !breakeven,
         stockPriceToSarBeSarPercent,
+        
+        maxProfit,
         name: createStrategyName(isBUCS ? [ buyingCall, sellingCall,buyingPut, sellingPut]:[buyingPut, sellingPut,buyingCall, sellingCall]),
         profitPercent
     }
@@ -23035,7 +20509,7 @@ const createAndCalcBUS_BES_Strategy = ({ buyingCall, sellingCall, buyingPut, sel
 const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
     settlementGainChoosePriceType="MIN", strategySubName,  
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -23161,6 +20635,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
                         return _allPossibleStrategies.concat([{
                             ...strategyObj,
+                            optionListOfSameDate,
                             strategyTypeTitle: "BUS_With_BUCS_BEPS",
                             expectedProfitNotif,
                             minProfitToFilter,
@@ -23227,6 +20702,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
                         return _allPossibleStrategies.concat([{
                             ...strategyObj,
+                            optionListOfSameDate,
                             strategyTypeTitle: "BUS_With_BUCS_BEPS",
                             expectedProfitNotif,
                             minProfitToFilter,
@@ -23300,7 +20776,153 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
 
 
+const calcBUCS_BEPS_LongPutStrategies = ({ filteredBusList, priceType, strategySubName,
+    minProfitToFilter,
+    isProfitEnoughFn,
+    min_time_to_settlement = -Infinity, max_time_to_settlement = Infinity,
+    minStockPriceToSarBeSar = -Infinity, maxStockPriceToSarBeSar = Infinity,
+    minVol = CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif = false, ...restConfig }) => {
 
+    const enrichedList = filteredBusList.map(bus => {
+
+
+        const { optionListOfSameDate, strategyPositions, maxProfit: maxProfitOfBUS, positions: busPositions } = bus;
+
+        
+        const strikes = strategyPositions.map(strategyPosition => strategyPosition.strikePrice);
+        const uniqueStrikes = [...new Set(strikes)];
+        const maxStrikePrice = Math.max(...uniqueStrikes);
+
+        const higherStrikePuts = optionListOfSameDate.filter(_option => {
+            if (!_option.isPut)
+                return false
+            if (_option.optionDetails?.strikePrice < maxStrikePrice)
+                return false
+
+            if (!_option.optionDetails.stockSymbolDetails) return false
+
+            return true
+        }
+        );
+
+
+        const allPossibleStrategies = higherStrikePuts.reduce((_allPossibleStrategies, buyingPut) => {
+            const buyingPutPrice = getPriceOfAsset({
+                asset: buyingPut,
+                priceType,
+                sideType: 'BUY'
+            });
+
+            if (buyingPutPrice === 0) return _allPossibleStrategies
+
+            const quantityFactorOfBuyingPut = Math.abs(maxProfitOfBUS / buyingPutPrice);
+
+            const strategyPositionsOfBUCS_BEPS_LongPut = [
+                ...strategyPositions,
+                {
+                    ...buyingPut,
+                    isBuy: true,
+                    getQuantity: () => 1 * quantityFactorOfBuyingPut / 1.3,
+                    getRequiredMargin() { }
+                },
+            ]
+
+
+            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
+                strategyPositions:strategyPositionsOfBUCS_BEPS_LongPut,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
+            });
+
+            const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__.findBreakevenList)({
+                positions: strategyPositionsOfBUCS_BEPS_LongPut,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
+            });
+
+            const breakeven = breakevenList.length ? Math.max(...breakevenList) : null;
+
+            const priceThatCauseMinProfit = Math.max(...strategyPositionsOfBUCS_BEPS_LongPut.map(strategyPosition => strategyPosition.strikePrice)) * 1.2;
+            const minProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions:strategyPositionsOfBUCS_BEPS_LongPut, stockPrice: priceThatCauseMinProfit });
+            const minProfitPercent = minProfit / Math.abs(totalCost);
+
+            let isFullBodyProfitable, stockPriceToSarBeSarPercent;
+            if (!breakeven && quantityFactorOfBuyingPut > 0) {
+                isFullBodyProfitable = true;
+            } else if (!breakeven) {
+                return _allPossibleStrategies
+            }
+            else {
+                if (!buyingPut?.optionDetails?.stockSymbolDetails?.last) return _allPossibleStrategies
+
+                stockPriceToSarBeSarPercent = (breakeven / buyingPut.optionDetails.stockSymbolDetails.last) - 1;
+                if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSar || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSar)
+                    return _allPossibleStrategies
+            }
+
+
+
+            return _allPossibleStrategies.concat([{
+                option: {
+                    ...buyingPut
+                },
+                positions: [...busPositions, buyingPut],
+                strategyTypeTitle: "BUCS_BEPS_LongPut",
+                expectedProfitNotif,
+                minProfitToFilter,
+                stockPriceToSarBeSarPercent,
+                isWholeProfitable: isFullBodyProfitable,
+                isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(minProfitPercent),
+                name: createStrategyName([...busPositions, buyingPut],),
+                // profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
+                profitPercent: minProfitPercent
+            }])
+
+
+
+
+        }, []);
+
+        return {
+            ...strategyPositions[0],
+            allPossibleStrategies
+        }
+
+
+    })
+
+    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+
+    return {
+        enrichedList,
+        allStrategiesSorted: sortedStrategies,
+        strategyName: "BUCS_BEPS_LongPut",
+        priceType,
+        min_time_to_settlement,
+        max_time_to_settlement,
+        minStockPriceToSarBeSar,
+        maxStockPriceToSarBeSar,
+        minVol,
+        expectedProfitNotif,
+        ...restConfig,
+        htmlTitle: configsToHtmlTitle({
+            strategyName: "BUCS_BEPS_LongPut",
+            strategySubName,
+            priceType,
+            min_time_to_settlement,
+            max_time_to_settlement,
+            minStockPriceToSarBeSar,
+            maxStockPriceToSarBeSar,
+            minVol
+        })
+    }
+}
 
 
 
@@ -23315,7 +20937,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
     settlementGainChoosePriceType="MIN", strategySubName,  
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -23581,7 +21203,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
     settlementGainChoosePriceType="MIN", strategySubName,  
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -23848,7 +21470,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
     settlementGainChoosePriceType="MIN", strategySubName,  
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -24123,7 +21745,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMonth,
     isProfitEnoughFn, 
     minProfitToFilter,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, minVol=CONSTS.DEFAULTS.MIN_VOL, 
     expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
@@ -24270,7 +21892,7 @@ const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMo
 const calcBuyStockByPutStrategies = (list, {priceType, expectedProfitPerMonth,
     isProfitEnoughFn, 
     minProfitToFilter,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, minVol=CONSTS.DEFAULTS.MIN_VOL, 
     expectedProfitNotif=false, ...restConfig}) => {
 
     const filteredList = list.filter(item => {
@@ -24402,7 +22024,7 @@ const calcBuyStockByPutStrategies = (list, {priceType, expectedProfitPerMonth,
 
 const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth, 
     isProfitEnoughFn,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity,
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement,
     minProfitToFilter, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -24669,7 +22291,7 @@ const calcSellCallNokoolGainStrategies = (list, { priceType, expectedProfitPerMo
 const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName, 
     minProfitToFilter,
     isProfitEnoughFn,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity,maxStockPriceToSarBeSar=Infinity,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -24927,7 +22549,7 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
 const calcBECS_Long_CallStrategies = (list, {priceType, strategySubName, 
     minProfitToFilter,
     isProfitEnoughFn,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity,maxStockPriceToSarBeSar=Infinity,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -25188,7 +22810,7 @@ const calcBECS_Long_CallStrategies = (list, {priceType, strategySubName,
 const calcBEPS_Long_CallStrategies = (list, {priceType, strategySubName, 
     minProfitToFilter,
     isProfitEnoughFn,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity,maxStockPriceToSarBeSar=Infinity,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -25447,7 +23069,7 @@ const calcBEPS_Long_CallStrategies = (list, {priceType, strategySubName,
 const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName, 
     minProfitToFilter,
     isProfitEnoughFn,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity,maxStockPriceToSarBeSar=Infinity,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -25706,7 +23328,7 @@ const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName,
 const filterStrategiesByConfig = ({
     strategies,
     strategyTypeTitle,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=Infinity,
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement,
     minStockPriceToSarBeSar=-Infinity,
     maxStockPriceToSarBeSar=Infinity,
     minProfitLossRatio,
@@ -25817,9 +23439,9 @@ const createListFilterContetnByList=(list)=>{
                 return false
             }
             ,
-            minProfitLossRatio: .92,
+            minProfitLossRatio: .95,
             isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
-                return profitLossRatio >= .92
+                return profitLossRatio >= .95
             },
             expectedProfitNotif: true // minVol: 1000 * 1000 * 1000,
         })
@@ -25843,9 +23465,9 @@ const createListFilterContetnByList=(list)=>{
                 return false
             }
             ,
-            minProfitLossRatio: .92,
+            minProfitLossRatio: .95,
             isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
-                return profitLossRatio >= .92
+                return profitLossRatio >= .95
             },
             expectedProfitNotif: true // minVol: 1000 * 1000 * 1000,
             // minStockPriceDistanceFromHigherStrikeInPercent: .22,
@@ -25900,6 +23522,12 @@ const createListFilterContetnByList=(list)=>{
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             expectedProfitNotif: true,
         });
+
+
+        
+
+        
+       
 
         const BUS_With_BUPS_BECSStrategies=  calcBUS_With_BUPS_BECSStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
@@ -26080,7 +23708,7 @@ const createListFilterContetnByList=(list)=>{
             ,
             minProfitLossRatio: .96,
             isProfitEnoughFn({ minProfitPercent, profitLossRatio }) {
-                return profitLossRatio >= .96
+                return profitLossRatio >= .96 && minProfitPercent>-0.01
             },
             expectedProfitNotif: true,
             BUCS_BEPS_COST_notProperRatio: 15,
@@ -26160,7 +23788,6 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: BUS_With_BUCS_BEPSStrategies,
-            maxStockPriceToSarBeSar : -.2,
             isWholeProfitable:false
         }),
 
@@ -26173,13 +23800,20 @@ const createListFilterContetnByList=(list)=>{
             isWholeProfitable:true,
         }),
 
+        calcBUCS_BEPS_LongPutStrategies({
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredBusList: filterStrategiesByConfig({
+                strategies: BUS_With_BUCS_BEPSStrategies,
+                maxStockPriceToSarBeSar : -0.05
+            }).allStrategiesSorted
+        }),
+
 
 
 
 
          filterStrategiesByConfig({
             strategies: BUS_With_BUPS_BECSStrategies,
-            maxStockPriceToSarBeSar: -.2,
             isWholeProfitable:false,
         }),
 
@@ -26197,7 +23831,6 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: BES_With_BUCS_BEPSStrategies,
-            minStockPriceToSarBeSar : .2,
             isWholeProfitable:false
         }),
 
@@ -26215,7 +23848,6 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: BES_With_BUPS_BECSStrategies,
-            minStockPriceToSarBeSar : .20,
             isWholeProfitable:false
         }),
 
@@ -27194,15 +24826,15 @@ const interval = async () => {
             });
 
 
-            chrome?.runtime?.sendMessage && chrome.runtime.sendMessage({
-                type: "FROM_FILTER_TAB",
-                payload: {
-                    list,
-                    generalIgnoreText,
-                    $tempIgnoredNotifList: tempIgnoredNotifList,
-                    $notifiedStrategyList: notifiedStrategyList
-                }
-            });
+            // chrome?.runtime?.sendMessage && chrome.runtime.sendMessage({
+            //     type: "FROM_FILTER_TAB",
+            //     payload: {
+            //         list,
+            //         generalIgnoreText,
+            //         $tempIgnoredNotifList: tempIgnoredNotifList,
+            //         $notifiedStrategyList: notifiedStrategyList
+            //     }
+            // });
         }
         
     } catch (error) {
