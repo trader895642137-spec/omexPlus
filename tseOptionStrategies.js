@@ -12445,7 +12445,6 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: BUS_With_BUCS_BEPSStrategies,
-            maxStockPriceToSarBeSar : -.2,
             isWholeProfitable:false
         }),
 
@@ -12464,7 +12463,6 @@ const createListFilterContetnByList=(list)=>{
 
          filterStrategiesByConfig({
             strategies: BUS_With_BUPS_BECSStrategies,
-            maxStockPriceToSarBeSar: -.2,
             isWholeProfitable:false,
         }),
 
@@ -12482,7 +12480,6 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: BES_With_BUCS_BEPSStrategies,
-            minStockPriceToSarBeSar : .2,
             isWholeProfitable:false
         }),
 
@@ -12500,7 +12497,6 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: BES_With_BUPS_BECSStrategies,
-            minStockPriceToSarBeSar : .20,
             isWholeProfitable:false
         }),
 
