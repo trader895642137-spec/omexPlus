@@ -352,3 +352,43 @@ document.getElementById('showVariableMargin').addEventListener('click', () => {
 
 
 });
+
+
+document.getElementById('addToWatcher').addEventListener('click', async () => {
+    try {
+        // ۱. تب فعال رو بگیر
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        // ۲. از تب فعلی داده‌ها رو بگیر (اگه نیاز داری)
+        const result = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                // این کد توی وب‌سایت اجرا میشه
+                return window.omexLib?.strategyPositions || null;
+            },
+            world: "MAIN"
+        });
+        
+        const strategyPositions = result[0]?.result;
+        
+        // ۳. مستقیم از popup به watcher بفرست
+        chrome.runtime.sendMessage({
+            type: "addToWatcher",
+            payload: {
+                strategyPositions: strategyPositions,
+                tabId: tab.id,
+                url: tab.url,
+                title: tab.title
+            }
+        }, (response) => {
+            if (chrome.runtime.lastError) {
+                console.error("❌ خطا:", chrome.runtime.lastError);
+            } else {
+                console.log("✅ پیام ارسال شد:", response);
+            }
+        });
+        
+    } catch (error) {
+        console.error("❌ خطا:", error);
+    }
+});

@@ -52,6 +52,7 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
 let strategyGroupInfoList = [];
 try {
     const port = chrome.runtime.connect({ name: "CHILD_PAGE" });
+
     port.onMessage.addListener(({list}) =>{
 
         strategyGroupInfoList = enrichStrategyGroupInfoListByInstrumentPrices(strategyGroupInfoList,list);
@@ -79,6 +80,15 @@ try {
     console.error("Cannot connect to background:", err);
 }
 
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log(message);
+  if (message.type === "addToWatcher") {
+    console.log("📨 پیام دریافت شد از:", sender.tab?.url || "اکستنشن");
+    console.log(message);
+    
+  }
+});
 
 
 
