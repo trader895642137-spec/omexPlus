@@ -2297,6 +2297,9 @@ const injectStyles = () => {
             client-instrument-favorites-item-trade-panel .o-priceContainer footer .-is-separator{
                 display: none !important;
             }
+            client-instrument-favorites-item-trade-panel  footer .e-operationModes{
+                display: none !important;
+            }
 
 
             client-option-reports-tabs c-k-tab-default:nth-child(3) button {
