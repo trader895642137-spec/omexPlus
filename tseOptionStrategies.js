@@ -10496,21 +10496,18 @@ const createListFilterContetnByList=(list)=>{
             strategies: COVEREDStrategies,
             min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 38 * 24 * 3600000,
-            minStockPriceToSarBeSar: 0.2,
         }),
 
         filterStrategiesByConfig({
             strategies: COVEREDStrategies,
             min_time_to_settlement: 6 * 24 * 3600000,
             max_time_to_settlement: 15 * 24 * 3600000,
-            minStockPriceToSarBeSar: 0.12,
         }),
        
         filterStrategiesByConfig({
             strategies: COVEREDStrategies,
             min_time_to_settlement: 1 * 3 * 3600000,
             max_time_to_settlement: 6 * 24 * 3600000,
-            minStockPriceToSarBeSar: 0.05,
             minProfitToFilter: 0.01,
         }),
 
