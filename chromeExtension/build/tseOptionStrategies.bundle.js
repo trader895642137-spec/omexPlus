@@ -23931,6 +23931,7 @@ const createListFilterContetnByList=(list)=>{
         , calcBUPS_COLLARStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             expectedProfitPerMonth: 1.04,
+            minProfitToFilter : 0.01,
             max_time_to_settlement: 61 * 24 * 3600000,
             expectedProfitNotif: true 
         }),
@@ -23939,6 +23940,7 @@ const createListFilterContetnByList=(list)=>{
         , calcBUCS_COLLAR_Strategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             expectedProfitPerMonth: 1.04,
+            minProfitToFilter : 0.01,
             max_time_to_settlement: 61 * 24 * 3600000,
             expectedProfitNotif: true 
         })
@@ -23947,6 +23949,8 @@ const createListFilterContetnByList=(list)=>{
         , calcBEPS_COLLAR_Strategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             expectedProfitPerMonth: 1.04,
+            minProfitToFilter : 0.01,
+            max_time_to_settlement: 61 * 24 * 3600000,
             expectedProfitNotif: true 
         }),
         
