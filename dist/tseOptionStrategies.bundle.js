@@ -896,7 +896,7 @@ const calcAveragePriceByExecutedOrders = (orders)=>{
 const isBuyQueue = (stock) => {
   if(!stock?.bestBuy || !stock.beforeTodayPrice || !stock.bestBuyQ) return 
   const isPriceNearCeil = stock.bestBuy / stock.beforeTodayPrice > 1.026;
-  const isQueue = stock.bestBuyQ * stock.bestBuy > 100000000;
+  const isQueue = (stock.bestBuyQ * stock.bestBuy) > 100000000000;
   return isPriceNearCeil && isQueue
 
 }
@@ -13875,7 +13875,7 @@ let prevListSymbolMap = {};
 let generalConfig = {
     max_time_to_settlement: 60 * 24 * 3600000,
     expectedProfitPerMonth: 1.04,
-    minProfitToFilter: 0.035,
+    minProfitToFilter: 0.01,
     BUCSSOptionListIgnorer: ({option, minVol}) => {
         return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض')  )
     }
@@ -23938,7 +23938,6 @@ const createListFilterContetnByList=(list)=>{
         }),
         
 
-        
 
         filterStrategiesByConfig({
             strategies: BECS_COLLAR_Strategies,
@@ -23947,9 +23946,8 @@ const createListFilterContetnByList=(list)=>{
 
         , calcBUCS_Long_PutStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            isProfitEnoughFn(profit){
-                return profit>=0.01
-            },
+            expectedProfitPerMonth: 1.03,
+            minProfitToFilter : 0.01,
             // minStockPriceDistanceInPercent: -.2,
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
@@ -23959,9 +23957,8 @@ const createListFilterContetnByList=(list)=>{
 
          calcBECS_Long_CallStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            isProfitEnoughFn(profit){
-                return profit>=0.01
-            },
+            expectedProfitPerMonth: 1.03,
+            minProfitToFilter : 0.01,
             // minStockPriceDistanceInPercent: -.2,
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
@@ -23971,9 +23968,8 @@ const createListFilterContetnByList=(list)=>{
 
          calcBEPS_Long_CallStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            isProfitEnoughFn(profit){
-                return profit>=0.01
-            },
+            expectedProfitPerMonth: 1.03,
+            minProfitToFilter : 0.01,
             // minStockPriceDistanceInPercent: -.2,
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
@@ -23984,9 +23980,8 @@ const createListFilterContetnByList=(list)=>{
 
          calcBUPS_Long_PutStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            isProfitEnoughFn(profit){
-                return profit>=0.01
-            },
+            expectedProfitPerMonth: 1.03,
+            minProfitToFilter : 0.01,
             // minStockPriceDistanceInPercent: -.2,
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
@@ -24003,9 +23998,8 @@ const createListFilterContetnByList=(list)=>{
                     return true
                 return false
             },
-            isProfitEnoughFn(profit){
-                return profit>=0.01
-            },
+            expectedProfitPerMonth: 1.03,
+            minProfitToFilter : 0.01,
             // minStockPriceDistanceInPercent: -.2,
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
@@ -24014,9 +24008,8 @@ const createListFilterContetnByList=(list)=>{
         })
         , calcBUPSRatioStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            isProfitEnoughFn(profit){
-                return profit>=0.01
-            },
+            expectedProfitPerMonth: 1.03,
+            minProfitToFilter : 0.01,
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 35 * 24 * 3600000,
@@ -24025,9 +24018,8 @@ const createListFilterContetnByList=(list)=>{
 
         calcBECSRatioStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            isProfitEnoughFn(profit){
-                return profit>=0.01
-            },
+            expectedProfitPerMonth: 1.03,
+            minProfitToFilter : 0.01,
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 35 * 24 * 3600000,
@@ -24036,9 +24028,8 @@ const createListFilterContetnByList=(list)=>{
 
         calcBEPSRatioStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            isProfitEnoughFn(profit){
-                return profit>=0.01
-            },
+            expectedProfitPerMonth: 1.03,
+            minProfitToFilter : 0.01,
             // maxStockPriceDistanceInPercent: .2,
             // min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 35 * 24 * 3600000,
@@ -24049,6 +24040,7 @@ const createListFilterContetnByList=(list)=>{
         calcBOXStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             expectedProfitPerMonth: 1.04,
+            minProfitToFilter: 0.04,
             expectedProfitNotif: true,
         }),
 
@@ -24056,6 +24048,7 @@ const createListFilterContetnByList=(list)=>{
         calcBOX_BUPS_BECSStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             expectedProfitPerMonth: 1.04,
+            minProfitToFilter: 0.04,
             expectedProfitNotif: true,
         }),
 

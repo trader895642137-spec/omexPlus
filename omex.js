@@ -1880,8 +1880,9 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
 
     let daysLeftToSettlement = _strategyPositions.find(_strategyPosition =>{
         _strategyPosition.daysLeftToSettlement = _strategyPosition.getDaysLeftToSettlement()
-        return _strategyPosition.daysLeftToSettlement
-    })?.daysLeftToSettlement || defaultDaysLeftToSettlement;
+        return (typeof _strategyPosition.daysLeftToSettlement === 'number' && !Number.isNaN(_strategyPosition.daysLeftToSettlement))
+    })?.daysLeftToSettlement ?? defaultDaysLeftToSettlement;
+
     daysLeftToSettlement = daysLeftToSettlement>=1 ? daysLeftToSettlement : 1;
 
     
