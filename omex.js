@@ -1016,10 +1016,11 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         }
 
 
-        const getCurrentPositionAvgPrice = (position) => {
+        function getCurrentPositionAvgPrice(position)  {
 
 
-            const {instrumentId,instrumentName} = position;
+            const instrumentId = (position || this).getInstrumentID();
+            const instrumentName = (position || this).instrumentName;
             let executedPrice,breakEvenPrice;
             optionID = getOptionID();
 
@@ -1173,6 +1174,34 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
     );
 }
 
+
+
+
+export const getStrategyPositionsForExport = ()=>{
+    
+    const strategyPositionsForExport = strategyPositions.map(sp => {
+
+        let spForExport = {...sp};
+
+        for (const key in spForExport) {
+            if (typeof spForExport[key] === 'function') {
+                const value = spForExport[key]();
+                spForExport[key] = () => value;
+            }
+        }
+
+        return spForExport
+
+    })
+
+    
+    
+    
+    
+    return strategyPositionsForExport;
+
+
+}
 
 
 
@@ -1864,7 +1893,18 @@ const observePriceChanges = () => {
     );
 }
 
-const isProfitEnough = ({ totalProfitPercent, percentPerMonth }) => {
+
+const isProfitEnough = ({ strategyPositions, totalProfitPercent, daysLeftToSettlement,expectedProfit }) => {
+    if (typeof strategyPositions.daysLeftToSettlement !== 'number' || Number.isNaN(daysLeftToSettlement)) {
+        daysLeftToSettlement = strategyPositions.find(sp => {
+            sp.daysLeftToSettlement = sp.getDaysLeftToSettlement()
+            return (typeof sp.daysLeftToSettlement === 'number' && !Number.isNaN(sp.daysLeftToSettlement))
+        })?.daysLeftToSettlement ?? defaultDaysLeftToSettlement;
+
+    }
+
+    const percentPerDay = Math.pow((1 + (totalProfitPercent / 100)), 1 / daysLeftToSettlement);
+    const percentPerMonth = Math.pow(percentPerDay, 30);
     if (expectedProfit?.strategy) {
         return totalProfitPercent > expectedProfit?.strategy
     }
@@ -1941,14 +1981,13 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
 
     
     
-    const percentPerDay = Math.pow((1 + (profitPercentByBestPrices.defaultQueue / 100)), 1 / daysLeftToSettlement);
-    const percentPerMonth = Math.pow(percentPerDay, 30);
+   
 
 
-    let isProfit=false;
-    if (isProfitEnough({ totalProfitPercent: profitPercentByBestPrices.defaultQueue, percentPerMonth })) {
+    let isProfitGood=false;
+    if (isProfitEnough({strategyPositions:_strategyPositions, totalProfitPercent: profitPercentByBestPrices.defaultQueue, daysLeftToSettlement,expectedProfit})) {
 
-        isProfit =true;
+        isProfitGood =true;
         informExtremeOrderPrice(_strategyPositions, 'openMore');
         showNotification({
             title: `سود %${profitPercentByBestPrices.defaultQueue.toFixed()}`,
@@ -1956,11 +1995,11 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
             tag: `${_strategyPositions[0].instrumentName}-expectedProfitPrecent`
         });
     } else {
-        isProfit =false;
+        isProfitGood =false;
         uninformExtremeOrderPrice(_strategyPositions);
     }
 
-    return isProfit;
+    return isProfitGood;
 }
 
 export const STRATEGY_NAME_PROFIT_CALCULATOR = {
