@@ -354,6 +354,8 @@ document.getElementById('showVariableMargin').addEventListener('click', () => {
 });
 
 
+
+
 document.getElementById('addToWatcher').addEventListener('click', async () => {
     try {
         // ۱. تب فعال رو بگیر
@@ -363,14 +365,46 @@ document.getElementById('addToWatcher').addEventListener('click', async () => {
         const result = await chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: () => {
-                // این کد توی وب‌سایت اجرا میشه
-                return window.omexLib?.strategyPositions || null;
+
+                const positions = window.omexLib?.getStrategyPositionsForExport() || null
+                if(!positions) return
+
+
+                const prepareForSerialization = (obj) => {
+
+                    const result = { ...obj };
+
+                    for (const [key, value] of Object.entries(result)) {
+                        if (typeof value === 'function') {
+                            const returnValue = value();
+                            // ذخیره تابع به صورت string
+                            result[key] = {
+                                __isFunction: true,
+                                __returnValue: returnValue,
+                                __functionString: `function() { return ${JSON.stringify(returnValue)}; }`
+                            };
+                        }
+                    }
+
+
+                    return result
+
+                }
+                
+                const positionsPrepareForSerialization = positions.map(position => {
+                    return prepareForSerialization(position)
+                });
+
+                return positionsPrepareForSerialization
+               
+                
             },
             world: "MAIN"
         });
         
-        const strategyPositions = result[0]?.result;
-        
+        let strategyPositions = result[0]?.result;
+        if(!strategyPositions) return
+
         // ۳. مستقیم از popup به watcher بفرست
         chrome.runtime.sendMessage({
             type: "addToWatcher",

@@ -1,3 +1,21 @@
+import { totalCostCalculatorForPriceTypes } from "../common";
+
+const deserializePreparedForSerialization = (obj) => {
+
+
+    const result = { ...obj };
+
+    for (const [key, value] of Object.entries(result)) {
+        if (value && value.__isFunction) {
+            // بازسازی تابع
+            const returnValue = value.__returnValue;
+            result[key] = function () { return returnValue; };
+        }
+    }
+
+    return result;
+}
+
 
 const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tradedInstrumentList)=>{
   if(!strategyGroupInfoList?.length || !tradedInstrumentList?.length) return strategyGroupInfoList
@@ -82,11 +100,18 @@ try {
 
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log(message);
+  
+  console.log(totalCostCalculatorForPriceTypes);
+  
   if (message.type === "addToWatcher") {
     console.log("📨 پیام دریافت شد از:", sender.tab?.url || "اکستنشن");
-    console.log(message);
-    
+
+    const strategyPositions = message.payload.strategyPositions.map(position => {
+      return deserializePreparedForSerialization(position)
+    });
+
+    console.log(strategyPositions);
+
   }
 });
 
