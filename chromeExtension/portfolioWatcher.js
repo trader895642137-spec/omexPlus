@@ -1,6 +1,7 @@
-import { totalCostCalculatorForPriceTypes } from "../common";
+import { showNotification, totalCostCalculatorForPriceTypes } from "../common";
+import { calcOffsetProfitOfStrategy, isProfitEnough, STRATEGY_NAME_PROFIT_CALCULATOR } from "../omex";
 
-const deserializePreparedForSerialization = (obj) => {
+const deserializeStrategyPositions = (obj) => {
 
 
     const result = { ...obj };
@@ -22,38 +23,19 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
 
   strategyGroupInfoList = strategyGroupInfoList.map(strategyGroupInfo=>{
 
-    strategyGroupInfo.strategyPositions = strategyGroupInfo.strategyPositions.map(strategyPosition=>{
-
-      const tradedInstrument = tradedInstrumentList.find(tradedInstrument=>tradedInstrument.instrumentName === strategyPosition.instrumentName);
-
-      strategyPosition.getQuantity = ()=>strategyPosition.quantityOfEstimationPositionRow;
-      strategyPosition.getCurrentPositionQuantity = ()=>strategyPosition.portfolioPositionQuantity;
-
-      strategyPosition.getCurrentPositionAvgPrice = ()=> strategyPosition.currentPositionAvgPrice,
-
-      
-      strategyPosition.getBestOffsetPrice = ()=> (strategyPosition.isBuy ? tradedInstrument?.bestBuy : tradedInstrument?.bestSell) || NaN
-      strategyPosition.getBaseInstrumentPriceOfOption  = ()=> tradedInstrument?.optionDetails?.stockSymbolDetails?.last
-      strategyPosition.getRequiredMargin = ()=> strategyPosition.requiredMargin;
-      strategyPosition.getInsertedPrice = ()=> NaN;
- 
-
-      strategyPosition.getBestOpenMorePrice = ()=>(strategyPosition.isBuy ? tradedInstrument?.bestSell : tradedInstrument?.bestBuy) || NaN;
-      strategyPosition.getStrategyType = ()=>NaN;
-      strategyPosition.getStrategyName = ()=>NaN;
-
-
-      return strategyPosition
-
-    });
+    
 
 
     try {
+      strategyGroupInfo.openPositionProfitInfo = STRATEGY_NAME_PROFIT_CALCULATOR.OTHERS({
+        strategyPositions: strategyGroupInfo.strategyPositions,
+        stockPrice: strategyGroupInfo.stockPrice,
+        nokoolOrNoRequestFactor: strategyGroupInfo.nokoolOrNoRequestFactor
+      });
       
-      strategyGroupInfo.openPositionProfitInfo =  omexLib && omexLib.STRATEGY_NAME_PROFIT_CALCULATOR.OTHERS(strategyGroupInfo.strategyPositions);
-      strategyGroupInfo.offsetProfitOfStrategy =  omexLib && omexLib.calcOffsetProfitOfStrategy(strategyGroupInfo.strategyPositions);
+      strategyGroupInfo.offsetProfitOfStrategy = calcOffsetProfitOfStrategy(strategyGroupInfo.strategyPositions);
     } catch (error) {
-      console.error(error,strategyGroupInfo)
+      console.error(error, strategyGroupInfo)
     }
 
 
@@ -67,32 +49,60 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
 }
 
 
+const checkProfitPercentAndInform = ({ strategyGroupInfoList }) => {
+
+
+  if(isSilentAllActive) return 
+
+  for (let i = 0; i < strategyGroupInfoList.length; i++) {
+    const strategyGroupInfo = strategyGroupInfoList[i];
+    if(strategyGroupInfo.isSilentModeActive) continue;
+    const strategyPositions = strategyGroupInfo.strategyPositions;
+    const expectedProfit = strategyGroupInfo.expectedProfit;
+    const profitPercentByBestPrices = strategyGroupInfo?.openPositionProfitInfo?.profitPercentByBestPrices?.defaultQueue;
+    // strategyName
+
+    if (strategyGroupInfo.offsetProfitOfStrategy.profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1)) {
+
+      showNotification({
+        title: 'به سود رسید',
+        body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
+        tag: `${strategyPositions[0].instrumentName}-expectedProfitForCurrentPositionsPrecent`
+      });
+    }
+
+    if (isProfitEnough({
+      strategyPositions,
+      totalProfitPercent: profitPercentByBestPrices,
+      expectedProfit
+    })) {
+
+      showNotification({
+        title: `سود %${profitPercentByBestPrices.toFixed()}`,
+        body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
+        tag: `${strategyPositions[0].instrumentName}-expectedProfitPrecent`
+      });
+
+
+    }
+
+  }
+
+
+  
+}
+
+
 let strategyGroupInfoList = [];
 try {
-    const port = chrome.runtime.connect({ name: "CHILD_PAGE" });
+    const port = chrome.runtime.connect({ name: "receiver" });
 
     port.onMessage.addListener(({list}) =>{
 
         strategyGroupInfoList = enrichStrategyGroupInfoListByInstrumentPrices(strategyGroupInfoList,list);
         renderStrategies();
-        console.log(strategyGroupInfoList)
-//         {
-//     "symbol": "مهرمام",
-//     "name": "مهرمام ميهن",
-//     "instrumentName": "مهرمام",
-//     "isOption": false,
-//     "isCall": false,
-//     "quantityOfTrades": 1614,
-//     "lastTradedTime": 1767258197354,
-//     "isPut": false,
-//     "isETF": false,
-//     "vol": 37995000000,
-//     "last": 4581,
-//     "bestBuyQ": 265684,
-//     "bestBuy": 4581,
-//     "bestSell": 4601,
-//     "bestSellQ": 260
-// }
+        checkProfitPercentAndInform({strategyGroupInfoList})
+
     } );
 } catch(err) {
     console.error("Cannot connect to background:", err);
@@ -100,17 +110,15 @@ try {
 
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  
+
   console.log(totalCostCalculatorForPriceTypes);
-  
+
   if (message.type === "addToWatcher") {
     console.log("📨 پیام دریافت شد از:", sender.tab?.url || "اکستنشن");
 
-    const strategyPositions = message.payload.strategyPositions.map(position => {
-      return deserializePreparedForSerialization(position)
-    });
+    const strategyInfo = deserializeStrategyInfo(message.payload.strategyInfo);
 
-    console.log(strategyPositions);
+    strategyGroupInfoList.push({ ...strategyInfo });
 
   }
 });
@@ -119,7 +127,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 
 
+const deserializeStrategyInfo = (strategyInfo) => {
 
+  const deserialized = {...strategyInfo};
+
+  deserialized.strategyPositions = deserialized.positionsPrepareForSerialization.map(position => {
+    return deserializeStrategyPositions(position);
+  });
+
+  return deserialized
+
+}
 
 
 
@@ -130,12 +148,53 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 
 const addBtn = document.getElementById('addStrategyBtn');
+const saveBtn = document.getElementById('saveGroupsBtn');
+const loadBtn = document.getElementById('loadGroupsBtn');
+const silentAllBtn = document.getElementById('silentAllBtn');
 const modal = document.getElementById('modalBackdrop');
 const input = document.getElementById('strategyJsonInput');
 const confirmBtn = document.getElementById('confirmBtn');
 const cancelBtn = document.getElementById('cancelBtn');
 const list = document.getElementById('strategyList');
 
+
+const cacheKey = "strategyGroupInfoList";
+
+let silentAllButtonTimeoutID,isSilentAllActive;
+silentAllBtn.addEventListener('click', () => {
+
+  clearTimeout(silentAllButtonTimeoutID);
+
+  isSilentAllActive = true;
+
+  silentAllButtonTimeoutID = setTimeout(() => {
+    isSilentAllActive = false;
+  }
+    , 160000);
+
+
+
+});
+
+
+saveBtn.addEventListener('click', () => {
+   try {
+      localStorage.setItem(cacheKey, JSON.stringify(strategyGroupInfoList));
+    } catch (error) {
+      console.error('خطا در ذخیره‌سازی:', error);
+    }
+});
+
+loadBtn.addEventListener('click', () => {
+  try {
+      const data = localStorage.getItem(cacheKey);
+      strategyGroupInfoList =  data ? JSON.parse(data) : null;
+      strategyGroupInfoList = strategyGroupInfoList.map(deserializeStrategyInfo);
+    } catch (error) {
+      console.error('خطا در بازیابی:', error);
+
+    }
+});
 
 
 /* ---------- modal ---------- */
@@ -175,6 +234,16 @@ confirmBtn.addEventListener('click', () => {
 
 });
 
+const openOmexStrategyTab = ({strategyName}) => {
+  const baseURL = 'https://khobregan.tsetab.ir/#/stock/derivative/main/strategy-estimation';
+  const params = new URLSearchParams({
+    GSTitle: strategyName,
+  });
+
+  const fullURL = baseURL + '?' + params.toString();
+  window.open(fullURL);
+}
+
 /* ---------- render ---------- */
 function renderStrategies() {
   list.innerHTML = '';
@@ -183,34 +252,54 @@ function renderStrategies() {
     const box = document.createElement('div');
     box.className = 'strategy-box';
 
-    box.innerHTML = `
-      <h4 class="title">${strategyGroupInfo.group.name}</h4>
+    const profitPercentByBestPrices = strategyGroupInfo?.openPositionProfitInfo?.profitPercentByBestPrices?.defaultQueue;
 
-      ${strategyGroupInfo.offsetProfitOfStrategy ? `<div style="color:${strategyGroupInfo.offsetProfitOfStrategy.profitLossByOffsetOrdersPercent >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
+    box.innerHTML = `
+      <h4 class="title">${strategyGroupInfo?.strategyName}</h4>
+
+      ${strategyGroupInfo.offsetProfitOfStrategy ? `<div style="color:${strategyGroupInfo?.offsetProfitOfStrategy?.profitLossByOffsetOrdersPercent >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
                 ${strategyGroupInfo.offsetProfitOfStrategy.profitLossByOffsetOrdersPercent.toLocaleString('en-US', {
                     minimumFractionDigits: 1,
                     maximumFractionDigits: 1
                 })}
       </div>`:``}
       ----
-      ${strategyGroupInfo.offsetProfitOfStrategy ?`<div style="color:${strategyGroupInfo.openPositionProfitInfo.profitPercentByBestPrices >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
-                ${strategyGroupInfo.openPositionProfitInfo.profitPercentByBestPrices.toLocaleString('en-US', {
+      ${profitPercentByBestPrices ?`<div style="color:${profitPercentByBestPrices >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
+                ${profitPercentByBestPrices.toLocaleString('en-US', {
                     minimumFractionDigits: 1,
                     maximumFractionDigits: 1
                 })}
       </div>`:``}
       <button class="delete-btn">حذف</button>
+      <button class="silent-btn">سکوت</button>
     `;
 
     box.querySelector('.title').addEventListener('click',async ()=>{
-      const groupWindow = await (omexLib && omexLib.openGroupInNewTab(strategyGroupInfo?.group?.name,'https://khobregan.tsetab.ir'));
+      openOmexStrategyTab({strategyName:strategyGroupInfo?.strategyName});
+      strategyGroupInfoList = strategyGroupInfoList.filter(_strategyGroupInfo=>_strategyGroupInfo.strategyName!==strategyGroupInfo?.strategyName)
+      
+    });
 
-
-
-    })
-
+    setUpSilentGroup({element:box.querySelector('.silent-btn'),strategyGroupInfo});
     setupHoldToDelete(box.querySelector('.delete-btn'), index);
     list.appendChild(box);
+  });
+}
+
+const setUpSilentGroup = ({ element, strategyGroupInfo }) => {
+
+
+  element.addEventListener('click', (event) => {
+    clearTimeout(strategyGroupInfo.silentButtonTimeoutID);
+
+    strategyGroupInfo.isSilentModeActive = true;
+
+    strategyGroupInfo.silentButtonTimeoutID = setTimeout(() => {
+      strategyGroupInfo.isSilentModeActive = false;
+    }
+      , 160000);
+
+
   });
 }
 

@@ -2355,9 +2355,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   createGroupOfCurrentStrategy: () => (/* binding */ createGroupOfCurrentStrategy),
 /* harmony export */   doJob: () => (/* binding */ doJob),
 /* harmony export */   expectedProfit: () => (/* binding */ expectedProfit),
-/* harmony export */   getStrategyPositionsForExport: () => (/* binding */ getStrategyPositionsForExport),
+/* harmony export */   getStrategyInfoForExport: () => (/* binding */ getStrategyInfoForExport),
 /* harmony export */   getSummaryNameOfStrategy: () => (/* binding */ getSummaryNameOfStrategy),
 /* harmony export */   groupLogger: () => (/* binding */ groupLogger),
+/* harmony export */   isProfitEnough: () => (/* binding */ isProfitEnough),
 /* harmony export */   openAllGroupsInNewTabs: () => (/* binding */ openAllGroupsInNewTabs),
 /* harmony export */   openGroupInNewTab: () => (/* binding */ openGroupInNewTab),
 /* harmony export */   portfolioLogger: () => (/* binding */ portfolioLogger),
@@ -3538,7 +3539,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
 
 
-const getStrategyPositionsForExport = ()=>{
+const getStrategyInfoForExport = ()=>{
     
     const strategyPositionsForExport = strategyPositions.map(sp => {
 
@@ -3553,13 +3554,21 @@ const getStrategyPositionsForExport = ()=>{
 
         return spForExport
 
-    })
+    });
+
+
+    return {
+        strategyPositionsForExport,
+        strategyName: getStrategyName(),
+        expectedProfit,
+        stockPrice: getBaseInstrumentPriceOfOption(),
+        nokoolOrNoRequestFactor: getnokoolOrNoRequestFactor()
+    }
 
     
     
     
     
-    return strategyPositionsForExport;
 
 
 }
@@ -4368,13 +4377,13 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
     utils: {},
 
    
-    OTHERS(_strategyPositions) {
+    OTHERS({strategyPositions,stockPrice=getBaseInstrumentPriceOfOption(),nokoolOrNoRequestFactor=getnokoolOrNoRequestFactor()}) {
 
-        const totalCostObj = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculatorForPriceTypes)(_strategyPositions);
+        const totalCostObj = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculatorForPriceTypes)(strategyPositions);
 
 
         const totalOffsetGainInfo = totalOffsetGainNearSettlementOfEstimationPanel({
-            strategyPositions: _strategyPositions
+            strategyPositions: strategyPositions
         });
 
         const profitPercentByBestPrices = {
@@ -4401,9 +4410,8 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
 
 
-        const stockPrice =   getBaseInstrumentPriceOfOption();
-        const nokoolOrNoRequestFactor =   getnokoolOrNoRequestFactor();
-        const {settlementProfitByBestPrices,settlementProfitByInsertedPrices} = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.settlementProfitCalculator)({strategyPositions:_strategyPositions,stockPrice,nokoolOrNoRequestFactor});
+       
+        const {settlementProfitByBestPrices,settlementProfitByInsertedPrices} = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.settlementProfitCalculator)({strategyPositions:strategyPositions,stockPrice,nokoolOrNoRequestFactor});
 
         return {
             profitPercentByBestPrices,
@@ -4435,7 +4443,7 @@ const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositions) => 
         profitPercentByBestPrices, 
         profitPercentByInsertedPrices,
         settlementProfitByBestPrices,
-        settlementProfitByInsertedPrices } = profitCalculator(_strategyPositions, _unChekcedPositions);
+        settlementProfitByInsertedPrices } = profitCalculator({strategyPositions:_strategyPositions});
 
     const isProfitable = informForExpectedProfitOnStrategy({
         _strategyPositions,

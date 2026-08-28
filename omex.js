@@ -1177,7 +1177,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
 
 
-export const getStrategyPositionsForExport = ()=>{
+export const getStrategyInfoForExport = ()=>{
     
     const strategyPositionsForExport = strategyPositions.map(sp => {
 
@@ -1192,13 +1192,21 @@ export const getStrategyPositionsForExport = ()=>{
 
         return spForExport
 
-    })
+    });
+
+
+    return {
+        strategyPositionsForExport,
+        strategyName: getStrategyName(),
+        expectedProfit,
+        stockPrice: getBaseInstrumentPriceOfOption(),
+        nokoolOrNoRequestFactor: getnokoolOrNoRequestFactor()
+    }
 
     
     
     
     
-    return strategyPositionsForExport;
 
 
 }
@@ -1894,7 +1902,7 @@ const observePriceChanges = () => {
 }
 
 
-const isProfitEnough = ({ strategyPositions, totalProfitPercent, daysLeftToSettlement,expectedProfit }) => {
+export const isProfitEnough = ({ strategyPositions, totalProfitPercent, daysLeftToSettlement,expectedProfit }) => {
     if (typeof strategyPositions.daysLeftToSettlement !== 'number' || Number.isNaN(daysLeftToSettlement)) {
         daysLeftToSettlement = strategyPositions.find(sp => {
             sp.daysLeftToSettlement = sp.getDaysLeftToSettlement()
@@ -2007,13 +2015,13 @@ export const STRATEGY_NAME_PROFIT_CALCULATOR = {
     utils: {},
 
    
-    OTHERS(_strategyPositions) {
+    OTHERS({strategyPositions,stockPrice=getBaseInstrumentPriceOfOption(),nokoolOrNoRequestFactor=getnokoolOrNoRequestFactor()}) {
 
-        const totalCostObj = totalCostCalculatorForPriceTypes(_strategyPositions);
+        const totalCostObj = totalCostCalculatorForPriceTypes(strategyPositions);
 
 
         const totalOffsetGainInfo = totalOffsetGainNearSettlementOfEstimationPanel({
-            strategyPositions: _strategyPositions
+            strategyPositions: strategyPositions
         });
 
         const profitPercentByBestPrices = {
@@ -2040,9 +2048,8 @@ export const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
 
 
-        const stockPrice =   getBaseInstrumentPriceOfOption();
-        const nokoolOrNoRequestFactor =   getnokoolOrNoRequestFactor();
-        const {settlementProfitByBestPrices,settlementProfitByInsertedPrices} = settlementProfitCalculator({strategyPositions:_strategyPositions,stockPrice,nokoolOrNoRequestFactor});
+       
+        const {settlementProfitByBestPrices,settlementProfitByInsertedPrices} = settlementProfitCalculator({strategyPositions:strategyPositions,stockPrice,nokoolOrNoRequestFactor});
 
         return {
             profitPercentByBestPrices,
@@ -2074,7 +2081,7 @@ export const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositio
         profitPercentByBestPrices, 
         profitPercentByInsertedPrices,
         settlementProfitByBestPrices,
-        settlementProfitByInsertedPrices } = profitCalculator(_strategyPositions, _unChekcedPositions);
+        settlementProfitByInsertedPrices } = profitCalculator({strategyPositions:_strategyPositions});
 
     const isProfitable = informForExpectedProfitOnStrategy({
         _strategyPositions,

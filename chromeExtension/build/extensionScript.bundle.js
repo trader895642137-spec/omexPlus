@@ -366,7 +366,10 @@ document.getElementById('addToWatcher').addEventListener('click', async () => {
             target: { tabId: tab.id },
             func: () => {
 
-                const positions = window.omexLib?.getStrategyPositionsForExport() || null
+                const strategyInfo = window.omexLib?.getStrategyInfoForExport() || null;
+                if(!strategyInfo) return
+
+                const positions = strategyInfo.strategyPositionsForExport;
                 if(!positions) return
 
 
@@ -395,21 +398,26 @@ document.getElementById('addToWatcher').addEventListener('click', async () => {
                     return prepareForSerialization(position)
                 });
 
-                return positionsPrepareForSerialization
+                return {
+
+                    ...strategyInfo,
+                    positionsPrepareForSerialization
+
+                }
                
                 
             },
             world: "MAIN"
         });
         
-        let strategyPositions = result[0]?.result;
-        if(!strategyPositions) return
+        let strategyInfo = result[0]?.result;
+        if(!strategyInfo) return
 
         // ۳. مستقیم از popup به watcher بفرست
         chrome.runtime.sendMessage({
             type: "addToWatcher",
             payload: {
-                strategyPositions: strategyPositions,
+                strategyInfo,
                 tabId: tab.id,
                 url: tab.url,
                 title: tab.title

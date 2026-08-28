@@ -24834,6 +24834,8 @@ const createFilterPanel = () => {
 
 }
 
+const port = chrome.runtime.connect({ name: "sender" });
+
 const interval = async () => {
 
 
@@ -24841,6 +24843,8 @@ const interval = async () => {
 
         const list = createList();
         // const list = await createList2();
+        port.postMessage({list});
+
         if (list?.length > 0) {
             createListFilterContetnByList(list);
 

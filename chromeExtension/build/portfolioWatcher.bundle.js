@@ -1,6 +1,7 @@
-/******/ var __webpack_modules__ = ({
-
-/***/ 2:
+/******/ var __webpack_modules__ = ([
+/* 0 */,
+/* 1 */,
+/* 2 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -1011,9 +1012,4247 @@ const  startMarketCountdown = ({
     timer = setInterval(update, 250);
 }
 
-/***/ })
+/***/ }),
+/* 3 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
-/******/ });
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   OMEXApi: () => (/* reexport safe */ _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi),
+/* harmony export */   Run: () => (/* binding */ Run),
+/* harmony export */   STRATEGY_NAME_PROFIT_CALCULATOR: () => (/* binding */ STRATEGY_NAME_PROFIT_CALCULATOR),
+/* harmony export */   calcAvgPricesByExecutenList: () => (/* binding */ calcAvgPricesByExecutenList),
+/* harmony export */   calcOffsetProfitOfStrategy: () => (/* binding */ calcOffsetProfitOfStrategy),
+/* harmony export */   calcProfitOfStrategy: () => (/* binding */ calcProfitOfStrategy),
+/* harmony export */   checkSumOfMoneyAndAssets: () => (/* binding */ checkSumOfMoneyAndAssets),
+/* harmony export */   configs: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.configs),
+/* harmony export */   createGroupOfCurrentStrategy: () => (/* binding */ createGroupOfCurrentStrategy),
+/* harmony export */   doJob: () => (/* binding */ doJob),
+/* harmony export */   expectedProfit: () => (/* binding */ expectedProfit),
+/* harmony export */   getStrategyInfoForExport: () => (/* binding */ getStrategyInfoForExport),
+/* harmony export */   getSummaryNameOfStrategy: () => (/* binding */ getSummaryNameOfStrategy),
+/* harmony export */   groupLogger: () => (/* binding */ groupLogger),
+/* harmony export */   isProfitEnough: () => (/* binding */ isProfitEnough),
+/* harmony export */   openAllGroupsInNewTabs: () => (/* binding */ openAllGroupsInNewTabs),
+/* harmony export */   openGroupInNewTab: () => (/* binding */ openGroupInNewTab),
+/* harmony export */   portfolioLogger: () => (/* binding */ portfolioLogger),
+/* harmony export */   showToast: () => (/* binding */ showToast),
+/* harmony export */   showVariableMargin: () => (/* binding */ showVariableMargin),
+/* harmony export */   silentNotificationForMoment: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.silentNotificationForMoment),
+/* harmony export */   strategyPositions: () => (/* binding */ strategyPositions),
+/* harmony export */   unChekcedPositions: () => (/* binding */ unChekcedPositions)
+/* harmony export */ });
+/* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
+/* harmony import */ var _omexApi_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4);
+/* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(5);
+/* harmony import */ var _createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(7);
+
+
+
+
+
+
+
+
+
+;
+
+
+ 
+
+
+
+let groupLogger,portfolioLogger;
+
+
+const defaultCSize = 1000;
+const defaultDaysLeftToSettlement = 30;
+
+const initLoggers = () => {
+
+    try {
+
+        groupLogger = (0,_createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_3__.createIntervalLogger)({
+            key: "strategyGroups",
+            interval: 30 * 60 * 1000,
+            sync: _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getGroups
+        });
+        portfolioLogger = (0,_createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_3__.createIntervalLogger)({
+            key: "optionPortfolio",
+            interval: 30 * 60 * 1000,
+            sync: _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionPortfolioList
+        });
+
+        
+    } catch (error) { }
+
+}
+
+
+const doJob=()=>{
+    console.log('DON')
+
+}
+
+// FIXME:expectedProfitPerMonth is factor but minExpectedProfitOfStrategy is percent
+let expectedProfit = {
+    expectedProfitPerMonth: 1.04,
+    minExpectedProfitOfStrategy: 1,
+    currentPositions: 0.9,
+    // strategy:3
+}
+
+
+
+
+const createStatusCnt = () => {
+    let statusCnt = domContextWindow.document.createElement('div');
+    statusCnt.classList.add('status-cnt');
+    statusCnt.style.cssText += `
+        padding: 0 10px;
+        width: 100%;
+        background: #FFF;
+        display: flex;
+        column-gap: 21px;
+        font-size: 20px;
+    `;
+
+    statusCnt.addEventListener('click', function(event) {
+        doubleCheckProfitByExactDecimalPricesOfPortFolio(strategyPositions,true)
+    });
+    domContextWindow.document.querySelector('client-option-layout-action-bar').append(statusCnt)
+    return statusCnt
+}
+
+const getStatusCnt = () => {
+
+    let statusCnt = domContextWindow.document.querySelector('client-option-layout-action-bar .status-cnt') || createStatusCnt()
+
+    return statusCnt
+
+}
+
+const createDeleteAllOrdersButton = () => {
+    let removeAllOrderButton = domContextWindow.document.createElement('button');
+    removeAllOrderButton.classList.add('remove-all-order-button');
+    removeAllOrderButton.textContent = 'حذف همه سفارشات';
+    removeAllOrderButton.style.cssText += `
+        margin-right: auto;
+        `;
+    removeAllOrderButton.addEventListener('click', async function(event) {
+        _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.deleteAllOpenOrders();
+        await new Promise(resolve => setTimeout(resolve, 500));
+        _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.deleteAllOpenOrders();
+    });
+    
+    domContextWindow.document.querySelector('client-option-reports-actions').append(removeAllOrderButton)
+    return removeAllOrderButton
+}
+
+const stopPropagationForDraggingModal = (e)=>{
+        e.stopPropagation();
+}
+
+const stopDraggingWrongOfOrdersModals =()=>{
+
+    strategyPositions.forEach(strategyPosition => {
+        strategyPosition.ordersModal.querySelector('client-instrument-favorites-item-main')?.removeEventListener("mousedown", stopPropagationForDraggingModal);
+        strategyPosition.ordersModal.querySelector('client-instrument-favorites-item-main')?.addEventListener("mousedown", stopPropagationForDraggingModal);
+    });
+
+}
+
+const createStrategyExpectedProfitCnt = () => {
+    let parent = domContextWindow.document.createElement('div');
+    let cnt = domContextWindow.document.createElement('div');
+    cnt.classList.add('status-cnt');
+    parent.style.cssText += `
+            position:absolute;
+            width: 205px;
+            padding: 0 10px;
+            background: #FFF;
+            display: flex;
+            flex-direction: column;
+            column-gap: 21px;
+            font-size: 20px;
+            left: 50%;
+            z-index: 500;
+            top: -8px;
+            transform: translateX(-50%);
+        `;
+    let currentStockPriceInput = domContextWindow.document.createElement('input');
+    currentStockPriceInput.classList.add('current-stock-price');
+    currentStockPriceInput.setAttribute('placeholder','قیمت سهم');
+    currentStockPriceInput.style.cssText += `border: 1px solid #EEE;min-width: 0;flex-basis: 150%;`;
+
+    let nokoolOrNoRequestFactorInput = domContextWindow.document.createElement('input');
+    nokoolOrNoRequestFactorInput.classList.add('nokool-or-no-request-factor');
+    nokoolOrNoRequestFactorInput.setAttribute('placeholder','عدم‌اعمال');
+    nokoolOrNoRequestFactorInput.style.cssText += `border: 1px solid #EEE;min-width: 0;`;
+    nokoolOrNoRequestFactorInput.value = 0;
+
+
+    let inputsCnt = domContextWindow.document.createElement('div');
+    inputsCnt.style.cssText += `
+            width: 100%;
+            display: flex;
+        `;
+
+
+    inputsCnt.append(currentStockPriceInput);
+    inputsCnt.append(nokoolOrNoRequestFactorInput);
+    parent.append(inputsCnt);
+    parent.append(cnt);
+
+    domContextWindow.document.querySelector('client-option-strategy-estimation-main .o-footer').style.cssText += `
+            position: relative;
+        `;
+    domContextWindow.document.querySelector('client-option-strategy-estimation-main .o-footer').append(parent)
+    return cnt
+}
+
+const getStrategyExpectedProfitCnt = () => {
+
+    let cnt = domContextWindow.document.querySelector('client-option-strategy-estimation-main .o-footer .status-cnt') || createStrategyExpectedProfitCnt()
+    return cnt
+
+}
+
+
+
+
+
+const settlementCommissionFactor = (_strategyPosition) => {
+
+    const commissionFactorObj = _strategyPosition.isOption ? _common_js__WEBPACK_IMPORTED_MODULE_0__.COMMISSION_FACTOR.OPTION.SETTLEMENT : _common_js__WEBPACK_IMPORTED_MODULE_0__.COMMISSION_FACTOR.STOCK;
+
+    let commissionFactor;
+
+    const sellCommissionFactor = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.isTaxFree)(_strategyPosition) ? commissionFactorObj.TAX_FREE_SELL : commissionFactorObj.SELL;
+
+    if (_strategyPosition.isCall) {
+        commissionFactor = _strategyPosition.isBuy ? commissionFactorObj.BUY : sellCommissionFactor;
+    } else if (_strategyPosition.isPut) {
+        commissionFactor = _strategyPosition.isBuy ? sellCommissionFactor : commissionFactorObj.BUY;
+    } else {
+        // is stock
+        commissionFactor = _strategyPosition.isBuy ? sellCommissionFactor : commissionFactorObj.BUY;
+    }
+
+    return commissionFactor
+}
+
+
+
+
+
+const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions }) => {
+
+    const getBestPriceCbNormalQueue = (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getNearSettlementPrice)({strategyPositions,strategyPosition: _strategyPosition, stockPrice:getBaseInstrumentPriceOfOption(),scenario : _common_js__WEBPACK_IMPORTED_MODULE_0__.QueueScenario.normal});
+    const getBestPriceCbBuyQueue = (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getNearSettlementPrice)({strategyPositions,strategyPosition: _strategyPosition, stockPrice:getBaseInstrumentPriceOfOption(),scenario : _common_js__WEBPACK_IMPORTED_MODULE_0__.QueueScenario.buyQueue});
+
+    
+    return {
+
+        defaultQueue: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
+            strategyPositions,
+            getBestPriceCb: getBestPriceCbNormalQueue,
+            getReservedMargin: _strategyPosition => {
+                return (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getReservedMarginOfEstimationQuantity)(_strategyPosition)
+            }
+        }),
+        buyQueue: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
+            strategyPositions,
+            getBestPriceCb: getBestPriceCbBuyQueue,
+            getReservedMargin: _strategyPosition => {
+                return (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getReservedMarginOfEstimationQuantity)(_strategyPosition)
+            }
+        }),
+       
+
+    }
+
+}
+
+const sumOfQuantityOfSamePosition = (position,strategyPositions)=>{
+
+    return strategyPositions.filter(_position => _position.instrumentName === position.instrumentName).reduce((_sumOfQuantityInEstimationPanel, position) => _sumOfQuantityInEstimationPanel + position.getQuantity(), 0);
+
+}
+
+const totalOffsetGainOfCurrentPositionsCalculator = ({ strategyPositions }) => {
+
+
+
+    const getReservedMargin = (position, __strategyPositions) => {
+
+        return getQuantityOfCurrentPosition(position, __strategyPositions) * position.getRequiredMargin()
+
+    }
+
+    const getQuantityOfCurrentPosition = (position, __strategyPositions) => {
+
+        const sumOfQuantityInEstimationPanel = sumOfQuantityOfSamePosition(position,__strategyPositions);
+
+
+        const quantityInEstimationPanel = position.getQuantity();
+
+        const quantityFactor = quantityInEstimationPanel / sumOfQuantityInEstimationPanel;
+
+
+        return position.getCurrentPositionQuantity() * quantityFactor
+    }
+
+    const totalOffsetGainByOffsetOrderPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
+        strategyPositions,
+        getBestPriceCb: (_strategyPosition) => _strategyPosition.getBestOffsetPrice(),
+        getQuantity: getQuantityOfCurrentPosition,
+        getReservedMargin
+    });
+
+    const totalOffsetGainByOpenMoreOrderPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
+        strategyPositions,
+        getBestPriceCb: (_strategyPosition) => _strategyPosition.getBestOpenMorePrice(),
+        getQuantity: getQuantityOfCurrentPosition,
+        getReservedMargin
+    });
+
+    const totalOffsetGainByInsertedPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
+        strategyPositions,
+        getBestPriceCb: (_strategyPosition) => _strategyPosition.getInsertedPrice(),
+        getQuantity: getQuantityOfCurrentPosition,
+        getReservedMargin
+    });
+
+    const totalOffsetGainNearSettlement =totalOffsetGainNearSettlementOfEstimationPanel({
+            strategyPositions
+    });
+
+    return {
+        byOffsetOrderPrices: totalOffsetGainByOffsetOrderPrices,
+        byOpenMoreOrderPrices: totalOffsetGainByOpenMoreOrderPrices,
+        byInsertedPrices: totalOffsetGainByInsertedPrices,
+        byNearSettlementPrices: totalOffsetGainNearSettlement,
+    }
+}
+
+
+
+
+const totalOffsetGainOfChunkOfEstimationQuantityCalculator = ({ strategyPositions }) => {
+
+
+
+    const getReservedMargin = (position, __strategyPositions) => {
+        return (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getReservedMarginOfEstimationQuantity)(position)
+    }
+
+
+    const totalOffsetGainByOffsetOrderPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
+        strategyPositions,
+        getBestPriceCb: (_strategyPosition) => _strategyPosition.getBestOffsetPrice(),
+        getReservedMargin
+    });
+
+    const totalOffsetGainByOpenMoreOrderPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
+        strategyPositions,
+        getBestPriceCb: (_strategyPosition) => _strategyPosition.getBestOpenMorePrice(),
+        getReservedMargin
+    });
+
+    const totalOffsetGainByInsertedPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.mainTotalOffsetGainCalculator)({
+        strategyPositions,
+        getBestPriceCb: (_strategyPosition) => _strategyPosition.getInsertedPrice(),
+        getReservedMargin
+    });
+
+    return {
+        byOffsetOrderPrices: totalOffsetGainByOffsetOrderPrices,
+        byOpenMoreOrderPrices: totalOffsetGainByOpenMoreOrderPrices,
+        byInsertedPrices: totalOffsetGainByInsertedPrices,
+    }
+}
+
+
+
+
+
+
+
+const MARGIN_CALC_TYPE = {
+    BY_CURRENT_POSITION: "BY_CURRENT_POSITION",
+    BY_GIVEN_PRICE: "BY_GIVEN_PRICE"
+}
+
+const lastCheckProfitByExactDecimalPricesOfPortFolio={
+};
+
+
+const calcProfitLossByExactDecimalPricesOfPortFolio = async (_strategyPositions)=>{
+
+    const portfolioList = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionPortfolioList();
+    const stockPortfolioList  = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getStockPortfolioList();
+    lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList = portfolioList;
+    lastCheckProfitByExactDecimalPricesOfPortFolio.stockPortfolioList = stockPortfolioList;
+
+    showToast('پرتفوی دریافت شد');
+
+
+    const currentPortfolioPositions = _strategyPositions.map(({instrumentId,instrumentName})=>{
+        const positionInPortfolio = findPositionInfoByGivenPortfolio({instrumentId,instrumentName}, [...lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList, ...lastCheckProfitByExactDecimalPricesOfPortFolio.stockPortfolioList]);
+        return {
+            ...positionInPortfolio,
+            instrumentName
+        }
+    }).map(({instrumentName,executedPrice,breakEvenPrice})=>({instrumentName,executedPrice,breakEvenPrice})) ;
+
+    lastCheckProfitByExactDecimalPricesOfPortFolio.currentPortfolioPositions = currentPortfolioPositions;
+    console.log(currentPortfolioPositions);
+    
+
+    const totalCostOfChunkOfEstimationQuantity = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculatorForPriceTypes)(_strategyPositions).totalCostOfChunkOfEstimationQuantity;
+
+    const totalOffsetGainOfChunkOfEstimation = totalOffsetGainOfChunkOfEstimationQuantityCalculator({
+        strategyPositions: _strategyPositions
+    });
+    let profitLossByOffsetOrdersPercent = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({
+        costWithSign: totalCostOfChunkOfEstimationQuantity,
+        gainWithSign: totalOffsetGainOfChunkOfEstimation.byOffsetOrderPrices
+    });
+
+    return {
+        totalOffsetGainOfChunkOfEstimation,
+        profitLossByOffsetOrdersPercent,
+        totalCostOfChunkOfEstimationQuantity
+    }
+
+}
+
+
+let lastCheckSumOfMoneyAndAssetsTime;
+const checkSumOfMoneyAndAssets = async (isForce)=>{
+    // const localstorageKey = 'SumOfMoneyAndAssets';
+    // if(!isForce  && lastCheckSumOfMoneyAndAssetsTime && (Date.now() - lastCheckSumOfMoneyAndAssetsTime)<60000 ) return 
+    // lastCheckSumOfMoneyAndAssetsTime = Date.now();
+
+
+    // const prevSumOfMoneyAndAssets = localStorage.getItem(localstorageKey);
+
+
+    const {sumOfMoneyAndAssets,blockedAmount,calculatedBlockedAmount}= await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calculateSumOfMoneyAndAssets();
+
+
+
+    if((0,_common_js__WEBPACK_IMPORTED_MODULE_0__.hasGreaterRatio)({num1:blockedAmount,num2:calculatedBlockedAmount,properRatio:1.05})){
+        showToast('مارجین محاسباتی با مارجین سرور تفاوت دارد',7000,'error');
+    }else{
+
+        showToast(sumOfMoneyAndAssets.toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }),5000);
+    }
+
+
+    console.log('مارجین',  blockedAmount.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }));
+    console.log('مارجین محاسباتی',  calculatedBlockedAmount.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }));
+    console.log('کل',  sumOfMoneyAndAssets.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }));
+
+    
+
+    // if(!prevSumOfMoneyAndAssets) return 
+    // const diff = sumOfMoneyAndAssets - prevSumOfMoneyAndAssets;
+
+    // if(diff < 0 && diff < -80000000){
+
+    // }else{
+    //     localStorage.setItem(localstorageKey, sumOfMoneyAndAssets);
+    // }
+
+
+}
+
+
+const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositions,isForce)=>{
+    if(!isForce  && lastCheckProfitByExactDecimalPricesOfPortFolio.time && (Date.now() - lastCheckProfitByExactDecimalPricesOfPortFolio.time)<60000 ) return lastCheckProfitByExactDecimalPricesOfPortFolio.isGood
+    lastCheckProfitByExactDecimalPricesOfPortFolio.time = Date.now();
+    
+
+    const {totalOffsetGainOfChunkOfEstimation,
+        profitLossByOffsetOrdersPercent,
+        totalCostOfChunkOfEstimationQuantity} = await calcProfitLossByExactDecimalPricesOfPortFolio(_strategyPositions)
+
+    const isGood = profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1);
+
+
+    lastCheckProfitByExactDecimalPricesOfPortFolio.isGood =isGood;
+
+    if(!isGood){
+        const issueMessage= 'با قیمت دقیق به سود مورد نظر نمیرسد';
+
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+                title: issueMessage,
+                body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
+                tag: `doubleCheckProfitByExactDecimalPricesOfPortFolio`
+        });
+
+        showToast(issueMessage);
+    }
+
+    
+
+    checkStrategyInProfit(_strategyPositions)
+
+    return isGood
+
+}
+
+const showCurrentStrategyPositionState = ({totalCurrentPositionCost,totalOffsetGainOfCurrentPositionObj,
+    profitLossByOffsetOrdersPercent,profitLossByInsertedPricesPercent,unreliableTotalCostOfCurrentPositions,profitPercentOfCurrentPositionsByNearSettlementPrices})=>{
+
+
+        
+    let statusCnt = getStatusCnt();
+
+    statusCnt.innerHTML = `
+            
+            <span style="
+                display: inline-block;
+                direction: ltr !important;
+            ">
+                ${totalOffsetGainOfCurrentPositionObj.byOffsetOrderPrices.toLocaleString('en-US', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
+                })} 
+            </span>
+
+            <div style="color:${profitLossByOffsetOrdersPercent >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
+                ${profitLossByOffsetOrdersPercent.toLocaleString('en-US', {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1
+                })} 
+            </div>
+
+        
+
+
+
+            <div style="margin-right: 200px;font-size: 85%;"> 
+             آفست با کادر قیمت
+                <span style="
+                    display: inline-block;
+                    direction: ltr !important;
+                ">
+                    ${totalOffsetGainOfCurrentPositionObj.byInsertedPrices.toLocaleString('en-US', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
+                    })}
+                </span>
+                
+                <span style="color:${profitLossByInsertedPricesPercent >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
+                ${profitLossByInsertedPricesPercent.toLocaleString('en-US', {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1
+                })}
+                </span>
+            </div>
+
+
+
+
+            <div style="margin-right: auto;font-size: 85%;display: flex;width: auto;flex-direction: column;"> 
+                <div style="
+                    width: max-content;
+                "> 
+                    
+                  ${ typeof profitPercentOfCurrentPositionsByNearSettlementPrices === 'number' && !Number.isNaN(profitPercentOfCurrentPositionsByNearSettlementPrices) ? `<span style="
+                        color:${(profitPercentOfCurrentPositionsByNearSettlementPrices) >= 0 ? 'green' : 'red'};
+                        display: inline-block;
+                        direction: ltr !important;
+                    "> ${(profitPercentOfCurrentPositionsByNearSettlementPrices).toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 2
+    })}</span>`:''} 
+                    <span> سرمایه درگیر</span>
+                    <span style="
+                        color:${(totalCurrentPositionCost || unreliableTotalCostOfCurrentPositions) >= 0 ? 'green' : ''};
+                        display: inline-block;
+                        direction: ltr !important;
+                    ">
+                        ${(totalCurrentPositionCost || unreliableTotalCostOfCurrentPositions).toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    })}
+                    </span>
+
+                </div>
+            </div>
+
+        
+        `;
+
+}
+const findPositionInfoByGivenPortfolio = ({instrumentId,instrumentName},portfolioList) => {
+    let currentPortfolioPosition = portfolioList.find(currentPortfolioPosition => instrumentId ? currentPortfolioPosition.instrumentId === instrumentId : currentPortfolioPosition.instrumentName === instrumentName)
+
+    return currentPortfolioPosition
+
+}
+
+
+const checkStrategyInProfit = async (_strategyPositions)=>{
+
+    const {
+        totalCurrentPositionCost,
+        totalOffsetGainOfCurrentPositionObj,
+        profitLossByOffsetOrdersPercent,
+        profitLossByInsertedPricesPercent,
+        unreliableTotalCostOfCurrentPositions, profitPercentOfCurrentPositionsByNearSettlementPrices } = calcOffsetProfitOfStrategy(_strategyPositions);
+
+
+
+
+    showCurrentStrategyPositionState({
+        totalCurrentPositionCost, totalOffsetGainOfCurrentPositionObj,
+        profitLossByOffsetOrdersPercent, profitLossByInsertedPricesPercent,
+        unreliableTotalCostOfCurrentPositions, profitPercentOfCurrentPositionsByNearSettlementPrices
+    });
+    
+
+    let hasProfit = await checkProfitPercentAndInform({strategyPositions:_strategyPositions,profitLossByOffsetOrdersPercent});
+    
+
+    return hasProfit
+
+}
+
+
+const getRecentExactDecimalPricesOfPortFolio = ({instrumentId,instrumentName}) => {
+
+    if (!lastCheckProfitByExactDecimalPricesOfPortFolio?.portfolioList?.length || !lastCheckProfitByExactDecimalPricesOfPortFolio.time || (Date.now() - lastCheckProfitByExactDecimalPricesOfPortFolio.time) > 60000) return null
+    let currentPortfolioPosition = findPositionInfoByGivenPortfolio({instrumentId,instrumentName}, [...lastCheckProfitByExactDecimalPricesOfPortFolio.portfolioList, ...lastCheckProfitByExactDecimalPricesOfPortFolio.stockPortfolioList]);
+
+    if (!currentPortfolioPosition) return null
+
+   
+
+    if(!currentPortfolioPosition.executedPrice || !currentPortfolioPosition.breakEvenPrice){
+        showToast('قیمت دقیق در پرتفوی موجود نمی باشد',2000,'error');
+        return null
+    }
+
+    return {
+        executedPrice : currentPortfolioPosition.executedPrice,
+        breakEvenPrice : currentPortfolioPosition.breakEvenPrice,
+    }
+}
+
+
+const calcOffsetProfitOfStrategy = (_strategyPositions) => {
+
+
+    const totalCostInfoObj = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculatorForPriceTypes)(_strategyPositions);
+
+    const totalCurrentPositionCost = totalCostInfoObj.totalCostOfCurrentPositions;
+    const unreliableTotalCostOfCurrentPositions = totalCostInfoObj.unreliableTotalCostOfCurrentPositions;
+    const totalCostOfChunkOfEstimationQuantity = totalCostInfoObj.totalCostOfChunkOfEstimationQuantity;
+
+    const totalOffsetGainOfChunkOfEstimation = totalOffsetGainOfChunkOfEstimationQuantityCalculator({
+        strategyPositions: _strategyPositions
+    });
+
+    const totalOffsetGainOfCurrentPositionObj = totalOffsetGainOfCurrentPositionsCalculator({
+        strategyPositions: _strategyPositions
+    });
+
+
+
+    
+
+    let profitLossByOffsetOrdersPercent = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({
+        costWithSign: totalCostOfChunkOfEstimationQuantity,
+        gainWithSign: totalOffsetGainOfChunkOfEstimation.byOffsetOrderPrices
+    });
+
+    let profitLossByInsertedPricesPercent = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({
+        costWithSign: totalCostOfChunkOfEstimationQuantity,
+        gainWithSign: totalOffsetGainOfChunkOfEstimation.byInsertedPrices
+    });
+
+    let profitPercentOfCurrentPositionsByNearSettlementPrices = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({
+        costWithSign: totalCostOfChunkOfEstimationQuantity,
+        gainWithSign: totalOffsetGainOfCurrentPositionObj?.byNearSettlementPrices?.defaultQueue
+    });
+
+
+    return {
+        totalCurrentPositionCost,
+        totalOffsetGainOfCurrentPositionObj,
+        profitLossByOffsetOrdersPercent,
+        profitLossByInsertedPricesPercent,
+        profitPercentOfCurrentPositionsByNearSettlementPrices,
+        unreliableTotalCostOfCurrentPositions,
+        
+
+    }
+
+
+}
+
+const getBreakevenExecutedPriceDiffIssueInAllPortfolioLogs = ({ strategyPositions })=>{
+
+    const instrumentNameList = strategyPositions.map(sp => sp.instrumentName);
+    const storedPortfolioLogs = portfolioLogger.getLogs();
+    let issueMap = [];
+    for (let [dateKey, logList] of Object.entries(storedPortfolioLogs)) {
+
+        const hadIssuedLog =  logList.find(logObj => {
+            return logObj.data.find(instrument => instrumentNameList.includes(instrument.instrumentName) && (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.hasBreakevenExecutedPriceDiffIssue)({ executedPrice: instrument.executedPrice, breakEvenPrice: instrument.breakEvenPrice }))
+        });
+
+        hadIssuedLog && issueMap.push({dateKey,hadIssuedLog})
+
+    }
+
+    return issueMap
+
+}
+
+const checkProfitPercentAndInform =async ({strategyPositions,profitLossByOffsetOrdersPercent})=>{
+
+    let hasProfit=false
+    if (profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1)) {
+        const isDoubleCheckOk = await doubleCheckProfitByExactDecimalPricesOfPortFolio(strategyPositions)
+        if(!isDoubleCheckOk){
+            hasProfit=false;
+            uninformExtremeOrderPrice(strategyPositions, 'offset');
+            return hasProfit
+        } 
+        const breakevenExecutedPriceIssueListOfAllLogs = getBreakevenExecutedPriceDiffIssueInAllPortfolioLogs({strategyPositions});
+        if(breakevenExecutedPriceIssueListOfAllLogs?.length>0){
+
+            const issueMessage = 'قبلا میانگین و سر به سر مشکل داشته';
+                
+            showToast(issueMessage,50000,'error');
+            console.log('قبلا مشکل میانگین داشته ' , breakevenExecutedPriceIssueListOfAllLogs);
+
+        }
+        hasProfit=true;
+
+        informExtremeOrderPrice(strategyPositions, 'offset');
+
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+            title: 'به سود رسید',
+            body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
+            tag: `${strategyPositions[0].instrumentName}-expectedProfitForCurrentPositionsPrecent`
+        });
+    } else {
+        hasProfit=false;
+        uninformExtremeOrderPrice(strategyPositions, 'offset');
+    }
+
+    return hasProfit
+
+}
+const informExtremeOrderPrice = (_strategyPositions, type) => {
+
+    const getOrderPriceElement = (___strategyPosition) => {
+        return type === 'offset' ? ___strategyPosition.getOffsetOrderPriceElements()[0] : ___strategyPosition.getOpenMoreOrderPriceElements()[0];
+    }
+    _strategyPositions.forEach(_strategyPosition => {
+        const orderPriceElement = getOrderPriceElement(_strategyPosition);
+        orderPriceElement && orderPriceElement.parentElement.classList.remove("amin-bold", "amin-bold--light");
+    }
+    );
+
+
+    const sortedPositionsByDiff = [..._strategyPositions].sort((positionA, positionB) => {
+
+        const { ratio: ratioOfA, diff: diffOfA } = positionA.getBestSecondPriceRatioDiff(type);
+        const { ratio: ratioOfB, diff: diffOfB } = positionB.getBestSecondPriceRatioDiff(type);
+
+        const ratioDiffOfAB = (diffOfA / diffOfB)
+
+
+        if ((ratioOfB >= ratioOfA && (ratioDiffOfAB < 1.5)) || (ratioOfA >= ratioOfB && (ratioDiffOfAB) < 0.67)) {
+            return 1
+        } else {
+            return -1
+        }
+
+    });
+
+    // const orderPriceElement = getOrderPriceElement(positionWithMaxDiff);
+
+
+    const firstPriceElement = getOrderPriceElement(sortedPositionsByDiff[0]);
+    firstPriceElement.parentElement.classList.add("amin-bold");
+
+    if(sortedPositionsByDiff[1]){
+        const secondPriceElement = getOrderPriceElement(sortedPositionsByDiff[1]);
+        secondPriceElement.parentElement.classList.add("amin-bold--light");
+    }
+
+}
+
+const uninformExtremeOrderPrice = (_strategyPositions, type) => {
+    const getOrderPriceElement = (___strategyPosition) => {
+        return type === 'offset' ? ___strategyPosition.getOffsetOrderPriceElements()[0] : ___strategyPosition.getOpenMoreOrderPriceElements()[0];
+    }
+    _strategyPositions.forEach(_strategyPosition => {
+        const orderPriceElement = getOrderPriceElement(_strategyPosition);
+        orderPriceElement && orderPriceElement.parentElement.classList.remove("amin-bold", "amin-bold--light");
+    }
+    );
+}
+
+const convertStringToInt = (stringNumber) => {
+    if (!stringNumber)
+        return NaN
+    return parseInt(stringNumber.replaceAll(',', '').trim());
+}
+const convertStringToFloat = (stringNumber) => {
+    if (!stringNumber)
+        return NaN
+    return parseFloat(stringNumber.replaceAll(',', '').trim());
+}
+
+
+
+
+const getBaseInstrumentPriceOfOption = () => {
+
+
+    const baseInstrumentPriceInputEl = domContextWindow.document.querySelector('.current-stock-price');
+
+    return baseInstrumentPriceInputEl && convertStringToInt(baseInstrumentPriceInputEl.value);
+
+}
+const getnokoolOrNoRequestFactor = () => {
+
+    const nokoolOrNoRequestFactorInputEl = domContextWindow.document.querySelector('.nokool-or-no-request-factor');
+
+    return convertStringToFloat(nokoolOrNoRequestFactorInputEl?.value) || 0;
+
+}
+
+
+
+
+const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
+    return assetRowLementList.map(optionRowEl => {
+
+        const instrumentName = optionRowEl.querySelector('.instrument-title span').innerHTML;
+        let optionID = Array.from(domContextWindow.document.querySelectorAll('client-option-positions-main .ag-pinned-right-cols-container .ag-row'))?.find(optionNameCellEl => Array.from(optionNameCellEl.querySelectorAll('span'))?.find(span => span.innerHTML === instrumentName))?.getAttribute('row-id');
+        const isBuy = optionRowEl.querySelector('client-option-strategy-estimation-main-ui-order-side .-isActive')?.classList?.contains('buy');
+
+        const isOption = (0,_omexApi_js__WEBPACK_IMPORTED_MODULE_1__.isInstrumentNameOfOption)(instrumentName);
+
+        const isPut = isOption && instrumentName && instrumentName.charAt(0) === 'ط';
+
+        const isCall = isOption && instrumentName && instrumentName.charAt(0) === 'ض';
+        let cSize = isOption ? defaultCSize : 1;
+        let daysLeftToSettlement = defaultDaysLeftToSettlement;
+
+        const ordersModal = Array.from(domContextWindow.document.querySelectorAll('client-option-modal-trade-layout')).find(modal => {
+            return Array.from(modal.querySelectorAll('label')).find(label => label.innerHTML === instrumentName)
+        }
+        );
+
+        const instrumentFullTitle = ordersModal && ordersModal.querySelector('client-option-instruments-favorites-item-header main > span').innerHTML;
+
+        const getOffsetOrderPriceElements = () => (ordersModal && ordersModal.querySelectorAll(`client-instrument-best-limit-ui-option client-instrument-price-position-row[orderside="${isBuy ? 'Buy' : 'Sell'}"] .-is-price span`)) || [];
+
+        const getOpenMoreOrderPriceElements = () => (ordersModal && ordersModal.querySelectorAll(`client-instrument-best-limit-ui-option client-instrument-price-position-row[orderside="${isBuy ? 'Sell' : 'Buy'}"] .-is-price span`)) || [];
+
+        const getBestOffsetPrice = () => {
+            const priceElement = getOffsetOrderPriceElements()[0];
+            return priceElement && convertStringToInt(priceElement.innerHTML);
+        }
+
+        const getBestOpenMorePrice = () => {
+            const priceElement = getOpenMoreOrderPriceElements()[0];
+            return priceElement && convertStringToInt(priceElement.innerHTML);
+        }
+
+        const getQuantity = () => {
+            const cSize = getCSize();
+            const quantity = convertStringToInt(optionRowEl.querySelector('[formcontrolname="quantity"] input').value);
+            const quantityMultiplier = isOption ? cSize : 1;
+            return quantity * quantityMultiplier;
+        }
+
+
+        let cachedCurrentPositionQuantityElement;
+        const getCSize = ()=>{
+            const instrumentExtraData = instrumentExtraDataMap[instrumentName];
+            return instrumentExtraData?.cSize || cSize;
+        }
+        const getOptionID = ()=>{
+            const instrumentExtraData = instrumentExtraDataMap[instrumentName];
+            return instrumentExtraData?.optionID || optionID;
+        }
+        const getInstrumentID = ()=>{
+            const instrumentExtraData = instrumentExtraDataMap[instrumentName];
+            return instrumentExtraData?.instrumentId;
+        }
+        const getDaysLeftToSettlement= ()=>{
+            const instrumentExtraData = instrumentExtraDataMap[instrumentName];
+            return instrumentExtraData?.daysLeftToSettlement;
+        }
+        const getCurrentPositionQuantity = () => {
+
+            optionID = getOptionID();
+            const cSize = getCSize();
+
+
+            cachedCurrentPositionQuantityElement = domContextWindow.document.body.contains(cachedCurrentPositionQuantityElement) ? cachedCurrentPositionQuantityElement : domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy ? 'buyCount' : 'sellCount'}"]`);
+
+            let currentPositionQuantity
+            if (cachedCurrentPositionQuantityElement) {
+                currentPositionQuantity = convertStringToInt(cachedCurrentPositionQuantityElement?.innerHTML);
+            } else {
+                currentPositionQuantity = getOrderModalPortfolioQuantity();
+            }
+
+            const quantityMultiplier = isOption ? cSize : 1;
+            return currentPositionQuantity * quantityMultiplier;
+
+        }
+
+
+        let cachedOrderModalPortfolioQuantityElement;
+        const getOrderModalPortfolioQuantity = () => {
+            cachedOrderModalPortfolioQuantityElement = domContextWindow.document.body.contains(cachedOrderModalPortfolioQuantityElement) ? cachedOrderModalPortfolioQuantityElement : ordersModal.querySelector('.o-quantityContainer footer span');
+            return convertStringToInt(cachedOrderModalPortfolioQuantityElement?.innerHTML) || 0
+
+        }
+        let cachedOrderModalQuantityFooterElement
+        const getOrderModalQuantityFooterElement = () => {
+            if (!domContextWindow.document.body.contains(cachedOrderModalQuantityFooterElement)) {
+                cachedOrderModalQuantityFooterElement = ordersModal.querySelector('.o-quantityContainer footer')
+            }
+
+
+            return cachedOrderModalQuantityFooterElement
+
+        }
+
+        let cachedOrderModalTradePanelElement
+        const getOrderModalTradePanelElement = () => {
+            if (!domContextWindow.document.body.contains(cachedOrderModalTradePanelElement)) {
+                cachedOrderModalTradePanelElement = ordersModal.querySelector('client-instrument-favorites-item-trade-panel')
+            }
+
+
+            return cachedOrderModalTradePanelElement
+
+        }
+
+
+        let cachedOrderModalStrategyDropdownElement;
+        const getOrderModalStrategyDropdownElement = ()=>{
+            if (!domContextWindow.document.body.contains(cachedOrderModalTradePanelElement)) {
+                cachedOrderModalStrategyDropdownElement = ordersModal.querySelector('client-instrument-favorites-item-trade-panel ng-select.-is-strategyDropdown');
+            }
+
+
+            return cachedOrderModalStrategyDropdownElement
+        }
+
+
+        
+
+
+         let cachedOrderModalQuantityInputElement;
+        const getOrderModalQuantityInputElement = ()=>{
+            if (!domContextWindow.document.body.contains(cachedOrderModalQuantityInputElement)) {
+                cachedOrderModalQuantityInputElement =ordersModal.querySelector('#tabKey-optionTradeQuantityInput');
+            }
+
+
+            return cachedOrderModalQuantityInputElement
+        }
+
+
+
+        
+         let cachedOrderModalQuantityInputArrowUpElement;
+        const getOrderModalQuantityInputArrowUpElement = ()=>{
+            if (!domContextWindow.document.body.contains(cachedOrderModalQuantityInputArrowUpElement)) {
+                cachedOrderModalQuantityInputArrowUpElement = ordersModal.querySelector('[iconname="arrow-up-filled"]');
+            }
+
+
+            return cachedOrderModalQuantityInputArrowUpElement
+        }
+
+
+         let cachedOrderModalPriceElement;
+        const getOrderModalPriceInputElement = ()=>{
+            if (!domContextWindow.document.body.contains(cachedOrderModalPriceElement)) {
+                 cachedOrderModalPriceElement =ordersModal.querySelector('#tabKey-optionTradePriceInput');
+            }
+
+            return cachedOrderModalPriceElement
+        }
+
+        const getRequiredMargin = () => {
+
+            const isMarginRequired = optionRowEl.querySelector('input[formcontrolname="requiredMarginIsSelected"]')?.checked;
+            const cSize = getCSize()
+
+            if (!isMarginRequired)
+                return 0
+
+            const requiredMargin = convertStringToInt(optionRowEl.querySelector('[formcontrolname="requiredMargin"] input').value) / cSize;
+
+            return requiredMargin
+        }
+
+        const getInsertedPrice = () => {
+            const insertedPrice = convertStringToInt(optionRowEl.querySelector('[formcontrolname="price"] input').value);
+            return insertedPrice;
+        }
+
+        const getInsertedQuantity = () => {
+            const insertedQuantity = convertStringToInt(optionRowEl.querySelector('[formcontrolname="quantity"] input').value);
+            return insertedQuantity;
+        }
+
+        const calcBestSecondOrderPriceRatioDiff = (priceOrderElements) => {
+            if (!priceOrderElements || priceOrderElements.length < 2)
+                return
+
+            const bestPrice = convertStringToInt(priceOrderElements[0].innerHTML);
+            const secondPrice = convertStringToInt(priceOrderElements[1].innerHTML);
+
+            const bestSecondPriceRatio = Math.abs((bestPrice / secondPrice) - 1);
+
+            let bestSecondPriceDiff = Math.abs(bestPrice - secondPrice);
+
+            return {
+                diff: bestSecondPriceDiff,
+                ratio: bestSecondPriceRatio
+            }
+
+        }
+
+        const getBestSecondPriceRatioDiff = (chooseBestPriceType) => {
+            return calcBestSecondOrderPriceRatioDiff(chooseBestPriceType === 'offset' ? getOffsetOrderPriceElements() : getOpenMoreOrderPriceElements());
+        }
+
+
+        function getCurrentPositionAvgPrice(position)  {
+
+
+            const instrumentId = (position || this).getInstrumentID();
+            const instrumentName = (position || this).instrumentName;
+            let executedPrice,breakEvenPrice;
+            optionID = getOptionID();
+
+            const recentExactDecimalPricesOfPortFolioObj = (instrumentId || instrumentName) && getRecentExactDecimalPricesOfPortFolio({instrumentId,instrumentName});
+
+
+            const recentCalculatedAvgPrices  =  getRecentCalculatedAvgPrices({instrumentId,instrumentName});
+            if(recentCalculatedAvgPrices){
+
+                executedPrice = recentCalculatedAvgPrices.avgPrice;
+                breakEvenPrice = recentCalculatedAvgPrices.avgPrice;
+                showToast('استفاده از میانگین های حساب شده');
+
+            }
+            else if(recentExactDecimalPricesOfPortFolioObj){
+                executedPrice = recentExactDecimalPricesOfPortFolioObj.executedPrice;
+                breakEvenPrice = recentExactDecimalPricesOfPortFolioObj.breakEvenPrice;
+            }else{
+                const executedPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="executedPrice"]`;
+                const breakEvenPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="breakEvenPrice"]`;
+                executedPrice = convertStringToInt(domContextWindow.document.querySelector(executedPriceSelector)?.innerHTML);
+                breakEvenPrice = convertStringToInt(domContextWindow.document.querySelector(breakEvenPriceSelector)?.innerHTML);
+            }
+            if (executedPrice && breakEvenPrice && (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.hasBreakevenExecutedPriceDiffIssue)({executedPrice,breakEvenPrice})) {
+
+                const issueMessage = 'مشکل تفاوت میانگین و سر به سر';
+                console.log(issueMessage,{instrumentName,executedPrice,breakEvenPrice});
+                
+                showToast(issueMessage,50000,'error');
+                // !domContextWindow.window.doNotNotifAvrageIssue && showNotification({
+                //     title: issueMessage,
+                //     body: `${instrumentName}`,
+                //     tag: `CurrentPositionAvgPriceIssue`
+                // });
+                return breakEvenPrice
+            }
+
+            return executedPrice || getUnreliableCurrentPositionAvgPrice()
+
+        }
+
+
+        let cachedUnreliableCurrentPositionAvgPriceElement;
+        const getUnreliableCurrentPositionAvgPrice = () => {
+             
+ 
+
+            if (!domContextWindow.document.body.contains(cachedUnreliableCurrentPositionAvgPriceElement)) {
+                const labelText = 'میانگین';
+                const xpath = `.//label[normalize-space(text())='${labelText}']/following-sibling::span[1]`;
+
+                const avgPriceElement = domContextWindow.document.evaluate(
+                    xpath,
+                    ordersModal, // فقط در این محدوده بگرد
+                    null,
+                    XPathResult.FIRST_ORDERED_NODE_TYPE,
+                    null
+                ).singleNodeValue;
+
+                cachedUnreliableCurrentPositionAvgPriceElement = avgPriceElement || null
+
+            }
+
+            return convertStringToInt(cachedUnreliableCurrentPositionAvgPriceElement.innerHTML) || 0
+
+        }
+
+
+
+       
+
+
+
+        const getStrategyName = () => {
+            return domContextWindow.document.querySelector('client-option-strategy-estimation-header c-k-input-text input')?.value
+        }
+
+        const getBestOpenMorePriceWithSideSign = () => {
+            const bestOpenMorePrice = getBestOpenMorePrice();
+            if (!bestOpenMorePrice)
+                return
+            return bestOpenMorePrice * (isBuy ? -1 : 1);
+        }
+
+        const strikePrice = convertStringToInt(domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="strikePrice"]`)?.innerHTML) || convertStringToInt(optionRowEl.querySelectorAll('.o-item-row > div')[5].innerHTML);
+        
+
+       
+
+        const getStrategyType = () => {
+            const strategyName = getStrategyName();
+            if (!strategyName)
+                return
+
+            const strategyType = strategyName.split('@')[0];
+            return 
+            // return ['COVERED'].find(type => strategyType === type);
+            // return ['BUCS_COLLAR', 'BUPS_COLLAR', 'BEPS_COLLAR', 'BUCS', 'BECS', 'BUPS', 'BEPS', 'BOX_BUPS_BECS', 'BOX', 'COVERED', 'GUTS', 'LongGUTS_STRANGLE', 'CALL_BUTT_CONDOR'].find(type => strategyType === type);
+        }
+
+
+      
+
+
+        let strategyPosition = {
+            optionRowEl,
+            // TODO: is not just option meybe stock
+            instrumentName,
+            instrumentFullTitle,
+            isBuy,
+            isETF : (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.isETF)(instrumentName),
+            optionID,
+            isOption,
+            isCall,
+            isPut,
+            cSize,
+            getCSize,
+            getOptionID,
+            getInstrumentID,
+            getDaysLeftToSettlement,
+            getQuantity,
+            getCurrentPositionQuantity,
+            getOrderModalPortfolioQuantity,
+            getOrderModalQuantityFooterElement,
+            getOrderModalTradePanelElement,
+            getOrderModalStrategyDropdownElement,
+            getOrderModalQuantityInputElement,
+            getOrderModalPriceInputElement,
+            getOrderModalQuantityInputArrowUpElement,
+            getInsertedPrice,
+            getInsertedQuantity,
+            getRequiredMargin,
+            getCurrentPositionAvgPrice,
+            getUnreliableCurrentPositionAvgPrice,
+            strikePrice,
+            daysLeftToSettlement,
+            ordersModal,
+            getOffsetOrderPriceElements,
+            getOpenMoreOrderPriceElements,
+            getBestOffsetPrice,
+            getBestOpenMorePrice,
+            getBestSecondPriceRatioDiff,
+            getBestOpenMorePriceWithSideSign,
+            getStrategyName,
+            getStrategyType,
+            observers: []
+        }
+
+        return strategyPosition
+    }
+    );
+}
+
+
+
+
+const getStrategyInfoForExport = ()=>{
+    
+    const strategyPositionsForExport = strategyPositions.map(sp => {
+
+        let spForExport = {...sp};
+
+        for (const key in spForExport) {
+            if (typeof spForExport[key] === 'function') {
+                const value = spForExport[key]();
+                spForExport[key] = () => value;
+            }
+        }
+
+        return spForExport
+
+    });
+
+
+    return {
+        strategyPositionsForExport,
+        strategyName: getStrategyName(),
+        expectedProfit,
+        stockPrice: getBaseInstrumentPriceOfOption(),
+        nokoolOrNoRequestFactor: getnokoolOrNoRequestFactor()
+    }
+
+    
+    
+    
+    
+
+
+}
+
+
+
+const orderModalInputCheckAndInformer = () => {
+
+    setTimeout(() => {
+        
+        quantityUnbalanceInformer({
+            orderModalQuantityGetter: (strategyPosition) => convertStringToInt(strategyPosition.getOrderModalQuantityInputElement()?.value),
+            informer: (strategyPosition) => { 
+                if(!strategyPosition.getOrderModalQuantityInputElement()) return 
+                const quantityInput = strategyPosition.getOrderModalQuantityInputElement();
+                if (quantityInput) {
+                    quantityInput.classList.add('inserted-quantity-unbalance-error'); 
+                }
+            },
+            informCleaner: (strategyPosition) => { 
+                if(!strategyPosition.getOrderModalQuantityInputElement()) return 
+
+                const quantityInput = strategyPosition.getOrderModalQuantityInputElement();
+                if (quantityInput) {
+                    quantityInput.classList.remove('inserted-quantity-unbalance-error'); 
+                }
+            }
+        });
+        highSumValueOfInsertedOrderInformer({
+            orderModalQuantityGetter: (strategyPosition) => convertStringToInt(strategyPosition.getOrderModalQuantityInputElement()?.value),
+            orderModalPriceGetter: (strategyPosition) => convertStringToInt(strategyPosition.getOrderModalPriceInputElement()?.value),
+            informer: (strategyPosition) => { 
+                if(!strategyPosition.ordersModal) return 
+
+                const inModalWrapper = strategyPosition.ordersModal.querySelector('.o-inModalWrapper');
+                if (inModalWrapper) {
+                    inModalWrapper.classList.add('inserted-high-sum-value-error'); 
+                }
+            },
+            informCleaner: (strategyPosition) => { 
+                if(!strategyPosition.ordersModal) return 
+
+                const inModalWrapper = strategyPosition.ordersModal.querySelector('.o-inModalWrapper');
+                if (inModalWrapper) {
+                    inModalWrapper.classList.remove('inserted-high-sum-value-error'); 
+                }
+            }
+        });
+
+        higherQuantityOfInsertedOrderInformer({
+            orderModalQuantityGetter: (strategyPosition) => convertStringToInt(strategyPosition.getOrderModalQuantityInputElement()?.value),
+            informer: (strategyPosition) => {
+                if (!strategyPosition.ordersModal) return
+
+                const footer = strategyPosition.ordersModal.querySelector('.o-quantityContainer footer');
+                if (footer) {
+                    footer.classList.add('higher-than-portfolio'); 
+                }
+
+                const issueMessage = 'تعداد بیشتر از دارایی است';
+                showToast(issueMessage, 3000, 'error');
+            },
+            informCleaner: (strategyPosition) => {
+                if (!strategyPosition.ordersModal) return
+
+                const footer = strategyPosition.ordersModal.querySelector('.o-quantityContainer footer');
+                if (footer) {
+                    footer.classList.remove('higher-than-portfolio'); 
+                }
+            }
+        });
+
+
+        
+    }, 100);
+    
+
+}
+const observeInputQuantityOfOrderModal = () => {
+
+
+    return strategyPositions.map(strategyPositionObj => {
+
+        strategyPositionObj.observers.filter(observerInfoObj => ['inputQuantityOfOrderModal'].includes(observerInfoObj.key)).forEach(observerInfoObj => observerInfoObj.observer.disconnect())
+
+        const inputQuantityOfOrderModal = strategyPositionObj.getOrderModalQuantityInputElement();
+        const ordersModal = strategyPositionObj.ordersModal;
+
+        const eventNames = ['input', 'change', 'click'];
+        eventNames.forEach(eventName => inputQuantityOfOrderModal.removeEventListener(eventName, orderModalInputCheckAndInformer));
+        eventNames.forEach(eventName => inputQuantityOfOrderModal.addEventListener(eventName, orderModalInputCheckAndInformer));
+
+
+        const eventNamesOnOrderModal =['click','mousedown','mouseup']
+
+        eventNamesOnOrderModal.forEach(eventName => ordersModal.removeEventListener(eventName, orderModalInputCheckAndInformer));
+        eventNamesOnOrderModal.forEach(eventName => ordersModal.addEventListener(eventName, orderModalInputCheckAndInformer));
+        
+
+        let lastClickTime = 0;
+        const minInterval = 300;
+        const mousemoveEventHandler = () => {
+            const currentTime = new Date().getTime();
+            if ((currentTime - lastClickTime) < minInterval)
+                return
+            lastClickTime = currentTime;
+            orderModalInputCheckAndInformer();
+
+        }
+
+        // TODO:FIXME: refactor this name and persist event handler code
+        
+        strategyPositionObj.mouseMoveOnOrderModalEventHandler && ordersModal.addEventListener('mousemove', strategyPositionObj.mouseMoveOnOrderModalEventHandler);
+        ordersModal.addEventListener('mousemove', mousemoveEventHandler);
+        strategyPositionObj.mouseMoveOnOrderModalEventHandler = mousemoveEventHandler;
+
+        const inputObserver = {
+            disconnect() {
+                eventNames.forEach(eventName => inputQuantityOfOrderModal.removeEventListener(eventName, orderModalInputCheckAndInformer));
+                ordersModal.removeEventListener('click', orderModalInputCheckAndInformer)
+                ordersModal.removeEventListener('mousemove ', mousemoveEventHandler)
+            }
+        }
+
+        let observers = strategyPositionObj.observers.filter(observerInfoObj => !['inputQuantityOfOrderModal'].includes(observerInfoObj.key));
+
+        observers.push({
+            key: 'inputQuantityOfOrderModal',
+            observer: inputObserver
+        });
+
+        return {
+            ...strategyPositionObj,
+            observers
+        }
+    }
+    )
+
+}
+
+const observeInputBoxInRowOfStrategy = () => {
+
+    return strategyPositions.map(strategyPositionObj => {
+
+        strategyPositionObj.observers.filter(observerInfoObj => ['rowPriceLockTypeSelector', 'rowPriceInput'].includes(observerInfoObj.key)).forEach(observerInfoObj => observerInfoObj.observer.disconnect())
+
+        const onChangeCb = () => {
+            
+            setTimeout(() => {
+                calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+                checkStrategyInProfit(strategyPositions);
+            }
+                , 300)
+
+        }
+        const observer = new MutationObserver((mutationList) => {
+            onChangeCb();
+        }
+        );
+        const rowInputPrice = strategyPositionObj.optionRowEl.querySelector('[formcontrolname="price"] input');
+        const rowPriceLockTypeSelector = strategyPositionObj.optionRowEl.querySelector('.o-price-group client-option-strategy-estimation-main-ui-lock');
+
+        rowInputPrice.addEventListener('input', onChangeCb)
+        rowPriceLockTypeSelector.addEventListener('click', onChangeCb)
+
+        const inputObserver = {
+            disconnect() {
+                rowInputPrice.removeEventListener('input', onChangeCb)
+            }
+        }
+        const rowPriceLockTypeSelectorClickObserver = {
+            disconnect() {
+                rowInputPrice.removeEventListener('click', onChangeCb)
+            }
+        }
+
+        observer.observe(rowPriceLockTypeSelector, {
+            attributes: true,
+            childList: true,
+            subtree: true
+        });
+
+        let observers = strategyPositionObj.observers.filter(observerInfoObj => !['rowPriceLockTypeSelector', 'rowPriceInput'].includes(observerInfoObj.key));
+
+        observers.push({
+            key: 'rowPriceInput',
+            observer: inputObserver
+        });
+        observers.push({
+            key: 'rowPriceLockTypeSelector',
+            observer
+        });
+        observers.push({
+            key: 'rowPriceLockTypeSelectorClickObserver',
+            observer : rowPriceLockTypeSelectorClickObserver
+        });
+
+        return {
+            ...strategyPositionObj,
+            observers
+        }
+    }
+    )
+
+}
+
+
+let currentPositionQuantityUnbalanceInformerTimeout;
+const currentPositionQuantityUnbalanceCheckAndNotif = () => {
+    const hasIssue = quantityUnbalanceInformer({
+        orderModalQuantityGetter: (strategyPosition) => strategyPosition.getOrderModalPortfolioQuantity(),
+        informer: (strategyPosition) => {
+            if (!strategyPosition?.getOrderModalQuantityFooterElement()) return
+
+            const quantityFooter = strategyPosition.getOrderModalQuantityFooterElement();
+            if (quantityFooter) {
+                quantityFooter.classList.add('current-position-quantity-unbalance-error'); 
+            }
+
+        },
+        informCleaner: (strategyPosition) => {
+            if (!strategyPosition?.getOrderModalQuantityFooterElement()) return
+
+            const quantityFooter = strategyPosition.getOrderModalQuantityFooterElement();
+            if (quantityFooter) {
+                quantityFooter.classList.remove('current-position-quantity-unbalance-error'); 
+            }
+        }
+    }).hasIssue;
+
+
+    if (hasIssue) {
+
+
+
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+            title: 'تعداد بالانس نیست',
+            body: `${strategyPositions[0].instrumentName}`,
+            tag: `${strategyPositions[0].instrumentName}-currentPositionQuantityUnbalance`
+        });
+
+        clearTimeout(currentPositionQuantityUnbalanceInformerTimeout);
+        currentPositionQuantityUnbalanceInformerTimeout = setTimeout(currentPositionQuantityUnbalanceCheckAndNotif, 40000);
+    } else {
+        clearTimeout(currentPositionQuantityUnbalanceInformerTimeout);
+    }
+
+
+
+}
+
+
+const observePortfolioQuantityOfOrderModal = () => {
+    // TODO:FIXME: use domContextWindow.document.body.contains(...)
+
+    currentPositionQuantityUnbalanceCheckAndNotif();
+    return strategyPositions.map(strategyPositionObj => {
+
+        strategyPositionObj.observers.filter(observerInfoObj => ['PortfolioQuantity', 'PortfolioQuantityMousemove','PortfolioQuantityTabClick'].includes(observerInfoObj.key)).forEach(observerInfoObj => observerInfoObj.observer.disconnect())
+
+        // const portfolioQuantityElement =strategyPositionObj.ordersModal.querySelector('client-instrument-favorites-item-trade-panel .o-quantityContainer footer span')
+
+
+        let previousStoredPortfolioQuantity = strategyPositionObj.getOrderModalPortfolioQuantity();
+
+        const config = {
+            //attributes: true,
+            childList: true,
+            characterData: true,
+            characterDataOldValue: true,
+            subtree: true
+        };
+
+        const PortfolioQuantityCallback = (mutationList) => {
+            for (const mutation of mutationList) {
+                // if(mutation?.type!=="characterData") return
+
+                // const oldValue = mutation.oldValue ? convertStringToInt(mutation.oldValue) : 0;
+                const oldValue = previousStoredPortfolioQuantity >= 0 ? previousStoredPortfolioQuantity : 0;
+                // const newValue = mutation.target.nodeValue ? convertStringToInt(mutation.target.nodeValue) : null;
+                const newValue = strategyPositionObj.getOrderModalPortfolioQuantity() || 0;
+                // if(newValue===null) return
+
+                if(oldValue===newValue) return
+                let bgColor
+
+
+                if (newValue > oldValue) {
+                    bgColor = '#008000a3'
+                } else {
+                    bgColor = '#ff00009c'
+                }
+
+                // let quantityFooter = strategyPositionObj.getOrderModalQuantityFooterElement();
+                let tradePanelElement = strategyPositionObj.getOrderModalTradePanelElement();
+
+
+                // quantityFooter.style.backgroundColor = bgColor;
+                tradePanelElement.style.backgroundColor = bgColor;
+                (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+                    title: 'معامله شد',
+                    body: `${strategyPositionObj.instrumentName}`,
+                    tag: `${strategyPositionObj.getStrategyName()}-PortfolioQuantityChange`,
+                    requireInteraction: true
+
+                });
+
+                previousStoredPortfolioQuantity = newValue
+
+                setTimeout(() => {
+                    tradePanelElement.style.backgroundColor = '';
+
+                    currentPositionQuantityUnbalanceCheckAndNotif();
+                }
+                    , 600);
+
+
+
+            }
+        }
+            ;
+
+
+
+        const PortfolioQuantityObserver = new MutationObserver(PortfolioQuantityCallback);
+
+        strategyPositionObj.getOrderModalQuantityFooterElement() && PortfolioQuantityObserver.observe(strategyPositionObj.getOrderModalQuantityFooterElement(), config);
+
+
+        const tabClickHandler = ()=>{
+             setTimeout(() => {
+
+                    const isTradePanelVisible = domContextWindow.document.body.contains(strategyPositionObj.getOrderModalTradePanelElement());
+
+                    if (isTradePanelVisible) {
+                        removeAllListeners();
+                        strategyPositions = observePortfolioQuantityOfOrderModal();
+                    }
+                    
+                    stopDraggingWrongOfOrdersModals();
+
+                    currentPositionQuantityUnbalanceCheckAndNotif();
+
+                }
+                    , 100)
+
+        }
+
+
+        const setupTabListeners = () => {
+            
+            const elements = strategyPositionObj.ordersModal.querySelectorAll(
+                'client-trade-ui-tabs,[iconname="details-outlined"]'
+            );
+            
+            elements.forEach(el => {
+                el.removeEventListener('click', tabClickHandler);
+                el.addEventListener('click', tabClickHandler);
+            });
+            
+        };
+       
+
+        const removeAllListeners = ()=>{
+            PortfolioQuantityObserver && PortfolioQuantityObserver.disconnect();
+
+            mouseMoveObserver && mouseMoveObserver.disconnect();
+            tabClickObserver && tabClickObserver.disconnect();
+        }
+        setupTabListeners();
+
+        const tabClickObserver = {
+            // TODO: remove click event listener
+            disconnect() {
+                const elements = strategyPositionObj.ordersModal.querySelectorAll(
+                    'client-trade-ui-tabs,[iconname="details-outlined"]'
+                );
+
+                elements.forEach(el => {
+                    el.removeEventListener('click', tabClickHandler);
+                });
+            }
+        }
+
+
+
+        let lastClickTime = 0;
+        const minInterval = 1000;
+        const mousemoveEventHandler = () => {
+            const currentTime = new Date().getTime();
+            if ((currentTime - lastClickTime) < minInterval)
+                return
+            lastClickTime = currentTime;
+            currentPositionQuantityUnbalanceCheckAndNotif();
+
+        }
+
+
+        strategyPositionObj.orderModalMousemoveEventHandler && strategyPositionObj.ordersModal.removeEventListener('mousemove', strategyPositionObj.orderModalMousemoveEventHandler)
+        strategyPositionObj.ordersModal.addEventListener('mousemove', mousemoveEventHandler);
+
+        strategyPositionObj.orderModalMousemoveEventHandler = mousemoveEventHandler
+
+        const mouseMoveObserver = {
+            // TODO: remove click event listener
+            disconnect() {
+                strategyPositionObj.ordersModal.removeEventListener('mousemove', mousemoveEventHandler)
+            }
+        }
+
+        let observers = strategyPositionObj.observers.filter(observerInfoObj => !['PortfolioQuantity', 'PortfolioQuantityMousemove','PortfolioQuantityTabClick'].includes(observerInfoObj.key));
+
+
+        observers.push({
+            key: 'PortfolioQuantityMousemove',
+            observer: mouseMoveObserver
+        });
+
+        observers.push({
+            key: 'PortfolioQuantity',
+            observer: PortfolioQuantityObserver
+        });
+        observers.push({
+            key: 'PortfolioQuantityTabClick',
+            observer: tabClickObserver
+        });
+
+        return {
+            ...strategyPositionObj,
+            observers
+        }
+    }
+    );
+}
+
+
+
+
+
+const observeMyOrderInOrdersModal = () => {
+    return strategyPositions.map(strategyPositionObj => {
+
+        strategyPositionObj.observers.filter(observerInfoObj => ['firstBuyRowChange', 'firstSellRowChange'].includes(observerInfoObj.key)).forEach(observerInfoObj => observerInfoObj.observer.disconnect())
+
+        const config = {
+            attributes: true,
+            childList: true,
+            subtree: true
+        };
+
+        const myOrderOnOrdersModal = (() => {
+            let isInSell, isInBuy, buyTimeout, sellTimeout
+
+            return {
+                is({ isBuy } = {}) {
+                    const pulseElement = strategyPositionObj.ordersModal.querySelector(`ul.${isBuy ? '-is-buy' : '-is-sell'} .c-pulse`)
+                    if (!pulseElement) return
+
+                    const pulseStyle = domContextWindow.window.getComputedStyle(pulseElement);
+
+                    if (pulseStyle.display === 'none') return false;
+                    if (pulseStyle.visibility === 'hidden') return false;
+                    if (parseFloat(pulseStyle.opacity) <= 0) return false;
+                },
+                was({ isBuy }) {
+
+                    return isBuy ? isInBuy : isInSell
+                },
+                set({ isBuy, bool }) {
+                    return isBuy ? isInBuy = bool : isInSell = bool
+                },
+                setTimeout({ isBuy, cb }) {
+                    const timeout = setTimeout(cb, 3 * 60 * 1000);
+                    isBuy ? buyTimeout = timeout : sellTimeout = timeout
+                },
+                createTimeout({ isBuy }) {
+                    isBuy ? clearTimeout(buyTimeout) : clearTimeout(sellTimeout)
+                }
+            }
+
+        }
+        )()
+
+        const rowChangeCBFactory = ({ isBuy, isSell }) => (mutationList) => {
+            const _isMyOrderOnOrdersModal = myOrderOnOrdersModal.is({
+                isBuy,
+                isSell
+            });
+            if (!_isMyOrderOnOrdersModal && myOrderOnOrdersModal.was({
+                isBuy,
+                isSell
+            })) {
+                (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+                    title: `سفارش ${strategyPositionObj.instrumentName} از سفارشات ${isBuy ? 'خرید' : 'فروش'} خارج شد`,
+                    body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
+                });
+                myOrderOnOrdersModal.set({
+                    isBuy,
+                    isSell,
+                    bool: false
+                });
+
+                myOrderOnOrdersModal.createTimeout({
+                    isBuy
+                });
+            } else if (_isMyOrderOnOrdersModal && !myOrderOnOrdersModal.was({
+                isBuy,
+                isSell
+            })) {
+                myOrderOnOrdersModal.set({
+                    isBuy,
+                    isSell,
+                    bool: true
+                });
+
+                myOrderOnOrdersModal.setTimeout({
+                    isBuy,
+                    cb: () => (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+                        title: `سفارش  ${isBuy ? 'خرید' : 'فروش'} ${strategyPositionObj.instrumentName}   طولانی شده`,
+                        body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
+                    })
+                })
+
+            }
+        }
+            ;
+
+        const firstBuyRow = strategyPositionObj.ordersModal.querySelector('client-instrument-price-position-row[orderside="Buy"]');
+        const firstSellRow = strategyPositionObj.ordersModal.querySelector('client-instrument-price-position-row[orderside="Sell"]');
+
+        const firstBuyRowChangeObserver = new MutationObserver(rowChangeCBFactory({
+            isBuy: true
+        }));
+        const firstSellRowChangeObserver = new MutationObserver(rowChangeCBFactory({
+            isSell: true
+        }));
+
+        firstBuyRow && firstBuyRowChangeObserver.observe(firstBuyRow, config);
+        firstSellRow && firstSellRowChangeObserver.observe(firstSellRow, config);
+
+        strategyPositionObj.ordersModal.querySelector('[iconname="details-outlined"]').addEventListener('click', (e) => {
+            setTimeout(() => {
+                const isLimitOrdersVisible = Boolean(strategyPositionObj.ordersModal.querySelector('client-instrument-best-limit'));
+                if (isLimitOrdersVisible) {
+                    firstBuyRowChangeObserver && firstBuyRowChangeObserver.disconnect();
+                    firstSellRowChangeObserver && firstSellRowChangeObserver.disconnect();
+                    strategyPositions = observeMyOrderInOrdersModal();
+                }
+            }
+                , 100)
+
+        }
+        )
+
+        let observers = strategyPositionObj.observers.filter(observerInfoObj => !['firstBuyRowChange', 'firstSellRowChange'].includes(observerInfoObj.key));
+
+        observers.push({
+            key: 'firstBuyRowChange',
+            observer: firstBuyRowChangeObserver
+        });
+        observers.push({
+            key: 'firstSellRowChange',
+            observer: firstSellRowChangeObserver
+        });
+
+        return {
+            ...strategyPositionObj,
+            observers
+        }
+    }
+    );
+}
+
+
+let calcOffsetProfitOfStrategyInformUntilNotProfitTimeout;
+
+const calcOffsetProfitOfStrategyInformUntilNotProfit = async () => {
+    const isProfit = await checkStrategyInProfit(strategyPositions);
+    if (isProfit) {
+        clearTimeout(calcOffsetProfitOfStrategyInformUntilNotProfitTimeout);
+        calcOffsetProfitOfStrategyInformUntilNotProfitTimeout = setTimeout(calcOffsetProfitOfStrategyInformUntilNotProfit, 10000);
+    } else {
+        clearTimeout(calcOffsetProfitOfStrategyInformUntilNotProfitTimeout);
+    }
+}
+
+let calcProfitOfStrategyInformUntilNotProfitTimeout;
+
+const calcProfitOfStrategyInformUntilNotProfit =async () => {
+    const isProfit = await calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+    if (isProfit) {
+        clearTimeout(calcProfitOfStrategyInformUntilNotProfitTimeout);
+        calcProfitOfStrategyInformUntilNotProfitTimeout = setTimeout(calcProfitOfStrategyInformUntilNotProfit, 10000);
+    } else {
+        clearTimeout(calcProfitOfStrategyInformUntilNotProfitTimeout);
+    }
+}
+
+const observePriceChanges = () => {
+    return strategyPositions.map(strategyPositionObj => {
+
+        strategyPositionObj.observers.filter(observerInfoObj => ['bestOffsetOrder', 'bestOpenMoreOrder'].includes(observerInfoObj.key)).forEach(observerInfoObj => observerInfoObj.observer.disconnect())
+
+        const config = {
+            attributes: true,
+            childList: true,
+            subtree: true
+        };
+
+        
+
+        const bestOffsetOrderCallback = (mutationList) => {
+            for (const mutation of mutationList) {
+                if (mutation?.target?.innerHTML) {
+                    
+                    setTimeout(() => {
+                        calcProfitOfStrategyInformUntilNotProfit()
+                    }
+                        , 400);
+                    calcOffsetProfitOfStrategyInformUntilNotProfit();
+                }
+
+            }
+        }
+            ;
+
+        const bestOpenMoreOrderCallback = (mutationList) => {
+            for (const mutation of mutationList) {
+                if (mutation?.target?.innerHTML) {
+
+
+                    setTimeout(() => {
+                        calcProfitOfStrategyInformUntilNotProfit()
+                    }
+                        , 400);
+                    calcOffsetProfitOfStrategyInformUntilNotProfit();
+
+                }
+
+            }
+        }
+            ;
+
+        const bestOffsetOrderObserver = new MutationObserver(bestOffsetOrderCallback);
+        const bestOpenMoreOrderObserver = new MutationObserver(bestOpenMoreOrderCallback);
+
+        
+
+        strategyPositionObj.getOffsetOrderPriceElements()[0] && bestOffsetOrderObserver.observe(strategyPositionObj.getOffsetOrderPriceElements()[0], config);
+        strategyPositionObj.getOpenMoreOrderPriceElements()[0] && bestOpenMoreOrderObserver.observe(strategyPositionObj.getOpenMoreOrderPriceElements()[0], config);
+
+
+        const assetDetailsIconClickHandler = ()=>{
+
+
+            setTimeout(() => {
+                const isLimitOrdersVisible = Boolean(strategyPositionObj.ordersModal.querySelector('client-instrument-best-limit'));
+
+                if (isLimitOrdersVisible) {
+                    bestOffsetOrderObserver && bestOffsetOrderObserver.disconnect();
+                    bestOpenMoreOrderObserver && bestOpenMoreOrderObserver.disconnect();
+                    strategyPositions = observePriceChanges();
+                }
+
+            }
+                , 100)
+
+        }
+
+        const detailsButton = strategyPositionObj?.ordersModal?.querySelector('[iconname="details-outlined"]');
+
+        strategyPositionObj.assetDetailsIconClickHandler && detailsButton && detailsButton.removeEventListener('click',strategyPositionObj.assetDetailsIconClickHandler);
+        detailsButton && detailsButton.addEventListener('click', assetDetailsIconClickHandler );
+        strategyPositionObj.assetDetailsIconClickHandler = assetDetailsIconClickHandler;
+
+
+        let observers = strategyPositionObj.observers.filter(observerInfoObj => !['bestOffsetOrder', 'bestOpenMoreOrder'].includes(observerInfoObj.key));
+
+        observers.push({
+            key: 'bestOffsetOrder',
+            observer: bestOffsetOrderObserver
+        });
+        observers.push({
+            key: 'bestOpenMoreOrder',
+            observer: bestOpenMoreOrderObserver
+        });
+        return {
+            ...strategyPositionObj,
+            observers
+        }
+    }
+    );
+}
+
+
+const isProfitEnough = ({ strategyPositions, totalProfitPercent, daysLeftToSettlement,expectedProfit }) => {
+    if (typeof strategyPositions.daysLeftToSettlement !== 'number' || Number.isNaN(daysLeftToSettlement)) {
+        daysLeftToSettlement = strategyPositions.find(sp => {
+            sp.daysLeftToSettlement = sp.getDaysLeftToSettlement()
+            return (typeof sp.daysLeftToSettlement === 'number' && !Number.isNaN(sp.daysLeftToSettlement))
+        })?.daysLeftToSettlement ?? defaultDaysLeftToSettlement;
+
+    }
+
+    const percentPerDay = Math.pow((1 + (totalProfitPercent / 100)), 1 / daysLeftToSettlement);
+    const percentPerMonth = Math.pow(percentPerDay, 30);
+    if (expectedProfit?.strategy) {
+        return totalProfitPercent > expectedProfit?.strategy
+    }
+    if (!percentPerMonth || !totalProfitPercent || totalProfitPercent <= expectedProfit.minExpectedProfitOfStrategy) return
+    return percentPerMonth >= expectedProfit.expectedProfitPerMonth
+}
+
+
+const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentByBestPrices, profitPercentByInsertedPrices,settlementProfitByBestPrices,settlementProfitByInsertedPrices }) => {
+
+    let statusCnt = getStrategyExpectedProfitCnt();
+    const maxDaysToShowQueueSenarioProfits = 4;
+
+    let daysLeftToSettlement = _strategyPositions.find(_strategyPosition =>{
+        _strategyPosition.daysLeftToSettlement = _strategyPosition.getDaysLeftToSettlement()
+        return (typeof _strategyPosition.daysLeftToSettlement === 'number' && !Number.isNaN(_strategyPosition.daysLeftToSettlement))
+    })?.daysLeftToSettlement ?? defaultDaysLeftToSettlement;
+
+    daysLeftToSettlement = daysLeftToSettlement>=1 ? daysLeftToSettlement : 1;
+
+    
+
+    statusCnt.innerHTML = `
+        <div style="display:flex;flex-direction: column;row-gap: 13px;">
+            <div style="display:flex;background: #f6faf3;border:1px solid ; padding: 3px;color:${profitPercentByBestPrices.defaultQueue >= 0 ? 'green' : 'red'}">
+                <div>
+                    <div>
+                            سرخط ${profitPercentByBestPrices.defaultQueue.toLocaleString('en-US', {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1
+                        })}
+                    </div>
+                    ${daysLeftToSettlement< maxDaysToShowQueueSenarioProfits ?`<div style="font-size: 11px;color:${profitPercentByBestPrices.buyQueue >= 0 ? 'green' : 'red'}">
+                            ص خرید ${profitPercentByBestPrices.buyQueue.toLocaleString('en-US', {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1
+                        })}
+                    </div>`:''}
+                </div>
+                ${settlementProfitByBestPrices ? `<div style="margin-right:auto;font-size: small; color:${settlementProfitByBestPrices >= 0 ? 'green' : '#db4848'}">
+                        اعمال ${settlementProfitByBestPrices.toLocaleString('en-US', {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 1
+                    })}
+                </div>`:''}
+             </div>
+            <div style="display:flex; font-size: 85%;color:${profitPercentByInsertedPrices.defaultQueue >= 0 ? 'green' : 'red'}">
+
+                <div>
+                    <div>
+                            اینپوت ${profitPercentByInsertedPrices.defaultQueue.toLocaleString('en-US', {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1
+                        })}
+                    </div>
+                    ${daysLeftToSettlement< maxDaysToShowQueueSenarioProfits ?`<div style="font-size: 11px;color:${profitPercentByInsertedPrices.buyQueue >= 0 ? 'green' : 'red'}">
+                            ص خرید ${profitPercentByInsertedPrices.buyQueue.toLocaleString('en-US', {
+                            minimumFractionDigits: 1,
+                            maximumFractionDigits: 1
+                        })}
+                    </div>`:''}
+                </div>
+                ${settlementProfitByInsertedPrices ? `<div style="margin-right:auto;font-size: small;color:${settlementProfitByInsertedPrices >= 0 ? 'green' : '#db4848'}">
+                        اعمال ${settlementProfitByInsertedPrices.toLocaleString('en-US', {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 1
+                    })}
+                </div>`:''}
+             </div>
+        </div>
+    `;
+
+
+
+    
+    
+   
+
+
+    let isProfitGood=false;
+    if (isProfitEnough({strategyPositions:_strategyPositions, totalProfitPercent: profitPercentByBestPrices.defaultQueue, daysLeftToSettlement,expectedProfit})) {
+
+        isProfitGood =true;
+        informExtremeOrderPrice(_strategyPositions, 'openMore');
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+            title: `سود %${profitPercentByBestPrices.defaultQueue.toFixed()}`,
+            body: `${_strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
+            tag: `${_strategyPositions[0].instrumentName}-expectedProfitPrecent`
+        });
+    } else {
+        isProfitGood =false;
+        uninformExtremeOrderPrice(_strategyPositions);
+    }
+
+    return isProfitGood;
+}
+
+const STRATEGY_NAME_PROFIT_CALCULATOR = {
+
+    utils: {},
+
+   
+    OTHERS({strategyPositions,stockPrice=getBaseInstrumentPriceOfOption(),nokoolOrNoRequestFactor=getnokoolOrNoRequestFactor()}) {
+
+        const totalCostObj = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculatorForPriceTypes)(strategyPositions);
+
+
+        const totalOffsetGainInfo = totalOffsetGainNearSettlementOfEstimationPanel({
+            strategyPositions: strategyPositions
+        });
+
+        const profitPercentByBestPrices = {
+            defaultQueue: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({
+                costWithSign: totalCostObj.totalCostByBestPrices,
+                gainWithSign: totalOffsetGainInfo.defaultQueue
+            }),
+            buyQueue: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({
+                costWithSign: totalCostObj.totalCostByBestPrices,
+                gainWithSign: totalOffsetGainInfo.buyQueue
+            })
+        } 
+
+        const profitPercentByInsertedPrices ={
+            defaultQueue: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({
+                costWithSign: totalCostObj.totalCostByInsertedPrices,
+                gainWithSign: totalOffsetGainInfo.defaultQueue
+            }),
+            buyQueue: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.profitPercentCalculator)({
+                costWithSign: totalCostObj.totalCostByInsertedPrices,
+                gainWithSign: totalOffsetGainInfo.buyQueue
+            })
+        } 
+
+
+
+       
+        const {settlementProfitByBestPrices,settlementProfitByInsertedPrices} = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.settlementProfitCalculator)({strategyPositions:strategyPositions,stockPrice,nokoolOrNoRequestFactor});
+
+        return {
+            profitPercentByBestPrices,
+            profitPercentByInsertedPrices,
+            settlementProfitByBestPrices,
+            settlementProfitByInsertedPrices
+            
+        }
+
+    }
+
+
+}
+
+let prevCalcProfitOfStrategyTimeout;
+
+const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositions) => {
+    // getStrategyName
+
+    clearTimeout(prevCalcProfitOfStrategyTimeout)
+
+    const profitCalculator = STRATEGY_NAME_PROFIT_CALCULATOR[_strategyPositions[0].getStrategyType() || 'OTHERS'];
+    if (!profitCalculator)
+        return
+
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const { 
+        profitPercentByBestPrices, 
+        profitPercentByInsertedPrices,
+        settlementProfitByBestPrices,
+        settlementProfitByInsertedPrices } = profitCalculator({strategyPositions:_strategyPositions});
+
+    const isProfitable = informForExpectedProfitOnStrategy({
+        _strategyPositions,
+        profitPercentByBestPrices,
+        profitPercentByInsertedPrices,
+        settlementProfitByBestPrices,
+        settlementProfitByInsertedPrices
+    });
+
+    if(isProfitable){
+        prevCalcProfitOfStrategyTimeout = setTimeout(() => {
+            calcProfitOfStrategy(_strategyPositions,_unChekcedPositions);
+
+            
+        }, 5000);
+    }
+ 
+    return isProfitable
+}
+
+
+const higherQuantityOfInsertedOrderInformer = ({ orderModalQuantityGetter, informer, informCleaner })=>{
+    if (!strategyPositions[0].ordersModal) return
+
+
+    strategyPositions.forEach(strategyPosition=>{
+        if (!strategyPosition?.ordersModal) return true
+
+        const insertedQuantity = orderModalQuantityGetter(strategyPosition);
+        const currentPortFolioQuantity = (strategyPosition.getCurrentPositionQuantity()/strategyPosition.getCSize());
+
+        const isOrderModalInBuyingTab =  strategyPosition.ordersModal.querySelector('.-is-frontView.-is-buy');
+        const isOrderModalInSellingTab =  strategyPosition.ordersModal.querySelector('.-is-frontView.-is-sell');
+        
+        if(!currentPortFolioQuantity){
+            return informCleaner(strategyPosition);
+        }
+
+        if(strategyPosition.isBuy && isOrderModalInSellingTab && insertedQuantity>currentPortFolioQuantity){
+            informer(strategyPosition);
+        }else if(!strategyPosition.isBuy && isOrderModalInBuyingTab && insertedQuantity>currentPortFolioQuantity){
+            informer(strategyPosition);
+        }else{
+            informCleaner(strategyPosition);
+        }
+        
+
+    });
+}
+
+
+const highSumValueOfInsertedOrderInformer = ({ orderModalQuantityGetter,orderModalPriceGetter, informer, informCleaner })=>{
+    if (!strategyPositions[0].ordersModal) return
+
+
+    strategyPositions.forEach(strategyPosition=>{
+        if (!strategyPosition?.ordersModal) return true
+
+        const positionModalQuantity = orderModalQuantityGetter(strategyPosition);
+        const positionModalPrice = orderModalPriceGetter(strategyPosition);
+
+        const cSize = strategyPosition.getCSize()
+        
+        if(positionModalQuantity*positionModalPrice * cSize > 1000000000){
+            informer(strategyPosition);
+        }else{
+            informCleaner(strategyPosition);
+        }
+
+    });
+}
+
+
+const quantityUnbalanceInformer = ({ orderModalQuantityGetter, informer, informCleaner }) => {
+
+    if (!strategyPositions[0].ordersModal) return
+
+    const position1ModalQuantity = orderModalQuantityGetter(strategyPositions[0]);
+    const position1InsertedQuantity = strategyPositions[0].getInsertedQuantity();
+    const p1Ratio = position1ModalQuantity / position1InsertedQuantity;
+
+
+    const hasModalInsertedQuantityIssue = strategyPositions.some(strategyPosition => {
+        if (!strategyPosition?.ordersModal) return true
+        const positionModalQuantity = orderModalQuantityGetter(strategyPosition);
+        const sumOfSameOptionInsertedQuantity = strategyPositions.filter(_position => _position.instrumentName === strategyPosition.instrumentName).reduce((sumOfQuantity, _position) => sumOfQuantity + _position.getInsertedQuantity(), 0);
+
+        const positionInsertedQuantity = sumOfSameOptionInsertedQuantity;
+        const ratio = positionModalQuantity / positionInsertedQuantity;
+        return p1Ratio != ratio
+    })
+
+
+    if (hasModalInsertedQuantityIssue) {
+        strategyPositions.forEach(informer);
+        return { hasIssue: true }
+    } else {
+        strategyPositions.forEach(informCleaner);
+        return { hasIssue: false }
+    }
+}
+
+
+const enterEvent = new KeyboardEvent("keydown", {
+    key: "Enter",
+    code: "Enter",
+    keyCode: 13,
+    // برای مرورگرهای قدیمی
+    bubbles: true,
+    cancelable: true
+});
+
+
+const observeTabClickOfOrderModal = () => {
+
+    return strategyPositions.map(strategyPositionObj => {
+
+        strategyPositionObj.observers.filter(observerInfoObj => ['tabClickOfOrderModal'].includes(observerInfoObj.key)).forEach(observerInfoObj => observerInfoObj.observer.disconnect())
+
+        const tabsCntOfOrderModal = strategyPositionObj.ordersModal.querySelector('client-trade-ui-tabs');
+
+        const tabClickOfOrderModalHandlerFactory = (ordersModal) => () => {
+
+            
+
+
+            const strategyDropdown = strategyPositionObj.getOrderModalStrategyDropdownElement();
+
+            if (strategyDropdown && !strategyDropdown.querySelector('.ng-value-container .ng-value')) {
+                strategyDropdown.dispatchEvent(enterEvent);
+                strategyDropdown.dispatchEvent(enterEvent);
+            }
+            if (strategyPositionObj.getOrderModalQuantityInputElement().value === '') {
+
+                setTradeModalQuantity(strategyPositionObj);
+                // strategyPositionObj.getOrderModalQuantityInputArrowUpElement().click();
+            }
+            
+
+        }
+
+        const clickHandler = tabClickOfOrderModalHandlerFactory(strategyPositionObj.ordersModal)
+
+        clickHandler();
+
+        tabsCntOfOrderModal.addEventListener('click', clickHandler);
+
+        const inputObserver = {
+            disconnect() {
+                
+                tabsCntOfOrderModal.removeEventListener('click', clickHandler)
+            }
+        }
+
+        let observers = strategyPositionObj.observers.filter(observerInfoObj => !['tabClickOfOrderModal'].includes(observerInfoObj.key));
+
+        observers.push({
+            key: 'tabClickOfOrderModal',
+            observer: inputObserver
+        });
+
+        return {
+            ...strategyPositionObj,
+            observers
+        }
+    }
+    )
+
+}
+
+const injectStyles = () => {
+
+    const css = `
+        
+            section.-is-frontView.-is-sell client-instrument-best-limit-ui-option .-is-sell ,
+            section.-is-frontView.-is-buy client-instrument-best-limit-ui-option .-is-buy {
+                opacity: 0.5 !important;
+            }
+
+
+            client-option-strategy-estimation-layout .o-settings{
+                height: 29px !important;
+                min-height: 29px !important;
+            }
+
+            client-option-strategy-estimation-header{
+                
+                min-height: 28px !important;
+            }
+            .o-item-header{
+                height: 27px !important;
+            }
+
+            client-option-strategy-estimation-chart > header{
+                display: none !important;
+            }
+
+
+            .toast-bottom-left {
+                bottom: 0px !important;
+                left: 160px !important;
+            }
+            .c-toast{
+                width: 201px !important;
+            }
+
+            .o-container .e-toastMessage{
+                font-size: 9px !important;
+            }
+
+            .amin-bold {
+                padding: 2px !important;
+                border: 2px solid !important;
+                background: #f7ff62;
+            }
+            .amin-bold--light {
+                padding: 2px !important;
+                border: 1px dashed !important;
+                background: #c5d8ff;
+            }
+
+
+            client-instrument-price-position-row .-is-price .-is-clickable {
+                width: 100%;
+            }
+
+            section.-is-buy  p , section.-is-sell p{
+                background-color: transparent !important
+            }
+
+
+            client-instrument-price-position-row[orderside="Buy"] {
+                background-color: rgb(160 ,218, 181,.6) !important
+            }
+
+            client-instrument-price-position-row[orderside="Sell"] {
+                background-color: rgba(250, 174, 180, 0.6) !important
+            }
+
+            client-option-modal-trade-layout{
+                width: 270px !important;
+            }
+
+
+            client-trade-ui-input-price-advance-compact #tabKey-optionTradePriceInput{
+                padding-right : 9px !important;
+            }
+
+            client-option-modal-trade-layout .o-inModalWrapper{
+                overflow: initial !important;
+            }
+
+
+            client-instrument-favorites-item-trade-panel .o-quantityContainer footer span{
+                font-size: 17px !important;
+            }
+            client-instrument-favorites-item-trade-panel .o-priceContainer footer{
+                flex-wrap: wrap !important;
+            }
+            client-instrument-favorites-item-trade-panel .o-priceContainer footer .-is-separator{
+                display: none !important;
+            }
+            client-instrument-favorites-item-trade-panel  footer .e-operationModes{
+                display: none !important;
+            }
+
+
+            client-option-reports-tabs c-k-tab-default:nth-child(3) button {
+                color: green !important;
+                text-shadow: 0 0 !important;
+                font-size: 17px !important;
+            }
+
+            // client-trade-ui-input-quantity-advance-compact .o-rangeTooltipContainer{
+            // 	display: none;
+            // }
+
+            .o-rangeTooltipContainer{
+                display: none !important;
+            }
+
+
+            client-instrument-favorites-item-trade-panel main section div p.-is-firstCol {
+                min-width: 170px !important;
+            }
+
+            .c-overlay {
+                backdrop-filter: none !important;
+            }
+
+            client-option-strategy-estimation-header .e-title-input{
+                width: 442px !important;
+            }
+            client-trade-ui-input-price-advance-compact .o-rangeButtonsContainer{
+                display:none;
+            }
+
+            .higher-than-portfolio{
+                border: 5px solid yellow !important;
+            }
+            .inserted-high-sum-value-error{
+                border: 10px solid red !important;
+            }
+            .inserted-quantity-unbalance-error{
+                border: 5px solid red !important;
+            }
+            .current-position-quantity-unbalance-error{
+                border-bottom: 2px solid red !important;
+            }
+
+            client-option-instruments-favorites-item-header  main span{
+                display: inline-block !important;; 
+                word-wrap: break-word !important;; 
+                white-space: normal !important;;   
+                max-width: 100% !important;;    
+            }
+        `;
+
+    const style = domContextWindow.document.createElement("style");
+    style.textContent = css;
+    domContextWindow.document.head.appendChild(style);
+}
+
+const fillCurrentStockPriceByStrikes = (strategyPositions)=>{
+
+    const greaterThanStrikes = Math.max(...strategyPositions.map(sp=>sp.strikePrice)) * 1.2;
+
+    const stockPrice = instrumentExtraDataMap[strategyPositions[0].instrumentName]?.stockPrice || greaterThanStrikes;
+
+
+    const baseInstrumentPriceInputEl = domContextWindow.document.querySelector('.current-stock-price');
+
+
+    baseInstrumentPriceInputEl.value = stockPrice
+
+
+
+}
+
+const  instrumentExtraDataMap = {};
+
+const getAndSetInstrumentData = async (strategyPositions)=>{
+
+    const strategyPositionWithInstrumentInfo = async (strategyPositions) => {
+
+        const instIdInfoMap = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getInstrumentInfoBySymbol(strategyPositions.map(stP=>stP.instrumentName));
+
+        instIdInfoMap.forEach(instIdInfo=>{
+            const strategyPosition = strategyPositions.find(stP=>stP.instrumentName===instIdInfo.instrumentName);
+    
+            const daysLeftToSettlement = strategyPosition.isOption ? Math.ceil((new Date(instIdInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000)): null;
+    
+            instrumentExtraDataMap[instIdInfo.instrumentName] = {
+                optionID : strategyPosition.isOption ?  instIdInfo.instrumentId: null,
+                instrumentId: instIdInfo.instrumentId,
+                cSize: strategyPosition.isOption ? instIdInfo.cSize: 1,
+                stockPrice:strategyPosition.isOption ? instIdInfo.stockPrice: null,
+                daysLeftToSettlement
+            }
+
+        });
+        
+
+
+        return strategyPositions
+
+    }
+
+    // const options = strategyPositions.filter(stP=>stP.isOption);
+
+
+    await strategyPositionWithInstrumentInfo(strategyPositions);
+
+    // const _strategyPositions = await Promise.all(
+    //     strategyPositions.map(async (strategyPosition) => {
+
+    //         return await strategyPositionWithInstrumentInfo(strategyPosition);
+    //     })
+    // );
+
+    return strategyPositions
+
+}
+
+const lastCalculatedAvgPrices={}
+
+
+const calcAvgPricesByExecutenList =async ()=>{
+
+    const requests = strategyPositions.map(async (strategyPosition) => {
+        const instrumentID = strategyPosition.getInstrumentID();
+        const averageInfo = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calcAveragePrice(instrumentID);
+        const avgPrice = averageInfo.averagePrice;
+        console.log({
+            [strategyPosition.instrumentName]:avgPrice,
+            quantity:averageInfo.quantity
+        });
+        return {
+            instrumentName: strategyPosition.instrumentName,
+            instrumentID: instrumentID,
+            quantity: averageInfo.quantity,
+            avgPrice,
+            strategyPosition: strategyPosition,
+            
+        };
+    });
+
+    const results = await Promise.all(requests);
+
+
+    lastCalculatedAvgPrices.results= results;
+    lastCalculatedAvgPrices.time = Date.now();
+    console.log('همه نتایج:', results);
+    console.log('strategyPosition:', strategyPositions);
+    strategyPositions.some(strategyPosition=>{
+        const foundCalcAvgPrice = results.find(result=>result.instrumentName===strategyPosition.instrumentName);
+
+        const calcQuantity = Math.abs(foundCalcAvgPrice.quantity);
+        const currentPositionQuantity = strategyPosition.getCurrentPositionQuantity()/strategyPosition.getCSize();
+        if(calcQuantity!==currentPositionQuantity){
+            const issueMessage = 'تعداد محاسبه شده یکی نیست'
+            showToast(issueMessage,10000,'error');
+        }
+    });
+
+
+
+}
+
+const showVariableMargin = async () => {
+
+    const { variableMargin } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getVariableMargin();
+
+    showToast(variableMargin.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }), 5000);
+}
+
+const getRecentCalculatedAvgPrices = ({instrumentId,instrumentName})=>{
+    if (!lastCalculatedAvgPrices.results || !lastCalculatedAvgPrices.time || (Date.now() - lastCalculatedAvgPrices.time) > (60000 * 3)) return null
+    if(!lastCalculatedAvgPrices.results.length) return 
+    return lastCalculatedAvgPrices.results.find(avgInfo=>avgInfo.instrumentName===instrumentName)
+
+}
+
+
+const openModalOfAllPositionsRows = async (documentOfWindow=document) => {
+
+    const _document  = documentOfWindow;
+
+    const estimationPositionRowList = Array.from(_document.querySelectorAll('client-option-strategy-estimation-main .o-item-body'));
+
+
+    for (const estimationPositionRow of estimationPositionRowList) {
+        const openModalButton = estimationPositionRow.querySelector('.o-instrument-container button');
+        if (!openModalButton?.click) continue;
+
+        openModalButton.click();
+        await new Promise(r => setTimeout(r, 300)); 
+    }
+   
+}
+
+const openWindowAndSelectGroup = (groupTitle,_origin=origin) => {
+
+    const { promise, resolve, reject } = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.createDeferredPromise)();
+    const newWindow = window.open(`${_origin}/#/stock/derivative/main/strategy-estimation?GSTitle=${groupTitle}`);
+
+    if (!newWindow) {
+        alert('پنجره توسط مرورگر مسدود شد!');
+        return;
+    }
+
+    newWindow.onload = function () {
+        setTimeout(async function () {
+            try {
+                const groupTab = await (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.waitForElement)(newWindow.document,()=>newWindow.document.querySelector('c-k-tab-default:nth-child(4) button'),60000);
+                groupTab.click();
+                await (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.waitForElement)(newWindow.document,()=>newWindow.document.querySelector('client-option-positions-layout client-option-positions-main client-grid .ag-body-viewport div[comp-id]'),60000);
+                await new Promise(r => setTimeout(r, 100));
+                newWindow.document.querySelector('c-k-filter-button button').click();
+                await new Promise(r => setTimeout(r, 100));
+
+                const groupSearchBox = newWindow.document.querySelector('client-option-positions-filter-bar ng-select[placeholder="انتخاب گروه"]');
+                groupSearchBox.querySelector('input').value = groupTitle;
+                groupSearchBox.querySelector('input').dispatchEvent(new Event('input', { bubbles: true }));
+                await new Promise(r => setTimeout(r, 100));
+                groupSearchBox.querySelector('ng-dropdown-panel .ng-option:first-child').click();
+
+                resolve(newWindow);
+
+            } catch (e) {
+                
+                console.error('خطا در دسترسی به پنجره:', e);
+                reject(new Error("خطایی رخ داد"));
+
+            }
+        }, 200); // تأخیر برای اطمینان از رندر شدن UI
+    };
+
+    return promise
+}
+
+
+const setTradeModalUiPositions = () => {
+
+    let left = 1200;
+    const top = 55;
+    Array.from(domContextWindow.document.querySelectorAll('client-modal-main client-option-modal-trade-layout')).forEach((tradeModal,i) => {
+        tradeModal.style.left =`${left}px`;
+        tradeModal.style.top =`${top}px`;
+
+        left-= (tradeModal.offsetWidth + 1);
+
+        i===1 &&  (left-=330)
+
+    });
+}
+
+const getStrategyName = ()=>{
+    return domContextWindow.document.querySelector('client-option-strategy-estimation-header c-k-input-text input')?.value
+}
+
+const setStrategyTitleOnUrl = ({strategyTitle,_window=domContextWindow}) => {
+    if (!strategyTitle) return
+
+    const hash = _window.location.hash;
+
+    const [route, query = ''] = hash.split('?');
+
+    const params = new URLSearchParams(query);
+    params.set('GSTitle', strategyTitle);
+
+    _window.history.replaceState(
+        null,
+        '',
+        _window.location.pathname +
+        _window.location.search +
+        route +
+        '?' +
+        params.toString()
+    );
+
+}
+
+const getAndSetStrategyTitleOnUrl = ()=>{
+
+    const strategyTitle = getStrategyName();
+    console.log(strategyTitle)
+    setStrategyTitleOnUrl({strategyTitle});
+}
+
+
+
+const openGroupInNewTab = async (groupName,_origin) => {
+
+
+    const childWindow = await openWindowAndSelectGroup(groupName,_origin);
+    
+
+    const { strategyRowLength,strategyTitle } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.selectStrategy(childWindow.document);
+
+    setStrategyTitleOnUrl({strategyTitle,_window:childWindow});
+
+
+    await (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.waitForElement)(childWindow.document, () => {
+        const openModalButtnList = childWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-item-body .o-instrument-container button:first-child');
+        return strategyRowLength ? (openModalButtnList.length === strategyRowLength) : openModalButtnList
+
+    }, 60000);
+
+    // await new Promise(r => setTimeout(r, 10000));
+
+
+    await openModalOfAllPositionsRows(childWindow.document);
+
+
+    childWindow.document.querySelector('c-k-filter-button button').click();
+
+    setTradeModalUiPositions();
+
+    return childWindow
+
+    // await new Promise(r => setTimeout(r, 1000));
+
+    // Run(childWindow)
+
+}
+
+const openAllGroupsInNewTabs = async ()=>{
+
+    const groups = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getGroups();
+
+    // for (const group of groups.slice(0, 1)) {
+    for (const group of groups) {
+
+        openGroupInNewTab(group.name);
+        await new Promise(r => setTimeout(r, 100));
+        
+    }
+
+}
+
+
+const getSummaryNameOfStrategy = () => {
+
+
+    const instrumentNames = strategyPositions.map(strategyPosition=>strategyPosition.instrumentName);
+
+    const map = {};
+    const noNumberItems = [];
+
+    instrumentNames.forEach(item => {
+        const match = item.match(/^(\D+)(\d+)$/);
+
+        // اگه عدد نداشت
+        if (!match) {
+            noNumberItems.push(item);
+            return;
+        }
+
+        const [, prefix, num] = match;
+
+        if (!map[prefix]) {
+            map[prefix] = [];
+        }
+        map[prefix].push(num);
+    });
+
+    const result = [
+        ...Object.entries(map).map(
+            ([prefix, nums]) => `${prefix}${nums.join('-')}`
+        ),
+        ...noNumberItems
+    ].join('-');
+
+    return result
+
+}
+
+const createGroupOfCurrentStrategy = async ()=>{
+
+    try {
+
+        const response = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.createGroup({
+            name: getSummaryNameOfStrategy(),
+            instrumentIds: strategyPositions.map(strategyPosition=>strategyPosition.getInstrumentID())
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json(); 
+        console.log('Data received:', data);
+
+        showToast('گروه ایجاد شد');
+        groupLogger?.collect && groupLogger.collect({isForce:true});
+
+        const { sum, areNotInGroups } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getSumOfPositionsOfGroups();
+        if(areNotInGroups?.length){
+            const issueMessage = 'در گروه نیستن'
+            showToast(issueMessage,10000,'error');
+            console.log({sum,areNotInGroups});
+            (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+                title: issueMessage,
+                body: `${areNotInGroups.map(instrumentName => instrumentName).join('-')}`,
+                tag: `areNotInGroups`
+            });
+        }
+        
+    } catch (error) {
+        console.error('Fetch operation failed:', error);
+
+        console.error('Failed to fetch user data:', error);
+        const issueMessage = 'خطا در درخواست ساخت گروه'
+        showToast(issueMessage,10000,'error');
+
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+                title: issueMessage,
+                body: `${strategyPositions.map(instrumentName => instrumentName).join('-')}`,
+                tag: `createGroupError`
+        });
+        
+    }
+   
+    (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.takeScreenshot)();
+}
+
+function showToast(message, duration = 2000,type ='default') {
+  let toast = domContextWindow.document.getElementById('omex-plus-toast');
+
+  if (!toast) {
+    toast = domContextWindow.document.createElement('div');
+    toast.id = 'omex-plus-toast';
+    toast.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: black;
+      color: white;
+      padding: 8px 12px;
+      z-index: 9999;
+    `;
+    domContextWindow.document.body.appendChild(toast);
+  }
+    if (type === 'error') {
+        toast.style.background = 'red';
+        toast.style.top = 'auto'
+        toast.style.bottom = '20px';
+    } else {
+        toast.style.background = 'black';
+        toast.style.top = '20px';
+        toast.style.bottom = 'auto';
+
+    }
+
+
+  toast.textContent = message;
+  toast.style.display = 'block';
+
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    toast.style.display = 'none';
+  }, duration);
+}
+
+let strategyPositions;
+let unChekcedPositions;
+
+
+let domContextWindow = window;
+
+const setTradeModalQuantityOfAllTradeModals = () => {
+
+    for (const strategyPosition of strategyPositions) {
+
+        setTradeModalQuantity(strategyPosition)
+
+    }
+
+}
+const setTradeModalQuantity = (strategyPosition) => {
+
+    const cSize = strategyPosition.getCSize();
+
+    const quantity = sumOfQuantityOfSamePosition(strategyPosition,strategyPositions) / cSize;
+    strategyPosition.getOrderModalQuantityInputElement().value = quantity;
+    strategyPosition.getOrderModalQuantityInputElement().dispatchEvent(new Event('input', { bubbles: true }));
+
+}
+
+
+const setDaysFromToday= () => {
+
+    const daysFromTodayInput = domContextWindow.document.querySelector('[formcontrolname="daysFromToday"] input');
+    if(!daysFromTodayInput) {
+        console.error('daysFromTodayInput not found!');
+        return 
+    }
+    daysFromTodayInput.value = 100;
+    daysFromTodayInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+}
+
+
+const preventWhellScrollOnChart = ()=>{
+
+    function preventWheel(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation(); // برای امنیت بیشتر
+        return false;
+    }
+    
+    
+    domContextWindow.document.querySelector('client-option-strategy-estimation-chart').addEventListener('wheel', preventWheel, { passive: false, capture: true });
+}
+
+
+const Run = async (_window = window) => {
+
+    try {
+        if (typeof strategyPositions !== 'undefined') {
+            strategyPositions.forEach(strategyPosition => {
+                strategyPosition.observers.map(observerInfoObj => observerInfoObj?.observer.disconnect());
+
+            }
+            );
+        }
+    } catch (error) {
+
+    }
+
+    domContextWindow = _window
+    
+    strategyPositions = createPositionObjectArrayByElementRowArray(Array.from(domContextWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => rowEl.querySelector('c-k-input-checkbox input').checked));
+    unChekcedPositions  = createPositionObjectArrayByElementRowArray(Array.from(domContextWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => !rowEl.querySelector('c-k-input-checkbox input').checked));
+
+
+    injectStyles()
+
+    strategyPositions = observePriceChanges();
+
+    //  not needed and causes issue 
+    // strategyPositions = observeMyOrderInOrdersModal();
+    strategyPositions = observeInputBoxInRowOfStrategy();
+    strategyPositions = observeInputQuantityOfOrderModal();
+    strategyPositions = observeTabClickOfOrderModal();
+    strategyPositions = observePortfolioQuantityOfOrderModal();
+
+    calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+
+
+    calcOffsetProfitOfStrategyInformUntilNotProfit()
+
+
+
+    getStrategyExpectedProfitCnt();
+    createDeleteAllOrdersButton();
+
+    stopDraggingWrongOfOrdersModals();
+
+    
+
+    setTradeModalQuantityOfAllTradeModals();
+
+    setTradeModalUiPositions();
+    setDaysFromToday();
+
+    initLoggers();
+    preventWhellScrollOnChart();
+    fillCurrentStockPriceByStrikes(strategyPositions);
+    strategyPositions = await getAndSetInstrumentData(strategyPositions);
+
+    fillCurrentStockPriceByStrikes(strategyPositions);
+
+
+    calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+
+
+    (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.startMarketCountdown)();
+
+
+    getAndSetStrategyTitleOnUrl();
+
+
+    
+    console.log(strategyPositions);
+
+
+}
+
+// Run();
+
+
+
+
+
+
+
+
+
+
+/***/ }),
+/* 4 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   OMEXApi: () => (/* binding */ OMEXApi),
+/* harmony export */   cacheItemsTemporarily: () => (/* binding */ cacheItemsTemporarily),
+/* harmony export */   calculateSumOfMoneyAndAssets: () => (/* binding */ calculateSumOfMoneyAndAssets),
+/* harmony export */   createGroup: () => (/* binding */ createGroup),
+/* harmony export */   createStrategyListForAllGroups: () => (/* binding */ createStrategyListForAllGroups),
+/* harmony export */   fillEstimationPanelByStrategyName: () => (/* binding */ fillEstimationPanelByStrategyName),
+/* harmony export */   findDuplicationsInGroups: () => (/* binding */ findDuplicationsInGroups),
+/* harmony export */   getBlockedAmount: () => (/* binding */ getBlockedAmount),
+/* harmony export */   getOptionPortfolioList: () => (/* binding */ getOptionPortfolioList),
+/* harmony export */   getStockPortfolioList: () => (/* binding */ getStockPortfolioList),
+/* harmony export */   getSumOfPositionsOfGroups: () => (/* binding */ getSumOfPositionsOfGroups),
+/* harmony export */   getWalletInfo: () => (/* binding */ getWalletInfo),
+/* harmony export */   isInstrumentNameOfOption: () => (/* binding */ isInstrumentNameOfOption)
+/* harmony export */ });
+/* harmony import */ var _common__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
+
+
+// https://khobregan.tsetab.ir
+const origin = window.location.origin;
+const redOrigin = origin.replace('.tsetab','-red.tsetab');
+const deltaOrigin = origin.replace('.tsetab','-delta.tsetab');
+
+
+
+const getWalletInfo = async () => {
+
+    
+
+    const walletInfo = await fetch(`${redOrigin}/api/Customers/wallet-info`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => res.response?.data[0])
+
+    return walletInfo
+
+}
+
+
+const getOptionPortfolioList = async () => {
+
+    
+
+    const list = await fetch(`${redOrigin}/api/optionOpenPositions/get`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => res.response.data)
+
+    return list
+
+}
+
+const getStockPortfolioList = async () => {
+
+    const list = await fetch(`${deltaOrigin}/api/assets/portfolio-info`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => res.response?.data?.items);
+
+    return list
+}
+
+
+function formatDateToYyyymmdd(date) {
+    return date.toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+const getTodayOpenOrders = async () => {
+    // ?historyDate=20251026
+    return fetch(`${redOrigin}/api/Orders/GetOrders?historyDate=${formatDateToYyyymmdd(new Date())}`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const orders = res.response.data;
+        return orders.filter(order=>order.orderStatus==="InQueue" || order.orderStatus==="PartlySettled")
+
+    });
+
+
+}
+
+const deleteOrder = ({orderId,id}) => {
+    
+    return fetch( `${redOrigin}/api/Orders/OrderCancellation?orderId=${orderId}&Id=${id}`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "access-control-max-age": "3600",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "cache-control": "max-age=21600, public",
+            "content-type": "application/json; charset=UTF-8",
+            "ngsw-bypass": ""
+        },
+        //   "referrer": "https://khobregan.tsetab.ir/order-terminal-worker.6b5091bdcec9e3f3.js",
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "POST",
+        "mode": "cors",
+        "credentials": "include"
+    });
+}
+
+
+
+const getStockPricesData = async (instrumentIds)=>{
+
+    return fetch(`${redOrigin}/api/PublicMessages/InstTrades`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "content-type": "application/json",
+            "ngsw-bypass": "",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": JSON.stringify({
+            instrumentIds
+        }),
+        "method": "POST",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const stockInfos = res.response.data;
+        return stockInfos
+    });
+}
+
+
+const getStockInfos = async (instrumentIds) => {
+    return fetch(`${redOrigin}/api/PublicMessages/GetInstruments`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "content-type": "application/json",
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": JSON.stringify({
+            instrumentIds
+        }),
+        "method": "POST",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const stockInfos = res.response.data;
+        return stockInfos
+    });
+}
+
+const getOptionContractInfos = async (instrumentIds) => {
+
+    return fetch(`${redOrigin}/api/PublicMessages/GetOptionContractInfos`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "content-type": "application/json",
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": JSON.stringify({
+            instrumentIds
+        }),
+        "method": "POST",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const optionContractInfos = res.response.data;
+        return optionContractInfos
+    });
+
+
+
+}
+const searchOptionContractInfos = async (symbol) => {
+    // ?historyDate=20251026
+    return fetch(`${redOrigin}/api/PublicMessages/SearchInstruments?filter=${symbol}&marketType=Stock&marketType=Option&marketType=OptionEnergy&marketType=Other`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Google Chrome\";v=\"141\", \"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"141\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const optionNamesObj = res.response.data;
+        if(!optionNamesObj?.length) return null
+        return optionNamesObj[0]
+    });
+
+
+}
+
+
+const getInstrumentInfoBySymbol = async (instrumentNames) => {
+    // اگر ورودی رشته باشد، به آرایه تبدیل می‌کنیم
+    const names = Array.isArray(instrumentNames) ? instrumentNames : [instrumentNames];
+    
+    if (names.length === 0) {
+        return Array.isArray(instrumentNames) ? [] : null;
+    }
+    
+    // مرحله 1: دریافت ID همه سهم‌ها به صورت موازی
+    const searchPromises = names.map(async (name) => {
+        try {
+            const instrumentNameObj = await searchOptionContractInfos(name);
+            if (!instrumentNameObj) return null;
+            
+            return {
+                name: name,
+                instrumentId: instrumentNameObj.instrumentId,
+                isOption: isInstrumentNameOfOption(name)
+            };
+        } catch (error) {
+            console.error(`Error searching ${name}:`, error);
+            return null;
+        }
+    });
+    
+    const searchResults = await Promise.all(searchPromises);
+    const validResults = searchResults.filter(result => result !== null);
+    
+    if (validResults.length === 0) {
+        return Array.isArray(instrumentNames) ? [] : null;
+    }
+    
+    // تفکیک ID های آپشن و سهام
+    const optionIds = validResults
+        .filter(item => item.isOption)
+        .map(item => item.instrumentId);
+    
+    const stockIds = validResults
+        .filter(item => !item.isOption)
+        .map(item => item.instrumentId);
+    
+    // مرحله 2: دریافت اطلاعات با یک ریکویست برای هر نوع
+    const [optionInfos, stockInfos] = await Promise.all([
+        optionIds.length > 0 ? getOptionContractInfos(optionIds) : [],
+        stockIds.length > 0 ? getStockInfos(stockIds) : []
+    ]);
+    
+    // ساخت مپ از id به اطلاعات برای دسترسی سریع
+    const infoMap = new Map();
+
+    const baseInstrumentId = optionInfos[0].baseInstrumentId;
+
+
+    const [stockPriceInfoOfOption] = await getStockPricesData([baseInstrumentId]);
+    
+    optionInfos.forEach(info => {
+        const searchResult = validResults.find(validResult=>validResult.instrumentId===info.instrumentId);
+        const stockPrice = stockPriceInfoOfOption.pDrCotVal;
+        infoMap.set(info.instrumentId, {...info,instrumentName:searchResult.name,stockPrice});
+    });
+    
+    stockInfos.forEach(info => {
+        const searchResult = validResults.find(validResult=>validResult.instrumentId===info.instrumentId);
+        const stockPrice = stockPriceInfoOfOption.pDrCotVal;
+        infoMap.set(info.instrumentId, {...info,instrumentName:searchResult.name,stockPrice});
+    });
+    
+    // مرحله 3: ساخت نتیجه نهایی به ترتیب ورودی
+    const results = validResults
+        .map(item => infoMap.get(item.instrumentId) || null)
+        .filter(info => info !== null);
+    
+    // اگر ورودی تکی بود، همان شیء را برگردانید
+    return Array.isArray(instrumentNames) ? results : (results[0] || null);
+};
+
+const getInstrumentInfoBySymbol2 = async (instrumentName)=>{
+
+     const instrumentNameObj = await searchOptionContractInfos(instrumentName);
+
+     if(!instrumentNameObj) return null
+
+     const instrumentId = instrumentNameObj.instrumentId;
+
+
+     let instrumentInfos;
+     if(isInstrumentNameOfOption(instrumentName)){
+        instrumentInfos = await getOptionContractInfos([instrumentId]);
+
+     }else{
+        instrumentInfos = await getStockInfos([instrumentId]);
+     }
+
+
+     if(!instrumentInfos?.length) return null
+
+
+     return instrumentInfos[0]
+
+}
+
+
+const deleteAllOpenOrders =async ()=>{
+
+
+    const openOrderList = await getTodayOpenOrders();
+
+    for (let i = 0; i < openOrderList.length; i++) {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        const {orderId,id}=openOrderList[i];
+        await deleteOrder({orderId,id});
+    }
+
+
+    return
+
+}
+
+const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+};
+
+const getOrders = async (instrumentId,daysAgo = 120)=>{
+
+    const today = new Date();
+    const fromDateObj = new Date(today);
+    fromDateObj.setDate(today.getDate() - daysAgo);
+
+    const fromDate = formatDate(fromDateObj);
+
+    return fetch(`${redOrigin}/api/Orders/GetHistoryOrders?$count=true&instrumentId=${instrumentId}&fromDate=${fromDate}`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"148\", \"Google Chrome\";v=\"148\", \"Not/A)Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": "https://khobregan.tsetab.ir/",
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const orders = res.response.data;
+        if (!orders?.length) return null
+        return orders
+    });
+}
+
+const calcAveragePrice = async (instrumentId)=>{
+
+    const orders = await getOrders(instrumentId);
+
+    const averageInfo  = (0,_common__WEBPACK_IMPORTED_MODULE_0__.calcAveragePriceByExecutedOrders)(orders);
+
+    return  averageInfo
+
+}
+
+
+const getGroups =async () => {
+    return fetch(`${redOrigin}/api/AssetGrouping/GetGroups`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const groups = res.response.data;
+        return groups
+    });
+}
+const getCustomerOptionStrategyEstimationWithItems = async () => {
+    return fetch(`${redOrigin}/api/OptionStrategyEstimations/GetCustomerOptionStrategyEstimationWithItems`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-US,en;q=0.9,ar;q=0.8,ur;q=0.7,da;q=0.6,fa;q=0.5,ne;q=0.4",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const strategyEstimationList = res.response.data;
+        return strategyEstimationList
+    });
+}
+
+
+
+const getOptionStrategies = async () => {
+    return fetch(`${redOrigin}/api/OptionStrategies/Get`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "sec-ch-ua": "\"Not=A?Brand\";v=\"99\", \"Google Chrome\";v=\"151\", \"Chromium\";v=\"151\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": "https://khobregan.tsetab.ir/",
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => {
+        const optionStrategies = res.response.data;
+        return optionStrategies
+    });
+}
+
+
+
+const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
+
+    const groupPositions = group.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId));
+
+    const foundStrategy = strategies.find(strategy => {
+
+
+        strategy.rowLength = strategy.items.length;
+        strategy.items = Array.from(new Map(strategy.items.map(sItem => [sItem.instrumentId, sItem])).values());
+
+        const hasAllInstrumentId = groupPositions.every(groupPosition => strategy.items.find(sItem => groupPosition && sItem && groupPosition.instrumentId === sItem.instrumentId && groupPosition.orderSide === sItem.side));
+
+
+        return hasAllInstrumentId && strategy.items.length === group.instrumentIds.length
+
+    });
+
+    return foundStrategy
+
+}
+
+
+
+const selectStrategy =async (documentOfWindow)=>{
+    const _document  = documentOfWindow || document;
+    const selectedGroupTitle = _document.querySelector('client-option-positions-filter-bar .-is-group ng-select .u-ff-number').innerHTML;
+
+    const groups = await getGroups();
+
+    let selectedGroup = groups.find(group=>selectedGroupTitle.includes(group.name));
+
+    const portfolioList = await getOptionPortfolioList();
+
+
+    const strategies = await getCustomerOptionStrategyEstimationWithItems();
+
+
+    const foundStrategy  = findStrategyOfGroup({group:selectedGroup,strategies,portfolioList});
+
+    if(!foundStrategy) return
+
+
+
+    const  estimationListButton = _document.querySelector('client-option-strategy-estimation-header button[label="لیست برآوردها"]');
+
+
+    estimationListButton.click();
+    await new Promise(r => setTimeout(r, 200));
+
+    const estimationListSearchInput = _document.querySelector('client-option-strategy-estimation-list c-k-input-search input');
+    estimationListSearchInput.value=  foundStrategy.title;
+    estimationListSearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+
+
+
+    const searchResultElementList = _document.querySelectorAll('client-option-strategy-estimation-list .o-items-container .o-item');
+
+    await new Promise(r => setTimeout(r, 200));
+
+
+    Array.from(searchResultElementList).find(searchResultElement=>searchResultElement.querySelector('span').innerHTML===foundStrategy.title)?.click()
+
+    // console.log(foundStrategy);
+
+    return {
+        strategyTitle:foundStrategy.title,
+        _document,
+        strategyRowLength:foundStrategy.rowLength}
+    
+
+}
+
+const getSumOfPositionsOfGroups = async ()=>{
+    const groups = await getGroups();
+    let portfolioList = await getOptionPortfolioList();
+    const sum  = groups.reduce((sum,g)=>sum+=(g.instrumentIds.length),0);
+
+    const instrumentIdsOfGroups = groups.flatMap(group=>group.instrumentIds);
+
+
+    const areNotInGroups = portfolioList.reduce((areNotInGroups,position)=>{
+
+        if(!instrumentIdsOfGroups.find(instrumentId=>instrumentId===position.instrumentId)){
+            areNotInGroups.push(position.instrumentName) 
+        }
+        return areNotInGroups
+    },[])
+    
+    console.log(sum,areNotInGroups)
+
+    return {
+        sum,
+        areNotInGroups
+    }
+    
+}
+
+
+const calculateBlockedAmount =(optionPortfolioList)=>{
+
+    return optionPortfolioList.map(op=>op.blockedAmount).filter(Boolean).reduce((sum,current)=>sum+current,0)
+
+}
+
+
+const getBlockedAmount = ()=>{
+
+    getOptionPortfolioList().then(list=>{
+        console.log(calculateBlockedAmount(list))
+    })
+}
+
+
+
+
+const fillEstimationPanelByStrategyName=async ()=>{
+
+    const strategyName = document.querySelector('client-option-strategy-estimation-header .e-title-input input').value;
+    if(!strategyName) return 
+
+    const optionSymbolList = strategyName.split('@')[1].split('-');
+
+    const addNewRowButton = document.querySelector('client-option-strategy-estimation-main .o-footer button');
+
+    const searchAndSelectOption = async (optionSymbol)=>{
+        const getEmptyRow = ()=>{
+            const row = document.querySelector('client-option-strategy-estimation-main .o-items .o-item-body:last-child');
+            const searchInput = row?.querySelector('client-option-strategy-estimation-main-ui-instrument-search input');
+
+            return searchInput &&  {
+                searchInput,
+                row
+            }
+        }
+
+        let {searchInput,row} = getEmptyRow() || {};
+
+        const estimationPanelElement = document.querySelector('client-option-strategy-estimation-main .o-items');
+        
+        if(!searchInput){
+
+            addNewRowButton.click();
+            const result = await (0,_common__WEBPACK_IMPORTED_MODULE_0__.waitForElement)(estimationPanelElement,getEmptyRow);
+            searchInput = result.searchInput;
+            row = result.row;
+        }
+
+        searchInput.value = optionSymbol;
+        searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+        try {
+            const resultBodyElement = await (0,_common__WEBPACK_IMPORTED_MODULE_0__.waitForElement)(row,()=>row.querySelector('client-option-strategy-estimation-main-ui-instrument-search ng-dropdown-panel .ng-dropdown-panel-items .ng-option:first-child .c-resultBody'));
+            resultBodyElement.click();
+        } catch (err) {
+            console.error("Error:", err.message);
+        }
+
+        const quantityInput = row.querySelector('c-k-input-number[formcontrolname=quantity] input');
+        quantityInput.value='10';
+        quantityInput.dispatchEvent(new Event('input', { bubbles: true }));
+        const linkPriceButton = row.querySelector('.o-price-group client-option-strategy-estimation-main-ui-lock button')
+        linkPriceButton.click();
+        
+    }
+
+    for (const optionSymbol of optionSymbolList) {
+
+        await searchAndSelectOption(optionSymbol)
+
+    }
+   
+}
+
+
+const createGroup = ({ name, instrumentIds }) => {
+
+    return fetch(`${redOrigin}/api/AssetGrouping/Create`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "content-type": "application/json",
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Google Chrome\";v=\"143\", \"Chromium\";v=\"143\", \"Not A(Brand\";v=\"24\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": JSON.stringify({
+            name,
+            "assetGroupingTypeId": "OpenPosition",
+            instrumentIds
+        }),
+        "method": "POST",
+        "mode": "cors",
+        "credentials": "include"
+    });
+
+}
+
+
+
+const createStrategyListForAllGroups = async ()=>{
+
+
+    const groups = await getGroups();
+
+
+    const portfolioList = await getOptionPortfolioList();
+
+
+    const strategies = await getCustomerOptionStrategyEstimationWithItems();
+
+
+
+    const strategyListForAllGroups = groups.map(group=>{
+        const positions = group.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId))
+        const strategy  = findStrategyOfGroup({group,strategies,portfolioList});;
+
+
+        if(!strategy?.items) {
+            console.log(group);
+            return null
+        }
+
+        const strategyPositions = strategy.items.map(strategyItem=>{
+
+            const portfolioPosition = positions.find(pos=>pos.instrumentId===strategyItem.instrumentId)
+
+            const instrumentName = portfolioPosition.instrumentName;
+           
+            return {
+                instrumentName,
+                isBuy: strategyItem.side === 'Buy',
+                isETF: (0,_common__WEBPACK_IMPORTED_MODULE_0__.isETF)(instrumentName),
+                isOption: isInstrumentNameOfOption(instrumentName),
+                isCall: portfolioPosition.optionSide==="Call",
+                isPut: portfolioPosition.optionSide==="Put",
+                cSize: portfolioPosition.cSize,
+                // getBaseInstrumentPriceOfOption,
+
+
+                quantityOfEstimationPositionRow: strategyItem.quantity,
+                // getQuantity:()=>strategyItem.quantity,
+                portfolioPositionQuantity:portfolioPosition.blockedStrategyQuantity,
+                // getCurrentPositionQuantity:()=>portfolioPosition.blockedStrategyQuantity,
+
+
+                requiredMargin : strategyItem.requiredMargin / portfolioPosition.cSize,
+                // getRequiredMargin : strategyItem.requiredMargin / portfolioPosition.cSize,
+                currentPositionAvgPrice: portfolioPosition.executedPrice,
+                strikePrice : portfolioPosition.strikePrice,
+                daysLeftToSettlement : portfolioPosition.remainCsDateDays,
+                // getBestOffsetPrice,
+                // getBestOpenMorePrice,
+                // getBestOpenMorePriceWithSideSign,
+                // getStrategyName,
+                // getStrategyType,
+
+            }
+        })
+
+        return {group,strategy,strategyPositions}
+
+       
+
+        
+    }).filter(Boolean)
+
+
+
+    console.log(strategyListForAllGroups);
+    
+
+
+
+
+}
+
+const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
+
+
+
+
+const calculateSumOfMoneyAndAssets  = async ()=>{
+
+
+    const [optionPortfolioList,assetPortfolioList,walletInfo] = await Promise.all(
+        [
+            getOptionPortfolioList(),
+            getStockPortfolioList(),
+            getWalletInfo()
+        ]
+    )
+
+
+    // const blockedAmount = await calculateBlockedAmount(optionPortfolioList);
+
+    const sumCostWithoutMarginOfOptions = optionPortfolioList.reduce((sumCostWithoutMarginOfOptions,option)=>{
+
+        const {orderSide,cSize,count,executedPrice} = option;
+        const sumOfExecutedValue =  orderSide==='Buy' ? cSize * count * executedPrice * (1 + _common__WEBPACK_IMPORTED_MODULE_0__.COMMISSION_FACTOR.OPTION.BUY) : (cSize * count * executedPrice)/(1+_common__WEBPACK_IMPORTED_MODULE_0__.COMMISSION_FACTOR.OPTION.SELL);
+
+        sumCostWithoutMarginOfOptions += orderSide==='Buy' ? sumOfExecutedValue : - sumOfExecutedValue;
+
+        return sumCostWithoutMarginOfOptions
+
+    },0);
+
+
+    let isThereFreeRiskETF=false;
+    const sumCostOfAssetsWithoutFreeRiskETF = assetPortfolioList.reduce((sumCostOfAssetsWithoutFreeRiskETF,asset)=>{
+
+        const {quantity,executedPrice,instrumentId} = asset;
+        if(instrumentId==='IRT3KMDF0001'){
+            isThereFreeRiskETF=true;
+            return sumCostOfAssetsWithoutFreeRiskETF
+        }
+        const sumOfExecutedValue =   quantity * executedPrice *  (1 + _common__WEBPACK_IMPORTED_MODULE_0__.COMMISSION_FACTOR.STOCK.BUY);
+        sumCostOfAssetsWithoutFreeRiskETF += sumOfExecutedValue;
+
+        return sumCostOfAssetsWithoutFreeRiskETF
+
+    },0);
+
+
+
+    const {customerOptionPurchasePowerT2,blockedAmount} = walletInfo;
+
+
+
+    const sumOfMoneyAndAssets = sumCostWithoutMarginOfOptions + customerOptionPurchasePowerT2 + blockedAmount + sumCostOfAssetsWithoutFreeRiskETF;
+    console.log(sumOfMoneyAndAssets.toLocaleString('en-US', {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    }));
+
+
+    const calculatedBlockedAmount = optionPortfolioList.filter(position=>position.blockedAmount).reduce((sum,position)=>sum+position.blockedAmount,0);
+
+
+
+    return {
+        sumOfMoneyAndAssets,
+        sumCostWithoutMarginOfOptions,
+        blockedAmount,
+        calculatedBlockedAmount,
+        customerOptionPurchasePowerT2,
+        sumCostOfAssetsWithoutFreeRiskETF
+    }
+
+    
+}
+
+const cacheItemsTemporarily = async (item)=>{
+    localStorage.setItem(
+        'tempCachedItems',
+        JSON.stringify(item)
+    );
+}
+
+
+const findDuplicationsInGroups = async ()=>{
+    const groups = await getGroups();
+    const optionPortfolioList = await getOptionPortfolioList();
+
+
+    cacheItemsTemporarily({groups,optionPortfolioList});
+
+
+    const duplicateMap = new Map();
+
+    for (const group of groups) {
+        for (const instrumentId of group.instrumentIds) {
+            if (!duplicateMap.has(instrumentId)) {
+                duplicateMap.set(instrumentId, {
+                    count: 0,
+                    groups: []
+                });
+            }
+
+            const item = duplicateMap.get(instrumentId);
+            item.count++;
+            item.groups.push({
+                id: group.id,
+                name: group.name
+            });
+        }
+    }
+
+    const instrumentNameMap = new Map(
+        optionPortfolioList.map(item => [
+            item.instrumentId,
+            item.instrumentName
+        ])
+    );
+
+    const duplicates = [...duplicateMap.entries()]
+        .filter(([_, value]) => value.count > 1)
+        .map(([instrumentId, value]) => ({
+            instrumentId,
+            instrumentName: instrumentNameMap.get(instrumentId) ?? 'نامشخص',
+            count: value.count,
+            groups: value.groups
+        }));
+
+    console.log(duplicates);
+
+    duplicates.forEach(item => {
+        console.log(
+            `${item.instrumentName} (${item.instrumentId}) در ${item.count} گروه استفاده شده:`,
+            item.groups.map(group => group.name).join("، ")
+        );
+    });
+}
+
+const FIXED_MARGIN_STRATEGIES = new Set([
+  "BearCallSpread",
+  "BullPutSpread",
+]);
+
+
+
+
+const calculateFixedMargin = async () => {
+
+
+    const positions = await getOptionPortfolioList();
+    const strategies = await getOptionStrategies();
+    const positionMap = new Map(
+        positions.map(p => [p.instrumentId, p])
+    );
+
+    let totalFixedDMargin = 0;
+
+    const details = [];
+
+    for (const strategy of strategies) {
+
+        // فعلاً Butterfly را جداگانه مدیریت می‌کنیم
+        if (!FIXED_MARGIN_STRATEGIES.has(strategy.type)) {
+            continue;
+        }
+
+        const p1 = positionMap.get(strategy.baseStrategyInstrumentId);
+        const p2 = positionMap.get(strategy.strategyInstrumentId);
+
+        if (!p1 || !p2) {
+            console.warn(
+                "Position not found for strategy:",
+                strategy.type,
+                strategy.id,
+                strategy.baseStrategyInstrumentName,
+                strategy.strategyInstrumentName
+            );
+
+            continue;
+        }
+
+        const strike1 = Number(p1.strikePrice);
+        const strike2 = Number(p2.strikePrice);
+
+        const contractSize = Number(p1.cSize);
+
+        // تعداد واقعی Spread
+        const quantity = Number(
+            strategy.quantity
+        );
+
+        const strikeDifference = Math.abs(strike1 - strike2);
+
+        const margin =
+            strikeDifference *
+            contractSize *
+            quantity;
+
+        totalFixedDMargin += margin;
+
+        details.push({
+            strategyId: strategy.id,
+            type: strategy.type,
+
+            instrument1: p1.instrumentName,
+            instrument2: p2.instrumentName,
+
+            strike1,
+            strike2,
+            strikeDifference,
+
+            contractSize,
+            quantity,
+
+            margin
+        });
+    }
+
+    console.log({ totalFixedDMargin, details });
+
+
+    return {
+        totalFixedDMargin,
+        details
+    };
+}
+
+
+const getVariableMargin = async()=>{
+
+    const {totalFixedDMargin} = await calculateFixedMargin();
+    const {calculatedBlockedAmount} = await calculateSumOfMoneyAndAssets();
+    const variableMargin = calculatedBlockedAmount - totalFixedDMargin;
+
+    console.log({calculatedBlockedAmount,totalFixedDMargin,variableMargin})
+
+
+    return {
+        calculatedBlockedAmount,
+        totalFixedDMargin,
+        variableMargin
+    }
+
+}
+
+
+
+
+const OMEXApi = {
+    getGroups,
+    getOptionPortfolioList,
+    getStockPortfolioList,
+    getOptionContractInfos,
+    getInstrumentInfoBySymbol,
+    deleteAllOpenOrders,
+    selectStrategy,
+    getSumOfPositionsOfGroups,
+    getBlockedAmount,
+    fillEstimationPanelByStrategyName,
+    createGroup,
+    createStrategyListForAllGroups,
+    calculateSumOfMoneyAndAssets,
+    calcAveragePrice,
+    findDuplicationsInGroups,
+    getVariableMargin
+}
+
+/***/ }),
+/* 5 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony import */ var _flashTitle__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(6);
+
+
+ (() => {
+  // 1) اگر مرورگر نوتیفیکیشن را پشتیبانی نمی‌کند
+  if (!("Notification" in window)) {
+
+    (0,_flashTitle__WEBPACK_IMPORTED_MODULE_0__.flashTitle)("⚠️ این مرورگر نوتیفیکیشن را پشتیبانی نمی‌کند!");
+    
+    return;
+  }
+
+  // 2) اگر قبلاً اجازه داده شده
+  if (Notification.permission === "granted") {
+    console.log("نوتیفیکیشن قبلاً مجاز شده");
+    return;
+  }
+
+  // 3) اگر نه مجاز است نه بلاک شده → از کاربر اجازه می‌گیریم
+  if (Notification.permission === "default") {
+    Notification.requestPermission().then(result => {
+      if (result === "granted") {
+        console.log("کاربر اجازه داد");
+      } else {
+        console.log("کاربر اجازه نداد");
+      }
+    });
+  }
+
+
+  if (Notification.permission === "denied") {
+    (0,_flashTitle__WEBPACK_IMPORTED_MODULE_0__.flashTitle)("⚠️ دسکتاپ نوتیفیکیشن غیر فعال است!");
+    return;
+  }
+
+
+
+  
+  // 4) اگر permission = denied بود، نمی‌توانی دوباره درخواست بدهی
+  // فقط باید کاربر خودش از تنظیمات مرورگر اصلاح کند
+})()
+
+/***/ }),
+/* 6 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   flashTitle: () => (/* binding */ flashTitle)
+/* harmony export */ });
+let flashing = false;
+let intervalId;
+
+function flashTitle(message = "🔔 توجه!") {
+  if (flashing) return;
+  flashing = true;
+
+  const original = document.title;
+
+  intervalId = setInterval(() => {
+    document.title = document.title === original ? message : original;
+  }, 700);
+
+  return () => {
+    clearInterval(intervalId);
+    document.title = original;
+    flashing = false;
+  };
+}
+
+
+/***/ }),
+/* 7 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   createIntervalLogger: () => (/* binding */ createIntervalLogger)
+/* harmony export */ });
+
+// TODO: use in extension for multiple tabs
+function createIntervalLogger({ key, interval, sync }) {
+  if (!key || !interval || typeof sync !== "function") {
+    throw new Error("Invalid logger configuration");
+  }
+
+  function getTodayKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  function loadLogs() {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function saveLogs(logs) {
+    try {
+      const keys = Object.keys(logs).sort().reverse();
+      const trimmed = {};
+
+      for (let i = 0; i < Math.min(3, keys.length); i++) {
+        trimmed[keys[i]] = logs[keys[i]];
+      }
+
+      localStorage.setItem(key, JSON.stringify(trimmed));
+    } catch {}
+  }
+
+  function canCollect(logs) {
+    const today = getTodayKey();
+    const todayLogs = logs[today];
+    if (!todayLogs || todayLogs.length === 0) return true;
+
+    const lastLog = todayLogs[todayLogs.length - 1];
+    return Date.now() - lastLog.timestamp >= interval;
+  }
+
+  async function collect({isForce}={}) {
+    try {
+      const logs = loadLogs();
+
+      // ⛔ قبل از sync
+
+      if (!isForce && !canCollect(logs)) return;
+
+      const data = await sync();
+
+      const today = getTodayKey();
+      const nowTs = Date.now();
+
+      if (!logs[today]) logs[today] = [];
+
+      logs[today].push({
+        time: new Date(nowTs).toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        timestamp: nowTs,
+        data,
+      });
+
+      saveLogs(logs);
+
+    } catch (err) {
+      console.error(`Logger [${key}] error:`, err);
+    }
+  }
+
+  // اجراها
+  collect();
+  const timer = setInterval(collect, interval);
+
+  // API خروجی
+  return {
+    stop() {
+      clearInterval(timer);
+    },
+    collect,
+    getLogs() {
+      return loadLogs();
+    },
+    clear() {
+      localStorage.removeItem(key);
+    }
+  };
+}
+
+/***/ })
+/******/ ]);
 /************************************************************************/
 /******/ // The module cache
 /******/ var __webpack_module_cache__ = {};
@@ -1074,9 +5313,11 @@ var __webpack_exports__ = {};
 (() => {
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _common__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
+/* harmony import */ var _omex__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3);
 
 
-const deserializePreparedForSerialization = (obj) => {
+
+const deserializeStrategyPositions = (obj) => {
 
 
     const result = { ...obj };
@@ -1098,38 +5339,19 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
 
   strategyGroupInfoList = strategyGroupInfoList.map(strategyGroupInfo=>{
 
-    strategyGroupInfo.strategyPositions = strategyGroupInfo.strategyPositions.map(strategyPosition=>{
-
-      const tradedInstrument = tradedInstrumentList.find(tradedInstrument=>tradedInstrument.instrumentName === strategyPosition.instrumentName);
-
-      strategyPosition.getQuantity = ()=>strategyPosition.quantityOfEstimationPositionRow;
-      strategyPosition.getCurrentPositionQuantity = ()=>strategyPosition.portfolioPositionQuantity;
-
-      strategyPosition.getCurrentPositionAvgPrice = ()=> strategyPosition.currentPositionAvgPrice,
-
-      
-      strategyPosition.getBestOffsetPrice = ()=> (strategyPosition.isBuy ? tradedInstrument?.bestBuy : tradedInstrument?.bestSell) || NaN
-      strategyPosition.getBaseInstrumentPriceOfOption  = ()=> tradedInstrument?.optionDetails?.stockSymbolDetails?.last
-      strategyPosition.getRequiredMargin = ()=> strategyPosition.requiredMargin;
-      strategyPosition.getInsertedPrice = ()=> NaN;
- 
-
-      strategyPosition.getBestOpenMorePrice = ()=>(strategyPosition.isBuy ? tradedInstrument?.bestSell : tradedInstrument?.bestBuy) || NaN;
-      strategyPosition.getStrategyType = ()=>NaN;
-      strategyPosition.getStrategyName = ()=>NaN;
-
-
-      return strategyPosition
-
-    });
+    
 
 
     try {
+      strategyGroupInfo.openPositionProfitInfo = _omex__WEBPACK_IMPORTED_MODULE_1__.STRATEGY_NAME_PROFIT_CALCULATOR.OTHERS({
+        strategyPositions: strategyGroupInfo.strategyPositions,
+        stockPrice: strategyGroupInfo.stockPrice,
+        nokoolOrNoRequestFactor: strategyGroupInfo.nokoolOrNoRequestFactor
+      });
       
-      strategyGroupInfo.openPositionProfitInfo =  omexLib && omexLib.STRATEGY_NAME_PROFIT_CALCULATOR.OTHERS(strategyGroupInfo.strategyPositions);
-      strategyGroupInfo.offsetProfitOfStrategy =  omexLib && omexLib.calcOffsetProfitOfStrategy(strategyGroupInfo.strategyPositions);
+      strategyGroupInfo.offsetProfitOfStrategy = (0,_omex__WEBPACK_IMPORTED_MODULE_1__.calcOffsetProfitOfStrategy)(strategyGroupInfo.strategyPositions);
     } catch (error) {
-      console.error(error,strategyGroupInfo)
+      console.error(error, strategyGroupInfo)
     }
 
 
@@ -1143,32 +5365,60 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
 }
 
 
+const checkProfitPercentAndInform = ({ strategyGroupInfoList }) => {
+
+
+  if(isSilentAllActive) return 
+
+  for (let i = 0; i < strategyGroupInfoList.length; i++) {
+    const strategyGroupInfo = strategyGroupInfoList[i];
+    if(strategyGroupInfo.isSilentModeActive) continue;
+    const strategyPositions = strategyGroupInfo.strategyPositions;
+    const expectedProfit = strategyGroupInfo.expectedProfit;
+    const profitPercentByBestPrices = strategyGroupInfo?.openPositionProfitInfo?.profitPercentByBestPrices?.defaultQueue;
+    // strategyName
+
+    if (strategyGroupInfo.offsetProfitOfStrategy.profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1)) {
+
+      (0,_common__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+        title: 'به سود رسید',
+        body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
+        tag: `${strategyPositions[0].instrumentName}-expectedProfitForCurrentPositionsPrecent`
+      });
+    }
+
+    if ((0,_omex__WEBPACK_IMPORTED_MODULE_1__.isProfitEnough)({
+      strategyPositions,
+      totalProfitPercent: profitPercentByBestPrices,
+      expectedProfit
+    })) {
+
+      (0,_common__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+        title: `سود %${profitPercentByBestPrices.toFixed()}`,
+        body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
+        tag: `${strategyPositions[0].instrumentName}-expectedProfitPrecent`
+      });
+
+
+    }
+
+  }
+
+
+  
+}
+
+
 let strategyGroupInfoList = [];
 try {
-    const port = chrome.runtime.connect({ name: "CHILD_PAGE" });
+    const port = chrome.runtime.connect({ name: "receiver" });
 
     port.onMessage.addListener(({list}) =>{
 
         strategyGroupInfoList = enrichStrategyGroupInfoListByInstrumentPrices(strategyGroupInfoList,list);
         renderStrategies();
-        console.log(strategyGroupInfoList)
-//         {
-//     "symbol": "مهرمام",
-//     "name": "مهرمام ميهن",
-//     "instrumentName": "مهرمام",
-//     "isOption": false,
-//     "isCall": false,
-//     "quantityOfTrades": 1614,
-//     "lastTradedTime": 1767258197354,
-//     "isPut": false,
-//     "isETF": false,
-//     "vol": 37995000000,
-//     "last": 4581,
-//     "bestBuyQ": 265684,
-//     "bestBuy": 4581,
-//     "bestSell": 4601,
-//     "bestSellQ": 260
-// }
+        checkProfitPercentAndInform({strategyGroupInfoList})
+
     } );
 } catch(err) {
     console.error("Cannot connect to background:", err);
@@ -1176,17 +5426,15 @@ try {
 
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  
+
   console.log(_common__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculatorForPriceTypes);
-  
+
   if (message.type === "addToWatcher") {
     console.log("📨 پیام دریافت شد از:", sender.tab?.url || "اکستنشن");
 
-    const strategyPositions = message.payload.strategyPositions.map(position => {
-      return deserializePreparedForSerialization(position)
-    });
+    const strategyInfo = deserializeStrategyInfo(message.payload.strategyInfo);
 
-    console.log(strategyPositions);
+    strategyGroupInfoList.push({ ...strategyInfo });
 
   }
 });
@@ -1195,7 +5443,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 
 
+const deserializeStrategyInfo = (strategyInfo) => {
 
+  const deserialized = {...strategyInfo};
+
+  deserialized.strategyPositions = deserialized.positionsPrepareForSerialization.map(position => {
+    return deserializeStrategyPositions(position);
+  });
+
+  return deserialized
+
+}
 
 
 
@@ -1206,12 +5464,53 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
 
 const addBtn = document.getElementById('addStrategyBtn');
+const saveBtn = document.getElementById('saveGroupsBtn');
+const loadBtn = document.getElementById('loadGroupsBtn');
+const silentAllBtn = document.getElementById('silentAllBtn');
 const modal = document.getElementById('modalBackdrop');
 const input = document.getElementById('strategyJsonInput');
 const confirmBtn = document.getElementById('confirmBtn');
 const cancelBtn = document.getElementById('cancelBtn');
 const list = document.getElementById('strategyList');
 
+
+const cacheKey = "strategyGroupInfoList";
+
+let silentAllButtonTimeoutID,isSilentAllActive;
+silentAllBtn.addEventListener('click', () => {
+
+  clearTimeout(silentAllButtonTimeoutID);
+
+  isSilentAllActive = true;
+
+  silentAllButtonTimeoutID = setTimeout(() => {
+    isSilentAllActive = false;
+  }
+    , 160000);
+
+
+
+});
+
+
+saveBtn.addEventListener('click', () => {
+   try {
+      localStorage.setItem(cacheKey, JSON.stringify(strategyGroupInfoList));
+    } catch (error) {
+      console.error('خطا در ذخیره‌سازی:', error);
+    }
+});
+
+loadBtn.addEventListener('click', () => {
+  try {
+      const data = localStorage.getItem(cacheKey);
+      strategyGroupInfoList =  data ? JSON.parse(data) : null;
+      strategyGroupInfoList = strategyGroupInfoList.map(deserializeStrategyInfo);
+    } catch (error) {
+      console.error('خطا در بازیابی:', error);
+
+    }
+});
 
 
 /* ---------- modal ---------- */
@@ -1251,6 +5550,16 @@ confirmBtn.addEventListener('click', () => {
 
 });
 
+const openOmexStrategyTab = ({strategyName}) => {
+  const baseURL = 'https://khobregan.tsetab.ir/#/stock/derivative/main/strategy-estimation';
+  const params = new URLSearchParams({
+    GSTitle: strategyName,
+  });
+
+  const fullURL = baseURL + '?' + params.toString();
+  window.open(fullURL);
+}
+
 /* ---------- render ---------- */
 function renderStrategies() {
   list.innerHTML = '';
@@ -1259,34 +5568,54 @@ function renderStrategies() {
     const box = document.createElement('div');
     box.className = 'strategy-box';
 
-    box.innerHTML = `
-      <h4 class="title">${strategyGroupInfo.group.name}</h4>
+    const profitPercentByBestPrices = strategyGroupInfo?.openPositionProfitInfo?.profitPercentByBestPrices?.defaultQueue;
 
-      ${strategyGroupInfo.offsetProfitOfStrategy ? `<div style="color:${strategyGroupInfo.offsetProfitOfStrategy.profitLossByOffsetOrdersPercent >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
+    box.innerHTML = `
+      <h4 class="title">${strategyGroupInfo?.strategyName}</h4>
+
+      ${strategyGroupInfo.offsetProfitOfStrategy ? `<div style="color:${strategyGroupInfo?.offsetProfitOfStrategy?.profitLossByOffsetOrdersPercent >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
                 ${strategyGroupInfo.offsetProfitOfStrategy.profitLossByOffsetOrdersPercent.toLocaleString('en-US', {
                     minimumFractionDigits: 1,
                     maximumFractionDigits: 1
                 })}
       </div>`:``}
       ----
-      ${strategyGroupInfo.offsetProfitOfStrategy ?`<div style="color:${strategyGroupInfo.openPositionProfitInfo.profitPercentByBestPrices >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
-                ${strategyGroupInfo.openPositionProfitInfo.profitPercentByBestPrices.toLocaleString('en-US', {
+      ${profitPercentByBestPrices ?`<div style="color:${profitPercentByBestPrices >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
+                ${profitPercentByBestPrices.toLocaleString('en-US', {
                     minimumFractionDigits: 1,
                     maximumFractionDigits: 1
                 })}
       </div>`:``}
       <button class="delete-btn">حذف</button>
+      <button class="silent-btn">سکوت</button>
     `;
 
     box.querySelector('.title').addEventListener('click',async ()=>{
-      const groupWindow = await (omexLib && omexLib.openGroupInNewTab(strategyGroupInfo?.group?.name,'https://khobregan.tsetab.ir'));
+      openOmexStrategyTab({strategyName:strategyGroupInfo?.strategyName});
+      strategyGroupInfoList = strategyGroupInfoList.filter(_strategyGroupInfo=>_strategyGroupInfo.strategyName!==strategyGroupInfo?.strategyName)
+      
+    });
 
-
-
-    })
-
+    setUpSilentGroup({element:box.querySelector('.silent-btn'),strategyGroupInfo});
     setupHoldToDelete(box.querySelector('.delete-btn'), index);
     list.appendChild(box);
+  });
+}
+
+const setUpSilentGroup = ({ element, strategyGroupInfo }) => {
+
+
+  element.addEventListener('click', (event) => {
+    clearTimeout(strategyGroupInfo.silentButtonTimeoutID);
+
+    strategyGroupInfo.isSilentModeActive = true;
+
+    strategyGroupInfo.silentButtonTimeoutID = setTimeout(() => {
+      strategyGroupInfo.isSilentModeActive = false;
+    }
+      , 160000);
+
+
   });
 }
 
