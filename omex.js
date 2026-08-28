@@ -1356,7 +1356,7 @@ const observeInputBoxInRowOfStrategy = () => {
         const onChangeCb = () => {
             
             setTimeout(() => {
-                calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+                calcProfitOfStrategy(strategyPositions);
                 checkStrategyInProfit(strategyPositions);
             }
                 , 300)
@@ -1796,7 +1796,7 @@ const calcOffsetProfitOfStrategyInformUntilNotProfit = async () => {
 let calcProfitOfStrategyInformUntilNotProfitTimeout;
 
 const calcProfitOfStrategyInformUntilNotProfit =async () => {
-    const isProfit = await calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+    const isProfit = await calcProfitOfStrategy(strategyPositions);
     if (isProfit) {
         clearTimeout(calcProfitOfStrategyInformUntilNotProfitTimeout);
         calcProfitOfStrategyInformUntilNotProfitTimeout = setTimeout(calcProfitOfStrategyInformUntilNotProfit, 10000);
@@ -2066,7 +2066,7 @@ export const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
 let prevCalcProfitOfStrategyTimeout;
 
-export const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositions) => {
+export const calcProfitOfStrategy = async (_strategyPositions) => {
     // getStrategyName
 
     clearTimeout(prevCalcProfitOfStrategyTimeout)
@@ -2093,7 +2093,7 @@ export const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositio
 
     if(isProfitable){
         prevCalcProfitOfStrategyTimeout = setTimeout(() => {
-            calcProfitOfStrategy(_strategyPositions,_unChekcedPositions);
+            calcProfitOfStrategy(_strategyPositions);
 
             
         }, 5000);
@@ -2810,7 +2810,6 @@ export function showToast(message, duration = 2000,type ='default') {
 }
 
 export let strategyPositions;
-export let unChekcedPositions;
 
 
 let domContextWindow = window;
@@ -2878,8 +2877,7 @@ export const Run = async (_window = window) => {
 
     domContextWindow = _window
     
-    strategyPositions = createPositionObjectArrayByElementRowArray(Array.from(domContextWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => rowEl.querySelector('c-k-input-checkbox input').checked));
-    unChekcedPositions  = createPositionObjectArrayByElementRowArray(Array.from(domContextWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => !rowEl.querySelector('c-k-input-checkbox input').checked));
+    strategyPositions = createPositionObjectArrayByElementRowArray(Array.from(domContextWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')));
 
 
     injectStyles()
@@ -2893,7 +2891,7 @@ export const Run = async (_window = window) => {
     strategyPositions = observeTabClickOfOrderModal();
     strategyPositions = observePortfolioQuantityOfOrderModal();
 
-    calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+    calcProfitOfStrategy(strategyPositions);
 
 
     calcOffsetProfitOfStrategyInformUntilNotProfit()
@@ -2920,7 +2918,7 @@ export const Run = async (_window = window) => {
     fillCurrentStockPriceByStrikes(strategyPositions);
 
 
-    calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+    calcProfitOfStrategy(strategyPositions);
 
 
     startMarketCountdown();

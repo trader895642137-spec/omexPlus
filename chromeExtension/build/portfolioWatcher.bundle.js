@@ -1039,8 +1039,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   showToast: () => (/* binding */ showToast),
 /* harmony export */   showVariableMargin: () => (/* binding */ showVariableMargin),
 /* harmony export */   silentNotificationForMoment: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.silentNotificationForMoment),
-/* harmony export */   strategyPositions: () => (/* binding */ strategyPositions),
-/* harmony export */   unChekcedPositions: () => (/* binding */ unChekcedPositions)
+/* harmony export */   strategyPositions: () => (/* binding */ strategyPositions)
 /* harmony export */ });
 /* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
 /* harmony import */ var _omexApi_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4);
@@ -2392,7 +2391,7 @@ const observeInputBoxInRowOfStrategy = () => {
         const onChangeCb = () => {
             
             setTimeout(() => {
-                calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+                calcProfitOfStrategy(strategyPositions);
                 checkStrategyInProfit(strategyPositions);
             }
                 , 300)
@@ -2832,7 +2831,7 @@ const calcOffsetProfitOfStrategyInformUntilNotProfit = async () => {
 let calcProfitOfStrategyInformUntilNotProfitTimeout;
 
 const calcProfitOfStrategyInformUntilNotProfit =async () => {
-    const isProfit = await calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+    const isProfit = await calcProfitOfStrategy(strategyPositions);
     if (isProfit) {
         clearTimeout(calcProfitOfStrategyInformUntilNotProfitTimeout);
         calcProfitOfStrategyInformUntilNotProfitTimeout = setTimeout(calcProfitOfStrategyInformUntilNotProfit, 10000);
@@ -3102,7 +3101,7 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
 let prevCalcProfitOfStrategyTimeout;
 
-const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositions) => {
+const calcProfitOfStrategy = async (_strategyPositions) => {
     // getStrategyName
 
     clearTimeout(prevCalcProfitOfStrategyTimeout)
@@ -3129,7 +3128,7 @@ const calcProfitOfStrategy = async (_strategyPositions, _unChekcedPositions) => 
 
     if(isProfitable){
         prevCalcProfitOfStrategyTimeout = setTimeout(() => {
-            calcProfitOfStrategy(_strategyPositions,_unChekcedPositions);
+            calcProfitOfStrategy(_strategyPositions);
 
             
         }, 5000);
@@ -3846,7 +3845,6 @@ function showToast(message, duration = 2000,type ='default') {
 }
 
 let strategyPositions;
-let unChekcedPositions;
 
 
 let domContextWindow = window;
@@ -3914,8 +3912,7 @@ const Run = async (_window = window) => {
 
     domContextWindow = _window
     
-    strategyPositions = createPositionObjectArrayByElementRowArray(Array.from(domContextWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => rowEl.querySelector('c-k-input-checkbox input').checked));
-    unChekcedPositions  = createPositionObjectArrayByElementRowArray(Array.from(domContextWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')).filter(rowEl => !rowEl.querySelector('c-k-input-checkbox input').checked));
+    strategyPositions = createPositionObjectArrayByElementRowArray(Array.from(domContextWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')));
 
 
     injectStyles()
@@ -3929,7 +3926,7 @@ const Run = async (_window = window) => {
     strategyPositions = observeTabClickOfOrderModal();
     strategyPositions = observePortfolioQuantityOfOrderModal();
 
-    calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+    calcProfitOfStrategy(strategyPositions);
 
 
     calcOffsetProfitOfStrategyInformUntilNotProfit()
@@ -3956,7 +3953,7 @@ const Run = async (_window = window) => {
     fillCurrentStockPriceByStrikes(strategyPositions);
 
 
-    calcProfitOfStrategy(strategyPositions, unChekcedPositions);
+    calcProfitOfStrategy(strategyPositions);
 
 
     (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.startMarketCountdown)();
