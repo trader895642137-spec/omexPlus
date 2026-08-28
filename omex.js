@@ -210,10 +210,10 @@ const settlementCommissionFactor = (_strategyPosition) => {
 
 
 
-const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions }) => {
+const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions , stockPrice=getBaseInstrumentPriceOfOption() }) => {
 
-    const getBestPriceCbNormalQueue = (_strategyPosition) => getNearSettlementPrice({strategyPositions,strategyPosition: _strategyPosition, stockPrice:getBaseInstrumentPriceOfOption(),scenario : QueueScenario.normal});
-    const getBestPriceCbBuyQueue = (_strategyPosition) => getNearSettlementPrice({strategyPositions,strategyPosition: _strategyPosition, stockPrice:getBaseInstrumentPriceOfOption(),scenario : QueueScenario.buyQueue});
+    const getBestPriceCbNormalQueue = (_strategyPosition) => getNearSettlementPrice({strategyPositions,strategyPosition: _strategyPosition, stockPrice ,scenario : QueueScenario.normal});
+    const getBestPriceCbBuyQueue = (_strategyPosition) => getNearSettlementPrice({strategyPositions,strategyPosition: _strategyPosition, stockPrice ,scenario : QueueScenario.buyQueue});
 
     
     return {
@@ -2021,7 +2021,8 @@ export const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
 
         const totalOffsetGainInfo = totalOffsetGainNearSettlementOfEstimationPanel({
-            strategyPositions: strategyPositions
+            strategyPositions: strategyPositions,
+            stockPrice
         });
 
         const profitPercentByBestPrices = {

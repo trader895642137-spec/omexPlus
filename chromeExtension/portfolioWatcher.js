@@ -115,8 +115,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "addToWatcher") {
     console.log("📨 پیام دریافت شد از:", sender.tab?.url || "اکستنشن");
-
     const strategyInfo = deserializeStrategyInfo(message.payload.strategyInfo);
+
+    strategyGroupInfoList = strategyGroupInfoList.filter(
+      item => item.strategyName !== strategyInfo.strategyName
+    );
+
+
 
     strategyGroupInfoList.push({ ...strategyInfo });
 

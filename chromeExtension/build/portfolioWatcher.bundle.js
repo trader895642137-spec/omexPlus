@@ -1245,10 +1245,10 @@ const settlementCommissionFactor = (_strategyPosition) => {
 
 
 
-const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions }) => {
+const totalOffsetGainNearSettlementOfEstimationPanel = ({ strategyPositions , stockPrice=getBaseInstrumentPriceOfOption() }) => {
 
-    const getBestPriceCbNormalQueue = (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getNearSettlementPrice)({strategyPositions,strategyPosition: _strategyPosition, stockPrice:getBaseInstrumentPriceOfOption(),scenario : _common_js__WEBPACK_IMPORTED_MODULE_0__.QueueScenario.normal});
-    const getBestPriceCbBuyQueue = (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getNearSettlementPrice)({strategyPositions,strategyPosition: _strategyPosition, stockPrice:getBaseInstrumentPriceOfOption(),scenario : _common_js__WEBPACK_IMPORTED_MODULE_0__.QueueScenario.buyQueue});
+    const getBestPriceCbNormalQueue = (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getNearSettlementPrice)({strategyPositions,strategyPosition: _strategyPosition, stockPrice ,scenario : _common_js__WEBPACK_IMPORTED_MODULE_0__.QueueScenario.normal});
+    const getBestPriceCbBuyQueue = (_strategyPosition) => (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.getNearSettlementPrice)({strategyPositions,strategyPosition: _strategyPosition, stockPrice ,scenario : _common_js__WEBPACK_IMPORTED_MODULE_0__.QueueScenario.buyQueue});
 
     
     return {
@@ -3056,7 +3056,8 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
 
         const totalOffsetGainInfo = totalOffsetGainNearSettlementOfEstimationPanel({
-            strategyPositions: strategyPositions
+            strategyPositions: strategyPositions,
+            stockPrice
         });
 
         const profitPercentByBestPrices = {
@@ -5428,8 +5429,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.type === "addToWatcher") {
     console.log("📨 پیام دریافت شد از:", sender.tab?.url || "اکستنشن");
-
     const strategyInfo = deserializeStrategyInfo(message.payload.strategyInfo);
+
+    strategyGroupInfoList = strategyGroupInfoList.filter(
+      item => item.strategyName !== strategyInfo.strategyName
+    );
+
+
 
     strategyGroupInfoList.push({ ...strategyInfo });
 
