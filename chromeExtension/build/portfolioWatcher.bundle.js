@@ -5352,11 +5352,6 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
 
     
 
-
-    if(strategyGroupInfo.strategyName==='BUCS@ضهرم6045-ضهرم6047'){
-      console.log(23423)
-    }
-
     try {
       strategyGroupInfo.openPositionProfitInfo = _omex__WEBPACK_IMPORTED_MODULE_1__.STRATEGY_NAME_PROFIT_CALCULATOR.OTHERS({
         strategyPositions: strategyGroupInfo.strategyPositions,
