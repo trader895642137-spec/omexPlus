@@ -23,8 +23,20 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
 
   strategyGroupInfoList = strategyGroupInfoList.map(strategyGroupInfo=>{
 
-    
+    strategyGroupInfo.strategyPositions = strategyGroupInfo.strategyPositions.map(strategyPosition=>{
 
+      const tradedInstrument = tradedInstrumentList.find(tradedInstrument=>tradedInstrument.instrumentName === strategyPosition.instrumentName);
+
+      
+      strategyPosition.getBestOffsetPrice = ()=> (strategyPosition.isBuy ? tradedInstrument?.bestBuy : tradedInstrument?.bestSell) || NaN
+
+      strategyPosition.getBestOpenMorePrice = ()=>(strategyPosition.isBuy ? tradedInstrument?.bestSell : tradedInstrument?.bestBuy) || NaN;
+
+      return strategyPosition
+
+    });
+
+    
 
     try {
       strategyGroupInfo.openPositionProfitInfo = STRATEGY_NAME_PROFIT_CALCULATOR.OTHERS({
