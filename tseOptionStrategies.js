@@ -10511,11 +10511,9 @@ const createListFilterContetnByList=(list)=>{
 
 
 
-       
 
 
-
-        filterStrategiesByConfig({
+         filterStrategiesByConfig({
             strategies: BUPS_COLLARStrategies,
             expectedProfitPerMonth: 1.05,
             min_time_to_settlement: 20 * 24 * 3600000,
@@ -10524,9 +10522,20 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: BUPS_COLLARStrategies,
             expectedProfitPerMonth: 1.08,
+            min_time_to_settlement: 3 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
+            minProfitToFilter : 0.035
+        }),
+        filterStrategiesByConfig({
+            strategies: BUPS_COLLARStrategies,
+            expectedProfitPerMonth: 1.08,
+            max_time_to_settlement: 3 * 24 * 3600000,
             minProfitToFilter : 0.01
         }),
+        
+       
+
+
 
 
 
@@ -10544,10 +10553,20 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: BUCS_COLLAR_Strategies,
             expectedProfitPerMonth: 1.08,
+            min_time_to_settlement: 3 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
+            minProfitToFilter : 0.035
+        }),
+        filterStrategiesByConfig({
+            strategies: BUCS_COLLAR_Strategies,
+            expectedProfitPerMonth: 1.08,
+            max_time_to_settlement: 3 * 24 * 3600000,
             minProfitToFilter : 0.01
         }),
         
+
+
+
 
 
 
@@ -10561,9 +10580,17 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: BEPS_COLLARStrategies,
             expectedProfitPerMonth: 1.08,
+            min_time_to_settlement: 3 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
+            minProfitToFilter : 0.035
+        }),
+        filterStrategiesByConfig({
+            strategies: BEPS_COLLARStrategies,
+            expectedProfitPerMonth: 1.08,
+            max_time_to_settlement: 3 * 24 * 3600000,
             minProfitToFilter : 0.01
         }),
+        
 
 
         
@@ -10572,6 +10599,8 @@ const createListFilterContetnByList=(list)=>{
         
 
 
+
+        
         filterStrategiesByConfig({
             strategies: BECS_COLLAR_Strategies,
             expectedProfitPerMonth: 1.05,
@@ -10581,29 +10610,47 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: BECS_COLLAR_Strategies,
             expectedProfitPerMonth: 1.08,
+            min_time_to_settlement: 3 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
+            minProfitToFilter : 0.035
+        }),
+        filterStrategiesByConfig({
+            strategies: BECS_COLLAR_Strategies,
+            expectedProfitPerMonth: 1.08,
+            max_time_to_settlement: 3 * 24 * 3600000,
             minProfitToFilter : 0.01
         }),
 
 
 
-        
-
-
 
         
+
+
+
+
         filterStrategiesByConfig({
             strategies: BUCS_Long_PutStrategies,
-            expectedProfitPerMonth: 1.04,
+            expectedProfitPerMonth: 1.05,
             min_time_to_settlement: 20 * 24 * 3600000,
             max_time_to_settlement: 61 * 24 * 3600000,
         }),
         filterStrategiesByConfig({
             strategies: BUCS_Long_PutStrategies,
-            expectedProfitPerMonth: 1.07,
+            expectedProfitPerMonth: 1.08,
+            min_time_to_settlement: 3 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
+            minProfitToFilter : 0.035
+        }),
+        filterStrategiesByConfig({
+            strategies: BUCS_Long_PutStrategies,
+            expectedProfitPerMonth: 1.08,
+            max_time_to_settlement: 3 * 24 * 3600000,
             minProfitToFilter : 0.01
         }),
+
+        
+        
 
 
 
@@ -10613,20 +10660,30 @@ const createListFilterContetnByList=(list)=>{
 
 
 
-
         filterStrategiesByConfig({
             strategies: BECS_Long_CallStrategies,
-            expectedProfitPerMonth: 1.04,
+            expectedProfitPerMonth: 1.05,
             min_time_to_settlement: 20 * 24 * 3600000,
             max_time_to_settlement: 61 * 24 * 3600000,
         }),
         filterStrategiesByConfig({
             strategies: BECS_Long_CallStrategies,
-            expectedProfitPerMonth: 1.07,
+            expectedProfitPerMonth: 1.08,
+            min_time_to_settlement: 3 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
+            minProfitToFilter : 0.035
+        }),
+        filterStrategiesByConfig({
+            strategies: BECS_Long_CallStrategies,
+            expectedProfitPerMonth: 1.08,
+            max_time_to_settlement: 3 * 24 * 3600000,
             minProfitToFilter : 0.01
         }),
 
+
+
+
+       
 
 
 
@@ -10636,14 +10693,21 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: BEPS_Long_CallStrategies,
-            expectedProfitPerMonth: 1.04,
+            expectedProfitPerMonth: 1.05,
             min_time_to_settlement: 20 * 24 * 3600000,
             max_time_to_settlement: 61 * 24 * 3600000,
         }),
         filterStrategiesByConfig({
             strategies: BEPS_Long_CallStrategies,
-            expectedProfitPerMonth: 1.07,
+            expectedProfitPerMonth: 1.08,
+            min_time_to_settlement: 3 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
+            minProfitToFilter : 0.035
+        }),
+        filterStrategiesByConfig({
+            strategies: BEPS_Long_CallStrategies,
+            expectedProfitPerMonth: 1.08,
+            max_time_to_settlement: 3 * 24 * 3600000,
             minProfitToFilter : 0.01
         }),
 
@@ -10651,18 +10715,30 @@ const createListFilterContetnByList=(list)=>{
 
 
 
+
+
         filterStrategiesByConfig({
             strategies: BUPS_Long_PutStrategies,
-            expectedProfitPerMonth: 1.04,
+            expectedProfitPerMonth: 1.05,
             min_time_to_settlement: 20 * 24 * 3600000,
             max_time_to_settlement: 61 * 24 * 3600000,
         }),
         filterStrategiesByConfig({
             strategies: BUPS_Long_PutStrategies,
-            expectedProfitPerMonth: 1.07,
+            expectedProfitPerMonth: 1.08,
+            min_time_to_settlement: 3 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
+            minProfitToFilter : 0.035
+        }),
+        filterStrategiesByConfig({
+            strategies: BUPS_Long_PutStrategies,
+            expectedProfitPerMonth: 1.08,
+            max_time_to_settlement: 3 * 24 * 3600000,
             minProfitToFilter : 0.01
         }),
+
+
+
        
        
 
