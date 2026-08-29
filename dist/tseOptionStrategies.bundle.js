@@ -18907,6 +18907,9 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
                             ...option
                         },
                         positions:[option, _option,callOptionWithSameStrike],
+                        strategyPositions,
+                        currentStockPrice:option.optionDetails?.stockSymbolDetails?.last,
+                        totalCost,
                         strategyTypeTitle: "BUPS_COLLAR",
                         expectedProfitNotif,
                         minProfitToFilter,
@@ -19093,6 +19096,12 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
                             ...option
                         },
                         positions:[option, _option,putOptionWithSameStrike],
+
+                        strategyPositions,
+                        currentStockPrice:option.optionDetails?.stockSymbolDetails?.last,
+                        totalCost,
+
+
                         strategyTypeTitle: "BUCS_COLLAR",
                         expectedProfitNotif,
                         minProfitToFilter,
@@ -19303,6 +19312,9 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
                             ...option
                         },
                         positions:[option, buyingPut,callWithSameStrikeOfSellingPut],
+                        strategyPositions,
+                        currentStockPrice:option.optionDetails?.stockSymbolDetails?.last,
+                        totalCost,
                         strategyTypeTitle: "BEPS_COLLAR",
                         expectedProfitNotif,
                         minProfitToFilter,
@@ -19517,6 +19529,9 @@ const calcBECS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
                             ...option
                         },
                         positions:[option, buyingCall,putWithSameStrikeOfSellingCall],
+                        strategyPositions,
+                        currentStockPrice:option.optionDetails?.stockSymbolDetails?.last,
+                        totalCost,
                         strategyTypeTitle: "BECS_COLLAR",
                         expectedProfitNotif,
                         minProfitToFilter,
@@ -22693,6 +22708,9 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
                             },
                             positions:[buyingCall, sellingCall, buyingPut],
                             strategyTypeTitle: "BUCS_LONG_PUT",
+                            strategyPositions: strategyPositionsOfBUCS_Long_Put,
+                            currentStockPrice: buyingCall.optionDetails?.stockSymbolDetails?.last,
+                            totalCost: totalCostOfBUCS_Long_Put,
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
@@ -22954,6 +22972,9 @@ const calcBECS_Long_CallStrategies = (list, {priceType, strategySubName,
                             },
                             positions:[buyingCall, sellingCall, anotherBuyingCall],
                             strategyTypeTitle: "BECS_LONG_CALL",
+                            strategyPositions: strategyPositionsOfBECS_Long_Call,
+                            currentStockPrice: buyingCall.optionDetails?.stockSymbolDetails?.last,
+                            totalCost: totalCostOfBECS_Long_Call,
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
@@ -23213,6 +23234,9 @@ const calcBEPS_Long_CallStrategies = (list, {priceType, strategySubName,
                             },
                             positions:[buyingPut, sellingPut, buyingCall],
                             strategyTypeTitle: "BEPS_LONG_CALL",
+                            strategyPositions: strategyPositionsOfBEPS_Long_Call,
+                            currentStockPrice: buyingPut.optionDetails?.stockSymbolDetails?.last,
+                            totalCost: totalCostOfBEPS_Long_Call,
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
@@ -23474,6 +23498,9 @@ const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName,
                             },
                             positions:[buyingPut, sellingPut, anotherBuyingPut],
                             strategyTypeTitle: "BUPS_LONG_PUT",
+                            strategyPositions: strategyPositionsOfBUPS_Long_Put,
+                            currentStockPrice: buyingPut.optionDetails?.stockSymbolDetails?.last,
+                            totalCost: totalCostOfBUPS_Long_Put,
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
@@ -23546,7 +23573,35 @@ const filterStrategiesByConfig = ({
     isWholeProfitable,
     isProfitEnoughFn,
     expectedProfitNotif,
-    minProfitToFilter ,expectedProfitPerMonth }) => {
+    minProfitToFilter ,expectedProfitPerMonth,
+
+    nokoolOrNoRequestFactor=0,
+    minProfitPercentOfSettlement,
+
+
+}) => {
+
+
+    const calcProfitPercentOfSettlement = ({ totalCost, strategyPositions, stockPrice,nokoolOrNoRequestFactor }) => {
+
+
+
+        const settlementGain = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.settlementGainCalculator)({ strategyPositions, stockPrice,nokoolOrNoRequestFactor })
+
+        const profitOfSettlement = totalCost + settlementGain;
+        const profitPercentOfSettlement = profitOfSettlement / Math.abs(totalCost);
+
+        return profitPercentOfSettlement
+
+    }
+
+    const isProfitPercentOfSettlementOk = ({ totalCost, strategyPositions, stockPrice,nokoolOrNoRequestFactor,minProfitPercentOfSettlement })=>{
+
+
+        const profitPercentOfSettlement = calcProfitPercentOfSettlement({totalCost, strategyPositions, stockPrice,nokoolOrNoRequestFactor});
+
+        return profitPercentOfSettlement >= minProfitPercentOfSettlement
+    }
 
 
 
@@ -23567,6 +23622,17 @@ const filterStrategiesByConfig = ({
         if(minProfitLossRatio!=null && strategy.profitLossRatio < minProfitLossRatio) {
             return
         } 
+        if(minProfitPercentOfSettlement!=null){
+            
+            return isProfitPercentOfSettlementOk({ 
+                    totalCost : strategy.totalCost, 
+                    strategyPositions:strategy.strategyPositions, 
+                    stockPrice: strategy.currentStockPrice,
+                    nokoolOrNoRequestFactor,
+                    minProfitPercentOfSettlement })
+        }
+
+
 
         return true
 
@@ -24236,16 +24302,18 @@ const createListFilterContetnByList=(list)=>{
         }),
         filterStrategiesByConfig({
             strategies: BUPS_COLLARStrategies,
-            expectedProfitPerMonth: 1.08,
-            min_time_to_settlement: 3 * 24 * 3600000,
+            expectedProfitPerMonth: 1.05,
+            min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
             minProfitToFilter : 0.035
         }),
         filterStrategiesByConfig({
             strategies: BUPS_COLLARStrategies,
             expectedProfitPerMonth: 1.08,
-            max_time_to_settlement: 3 * 24 * 3600000,
-            minProfitToFilter : 0.01
+            max_time_to_settlement: 10 * 24 * 3600000,
+            minProfitToFilter : 0.01,
+            nokoolOrNoRequestFactor:0.7,
+            minProfitPercentOfSettlement:0
         }),
         
        
@@ -24267,16 +24335,18 @@ const createListFilterContetnByList=(list)=>{
         }),
         filterStrategiesByConfig({
             strategies: BUCS_COLLAR_Strategies,
-            expectedProfitPerMonth: 1.08,
-            min_time_to_settlement: 3 * 24 * 3600000,
+            expectedProfitPerMonth: 1.05,
+            min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
-            minProfitToFilter : 0.035
+            minProfitToFilter : 0.035,
         }),
         filterStrategiesByConfig({
             strategies: BUCS_COLLAR_Strategies,
             expectedProfitPerMonth: 1.08,
-            max_time_to_settlement: 3 * 24 * 3600000,
-            minProfitToFilter : 0.01
+            max_time_to_settlement: 10 * 24 * 3600000,
+            minProfitToFilter : 0.01,
+            nokoolOrNoRequestFactor:0.7,
+            minProfitPercentOfSettlement:0
         }),
         
 
@@ -24294,16 +24364,18 @@ const createListFilterContetnByList=(list)=>{
         }),
         filterStrategiesByConfig({
             strategies: BEPS_COLLARStrategies,
-            expectedProfitPerMonth: 1.08,
-            min_time_to_settlement: 3 * 24 * 3600000,
+            expectedProfitPerMonth: 1.05,
+            min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
             minProfitToFilter : 0.035
         }),
         filterStrategiesByConfig({
             strategies: BEPS_COLLARStrategies,
             expectedProfitPerMonth: 1.08,
-            max_time_to_settlement: 3 * 24 * 3600000,
-            minProfitToFilter : 0.01
+            max_time_to_settlement: 10 * 24 * 3600000,
+            minProfitToFilter : 0.01,
+            nokoolOrNoRequestFactor:0.7,
+            minProfitPercentOfSettlement:0
         }),
         
 
@@ -24324,16 +24396,18 @@ const createListFilterContetnByList=(list)=>{
         }),
         filterStrategiesByConfig({
             strategies: BECS_COLLAR_Strategies,
-            expectedProfitPerMonth: 1.08,
-            min_time_to_settlement: 3 * 24 * 3600000,
+            expectedProfitPerMonth: 1.05,
+            min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
             minProfitToFilter : 0.035
         }),
         filterStrategiesByConfig({
             strategies: BECS_COLLAR_Strategies,
             expectedProfitPerMonth: 1.08,
-            max_time_to_settlement: 3 * 24 * 3600000,
-            minProfitToFilter : 0.01
+            max_time_to_settlement: 10 * 24 * 3600000,
+            minProfitToFilter : 0.01,
+            nokoolOrNoRequestFactor:0.7,
+            minProfitPercentOfSettlement:0
         }),
 
 
@@ -24343,7 +24417,7 @@ const createListFilterContetnByList=(list)=>{
 
 
 
-
+// THISTHIS
         filterStrategiesByConfig({
             strategies: BUCS_Long_PutStrategies,
             expectedProfitPerMonth: 1.05,
@@ -24352,16 +24426,18 @@ const createListFilterContetnByList=(list)=>{
         }),
         filterStrategiesByConfig({
             strategies: BUCS_Long_PutStrategies,
-            expectedProfitPerMonth: 1.08,
-            min_time_to_settlement: 3 * 24 * 3600000,
+            expectedProfitPerMonth: 1.05,
+            min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
             minProfitToFilter : 0.035
         }),
         filterStrategiesByConfig({
             strategies: BUCS_Long_PutStrategies,
             expectedProfitPerMonth: 1.08,
-            max_time_to_settlement: 3 * 24 * 3600000,
-            minProfitToFilter : 0.01
+            max_time_to_settlement: 10 * 24 * 3600000,
+            minProfitToFilter : 0.01,
+            nokoolOrNoRequestFactor:0.7,
+            minProfitPercentOfSettlement:0
         }),
 
         
@@ -24383,16 +24459,18 @@ const createListFilterContetnByList=(list)=>{
         }),
         filterStrategiesByConfig({
             strategies: BECS_Long_CallStrategies,
-            expectedProfitPerMonth: 1.08,
-            min_time_to_settlement: 3 * 24 * 3600000,
+            expectedProfitPerMonth: 1.05,
+            min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
             minProfitToFilter : 0.035
         }),
         filterStrategiesByConfig({
             strategies: BECS_Long_CallStrategies,
             expectedProfitPerMonth: 1.08,
-            max_time_to_settlement: 3 * 24 * 3600000,
-            minProfitToFilter : 0.01
+            max_time_to_settlement: 10 * 24 * 3600000,
+            minProfitToFilter : 0.01,
+            nokoolOrNoRequestFactor:0.7,
+            minProfitPercentOfSettlement:0
         }),
 
 
@@ -24414,16 +24492,18 @@ const createListFilterContetnByList=(list)=>{
         }),
         filterStrategiesByConfig({
             strategies: BEPS_Long_CallStrategies,
-            expectedProfitPerMonth: 1.08,
-            min_time_to_settlement: 3 * 24 * 3600000,
+            expectedProfitPerMonth: 1.05,
+            min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
             minProfitToFilter : 0.035
         }),
         filterStrategiesByConfig({
             strategies: BEPS_Long_CallStrategies,
             expectedProfitPerMonth: 1.08,
-            max_time_to_settlement: 3 * 24 * 3600000,
-            minProfitToFilter : 0.01
+            max_time_to_settlement: 10 * 24 * 3600000,
+            minProfitToFilter : 0.01,
+            nokoolOrNoRequestFactor:0.7,
+            minProfitPercentOfSettlement:0
         }),
 
 
@@ -24440,16 +24520,18 @@ const createListFilterContetnByList=(list)=>{
         }),
         filterStrategiesByConfig({
             strategies: BUPS_Long_PutStrategies,
-            expectedProfitPerMonth: 1.08,
-            min_time_to_settlement: 3 * 24 * 3600000,
+            expectedProfitPerMonth: 1.05,
+            min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
             minProfitToFilter : 0.035
         }),
         filterStrategiesByConfig({
             strategies: BUPS_Long_PutStrategies,
             expectedProfitPerMonth: 1.08,
-            max_time_to_settlement: 3 * 24 * 3600000,
-            minProfitToFilter : 0.01
+            max_time_to_settlement: 10 * 24 * 3600000,
+            minProfitToFilter : 0.01,
+            nokoolOrNoRequestFactor:0.7,
+            minProfitPercentOfSettlement:0
         }),
 
 
