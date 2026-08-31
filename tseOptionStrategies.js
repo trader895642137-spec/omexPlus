@@ -6,7 +6,7 @@ import './desktopNotificationCheck.js'
 
 import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator, showNotification, someOfNokoolGainCalculator, isHourMinGreaterThan, profitPercentCalculator, ETF_LIST, isBuyQueue } from './common.js';
 import { findBreakevenList } from './findBreakevens.js';
-import { parseIgnoreStrategies } from './ignoreRuleParser.js';
+import { generateObjConfigByText, isStrategyIgnored } from './ignoreRule.js';
 
 
 
@@ -176,141 +176,7 @@ let generalConfig = {
 
 
 
-const isStrategyIgnored = (strategy,ignoreStrategyList) => {
 
-    
-    if (!ignoreStrategyList?.length) return false
-    const strategySymbols = strategy.positions.map(pos => pos.symbol).map(symbol=>symbol.replaceAll('ي','ی'));
-    const strategyFullSymbolNames = strategy.positions.map(opt => opt.symbol).join('-').replaceAll('ي','ی');
-
-    const isSymbolNameIgnoredChecker = ({ignoreStrategyObj, strategy, strategySymbols}) => {
-        if (!ignoreStrategyObj.name) return true
-
-        const ignoreStrategyName = ignoreStrategyObj.name.replaceAll('ي', 'ی');
-        if (ignoreStrategyName === strategyFullSymbolNames) return true
-        if (strategySymbols.some(symbol => symbol.includes(ignoreStrategyName))) return true
-       
-
-    }
-
-   
-
-    const profitFilterCheck = ({ignoreStrategyObj,strategy})=>{
-
-       
-        const hasFilter = ignoreStrategyObj.profitPercent != null;
-
-        return {
-            isPass: hasFilter ? strategy.profitPercent >= ignoreStrategyObj.profitPercent.val : null,
-            hasFilter
-        }
-
-    }
-
-    
-
-    const sarBeSarFilterCheck = ({ ignoreStrategyObj, strategy }) => {
-
-        const hasToSarBeSarFilter = ignoreStrategyObj.toSarBeSar != null;
-        const hasToHighSarBeSarFilter = ignoreStrategyObj.toHighSarBeSar != null;
-        const hasToLowSarBeSarFilter = ignoreStrategyObj.toLowSarBeSar != null;
-
-        const hasFilter =
-            hasToSarBeSarFilter ||
-            hasToHighSarBeSarFilter ||
-            hasToLowSarBeSarFilter;
-
-        const check = (value, filter) => {
-            if (value == null) {
-                return true;
-            }
-
-            if (filter.min != null && value < filter.min) {
-                return false;
-            }
-
-            if (filter.max != null && value > filter.max) {
-                return false;
-            }
-
-            return true;
-        };
-
-        const isPass =
-            (!hasToSarBeSarFilter ||
-                check(
-                    strategy.stockPriceToSarBeSarPercent,
-                    ignoreStrategyObj.toSarBeSar
-                )) &&
-            (!hasToHighSarBeSarFilter ||
-                check(
-                    strategy.stockPriceToHighSarBeSarPercent,
-                    ignoreStrategyObj.toHighSarBeSar
-                )) &&
-            (!hasToLowSarBeSarFilter ||
-                check(
-                    strategy.stockPriceToLowSarBeSarPercent,
-                    ignoreStrategyObj.toLowSarBeSar
-                ));
-
-        return {
-            isPass,
-            hasFilter
-        };
-    };
-
-     const allProfitFilterCheck = ({ ignoreStrategyObj, strategy }) => {
-
-        const hasFilter = ignoreStrategyObj.allProfit != null;
-
-        let isPass = null;
-        if (hasFilter) {
-            isPass = strategy.isWholeProfitable;
-        }
-        
-
-        return {
-            isPass,
-            hasFilter 
-        }
-
-    }
-
-
-
-
-    return ignoreStrategyList.find(ignoreStrategyObj => {
-
-        const isTypeIgnored = ignoreStrategyObj.type === 'ALL' || (ignoreStrategyObj.type === strategy.strategyTypeTitle);
-
-        if (!isTypeIgnored) return false
-
-        const isSymbolNameIgnored = isSymbolNameIgnoredChecker({ ignoreStrategyObj, strategy, strategySymbols });
-        if (!isSymbolNameIgnored) return false
-
-
-
-        const { hasFilter: hasProfitFilter, isPass: isProfitPass } = profitFilterCheck({ ignoreStrategyObj, strategy });
-        if (hasProfitFilter && !isProfitPass) return true
-
-
-        const { hasFilter: hasToSarBeSarFilter, isPass: isSarBeSarPass } = sarBeSarFilterCheck({ ignoreStrategyObj, strategy });
-        if (hasToSarBeSarFilter && !isSarBeSarPass &&  !strategy.isWholeProfitable) return true
-
-
-
-        const { hasFilter: hasAllProfitFilter, isPass: isAllProfitPass } = allProfitFilterCheck({ ignoreStrategyObj, strategy });
-        if (hasAllProfitFilter && !isAllProfitPass) return true
-
-
-        const hasAnyFilter = hasProfitFilter || hasToSarBeSarFilter || hasAllProfitFilter;
-
-        return !hasAnyFilter
-
-    }
-    )
-
-}
 
 
 
@@ -374,7 +240,7 @@ const getIgnoreStrategyNames = ()=>{
         }
 
 
-        return parseIgnoreStrategies(ignoreListText)
+        return generateObjConfigByText(ignoreListText)
 }
 
 

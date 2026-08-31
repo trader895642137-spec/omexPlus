@@ -13559,8 +13559,132 @@ function findBreakevenList({positions,getPrice}) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   expandIgnoreStrategies: () => (/* binding */ expandIgnoreStrategies),
+/* harmony export */   generateObjConfigByText: () => (/* binding */ generateObjConfigByText),
+/* harmony export */   isStrategyIgnored: () => (/* binding */ isStrategyIgnored),
 /* harmony export */   parseIgnoreStrategies: () => (/* binding */ parseIgnoreStrategies)
 /* harmony export */ });
+const CONFIG_TYPE_EXPANSIONS = {
+    BUS: [
+        { type: 'BUCS' },
+        { type: 'BUCS_LONG_PUT' },
+        { type: 'BUCS_BEPS_LongPut' },
+        { type: 'SYNTHETIC_COVERED_CALL' },
+        {
+            type: 'COVERED',
+            modify: config => ({
+                ...config,
+                toSarBeSar: config.toSarBeSar
+                    ? {
+                        ...config.toSarBeSar,
+                        max: config.toSarBeSar.max / 1.3,
+                    }
+                    : null,
+            }),
+        },
+        { type: 'BECS_Ratio' },
+        { type: 'BESRatio_BUCS' },
+        {
+            type: 'BESRatio_BUPS',
+            modify: config => ({
+                ...config,
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+            }),
+        },
+        {
+            type: 'BEPS_Ratio', modify: config => ({
+                ...config,
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+            }),
+        },
+        {
+            type: 'BUPS', modify: config => ({
+                ...config,
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+            }),
+        },
+        {
+            type: 'BUPS_LONG_PUT', modify: config => ({
+                ...config,
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+            }),
+        },
+        {
+            type: 'BUS_With_BUCS_BEPS',
+            modify: config => ({
+                ...config,
+                toSarBeSar: config.toSarBeSar
+                    ? {
+                        ...config.toSarBeSar,
+                        max: config.toSarBeSar.max / 1.2,
+                    }
+                    : null,
+            }),
+        },
+        {
+            type: 'BUS_With_BUPS_BECS',
+            modify: config => ({
+                ...config,
+                toSarBeSar: config.toSarBeSar
+                    ? {
+                        ...config.toSarBeSar,
+                        max: config.toSarBeSar.max / 1.2,
+                    }
+                    : null,
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+            }),
+        },
+    ],
+    BES: [
+        {
+            type: 'BECS',
+        },
+        {
+            type: 'BECS_LONG_CALL',
+        },
+        {
+            type: 'BUCS_RATIO',
+        },
+        {
+            type: 'BEPS_LONG_CALL',
+            modify: config => ({
+                ...config,
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+            }),
+        },
+        {
+            type: 'BEPS',
+            modify: config => ({
+                ...config,
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+            }),
+        },
+        {
+            type: 'BUPS_Ratio',
+            modify: config => ({
+                ...config,
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+            }),
+        },
+        {
+            type: 'BES_With_BUCS_BEPS',
+        },
+        {
+            type: 'BES_With_BUPS_BECS',
+            modify: config => ({
+                ...config,
+                toSarBeSar: config.toSarBeSar
+                    ? {
+                        ...config.toSarBeSar,
+                        min: config.toSarBeSar.min / 1.2,
+                    }
+                    : null,
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+            }),
+        },
+    ],
+};
+
 const RULE_NAME_MAP = {
     toSar: 'toSarBeSar',
     toLSar: 'toLowSarBeSar',
@@ -13596,7 +13720,6 @@ const parseIgnoreStrategy = (ignoreStrategyName) => {
         toLowSarBeSar: null,
         toHighSarBeSar: null,
         allProfit: null,
-        raw: ignoreStrategyName
     };
 
     const [type, ...parts] = ignoreStrategyName.split('@');
@@ -13630,6 +13753,92 @@ const parseIgnoreStrategy = (ignoreStrategyName) => {
 };
 
 
+const isSameConfig = ({generatedConfig, userConfig}) => {
+    return (
+        ((generatedConfig.type === userConfig.type) || userConfig.type === 'ALL') 
+        && 
+        (generatedConfig.name === userConfig.name || userConfig.name==null)
+    );
+};
+
+
+const removeDuplicateConfigs = (configs) => {
+    const configMap = new Map();
+
+    configs.forEach(config => {
+        const key = `${config.type}@${config.name ?? ''}`;
+
+        configMap.set(key, config);
+    });
+
+    return [...configMap.values()];
+};
+
+const resolveGeneratedConfigOverrides = (
+    { 
+        generatedConfigs,
+        userConfigs
+    }
+) => {
+    const resolvedGeneratedConfigs = generatedConfigs.map(
+        generatedConfig => {
+            const userConfig = userConfigs.find(userConfig =>
+                isSameConfig({generatedConfig, userConfig})
+            );
+
+            if (!userConfig) {
+                return generatedConfig;
+            }
+
+            return {
+                ...generatedConfig,
+
+                profitPercent:
+                    userConfig.profitPercent !== null
+                        ? userConfig.profitPercent
+                        : generatedConfig.profitPercent,
+
+                toSarBeSar: userConfig.toSarBeSar
+                    ? {
+                        ...generatedConfig.toSarBeSar,
+                        ...userConfig.toSarBeSar,
+                    }
+                    : generatedConfig.toSarBeSar,
+
+                toLowSarBeSar: userConfig.toLowSarBeSar
+                    ? {
+                        ...generatedConfig.toLowSarBeSar,
+                        ...userConfig.toLowSarBeSar,
+                    }
+                    : generatedConfig.toLowSarBeSar,
+
+                toHighSarBeSar: userConfig.toHighSarBeSar
+                    ? {
+                        ...generatedConfig.toHighSarBeSar,
+                        ...userConfig.toHighSarBeSar,
+                    }
+                    : generatedConfig.toHighSarBeSar,
+
+                allProfit:
+                    userConfig.allProfit !== null
+                        ? userConfig.allProfit
+                        : generatedConfig.allProfit,
+            };
+        }
+    );
+
+    const finalUserConfigs = userConfigs.filter(userConfig => {
+        return !generatedConfigs.some(generatedConfig =>
+            isSameConfig({generatedConfig, userConfig})
+        );
+    });
+
+    return [
+        ...finalUserConfigs,
+        ...resolvedGeneratedConfigs,
+    ];
+};
+
 
 
 
@@ -13640,6 +13849,186 @@ const parseIgnoreStrategies = (text) => {
         .filter(Boolean)
         .map(parseIgnoreStrategy);
 };
+
+const generateObjConfigByText = (text) => {
+
+    const configs = parseIgnoreStrategies(text);
+
+    const uniqueUserConfigs = removeDuplicateConfigs(configs);
+
+    const expandedConfigs = expandIgnoreStrategies(uniqueUserConfigs);
+
+    const resolvedGeneratedConfigs = resolveGeneratedConfigOverrides({generatedConfigs:expandedConfigs.filter(c=>c._generated), userConfigs : expandedConfigs.filter(c=>!c._generated)});
+
+
+    return resolvedGeneratedConfigs
+}
+
+
+
+const expandIgnoreStrategy = (config) => {
+    const expansions = CONFIG_TYPE_EXPANSIONS[config.type];
+
+    if (!expansions) {
+        return [config];
+    }
+
+    return expansions.map(({ type, modify }) => {
+        const expandedConfig = {
+            ...config,
+            type,
+            _generated: true,
+            _sourceType: config.type,
+        };
+
+        return modify
+            ? modify(expandedConfig)
+            : expandedConfig;
+    });
+};
+
+const expandIgnoreStrategies = (configs) => {
+    return configs.flatMap(expandIgnoreStrategy);
+};
+
+
+
+
+const isStrategyIgnored = (strategy, ignoreStrategyList) => {
+
+
+    if (!ignoreStrategyList?.length) return false
+    const strategySymbols = strategy.positions.map(pos => pos.symbol).map(symbol => symbol.replaceAll('ي', 'ی'));
+    const strategyFullSymbolNames = strategy.positions.map(opt => opt.symbol).join('-').replaceAll('ي', 'ی');
+
+    const isSymbolNameIgnoredChecker = ({ ignoreStrategyObj, strategy, strategySymbols }) => {
+        if (!ignoreStrategyObj.name) return true
+
+        const ignoreStrategyName = ignoreStrategyObj.name.replaceAll('ي', 'ی');
+        if (ignoreStrategyName === strategyFullSymbolNames) return true
+        if (strategySymbols.some(symbol => symbol.includes(ignoreStrategyName))) return true
+
+
+    }
+
+
+
+    const profitFilterCheck = ({ ignoreStrategyObj, strategy }) => {
+
+
+        const hasFilter = ignoreStrategyObj.profitPercent != null;
+
+        return {
+            isPass: hasFilter ? strategy.profitPercent >= ignoreStrategyObj.profitPercent.val : null,
+            hasFilter
+        }
+
+    }
+
+
+
+    const sarBeSarFilterCheck = ({ ignoreStrategyObj, strategy }) => {
+
+        const hasToSarBeSarFilter = ignoreStrategyObj.toSarBeSar != null;
+        const hasToHighSarBeSarFilter = ignoreStrategyObj.toHighSarBeSar != null;
+        const hasToLowSarBeSarFilter = ignoreStrategyObj.toLowSarBeSar != null;
+
+        const hasFilter =
+            hasToSarBeSarFilter ||
+            hasToHighSarBeSarFilter ||
+            hasToLowSarBeSarFilter;
+
+        const check = (value, filter) => {
+            if (value == null) {
+                return true;
+            }
+
+            if (filter.min != null && value < filter.min) {
+                return false;
+            }
+
+            if (filter.max != null && value > filter.max) {
+                return false;
+            }
+
+            return true;
+        };
+
+        const isPass =
+            (!hasToSarBeSarFilter ||
+                check(
+                    strategy.stockPriceToSarBeSarPercent,
+                    ignoreStrategyObj.toSarBeSar
+                )) &&
+            (!hasToHighSarBeSarFilter ||
+                check(
+                    strategy.stockPriceToHighSarBeSarPercent,
+                    ignoreStrategyObj.toHighSarBeSar
+                )) &&
+            (!hasToLowSarBeSarFilter ||
+                check(
+                    strategy.stockPriceToLowSarBeSarPercent,
+                    ignoreStrategyObj.toLowSarBeSar
+                ));
+
+        return {
+            isPass,
+            hasFilter
+        };
+    };
+
+    const allProfitFilterCheck = ({ ignoreStrategyObj, strategy }) => {
+
+        const hasFilter = ignoreStrategyObj.allProfit != null;
+
+        let isPass = null;
+        if (hasFilter) {
+            isPass = strategy.isWholeProfitable;
+        }
+
+
+        return {
+            isPass,
+            hasFilter
+        }
+
+    }
+
+
+
+
+    return ignoreStrategyList.find(ignoreStrategyObj => {
+
+        const isTypeIgnored = ignoreStrategyObj.type === 'ALL' || (ignoreStrategyObj.type === strategy.strategyTypeTitle);
+
+        if (!isTypeIgnored) return false
+
+        const isSymbolNameIgnored = isSymbolNameIgnoredChecker({ ignoreStrategyObj, strategy, strategySymbols });
+        if (!isSymbolNameIgnored) return false
+
+
+
+        const { hasFilter: hasProfitFilter, isPass: isProfitPass } = profitFilterCheck({ ignoreStrategyObj, strategy });
+        if (hasProfitFilter && !isProfitPass) return true
+
+
+        const { hasFilter: hasToSarBeSarFilter, isPass: isSarBeSarPass } = sarBeSarFilterCheck({ ignoreStrategyObj, strategy });
+        if (hasToSarBeSarFilter && !isSarBeSarPass && !strategy.isWholeProfitable) return true
+
+
+
+        const { hasFilter: hasAllProfitFilter, isPass: isAllProfitPass } = allProfitFilterCheck({ ignoreStrategyObj, strategy });
+        if (hasAllProfitFilter && !isAllProfitPass) return true
+
+
+        const hasAnyFilter = hasProfitFilter || hasToSarBeSarFilter || hasAllProfitFilter;
+
+        return !hasAnyFilter
+
+    }
+    )
+
+}
 
 /***/ })
 /******/ 	]);
@@ -13712,7 +14101,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
 /* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(1);
 /* harmony import */ var _findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(9);
-/* harmony import */ var _ignoreRuleParser_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(10);
+/* harmony import */ var _ignoreRule_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(10);
 
 
 
@@ -13891,141 +14280,7 @@ let generalConfig = {
 
 
 
-const isStrategyIgnored = (strategy,ignoreStrategyList) => {
 
-    
-    if (!ignoreStrategyList?.length) return false
-    const strategySymbols = strategy.positions.map(pos => pos.symbol).map(symbol=>symbol.replaceAll('ي','ی'));
-    const strategyFullSymbolNames = strategy.positions.map(opt => opt.symbol).join('-').replaceAll('ي','ی');
-
-    const isSymbolNameIgnoredChecker = ({ignoreStrategyObj, strategy, strategySymbols}) => {
-        if (!ignoreStrategyObj.name) return true
-
-        const ignoreStrategyName = ignoreStrategyObj.name.replaceAll('ي', 'ی');
-        if (ignoreStrategyName === strategyFullSymbolNames) return true
-        if (strategySymbols.some(symbol => symbol.includes(ignoreStrategyName))) return true
-       
-
-    }
-
-   
-
-    const profitFilterCheck = ({ignoreStrategyObj,strategy})=>{
-
-       
-        const hasFilter = ignoreStrategyObj.profitPercent != null;
-
-        return {
-            isPass: hasFilter ? strategy.profitPercent >= ignoreStrategyObj.profitPercent.val : null,
-            hasFilter
-        }
-
-    }
-
-    
-
-    const sarBeSarFilterCheck = ({ ignoreStrategyObj, strategy }) => {
-
-        const hasToSarBeSarFilter = ignoreStrategyObj.toSarBeSar != null;
-        const hasToHighSarBeSarFilter = ignoreStrategyObj.toHighSarBeSar != null;
-        const hasToLowSarBeSarFilter = ignoreStrategyObj.toLowSarBeSar != null;
-
-        const hasFilter =
-            hasToSarBeSarFilter ||
-            hasToHighSarBeSarFilter ||
-            hasToLowSarBeSarFilter;
-
-        const check = (value, filter) => {
-            if (value == null) {
-                return true;
-            }
-
-            if (filter.min != null && value < filter.min) {
-                return false;
-            }
-
-            if (filter.max != null && value > filter.max) {
-                return false;
-            }
-
-            return true;
-        };
-
-        const isPass =
-            (!hasToSarBeSarFilter ||
-                check(
-                    strategy.stockPriceToSarBeSarPercent,
-                    ignoreStrategyObj.toSarBeSar
-                )) &&
-            (!hasToHighSarBeSarFilter ||
-                check(
-                    strategy.stockPriceToHighSarBeSarPercent,
-                    ignoreStrategyObj.toHighSarBeSar
-                )) &&
-            (!hasToLowSarBeSarFilter ||
-                check(
-                    strategy.stockPriceToLowSarBeSarPercent,
-                    ignoreStrategyObj.toLowSarBeSar
-                ));
-
-        return {
-            isPass,
-            hasFilter
-        };
-    };
-
-     const allProfitFilterCheck = ({ ignoreStrategyObj, strategy }) => {
-
-        const hasFilter = ignoreStrategyObj.allProfit != null;
-
-        let isPass = null;
-        if (hasFilter) {
-            isPass = strategy.isWholeProfitable;
-        }
-        
-
-        return {
-            isPass,
-            hasFilter 
-        }
-
-    }
-
-
-
-
-    return ignoreStrategyList.find(ignoreStrategyObj => {
-
-        const isTypeIgnored = ignoreStrategyObj.type === 'ALL' || (ignoreStrategyObj.type === strategy.strategyTypeTitle);
-
-        if (!isTypeIgnored) return false
-
-        const isSymbolNameIgnored = isSymbolNameIgnoredChecker({ ignoreStrategyObj, strategy, strategySymbols });
-        if (!isSymbolNameIgnored) return false
-
-
-
-        const { hasFilter: hasProfitFilter, isPass: isProfitPass } = profitFilterCheck({ ignoreStrategyObj, strategy });
-        if (hasProfitFilter && !isProfitPass) return true
-
-
-        const { hasFilter: hasToSarBeSarFilter, isPass: isSarBeSarPass } = sarBeSarFilterCheck({ ignoreStrategyObj, strategy });
-        if (hasToSarBeSarFilter && !isSarBeSarPass &&  !strategy.isWholeProfitable) return true
-
-
-
-        const { hasFilter: hasAllProfitFilter, isPass: isAllProfitPass } = allProfitFilterCheck({ ignoreStrategyObj, strategy });
-        if (hasAllProfitFilter && !isAllProfitPass) return true
-
-
-        const hasAnyFilter = hasProfitFilter || hasToSarBeSarFilter || hasAllProfitFilter;
-
-        return !hasAnyFilter
-
-    }
-    )
-
-}
 
 
 
@@ -14089,7 +14344,7 @@ const getIgnoreStrategyNames = ()=>{
         }
 
 
-        return (0,_ignoreRuleParser_js__WEBPACK_IMPORTED_MODULE_5__.parseIgnoreStrategies)(ignoreListText)
+        return (0,_ignoreRule_js__WEBPACK_IMPORTED_MODULE_5__.generateObjConfigByText)(ignoreListText)
 }
 
 
@@ -14126,7 +14381,7 @@ const checkProfitsAnNotif = ({sortedStrategies}) => {
             return
 
         
-        if (isStrategyIgnored(strategy,ignoreStrategyList))
+        if ((0,_ignoreRule_js__WEBPACK_IMPORTED_MODULE_5__.isStrategyIgnored)(strategy,ignoreStrategyList))
             return false
         return true
     }
@@ -24962,7 +25217,7 @@ const createListFilterContetnByList=(list)=>{
             if (filterSymbolList.length && !filterSymbolList.find(filteredSymbol => strategy.name.includes(filteredSymbol)))
                 return false
 
-            if (isStrategyIgnored(strategy, ignoreStrategyList))
+            if ((0,_ignoreRule_js__WEBPACK_IMPORTED_MODULE_5__.isStrategyIgnored)(strategy, ignoreStrategyList))
                 return false
             return true
         }
