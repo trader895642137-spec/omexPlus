@@ -24115,6 +24115,13 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: BUCSStrategies,
+            min_time_to_settlement: 40 * 24 * 3600000,
+            max_time_to_settlement: 60 * 24 * 3600000,
+            minProfitToFilter : 0.05
+        }),
+
+        filterStrategiesByConfig({
+            strategies: BUCSStrategies,
             min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 40 * 24 * 3600000,
             minProfitToFilter : 0.03
@@ -24293,6 +24300,12 @@ const createListFilterContetnByList=(list)=>{
 
 
 
+        filterStrategiesByConfig({
+            strategies: BUPSStrategies,
+            min_time_to_settlement: 40 * 24 * 3600000,
+            max_time_to_settlement: 60 * 24 * 3600000,
+            minProfitToFilter : 0.05
+        }),
         filterStrategiesByConfig({
             strategies: BUPSStrategies,
             min_time_to_settlement: 15 * 24 * 3600000,
@@ -24753,8 +24766,8 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: SyntheticCoveredCallStrategies,
             min_time_to_settlement: 15 * 24 * 3600000,
-            max_time_to_settlement: 40 * 24 * 3600000,
-             minProfitToFilter : 0.03
+            max_time_to_settlement: 60 * 24 * 3600000,
+            minProfitToFilter : 0.03
         }),
 
 
@@ -24808,7 +24821,7 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: COVEREDStrategies,
             min_time_to_settlement: 15 * 24 * 3600000,
-            max_time_to_settlement: 38 * 24 * 3600000,
+            max_time_to_settlement: 60 * 24 * 3600000,
         }),
 
         filterStrategiesByConfig({
