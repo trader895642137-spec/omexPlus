@@ -806,8 +806,7 @@ const calcAveragePriceByExecutedOrders = (orders)=>{
     // فیلتر کردن سفارشات معتبر (فقط سفارشات انجام شده با مقدار و قیمت معتبر)
     const validOrders = orders.filter(order => 
         order.orderStatus === "CompletelySettled" && 
-        order.executedQuantity > 0 && 
-        order.executedPrice > 0
+        order.executedQuantity > 0 
     );
     
     // مرتب‌سازی بر اساس تاریخ

@@ -1,150 +1,92 @@
-const calcBUCS_BEPS_LongPutStrategies = ({ filteredBusList, priceType, strategySubName,
-    minProfitToFilter,
-    isProfitEnoughFn,
-    min_time_to_settlement = -Infinity, max_time_to_settlement = Infinity,
-    minStockPriceToSarBeSar = -Infinity, maxStockPriceToSarBeSar = Infinity,
-    minVol = CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif = false, ...restConfig }) => {
+export const calcAveragePriceByExecutedOrders = (orders)=>{
 
-    const enrichedList = filteredBusList.map(bus => {
-
-
-        const { optionListOfSameDate, strategyPositions, maxProfit: maxProfitOfBUS, positions: busPositions } = bus;
-
-        if(!optionListOfSameDate){
-            console.log(24234);
-            
-        }
-        const strikes = strategyPositions.map(strategyPosition => strategyPosition.strikePrice);
-        const uniqueStrikes = [...new Set(strikes)];
-        const maxStrikePrice = Math.max(...uniqueStrikes);
-
-        const higherStrikePuts = optionListOfSameDate.filter(_option => {
-            if (!_option.isPut)
-                return false
-            if (_option.optionDetails?.strikePrice < maxStrikePrice)
-                return false
-
-            if (!_option.optionDetails.stockSymbolDetails) return false
-
-            return true
-        }
-        );
-
-
-        const allPossibleStrategies = higherStrikePuts.reduce((_allPossibleStrategies, buyingPut) => {
-            const buyingPutPrice = getPriceOfAsset({
-                asset: buyingPut,
-                priceType,
-                sideType: 'BUY'
-            });
-
-            if (buyingPutPrice === 0) return _allPossibleStrategies
-
-            const quantityFactorOfBuyingPut = Math.abs(maxProfitOfBUS / buyingPutPrice);
-
-            const strategyPositionsOfBUCS_BEPS_LongPut = [
-                ...strategyPositions,
-                {
-                    ...buyingPut,
-                    isBuy: true,
-                    getQuantity: () => 1 * quantityFactorOfBuyingPut / 1.3,
-                    getRequiredMargin() { }
-                },
-            ]
-
-
-            const totalCost = totalCostCalculatorCommon({
-                strategyPositions:strategyPositionsOfBUCS_BEPS_LongPut,
-                getPrice: (strategyPosition) => getPriceOfAsset({
-                    asset: strategyPosition,
-                    priceType,
-                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                })
-            });
-
-            const breakevenList = findBreakevenList({
-                positions: strategyPositionsOfBUCS_BEPS_LongPut,
-                getPrice: (strategyPosition) => getPriceOfAsset({
-                    asset: strategyPosition,
-                    priceType,
-                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                })
-            });
-
-            const breakeven = breakevenList.length ? Math.max(...breakevenList) : null;
-
-            const priceThatCauseMinProfit = Math.max(...strategyPositionsOfBUCS_BEPS_LongPut.map(strategyPosition => strategyPosition.strikePrice)) * 1.2;
-            const minProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions:strategyPositionsOfBUCS_BEPS_LongPut, stockPrice: priceThatCauseMinProfit });
-            const minProfitPercent = minProfit / Math.abs(totalCost);
-
-            let isFullBodyProfitable, stockPriceToSarBeSarPercent;
-            if (!breakeven && quantityFactorOfBuyingPut > 0) {
-                isFullBodyProfitable = true;
-            } else if (!breakeven) {
-                return _allPossibleStrategies
+    let position = 0; // تعداد سهام در پوزیشن (مثبت: خرید، منفی: فروش)
+    let totalCost = 0; // ارزش کل خریدها
+    let averagePrice = 0;
+    
+    // فیلتر کردن سفارشات معتبر (فقط سفارشات انجام شده با مقدار و قیمت معتبر)
+    const validOrders = orders.filter(order => 
+        order.orderStatus === "CompletelySettled" && 
+        order.executedQuantity > 0 
+        
+    );
+    
+    // مرتب‌سازی بر اساس تاریخ
+    const sortedOrders = [...validOrders].sort((a, b) => 
+        new Date(a.createdDate) - new Date(b.createdDate)
+    );
+    
+    
+    for (const order of sortedOrders) {
+        const quantity = order.executedQuantity;
+        const price = order.executedPrice;
+        const isBuy = order.orderSide === "Buy";
+        
+        if (isBuy) {
+            if (position >= 0) {
+                // در موقعیت خرید یا خنثی
+                totalCost += quantity * price;
+                position += quantity;
+                averagePrice = totalCost / position;
+            } else {
+                // در موقعیت فروش
+                const remainingShort = -position;
+                
+                if (quantity <= remainingShort) {
+                    position += quantity;
+                } else {
+                    const coveringQuantity = remainingShort;
+                    const newBuyQuantity = quantity - coveringQuantity;
+                    position = 0;
+                    
+                    totalCost = newBuyQuantity * price;
+                    position = newBuyQuantity;
+                    averagePrice = price;
+                }
             }
-            else {
-                if (!buyingPut?.optionDetails?.stockSymbolDetails?.last) return _allPossibleStrategies
-
-                stockPriceToSarBeSarPercent = (breakeven / buyingPut.optionDetails.stockSymbolDetails.last) - 1;
-                if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSar || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSar)
-                    return _allPossibleStrategies
+        } else { // Sell
+            if (position <= 0) {
+                // در موقعیت فروش یا خنثی
+                const shortPosition = -position;
+                const newShortValue = (shortPosition * averagePrice) + (quantity * price);
+                position -= quantity;
+                averagePrice = newShortValue / (-position);
+            } else {
+                // در موقعیت خرید
+                const remainingLong = position;
+                
+                if (quantity <= remainingLong) {
+                    totalCost -= quantity * averagePrice;
+                    position -= quantity;
+                    
+                    if (position > 0) {
+                        averagePrice = totalCost / position;
+                    }
+                } else {
+                    const coveringQuantity = remainingLong;
+                    const newSellQuantity = quantity - coveringQuantity;
+                    
+                    position = 0;
+                    totalCost = 0;
+                    
+                    position = -newSellQuantity;
+                    averagePrice = price;
+                }
             }
-
-
-
-            return _allPossibleStrategies.concat([{
-                option: {
-                    ...buyingPut
-                },
-                positions: [...busPositions, buyingPut],
-                strategyTypeTitle: "BUCS_BEPS_LongPut",
-                expectedProfitNotif,
-                minProfitToFilter,
-                stockPriceToSarBeSarPercent,
-                isWholeProfitable: isFullBodyProfitable,
-                isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(minProfitPercent),
-                name: createStrategyName([...busPositions, buyingPut],),
-                // profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
-                profitPercent: minProfitPercent
-            }])
-
-
-
-
-        }, []);
-
-        return {
-            ...strategyPositions[0],
-            allPossibleStrategies
         }
-
-
-    })
-
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
-
-    return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
-        strategyName: "BUCS_BEPS_LongPut",
-        priceType,
-        min_time_to_settlement,
-        max_time_to_settlement,
-        minStockPriceToSarBeSar,
-        maxStockPriceToSarBeSar,
-        minVol,
-        expectedProfitNotif,
-        ...restConfig,
-        htmlTitle: configsToHtmlTitle({
-            strategyName: "BUCS_BEPS_LongPut",
-            strategySubName,
-            priceType,
-            min_time_to_settlement,
-            max_time_to_settlement,
-            minStockPriceToSarBeSar,
-            maxStockPriceToSarBeSar,
-            minVol
-        })
     }
+    
+    // تابع برای نمایش با 3 رقم اعشار (بدون گرد کردن)
+    const to3Decimal = (num) => {
+        if (isNaN(num) || num === 0) return 0;
+        return Math.floor(num * 1000) / 1000;
+    };
+    
+    return {
+        quantity: position,
+        averagePrice: to3Decimal(averagePrice),
+        totalValue: to3Decimal(Math.abs(position) * averagePrice),
+        side: position > 0 ? "Long" : (position < 0 ? "Short" : "Neutral")
+    };
+
 }
