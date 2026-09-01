@@ -122,7 +122,7 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
 
     strategyGroupInfo.strategyPositions = strategyGroupInfo.strategyPositions.map(strategyPosition=>{
 
-      const tradedInstrument = tradedInstrumentList.find(tradedInstrument=>tradedInstrument.instrumentName === strategyPosition.instrumentName);
+      const tradedInstrument = tradedInstrumentList.find(tradedInstrument=>tradedInstrument.instrumentName.replaceAll('ي', 'ی') === strategyPosition.instrumentName.replaceAll('ي', 'ی'));
 
       
       strategyPosition.getBestOffsetPrice = ()=> (strategyPosition.isBuy ? tradedInstrument?.bestBuy : tradedInstrument?.bestSell) || NaN

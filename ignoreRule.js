@@ -187,88 +187,100 @@ const parseIgnoreStrategy = (ignoreStrategyName) => {
 };
 
 
-const isSameConfig = ({generatedConfig, userConfig}) => {
-    return (
-        ((generatedConfig.type === userConfig.type) || userConfig.type === 'ALL') 
+
+
+// const removeDuplicateConfigs = (configs) => {
+//     const configMap = new Map();
+
+//     configs.forEach(config => {
+//         const key = `${config.type}@${config.name ?? ''}`;
+
+//         configMap.set(key, config);
+//     });
+
+//     return [...configMap.values()];
+// };
+
+
+const isSameConfigTarget = (generatedConfig, userConfig) => {
+     return (
+        ((generatedConfig.type === userConfig.type)) 
         && 
         (generatedConfig.name === userConfig.name || userConfig.name==null)
     );
 };
 
+const mergeConfig = (generatedConfig, userConfig) => {
+    return {
+        ...generatedConfig,
 
-const removeDuplicateConfigs = (configs) => {
-    const configMap = new Map();
+        profitPercent:
+            userConfig.profitPercent !== null
+                ? userConfig.profitPercent
+                : generatedConfig.profitPercent,
 
-    configs.forEach(config => {
-        const key = `${config.type}@${config.name ?? ''}`;
+        toSarBeSar: userConfig.toSarBeSar
+            ? {
+                ...generatedConfig.toSarBeSar,
+                ...userConfig.toSarBeSar,
+            }
+            : generatedConfig.toSarBeSar,
 
-        configMap.set(key, config);
-    });
+        toLowSarBeSar: userConfig.toLowSarBeSar
+            ? {
+                ...generatedConfig.toLowSarBeSar,
+                ...userConfig.toLowSarBeSar,
+            }
+            : generatedConfig.toLowSarBeSar,
 
-    return [...configMap.values()];
+        toHighSarBeSar: userConfig.toHighSarBeSar
+            ? {
+                ...generatedConfig.toHighSarBeSar,
+                ...userConfig.toHighSarBeSar,
+            }
+            : generatedConfig.toHighSarBeSar,
+
+        allProfit:
+            userConfig.allProfit !== null
+                ? userConfig.allProfit
+                : generatedConfig.allProfit,
+    };
 };
 
-const resolveGeneratedConfigOverrides = (
-    { 
-        generatedConfigs,
-        userConfigs
-    }
-) => {
+const resolveGeneratedConfigOverrides = ({
+    generatedConfigs,
+    userConfigs,
+}) => {
     const resolvedGeneratedConfigs = generatedConfigs.map(
         generatedConfig => {
-            const userConfig = userConfigs.find(userConfig =>
-                isSameConfig({generatedConfig, userConfig})
+            const matchingUserConfigs = userConfigs.filter(
+                userConfig =>
+                    isSameConfigTarget(
+                        generatedConfig,
+                        userConfig
+                    )
             );
 
-            if (!userConfig) {
-                return generatedConfig;
-            }
-
-            return {
-                ...generatedConfig,
-
-                profitPercent:
-                    userConfig.profitPercent !== null
-                        ? userConfig.profitPercent
-                        : generatedConfig.profitPercent,
-
-                toSarBeSar: userConfig.toSarBeSar
-                    ? {
-                        ...generatedConfig.toSarBeSar,
-                        ...userConfig.toSarBeSar,
-                    }
-                    : generatedConfig.toSarBeSar,
-
-                toLowSarBeSar: userConfig.toLowSarBeSar
-                    ? {
-                        ...generatedConfig.toLowSarBeSar,
-                        ...userConfig.toLowSarBeSar,
-                    }
-                    : generatedConfig.toLowSarBeSar,
-
-                toHighSarBeSar: userConfig.toHighSarBeSar
-                    ? {
-                        ...generatedConfig.toHighSarBeSar,
-                        ...userConfig.toHighSarBeSar,
-                    }
-                    : generatedConfig.toHighSarBeSar,
-
-                allProfit:
-                    userConfig.allProfit !== null
-                        ? userConfig.allProfit
-                        : generatedConfig.allProfit,
-            };
+            return matchingUserConfigs.reduce(
+                (result, userConfig) =>
+                    mergeConfig(result, userConfig),
+                generatedConfig
+            );
         }
     );
 
-    const finalUserConfigs = userConfigs.filter(userConfig => {
-        return !generatedConfigs.some(generatedConfig =>
-            isSameConfig({generatedConfig, userConfig})
-        );
-    });
+    const unmatchedUserConfigs = userConfigs.filter(
+        userConfig =>
+            !generatedConfigs.some(generatedConfig =>
+                isSameConfigTarget(
+                    generatedConfig,
+                    userConfig
+                )
+            )
+    );
 
     return [
-        ...finalUserConfigs,
+        ...unmatchedUserConfigs,
         ...resolvedGeneratedConfigs,
     ];
 };
@@ -288,9 +300,9 @@ export const generateObjConfigByText = (text) => {
 
     const configs = parseIgnoreStrategies(text);
 
-    const uniqueUserConfigs = removeDuplicateConfigs(configs);
+    // const uniqueUserConfigs = removeDuplicateConfigs(configs);
 
-    const expandedConfigs = expandIgnoreStrategies(uniqueUserConfigs);
+    const expandedConfigs = expandIgnoreStrategies(configs);
 
     const resolvedGeneratedConfigs = resolveGeneratedConfigOverrides({generatedConfigs:expandedConfigs.filter(c=>c._generated), userConfigs : expandedConfigs.filter(c=>!c._generated)});
 
