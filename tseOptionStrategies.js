@@ -9554,6 +9554,8 @@ const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName,
 
 }
 
+
+
 const filterStrategiesByConfig = ({
     strategies,
     strategyTypeTitle,
@@ -9571,7 +9573,6 @@ const filterStrategiesByConfig = ({
 
 
 }) => {
-
 
 
     const calcProfitPercentOfSettlement = ({ totalCost, strategyPositions, stockPrice,nokoolOrNoRequestFactor }) => {
@@ -9597,78 +9598,63 @@ const filterStrategiesByConfig = ({
 
 
 
-  
+    let allStrategiesSorted = strategies.allStrategiesSorted.filter(strategy => {
 
-    const allStrategiesSorted = [];
+        const settlementTimeDiff = strategy.option.settlementTimeDiff;
+        
+        if (settlementTimeDiff < min_time_to_settlement || settlementTimeDiff > max_time_to_settlement) return
 
-for (const strategy of strategies.allStrategiesSorted) {
+        const isToSarBeSarGood = strategy.stockPriceToSarBeSarPercent >= minStockPriceToSarBeSar && strategy.stockPriceToSarBeSarPercent <= maxStockPriceToSarBeSar;
+        if (!isToSarBeSarGood && !strategy.isWholeProfitable) return
+
+        if (isWholeProfitable ===true && !strategy.isWholeProfitable) return
+        if (isWholeProfitable ===false && strategy.isWholeProfitable) return
+
+       
+        
+        if(minProfitLossRatio!=null && strategy.profitLossRatio < minProfitLossRatio) {
+            return
+        } 
+        if(minProfitPercentOfSettlement!=null){
+            
+            return isProfitPercentOfSettlementOk({ 
+                    totalCost : strategy.totalCost, 
+                    strategyPositions:strategy.strategyPositions, 
+                    stockPrice: strategy.currentStockPrice,
+                    nokoolOrNoRequestFactor,
+                    minProfitPercentOfSettlement })
+        }
 
 
 
-    const settlementTimeDiff = strategy.settlementTimeDiff
+        return true
 
-
-    if (
-        settlementTimeDiff < min_time_to_settlement ||
-        settlementTimeDiff > max_time_to_settlement
-    ) continue;
-
-    const isToSarBeSarGood =
-        strategy.stockPriceToSarBeSarPercent >= minStockPriceToSarBeSar &&
-        strategy.stockPriceToSarBeSarPercent <= maxStockPriceToSarBeSar;
-
-    if (!isToSarBeSarGood && !strategy.isWholeProfitable) continue;
-
-    if (isWholeProfitable === true && !strategy.isWholeProfitable) continue;
-    if (isWholeProfitable === false && strategy.isWholeProfitable) continue;
-
-    if (
-        minProfitLossRatio != null &&
-        strategy.profitLossRatio < minProfitLossRatio
-    ) continue;
-
-    if (
-        minProfitPercentOfSettlement != null &&
-        !isProfitPercentOfSettlementOk({
-            totalCost: strategy.totalCost,
-            strategyPositions: strategy.strategyPositions,
-            stockPrice: strategy.currentStockPrice,
-            nokoolOrNoRequestFactor,
-            minProfitPercentOfSettlement
-        })
-    ) continue;
-
-    const extraProperties = {};
+    });
 
     if (minProfitToFilter != null) {
-        extraProperties.minProfitToFilter = minProfitToFilter;
+        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, minProfitToFilter }))
     }
-
     if (expectedProfitPerMonth != null) {
-        extraProperties.expectedProfitPerMonth = expectedProfitPerMonth;
+        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, expectedProfitPerMonth }))
     }
-
     if (isProfitEnoughFn != null) {
-        extraProperties.isProfitEnough = isProfitEnoughFn(strategy);
+        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, isProfitEnough: isProfitEnoughFn(strategy) }))
     }
-
     if (expectedProfitNotif != null) {
-        extraProperties.expectedProfitNotif = expectedProfitNotif;
-    }
+        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, expectedProfitNotif }));
 
+    }
+    
     if (strategyTypeTitle != null) {
-        extraProperties.strategyTypeTitle = strategyTypeTitle;
+        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, strategyTypeTitle }));
+
     }
 
-    allStrategiesSorted.push({
-        ...strategy,
-        ...extraProperties
-    });
-}
 
 
 
-    const result = {
+
+    return {
         ...strategies,
         strategyName : strategyTypeTitle || strategies.strategyName,
         expectedProfitNotif : expectedProfitNotif!=null ? expectedProfitNotif : strategies.expectedProfitNotif,
@@ -9697,12 +9683,6 @@ for (const strategy of strategies.allStrategiesSorted) {
         })
 
     }
-
-
-
-
-
-    return result
 }
 
 
@@ -9711,7 +9691,7 @@ for (const strategy of strategies.allStrategiesSorted) {
 const createListFilterContetnByList=(list)=>{
 
 
-    console.time('createListFilterContetnByList')
+    // console.time('createListFilterContetnByList')
 
     let htmlContent = '';
 
@@ -11113,7 +11093,7 @@ const createListFilterContetnByList=(list)=>{
     htmlContent += allStrategyListObject.map(strategyObj => strategyObj.htmlContent).join('');
 
     setFiltersContent(htmlContent);
-    console.timeEnd('createListFilterContetnByList')
+    // console.timeEnd('createListFilterContetnByList')
 
 }
 
