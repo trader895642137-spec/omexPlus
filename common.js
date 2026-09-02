@@ -300,15 +300,26 @@ export const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolO
 
 
   const buyStockValuablePositions = valuablePositions.filter(valuablePosition=>(valuablePosition.isCall && valuablePosition.isBuy) || (valuablePosition.isPut && !valuablePosition.isBuy));
-  let sellStockValuablePositions = valuablePositions.filter(valuablePosition=>(valuablePosition.isCall && !valuablePosition.isBuy) || (valuablePosition.isPut && valuablePosition.isBuy));
+ 
+    let sellStockValuablePositions = valuablePositions.filter(
+        valuablePosition =>
+            (valuablePosition.isCall && !valuablePosition.isBuy) ||
+            (valuablePosition.isPut && valuablePosition.isBuy)
+    );
 
-  sellStockValuablePositions = sellStockValuablePositions.sort((posA, posB) => {
-    if (posA.strikePrice >= posB.strikePrice) {
-      return -1
-    } else {
-      return 1
-    }
-  });
+    sellStockValuablePositions.sort((posA, posB) => {
+
+        const isCallSellA = posA.isCall && !posA.isBuy;
+        const isCallSellB = posB.isCall && !posB.isBuy;
+
+        // اول Call Sell
+        if (isCallSellA !== isCallSellB) {
+            return isCallSellA ? -1 : 1;
+        }
+
+        // داخل هر گروه، Strike بزرگ‌تر اول
+        return posB.strikePrice - posA.strikePrice;
+    });
 
 
   const totalMargins = strategyPositions.reduce((totalMargins, position) => {
