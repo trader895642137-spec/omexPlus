@@ -14302,7 +14302,9 @@ const isProfitEnough = ({strategy,profitPercent})=>{
     if (profitPercent < 0)
         return false
 
-    const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(strategy.option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+    const settlementTimeDiff = strategy.option.settlementTimeDiff;
+    !settlementTimeDiff && console.error('مقدار settlementTimeDiff ندارد',settlementTimeDiff);
+    
     const daysToSettlement = Math.floor(settlementTimeDiff / (24 * 3600000));
     // if(daysToSettlement<=0) return true
 
@@ -14680,17 +14682,11 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth,
      min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
      minVol=CONSTS.DEFAULTS.MIN_VOL,
      minProfitToFilter, 
+     filteredList,
+            optionsGroupedByStock,
      expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+   
 
     let enrichedList = []
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -14827,7 +14823,7 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth,
                         minProfitToFilter,
                         expectedProfitPerMonth,
                         isWholeProfitable:profit>=0, 
-                        settlementTimeDiff : (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(date, 'jYYYY/jMM/jDD').diff(Date.now()),
+                        settlementTimeDiff : option.settlementTimeDiff,
                         name: createStrategyName([option, higherStrikeOption]),
                         profitPercent
                     }
@@ -14894,17 +14890,11 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth,
 
 const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth,
     minProfitToFilter, 
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+    
 
     let enrichedList = []
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -15108,24 +15098,16 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth,
 
 const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
-    settlementGainChoosePriceType="MIN", strategySubName, 
+    settlementGainChoosePriceType="MIN", strategySubName,
+    filteredList,
+            optionsGroupedByStock, 
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
     minStockPriceToSarBeSar=0, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-
-       
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff >= min_time_to_settlement && settlementTimeDiff <= max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+   
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -15314,7 +15296,7 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
     const filteredList = list.filter(item => {
         if (!item.isOption)
             return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+        const settlementTimeDiff = item.settlementTimeDiff;
         return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
     }
     )
@@ -15506,7 +15488,7 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
     const filteredList = list.filter(item => {
         if (!item.isOption)
             return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+        const settlementTimeDiff = item.settlementTimeDiff;
         return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
     }
     )
@@ -15689,22 +15671,17 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
 }
 
 const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
-    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement,
+    filteredList, 
+    optionsGroupedByStock,
     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
+   
 
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
-
+    
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
         const optionsGroupedByDate = Object.groupBy(optionList, ({optionDetails}) => optionDetails.date);
@@ -15841,7 +15818,7 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                         stockPriceToSarBeSarPercent,
                         isWholeProfitable:!breakeven,
                         profitLossRatio,
-                        settlementTimeDiff : (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(date, 'jYYYY/jMM/jDD').diff(Date.now()),
+                        settlementTimeDiff : option.settlementTimeDiff,
                         name: createStrategyName([option, _option]),
                         profitPercent
                     }
@@ -15914,19 +15891,12 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
 
 const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", 
     strategySubName, BUPSOptionListIgnorer=generalConfig.BUPSOptionListIgnorer, 
+    filteredList,
+    optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -16081,7 +16051,7 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                         stockPriceToSarBeSarPercent,
                         isWholeProfitable:!breakeven,
                         profitLossRatio,
-                        settlementTimeDiff : (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(date, 'jYYYY/jMM/jDD').diff(Date.now()),
+                        settlementTimeDiff : option.settlementTimeDiff,
                         name: createStrategyName([option, _option]),
                         profitPercent
                     }
@@ -16147,21 +16117,15 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
 const calcSyntheticCoveredCallStrategies = (list, 
     {priceType, strategySubName, 
         minProfitToFilter,
+        filteredList,
+            optionsGroupedByStock,
         minStockPriceToSarBeSar=-Infinity,
         maxStockPriceToSarBeSar=Infinity,
         BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, min_time_to_settlement=-Infinity, 
         max_time_to_settlement=generalConfig.max_time_to_settlement, 
         minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+   
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -16394,18 +16358,14 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
     minProfitToFilter,
     priceType, settlementGainChoosePriceType="MIN", strategySubName, 
     isProfitEnoughFn,
+    filteredList,
+    optionsGroupedByStock,
     BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, MIN_BUCS_BECS_diffStrikesRatio=0, MAX_BUCS_BECS_diffStrikesRatio=Infinity, minStockStrike4DistanceInPercent=-Infinity, maxStockStrike4DistanceInPercent=Infinity, minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
+   
 
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+    
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -16960,7 +16920,7 @@ const calcIRON_BUTT_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainCh
     const filteredList = list.filter(item => {
         if (!item.isOption)
             return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+        const settlementTimeDiff = item.settlementTimeDiff;
         return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
     }
     )
@@ -17200,7 +17160,7 @@ const calcIRON_BUTT_CONDOR_BUPS_Strategies = (list, {priceType,
     const filteredList = list.filter(item => {
         if (!item.isOption)
             return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+        const settlementTimeDiff = item.settlementTimeDiff;
         return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
     }
     )
@@ -17518,6 +17478,8 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
     settlementGainChoosePriceType="MIN", strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     isProfitEnoughFn,
     minProfitToFilter,
+    filteredList,
+    optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
@@ -17526,15 +17488,6 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
     minStockMiddleDistanceInPercent=-Infinity, maxStockMiddleDistanceInPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, minProfitLossRatio=.7, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -17859,19 +17812,13 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
     BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     minProfitToFilter,
     isProfitEnoughFn,
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity,maxStockPriceToSarBeSar=Infinity,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+   
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -18145,17 +18092,11 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
     maxStockPriceToSarBeSar=Infinity,
     minProfitToFilter,
     isProfitEnoughFn,
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+    
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -18438,17 +18379,11 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
     maxStockPriceToSarBeSar=Infinity,
     minProfitToFilter,
     isProfitEnoughFn,
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+    
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -18736,17 +18671,11 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
     maxStockPriceToSarBeSar=Infinity,
     minProfitToFilter,
     isProfitEnoughFn,
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+    
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -19036,19 +18965,13 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
     settlementGainChoosePriceType="MIN", strategySubName, 
     BUPSOptionListIgnorer=generalConfig.BUPSOptionListIgnorer, 
     justIfWholeIsPofitable=false,
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+    
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -19263,20 +19186,14 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
 const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, strategySubName, 
     BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
     minProfitToFilter,
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     justIfWholeIsPofitable=false,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+   
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -19456,19 +19373,13 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
 const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, 
     strategySubName, min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minProfitToFilter,
+    filteredList,
+            optionsGroupedByStock,
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     justIfWholeIsPofitable=false,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+   
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -19671,19 +19582,13 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 const calcBECS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, 
     strategySubName, min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minProfitToFilter,
+    filteredList,
+            optionsGroupedByStock,
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     justIfWholeIsPofitable=false,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+  
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -19887,19 +19792,13 @@ const calcBECS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth, 
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minProfitToFilter,
+    filteredList,
+            optionsGroupedByStock,
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+   
 
     let enrichedList = [];
     for (let[stockSymbol,optionListOfStock] of Object.entries(optionsGroupedByStock)) {
@@ -19964,7 +19863,7 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
                 expectedProfitNotif,
                 expectedProfitPerMonth,
                 stockPriceToSarBeSarPercent,
-                settlementTimeDiff : (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now()),
+                settlementTimeDiff : option.settlementTimeDiff,
                 name: createStrategyName([option.optionDetails?.stockSymbolDetails, option]),
                 profitPercent
             }
@@ -20014,7 +19913,7 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
     const filteredList = list.filter(item => {
         if (!item.isOption)
             return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+        const settlementTimeDiff = item.settlementTimeDiff;
         return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
     }
     )
@@ -20144,7 +20043,7 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
     const filteredList = list.filter(item => {
         if (!item.isOption)
             return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+        const settlementTimeDiff = item.settlementTimeDiff;
         return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
     }
     )
@@ -20288,19 +20187,13 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
 const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
     settlementGainChoosePriceType="MAX",
+     filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+    
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -20487,19 +20380,13 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
 const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlementGainChoosePriceType="MAX", 
     minProfitToFilter,
     strategySubName, BECSSOptionListIgnorer=generalConfig.BECSSOptionListIgnorer, 
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity,  maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+   
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -20822,6 +20709,8 @@ const createAndCalcBUS_BES_Strategy = ({ buyingCall, sellingCall, buyingPut, sel
 const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
     settlementGainChoosePriceType="MIN", strategySubName,  
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -20830,15 +20719,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
    
     
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+    
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -21443,7 +21324,9 @@ const calcBESRatio_BY_BUS_BES_Strategies = ({ filteredBesList, priceType, strate
 
 const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
-    settlementGainChoosePriceType="MIN", strategySubName,  
+    settlementGainChoosePriceType="MIN", strategySubName,
+    filteredList,
+            optionsGroupedByStock,  
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -21453,15 +21336,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
     
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+   
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -21714,6 +21589,8 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
     settlementGainChoosePriceType="MIN", strategySubName,  
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -21722,15 +21599,6 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
    
     
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -21985,6 +21853,8 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth, 
     minProfitToFilter,
     settlementGainChoosePriceType="MIN", strategySubName,  
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
@@ -21995,15 +21865,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
     
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+   
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -22264,18 +22126,12 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMonth,
     isProfitEnoughFn, 
     minProfitToFilter,
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, minVol=CONSTS.DEFAULTS.MIN_VOL, 
     expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+    
 
     let enrichedList = []
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -22344,7 +22200,7 @@ const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMo
 
 
                
-                const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
+               
 
 
                
@@ -22411,18 +22267,12 @@ const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMo
 const calcBuyStockByPutStrategies = (list, {priceType, expectedProfitPerMonth,
     isProfitEnoughFn, 
     minProfitToFilter,
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, minVol=CONSTS.DEFAULTS.MIN_VOL, 
     expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+   
 
     let enrichedList = []
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -22543,20 +22393,14 @@ const calcBuyStockByPutStrategies = (list, {priceType, expectedProfitPerMonth,
 
 const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth, 
     isProfitEnoughFn,
+    filteredList,
+    optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement,
     minProfitToFilter, 
     minStockPriceDistanceInPercent=-Infinity, maxStockPriceDistanceInPercent=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+    
 
     let enrichedList = [];
     for (let[stockSymbol,optionListOfStock] of Object.entries(optionsGroupedByStock)) {
@@ -22623,8 +22467,7 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
-            const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-
+            const settlementTimeDiff = option.settlementTimeDiff;
 
            
 
@@ -22679,18 +22522,12 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
 
 const calcSellCallNokoolGainStrategies = (list, { priceType, expectedProfitPerMonth,
     minProfitToFilter,
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement = -Infinity, max_time_to_settlement = Infinity,
     minVol = CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif = false, ...restConfig }) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({ optionDetails }) => optionDetails.stockSymbol);
+   
 
     let enrichedList = [];
     for (let [stockSymbol, optionList] of Object.entries(optionsGroupedByStock)) {
@@ -22810,19 +22647,13 @@ const calcSellCallNokoolGainStrategies = (list, { priceType, expectedProfitPerMo
 const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName, 
     minProfitToFilter,
     isProfitEnoughFn,
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity,maxStockPriceToSarBeSar=Infinity,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+   
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -23071,19 +22902,13 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
 const calcBECS_Long_CallStrategies = (list, {priceType, strategySubName, 
     minProfitToFilter,
     isProfitEnoughFn,
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity,maxStockPriceToSarBeSar=Infinity,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+   
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -23335,19 +23160,13 @@ const calcBECS_Long_CallStrategies = (list, {priceType, strategySubName,
 const calcBEPS_Long_CallStrategies = (list, {priceType, strategySubName, 
     minProfitToFilter,
     isProfitEnoughFn,
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity,maxStockPriceToSarBeSar=Infinity,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+   
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -23597,19 +23416,13 @@ const calcBEPS_Long_CallStrategies = (list, {priceType, strategySubName,
 const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName, 
     minProfitToFilter,
     isProfitEnoughFn,
+    filteredList,
+            optionsGroupedByStock,
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceToSarBeSar=-Infinity,maxStockPriceToSarBeSar=Infinity,
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-    const filteredList = list.filter(item => {
-        if (!item.isOption)
-            return
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(item.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        return settlementTimeDiff > min_time_to_settlement && settlementTimeDiff < max_time_to_settlement
-    }
-    )
-
-    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
+    
 
     let enrichedList = [];
     for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
@@ -23875,6 +23688,7 @@ const filterStrategiesByConfig = ({
 }) => {
 
 
+
     const calcProfitPercentOfSettlement = ({ totalCost, strategyPositions, stockPrice,nokoolOrNoRequestFactor }) => {
 
 
@@ -23898,63 +23712,78 @@ const filterStrategiesByConfig = ({
 
 
 
-    let allStrategiesSorted = strategies.allStrategiesSorted.filter(strategy => {
+  
 
-        const settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(strategy.option.optionDetails.date, 'jYYYY/jMM/jDD').diff(Date.now());
-        
-        if (settlementTimeDiff < min_time_to_settlement || settlementTimeDiff > max_time_to_settlement) return
+    const allStrategiesSorted = [];
 
-        const isToSarBeSarGood = strategy.stockPriceToSarBeSarPercent >= minStockPriceToSarBeSar && strategy.stockPriceToSarBeSarPercent <= maxStockPriceToSarBeSar;
-        if (!isToSarBeSarGood && !strategy.isWholeProfitable) return
-
-        if (isWholeProfitable ===true && !strategy.isWholeProfitable) return
-        if (isWholeProfitable ===false && strategy.isWholeProfitable) return
-
-       
-        
-        if(minProfitLossRatio!=null && strategy.profitLossRatio < minProfitLossRatio) {
-            return
-        } 
-        if(minProfitPercentOfSettlement!=null){
-            
-            return isProfitPercentOfSettlementOk({ 
-                    totalCost : strategy.totalCost, 
-                    strategyPositions:strategy.strategyPositions, 
-                    stockPrice: strategy.currentStockPrice,
-                    nokoolOrNoRequestFactor,
-                    minProfitPercentOfSettlement })
-        }
+for (const strategy of strategies.allStrategiesSorted) {
 
 
 
-        return true
+    const settlementTimeDiff = strategy.settlementTimeDiff
 
-    });
+
+    if (
+        settlementTimeDiff < min_time_to_settlement ||
+        settlementTimeDiff > max_time_to_settlement
+    ) continue;
+
+    const isToSarBeSarGood =
+        strategy.stockPriceToSarBeSarPercent >= minStockPriceToSarBeSar &&
+        strategy.stockPriceToSarBeSarPercent <= maxStockPriceToSarBeSar;
+
+    if (!isToSarBeSarGood && !strategy.isWholeProfitable) continue;
+
+    if (isWholeProfitable === true && !strategy.isWholeProfitable) continue;
+    if (isWholeProfitable === false && strategy.isWholeProfitable) continue;
+
+    if (
+        minProfitLossRatio != null &&
+        strategy.profitLossRatio < minProfitLossRatio
+    ) continue;
+
+    if (
+        minProfitPercentOfSettlement != null &&
+        !isProfitPercentOfSettlementOk({
+            totalCost: strategy.totalCost,
+            strategyPositions: strategy.strategyPositions,
+            stockPrice: strategy.currentStockPrice,
+            nokoolOrNoRequestFactor,
+            minProfitPercentOfSettlement
+        })
+    ) continue;
+
+    const extraProperties = {};
 
     if (minProfitToFilter != null) {
-        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, minProfitToFilter }))
+        extraProperties.minProfitToFilter = minProfitToFilter;
     }
+
     if (expectedProfitPerMonth != null) {
-        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, expectedProfitPerMonth }))
+        extraProperties.expectedProfitPerMonth = expectedProfitPerMonth;
     }
+
     if (isProfitEnoughFn != null) {
-        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, isProfitEnough: isProfitEnoughFn(strategy) }))
+        extraProperties.isProfitEnough = isProfitEnoughFn(strategy);
     }
+
     if (expectedProfitNotif != null) {
-        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, expectedProfitNotif }));
-
+        extraProperties.expectedProfitNotif = expectedProfitNotif;
     }
-    
+
     if (strategyTypeTitle != null) {
-        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, strategyTypeTitle }));
-
+        extraProperties.strategyTypeTitle = strategyTypeTitle;
     }
 
+    allStrategiesSorted.push({
+        ...strategy,
+        ...extraProperties
+    });
+}
 
 
 
-
-    return {
+    const result = {
         ...strategies,
         strategyName : strategyTypeTitle || strategies.strategyName,
         expectedProfitNotif : expectedProfitNotif!=null ? expectedProfitNotif : strategies.expectedProfitNotif,
@@ -23983,6 +23812,12 @@ const filterStrategiesByConfig = ({
         })
 
     }
+
+
+
+
+
+    return result
 }
 
 
@@ -23991,12 +23826,39 @@ const filterStrategiesByConfig = ({
 const createListFilterContetnByList=(list)=>{
 
 
+    console.time('createListFilterContetnByList')
+
     let htmlContent = '';
+
+
+
+    const filteredList = [];
+
+    for (let i = 0; i < list.length; i++) {
+        const item = list[i];
+
+        if (!item.isOption) continue;
+
+        const settlementTimeDiff = item.settlementTimeDiff;
+
+        if (settlementTimeDiff >= generalConfig.max_time_to_settlement) {
+            continue;
+        }
+
+        filteredList.push({
+            ...item,
+        });
+    }
+
+
+    const optionsGroupedByStock = Object.groupBy(filteredList, ({optionDetails}) => optionDetails.stockSymbol);
 
     
 
     const CALL_BUTT_CONDORStrategies = calcCALL_BUTT_CONDORStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             BUCSSOptionListIgnorer: ({ option, minVol }) => {
                 if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
                     return true
@@ -24014,6 +23876,8 @@ const createListFilterContetnByList=(list)=>{
 
         const PUT_BUTT_CONDORStrategies = calcPUT_BUTT_CONDORStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             BUCSSOptionListIgnorer: ({ option, minVol }) => {
                 if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط'))
                     return true
@@ -24032,6 +23896,8 @@ const createListFilterContetnByList=(list)=>{
 
 
         const BUCSStrategies = calcBUCSStrategies(list, {
+            filteredList,
+            optionsGroupedByStock,
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             expectedProfitNotif: true
         });
@@ -24039,35 +23905,47 @@ const createListFilterContetnByList=(list)=>{
 
         const BUPSStrategies = calcBUPSStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true
         });
 
         const BEPSStrategies = calcBEPSStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true
         });
 
 
         const BECSStrategies = calcBECSStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true
         });
 
 
         const BES_With_BUCS_BEPSStrategies = calcBES_With_BUCS_BEPSStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true,
         });
 
 
         const BES_With_BUPS_BECSStrategies = calcBES_With_BUPS_BECSStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true,
         });
 
 
         const BUS_With_BUCS_BEPSStrategies = calcBUS_With_BUCS_BEPSStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true,
         });
 
@@ -24079,12 +23957,16 @@ const createListFilterContetnByList=(list)=>{
 
         const BUS_With_BUPS_BECSStrategies=  calcBUS_With_BUPS_BECSStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true,
         });
 
 
         const COVEREDStrategies = calcCOVEREDStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true
         });
 
@@ -24092,13 +23974,16 @@ const createListFilterContetnByList=(list)=>{
 
         const SyntheticCoveredCallStrategies =  calcSyntheticCoveredCallStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true
         });
 
 
         const BECS_COLLAR_Strategies = calcBECS_COLLAR_Strategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitPerMonth: 1.03,
             expectedProfitNotif: true 
         });
@@ -24132,12 +24017,16 @@ const createListFilterContetnByList=(list)=>{
 
         const BUCS_COLLAR_Strategies = calcBUCS_COLLAR_Strategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true 
         });
 
 
         const  BUPS_COLLARStrategies = calcBUPS_COLLARStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true 
         });
 
@@ -24145,85 +24034,174 @@ const createListFilterContetnByList=(list)=>{
 
         const BEPS_COLLARStrategies = calcBEPS_COLLAR_Strategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true 
         });
 
 
         const BUCS_Long_PutStrategies =  calcBUCS_Long_PutStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true,
         });
 
 
         const BECS_Long_CallStrategies = calcBECS_Long_CallStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true,
         });
 
         const BEPS_Long_CallStrategies =  calcBEPS_Long_CallStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true,
         });
 
 
         const BUPS_Long_PutStrategies = calcBUPS_Long_PutStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true,
         });
 
         const LongGUTS_STRANGLEStrategies = calcLongGUTS_STRANGLEStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true
         });
 
 
         const BOXStrategies = calcBOXStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true,
         });
 
 
         const BOX_BUPS_BECSStrategies = calcBOX_BUPS_BECSStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
             expectedProfitNotif: true,
+        });
+
+
+        const BUCSRatioStrategies = calcBUCSRatioStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
+            BUCSSOptionListIgnorer: ({ option, minVol }) => {
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
+                    return true
+                return false
+            },
+            expectedProfitNotif: true,
+        });
+        const BUPSRatioStrategies = calcBUPSRatioStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
+            expectedProfitNotif: true,
+        });
+
+        const BECSRatioStrategies = calcBECSRatioStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
+            expectedProfitNotif: true,
+        });
+
+        const BEPSRatioStrategies = calcBEPSRatioStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
+            expectedProfitNotif: true,
+        });
+
+
+
+
+
+        const ARBITRAGE_PUTStrategies = calcARBITRAGE_PUTStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
+            expectedProfitNotif: true,
+            
+        });
+        const SellCallNokoolGainStrategies = calcSellCallNokoolGainStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
+            expectedProfitNotif: true // minVol: 1000 * 1000 * 1000,
+        });
+
+         const BuyByCallNokoolGainStrategies = calcBuyByCallNokoolGainStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
+            expectedProfitNotif: true,
+            isProfitEnoughFn(){
+                return true
+            },
+        });
+        const BuyStockByPutStrategies = calcBuyStockByPutStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
+            expectedProfitNotif: true,
+            isProfitEnoughFn(){
+                return true
+            },
         });
 
 
 
     const strategyMapList = [
 
-        
-        calcARBITRAGE_PUTStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            expectedProfitNotif: true,
+
+
+
+
+        filterStrategiesByConfig({
+            strategies: ARBITRAGE_PUTStrategies,
             minProfitToFilter: 0.001,
             expectedProfitPerMonth: 1.03,
-            
-        }),
-        calcSellCallNokoolGainStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            max_time_to_settlement: 1 * 3600000,
-            minProfitToFilter: 0.005,
-            expectedProfitNotif: true // minVol: 1000 * 1000 * 1000,
         }),
 
-        (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isHourMinGreaterThan)({houre:12,minutes:20}) && calcBuyByCallNokoolGainStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        filterStrategiesByConfig({
+            strategies: SellCallNokoolGainStrategies,
             max_time_to_settlement: 1 * 3600000,
-            expectedProfitNotif: true,
-            isProfitEnoughFn(){
-                return true
-            },
-            // minProfitToFilter: 0.001,
+            minProfitToFilter: 0.005,
         }),
-        (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isHourMinGreaterThan)({houre:12,minutes:20}) && calcBuyStockByPutStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        
+
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isHourMinGreaterThan)({houre:12,minutes:20}) && filterStrategiesByConfig({
+            strategies: BuyByCallNokoolGainStrategies,
             max_time_to_settlement: 1 * 3600000,
             expectedProfitNotif: true,
             isProfitEnoughFn(){
                 return true
             },
-            // minProfitToFilter: -0.001,
+        }),
+
+
+        ,
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isHourMinGreaterThan)({houre:12,minutes:20}) && filterStrategiesByConfig({
+            strategies: BuyStockByPutStrategies,
+            max_time_to_settlement: 1 * 3600000,
+            expectedProfitNotif: true,
+            isProfitEnoughFn(){
+                return true
+            },
         }),
 
 
@@ -24867,55 +24845,38 @@ const createListFilterContetnByList=(list)=>{
         }),
 
 
-
        
        
 
+        filterStrategiesByConfig({
+            strategies: BUCSRatioStrategies,
+            expectedProfitPerMonth: 1.03,
+            minProfitToFilter : 0.01,
+            max_time_to_settlement: 35 * 24 * 3600000,
+        }),
+
+        filterStrategiesByConfig({
+            strategies: BUPSRatioStrategies,
+            expectedProfitPerMonth: 1.03,
+            minProfitToFilter : 0.01,
+            max_time_to_settlement: 35 * 24 * 3600000,
+        }),
+
+        filterStrategiesByConfig({
+            strategies: BECSRatioStrategies,
+            expectedProfitPerMonth: 1.03,
+            minProfitToFilter : 0.01,
+            max_time_to_settlement: 35 * 24 * 3600000,
+        }),
+
+
+        filterStrategiesByConfig({
+            strategies: BEPSRatioStrategies,
+            expectedProfitPerMonth: 1.03,
+            minProfitToFilter : 0.01,
+            max_time_to_settlement: 35 * 24 * 3600000,
+        }),
         
-        , calcBUCSRatioStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            BUCSSOptionListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
-                    return true
-                return false
-            },
-            expectedProfitPerMonth: 1.03,
-            minProfitToFilter : 0.01,
-            // minStockPriceDistanceInPercent: -.2,
-            // maxStockPriceDistanceInPercent: .2,
-            // min_time_to_settlement: 15 * 24 * 3600000,
-            max_time_to_settlement: 35 * 24 * 3600000,
-            expectedProfitNotif: true,
-        })
-        , calcBUPSRatioStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            expectedProfitPerMonth: 1.03,
-            minProfitToFilter : 0.01,
-            // maxStockPriceDistanceInPercent: .2,
-            // min_time_to_settlement: 15 * 24 * 3600000,
-            max_time_to_settlement: 35 * 24 * 3600000,
-            expectedProfitNotif: true,
-        }),
-
-        calcBECSRatioStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            expectedProfitPerMonth: 1.03,
-            minProfitToFilter : 0.01,
-            // maxStockPriceDistanceInPercent: .2,
-            // min_time_to_settlement: 15 * 24 * 3600000,
-            max_time_to_settlement: 35 * 24 * 3600000,
-            expectedProfitNotif: true,
-        }),
-
-        calcBEPSRatioStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            expectedProfitPerMonth: 1.03,
-            minProfitToFilter : 0.01,
-            // maxStockPriceDistanceInPercent: .2,
-            // min_time_to_settlement: 15 * 24 * 3600000,
-            max_time_to_settlement: 35 * 24 * 3600000,
-            expectedProfitNotif: true,
-        }),
 
 
 
@@ -25214,8 +25175,7 @@ const createListFilterContetnByList=(list)=>{
         
         
     ].filter(Boolean);
-
-
+    
 
     let allStrategyListObject = strategyMapList.map(({ allStrategiesSorted, htmlTitle, expectedProfitNotif }) => {
         let filteredStrategies = allStrategiesSorted.filter(strategy => isProfitEnough({ strategy, profitPercent: strategy.profitPercent }));
@@ -25259,15 +25219,16 @@ const createListFilterContetnByList=(list)=>{
 
 
     }
-    )
-
+    );
     checkProfitsAnNotif({
         sortedStrategies: allStrategyListObject.flatMap(strategyObj => strategyObj.filteredStrategies)
     });
 
+
     htmlContent += allStrategyListObject.map(strategyObj => strategyObj.htmlContent).join('');
 
     setFiltersContent(htmlContent);
+    console.timeEnd('createListFilterContetnByList')
 
 }
 
@@ -25276,6 +25237,7 @@ const createList = ()=>{
     if(!allElementList?.length) return []
 
     let allStockSymbolDetailsMap = {};
+    const now = Date.now();
 
     let list = allElementList.map(row => {
 
@@ -25301,7 +25263,7 @@ const createList = ()=>{
         )();
         const isCall = isOption && symbol.startsWith('ض');
         const isPut = isOption && symbol.startsWith('ط');
-        let optionDetails,strikePrice;
+        let optionDetails,strikePrice,settlementTimeDiff;
         if (isOption) {
             let date = name.split('-').pop();
             let dateArray = date.split('/');
@@ -25318,7 +25280,12 @@ const createList = ()=>{
                 stockSymbol,
                 strikePrice
             }
+            settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(
+                optionDetails.date,
+                'jYYYY/jMM/jDD'
+            ).diff(now);
         }
+
 
         prevListSymbolMap[symbol] = {
             quantityOfTrades,
@@ -25340,6 +25307,7 @@ const createList = ()=>{
             isETF: isETF(symbol),
             strikePrice,
             optionDetails,
+            settlementTimeDiff,
             vol: parseStringToNumber(cells[4].querySelector('div').innerHTML),
             beforeTodayPrice: convertStringToInt(cells[5].innerHTML),
             last: convertStringToInt(cells[7].innerHTML),
