@@ -11041,13 +11041,12 @@ const createListFilterContetnByList=(list)=>{
         
     ].filter(Boolean);
     
+    const filterSymbolList = getFilterSymbols();
+    const ignoreStrategyList = getIgnoreStrategyNames();
 
     let allStrategyListObject = strategyMapList.map(({ allStrategiesSorted, htmlTitle, expectedProfitNotif }) => {
         let filteredStrategies = allStrategiesSorted.filter(strategy => isProfitEnough({ strategy, profitPercent: strategy.profitPercent }));
-
-
-        const filterSymbolList = getFilterSymbols();
-        const ignoreStrategyList = getIgnoreStrategyNames();
+        
 
         filteredStrategies = filteredStrategies.filter(strategy => {
             if (filterSymbolList.length && !filterSymbolList.find(filteredSymbol => strategy.name.includes(filteredSymbol)))

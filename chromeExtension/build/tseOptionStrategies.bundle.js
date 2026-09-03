@@ -14429,6 +14429,8 @@ const checkProfitsAnNotif = ({sortedStrategies}) => {
 
 const configsToHtmlTitle = ({strategyName, strategySubName, priceType, min_time_to_settlement, max_time_to_settlement, minStockPriceDistanceInPercent, maxStockPriceDistanceInPercent, minVol, customLabels}) => {
 
+
+
     const _priceType = CONSTS.i18n[priceType];
     const minToSettlement = min_time_to_settlement && ("minD:" + (min_time_to_settlement / 3600000 / 24).toFixed(0));
     const maxToSettlement = max_time_to_settlement && max_time_to_settlement !== Infinity && ("maxD:" + (max_time_to_settlement / 3600000 / 24).toFixed(0));
@@ -14524,6 +14526,7 @@ const getAllPossibleStrategiesSorted = (_enrichedList) => {
         return 0;
     }
     )
+
 
     return allPossibleStrategies;
 
@@ -24156,6 +24159,8 @@ const createListFilterContetnByList=(list)=>{
 
 
 
+        
+
     const strategyMapList = [
 
 
@@ -25166,14 +25171,14 @@ const createListFilterContetnByList=(list)=>{
         
         
     ].filter(Boolean);
+   
     
+    const filterSymbolList = getFilterSymbols();
+    const ignoreStrategyList = getIgnoreStrategyNames();
 
     let allStrategyListObject = strategyMapList.map(({ allStrategiesSorted, htmlTitle, expectedProfitNotif }) => {
         let filteredStrategies = allStrategiesSorted.filter(strategy => isProfitEnough({ strategy, profitPercent: strategy.profitPercent }));
-
-
-        const filterSymbolList = getFilterSymbols();
-        const ignoreStrategyList = getIgnoreStrategyNames();
+        
 
         filteredStrategies = filteredStrategies.filter(strategy => {
             if (filterSymbolList.length && !filterSymbolList.find(filteredSymbol => strategy.name.includes(filteredSymbol)))
@@ -25219,6 +25224,7 @@ const createListFilterContetnByList=(list)=>{
     htmlContent += allStrategyListObject.map(strategyObj => strategyObj.htmlContent).join('');
 
     setFiltersContent(htmlContent);
+
     // console.timeEnd('createListFilterContetnByList')
 
 }
