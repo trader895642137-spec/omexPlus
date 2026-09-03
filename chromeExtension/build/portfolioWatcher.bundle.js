@@ -1637,7 +1637,7 @@ const checkStrategyInProfit = async (_strategyPositions)=>{
     });
     
 
-    let hasProfit = await checkProfitPercentAndInform({strategyPositions:_strategyPositions,profitLossByOffsetOrdersPercent});
+    let hasProfit = await checkProfitPercentAndInform({strategyPositions:_strategyPositions,profitLossByOffsetOrdersPercent ,profitPercentOfCurrentPositionsByNearSettlementPrices});
     
 
     return hasProfit
@@ -1736,10 +1736,12 @@ const getBreakevenExecutedPriceDiffIssueInAllPortfolioLogs = ({ strategyPosition
 
 }
 
-const checkProfitPercentAndInform =async ({strategyPositions,profitLossByOffsetOrdersPercent})=>{
+const checkProfitPercentAndInform =async ({strategyPositions,profitLossByOffsetOrdersPercent,profitPercentOfCurrentPositionsByNearSettlementPrices})=>{
 
     let hasProfit=false
-    if (profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1)) {
+    if (profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1) 
+        || 
+    profitLossByOffsetOrdersPercent > (profitPercentOfCurrentPositionsByNearSettlementPrices*0.8)) {
         const isDoubleCheckOk = await doubleCheckProfitByExactDecimalPricesOfPortFolio(strategyPositions)
         if(!isDoubleCheckOk){
             hasProfit=false;
