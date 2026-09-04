@@ -1043,6 +1043,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getSummaryNameOfStrategy: () => (/* binding */ getSummaryNameOfStrategy),
 /* harmony export */   groupLogger: () => (/* binding */ groupLogger),
 /* harmony export */   isProfitEnough: () => (/* binding */ isProfitEnough),
+/* harmony export */   isReachedToExpectedOffsetProfit: () => (/* binding */ isReachedToExpectedOffsetProfit),
 /* harmony export */   openAllGroupsInNewTabs: () => (/* binding */ openAllGroupsInNewTabs),
 /* harmony export */   openGroupInNewTab: () => (/* binding */ openGroupInNewTab),
 /* harmony export */   portfolioLogger: () => (/* binding */ portfolioLogger),
@@ -1500,6 +1501,9 @@ const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositio
         profitLossByOffsetOrdersPercent,
         totalCostOfChunkOfEstimationQuantity} = await calcProfitLossByExactDecimalPricesOfPortFolio(_strategyPositions)
 
+
+
+        // TODO:use isReachedToExpectedOffsetProfit
     const isGood = profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1);
 
 
@@ -1736,12 +1740,16 @@ const getBreakevenExecutedPriceDiffIssueInAllPortfolioLogs = ({ strategyPosition
 
 }
 
+const isReachedToExpectedOffsetProfit = ({profitLossByOffsetOrdersPercent,profitPercentOfCurrentPositionsByNearSettlementPrices,_expectedProfit=expectedProfit})=>{
+    return (profitLossByOffsetOrdersPercent > (_expectedProfit?.currentPositions || 1) 
+        || 
+    ((profitLossByOffsetOrdersPercent>0) &&  profitLossByOffsetOrdersPercent > (profitPercentOfCurrentPositionsByNearSettlementPrices*0.8)))
+}
+
 const checkProfitPercentAndInform =async ({strategyPositions,profitLossByOffsetOrdersPercent,profitPercentOfCurrentPositionsByNearSettlementPrices})=>{
 
     let hasProfit=false
-    if (profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1) 
-        || 
-    profitLossByOffsetOrdersPercent > (profitPercentOfCurrentPositionsByNearSettlementPrices*0.8)) {
+    if (isReachedToExpectedOffsetProfit({profitLossByOffsetOrdersPercent,profitPercentOfCurrentPositionsByNearSettlementPrices})) {
         const isDoubleCheckOk = await doubleCheckProfitByExactDecimalPricesOfPortFolio(strategyPositions)
         if(!isDoubleCheckOk){
             hasProfit=false;
@@ -5495,9 +5503,19 @@ const checkProfitPercentAndInform = ({ strategyGroupInfoList }) => {
     const strategyPositions = strategyGroupInfo.strategyPositions;
     const expectedProfit = strategyGroupInfo.expectedProfit;
     const profitPercentByBestPrices = strategyGroupInfo?.openPositionProfitInfo?.profitPercentByBestPrices?.defaultQueue;
+    const profitPercentOfCurrentPositionsByNearSettlementPrices = strategyGroupInfo.offsetProfitOfStrategy.profitPercentOfCurrentPositionsByNearSettlementPrices;
     // strategyName
 
-    if (strategyGroupInfo.offsetProfitOfStrategy.profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1)) {
+
+    let hasAlarmProfit = false;
+    
+    if ((0,_omex__WEBPACK_IMPORTED_MODULE_1__.isReachedToExpectedOffsetProfit)({
+      profitLossByOffsetOrdersPercent: strategyGroupInfo.offsetProfitOfStrategy.profitLossByOffsetOrdersPercent,
+      profitPercentOfCurrentPositionsByNearSettlementPrices,
+      expectedProfit
+    })) {
+
+      hasAlarmProfit = true;
 
       (0,_common__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
         title: 'به سود رسید',
@@ -5512,6 +5530,8 @@ const checkProfitPercentAndInform = ({ strategyGroupInfoList }) => {
       expectedProfit
     })) {
 
+
+      hasAlarmProfit = true;
       (0,_common__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
         title: `سود %${profitPercentByBestPrices.toFixed()}`,
         body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
@@ -5520,6 +5540,8 @@ const checkProfitPercentAndInform = ({ strategyGroupInfoList }) => {
 
 
     }
+
+    strategyGroupInfo.hasAlarmProfit = hasAlarmProfit;
 
   }
 
@@ -5560,6 +5582,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     strategyGroupInfoList.push({ ...strategyInfo });
 
+    renderStrategies();
+
   }
 });
 
@@ -5587,14 +5611,14 @@ const deserializeStrategyInfo = (strategyInfo) => {
 
 
 
-const addBtn = document.getElementById('addStrategyBtn');
+// const addBtn = document.getElementById('addStrategyBtn');
 const saveBtn = document.getElementById('saveGroupsBtn');
 const loadBtn = document.getElementById('loadGroupsBtn');
 const silentAllBtn = document.getElementById('silentAllBtn');
-const modal = document.getElementById('modalBackdrop');
-const input = document.getElementById('strategyJsonInput');
-const confirmBtn = document.getElementById('confirmBtn');
-const cancelBtn = document.getElementById('cancelBtn');
+// const modal = document.getElementById('modalBackdrop');
+// const input = document.getElementById('strategyJsonInput');
+// const confirmBtn = document.getElementById('confirmBtn');
+// const cancelBtn = document.getElementById('cancelBtn');
 const list = document.getElementById('strategyList');
 
 
@@ -5630,6 +5654,7 @@ loadBtn.addEventListener('click', () => {
       const data = localStorage.getItem(cacheKey);
       strategyGroupInfoList =  data ? JSON.parse(data) : null;
       strategyGroupInfoList = strategyGroupInfoList.map(deserializeStrategyInfo);
+      renderStrategies();
     } catch (error) {
       console.error('خطا در بازیابی:', error);
 
@@ -5638,41 +5663,41 @@ loadBtn.addEventListener('click', () => {
 
 
 /* ---------- modal ---------- */
-addBtn.addEventListener('click', () => {
-  input.value = '';
-  modal.style.display = 'flex';
-});
+// addBtn.addEventListener('click', () => {
+//   input.value = '';
+//   modal.style.display = 'flex';
+// });
 
-cancelBtn.addEventListener('click', () => {
-  modal.style.display = 'none';
-});
+// cancelBtn.addEventListener('click', () => {
+//   modal.style.display = 'none';
+// });
 
 /* ---------- add strategy ---------- */
-confirmBtn.addEventListener('click', () => {
-  let data;
-  try {
-    data = JSON.parse(input.value);
+// confirmBtn.addEventListener('click', () => {
+//   let data;
+//   try {
+//     data = JSON.parse(input.value);
 
-  } catch (err) {
-    console.error(err)
-    alert('خطا');
-  }
+//   } catch (err) {
+//     console.error(err)
+//     alert('خطا');
+//   }
 
-  modal.style.display = 'none';
+//   modal.style.display = 'none';
 
-  if (Array.isArray(data)) {
+//   if (Array.isArray(data)) {
 
-    strategyGroupInfoList = strategyGroupInfoList.concat(data)
-  } else {
+//     strategyGroupInfoList = strategyGroupInfoList.concat(data)
+//   } else {
 
-    strategyGroupInfoList.push(data);
-  }
+//     strategyGroupInfoList.push(data);
+//   }
 
   
-  renderStrategies();
+//   renderStrategies();
 
 
-});
+// });
 
 const openOmexStrategyTab = ({strategyName}) => {
   const baseURL = 'https://khobregan.tsetab.ir/#/stock/derivative/main/strategy-estimation';
@@ -5691,6 +5716,8 @@ function renderStrategies() {
   strategyGroupInfoList.forEach((strategyGroupInfo, index) => {
     const box = document.createElement('div');
     box.className = 'strategy-box';
+
+    strategyGroupInfo.hasAlarmProfit &&  box.classList.add('has-alarm-profit');
 
     const profitPercentByBestPrices = strategyGroupInfo?.openPositionProfitInfo?.profitPercentByBestPrices?.defaultQueue;
 

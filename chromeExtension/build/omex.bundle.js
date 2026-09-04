@@ -2369,6 +2369,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getSummaryNameOfStrategy: () => (/* binding */ getSummaryNameOfStrategy),
 /* harmony export */   groupLogger: () => (/* binding */ groupLogger),
 /* harmony export */   isProfitEnough: () => (/* binding */ isProfitEnough),
+/* harmony export */   isReachedToExpectedOffsetProfit: () => (/* binding */ isReachedToExpectedOffsetProfit),
 /* harmony export */   openAllGroupsInNewTabs: () => (/* binding */ openAllGroupsInNewTabs),
 /* harmony export */   openGroupInNewTab: () => (/* binding */ openGroupInNewTab),
 /* harmony export */   portfolioLogger: () => (/* binding */ portfolioLogger),
@@ -2826,6 +2827,9 @@ const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositio
         profitLossByOffsetOrdersPercent,
         totalCostOfChunkOfEstimationQuantity} = await calcProfitLossByExactDecimalPricesOfPortFolio(_strategyPositions)
 
+
+
+        // TODO:use isReachedToExpectedOffsetProfit
     const isGood = profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1);
 
 
@@ -3062,12 +3066,16 @@ const getBreakevenExecutedPriceDiffIssueInAllPortfolioLogs = ({ strategyPosition
 
 }
 
+const isReachedToExpectedOffsetProfit = ({profitLossByOffsetOrdersPercent,profitPercentOfCurrentPositionsByNearSettlementPrices,_expectedProfit=expectedProfit})=>{
+    return (profitLossByOffsetOrdersPercent > (_expectedProfit?.currentPositions || 1) 
+        || 
+    ((profitLossByOffsetOrdersPercent>0) &&  profitLossByOffsetOrdersPercent > (profitPercentOfCurrentPositionsByNearSettlementPrices*0.8)))
+}
+
 const checkProfitPercentAndInform =async ({strategyPositions,profitLossByOffsetOrdersPercent,profitPercentOfCurrentPositionsByNearSettlementPrices})=>{
 
     let hasProfit=false
-    if (profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1) 
-        || 
-    profitLossByOffsetOrdersPercent > (profitPercentOfCurrentPositionsByNearSettlementPrices*0.8)) {
+    if (isReachedToExpectedOffsetProfit({profitLossByOffsetOrdersPercent,profitPercentOfCurrentPositionsByNearSettlementPrices})) {
         const isDoubleCheckOk = await doubleCheckProfitByExactDecimalPricesOfPortFolio(strategyPositions)
         if(!isDoubleCheckOk){
             hasProfit=false;

@@ -50,7 +50,7 @@
     }
 
     /* modal */
-    .modal-backdrop {
+    /* .modal-backdrop {
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.4);
@@ -64,18 +64,21 @@
       padding: 16px;
       width: 400px;
       border-radius: 8px;
-    }
+    } */
 
     textarea {
       width: 100%;
       height: 120px;
+    }
+    .has-alarm-profit{
+      border: 5px solid #4fcd4f;
     }
   </style>
 </head>
 
 <body>
 
-  <button id="addStrategyBtn">➕ افزودن استراتژی</button>
+  <!-- <button id="addStrategyBtn">➕ افزودن استراتژی</button> -->
   <button id="saveGroupsBtn">ذخیره</button>
   <button id="loadGroupsBtn">بازیابی</button>
   <button id="silentAllBtn" style="float: left;">سکوت موقت</button>
@@ -83,7 +86,7 @@
   <div id="strategyList"></div>
 
   <!-- Modal -->
-  <div class="modal-backdrop" id="modalBackdrop">
+  <!-- <div class="modal-backdrop" id="modalBackdrop">
     <div class="modal">
       <h3>JSON استراتژی</h3>
       <textarea id="strategyJsonInput" placeholder='{
@@ -97,7 +100,7 @@
         <button id="confirmBtn">اوکی</button>
       </div>
     </div>
-  </div>
+  </div> -->
 
   <script src="./build/portfolioWatcher.bundle.js"  defer></script>
   <script src="./build/omex.bundle.js" defer></script>
