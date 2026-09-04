@@ -11540,7 +11540,21 @@ const createFilterPanel = () => {
 
 }
 
-const port = chrome.runtime.connect({ name: "sender" });
+
+let senderToBackgroundPort;
+
+try {
+    senderToBackgroundPort = chrome.runtime.connect({ name: "sender" });
+    
+} catch(err) {
+    console.error("Cannot connect to background:", err);
+     showNotification({
+            title: 'Cannot connect to background',
+            body: 'Cannot connect to background',
+            tag: `cannotConnectToBackground`
+        });
+}
+
 
 const interval = async () => {
 
@@ -11549,7 +11563,7 @@ const interval = async () => {
 
         const list = createList();
         // const list = await createList2();
-        port.postMessage({list});
+        senderToBackgroundPort.postMessage({list});
 
         if (list?.length > 0) {
             createListFilterContetnByList(list);
