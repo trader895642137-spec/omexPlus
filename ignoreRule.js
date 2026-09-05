@@ -11,7 +11,7 @@ const CONFIG_TYPE_EXPANSIONS = {
                 toSarBeSar: config.toSarBeSar
                     ? {
                         ...config.toSarBeSar,
-                        max: config.toSarBeSar.max / 1.3,
+                        max: config.toSarBeSar.max / 1.15,
                     }
                     : null,
             }),
@@ -123,6 +123,7 @@ const RULE_NAME_MAP = {
     toSar: 'toSarBeSar',
     toLSar: 'toLowSarBeSar',
     toHSar: 'toHighSarBeSar',
+    p: 'profitPercent',
     profit: 'profitPercent',
 };
 

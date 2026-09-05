@@ -2,6 +2,23 @@ import { showNotification, totalCostCalculatorForPriceTypes } from "../common";
 import { calcOffsetProfitOfStrategy, isProfitEnough, isReachedToExpectedOffsetProfit, STRATEGY_NAME_PROFIT_CALCULATOR } from "../omex";
 
 
+
+const notifyError = (error, context = '') => {
+  console.error(`[WATCHER ERROR] ${context}`, error);
+
+  const message =
+    error instanceof Error
+      ? `${error.message}\n${error.stack || ''}`
+      : String(error);
+
+  showNotification({
+    title: '❌ خطا در Watcher',
+    body: `${context ? context + ': ' : ''}${message}`.slice(0, 500),
+    tag: `watcher-error-${Date.now()}`
+  });
+};
+
+
 // https://github.com/turuslan/HackTimer/blob/master/HackTimer.min.js
 (function(s) {
     var w, f = {}, o = window, l = console, m = Math, z = 'postMessage', x = 'HackTimer.js by turuslan: ', v = 'Initialisation failed', p = 0, r = 'hasOwnProperty', y = [].slice, b = o.Worker;
@@ -115,6 +132,21 @@ const deserializeStrategyPositions = (obj) => {
 }
 
 
+
+window.addEventListener('error', (event) => {
+  notifyError(
+    event.error || event.message,
+    `خطا در ${event.filename || 'Watcher'}:${event.lineno || ''}`
+  );
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  notifyError(
+    event.reason,
+    'Unhandled Promise Rejection'
+  );
+});
+
 const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tradedInstrumentList)=>{
   if(!strategyGroupInfoList?.length || !tradedInstrumentList?.length) return strategyGroupInfoList
 
@@ -144,7 +176,11 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
       
       strategyGroupInfo.offsetProfitOfStrategy = calcOffsetProfitOfStrategy(strategyGroupInfo.strategyPositions);
     } catch (error) {
-      console.error(error, strategyGroupInfo)
+      console.error(error, strategyGroupInfo);
+      notifyError(
+        error,
+        `محاسبه سود استراتژی ${strategyGroupInfo?.strategyName || ''}`
+      );
     }
 
 
@@ -222,34 +258,43 @@ try {
 
     port.onMessage.addListener(({list}) =>{
 
-        strategyGroupInfoList = enrichStrategyGroupInfoListByInstrumentPrices(strategyGroupInfoList,list);
+      try {
+
+        strategyGroupInfoList = enrichStrategyGroupInfoListByInstrumentPrices(strategyGroupInfoList, list);
         renderStrategies();
-        checkProfitPercentAndInform({strategyGroupInfoList})
+        checkProfitPercentAndInform({ strategyGroupInfoList })
+      } catch (error) {
+        notifyError(error, 'Watcher - دریافت قیمت‌ها');
+      }
 
     } );
 } catch(err) {
     console.error("Cannot connect to background:", err);
+     notifyError(err, 'Cannot connect to background');
 }
 
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  try {
+    console.log(totalCostCalculatorForPriceTypes);
 
-  console.log(totalCostCalculatorForPriceTypes);
+    if (message.type === "addToWatcher") {
+      console.log("📨 پیام دریافت شد از:", sender.tab?.url || "اکستنشن");
+      const strategyInfo = deserializeStrategyInfo(message.payload.strategyInfo);
 
-  if (message.type === "addToWatcher") {
-    console.log("📨 پیام دریافت شد از:", sender.tab?.url || "اکستنشن");
-    const strategyInfo = deserializeStrategyInfo(message.payload.strategyInfo);
-
-    strategyGroupInfoList = strategyGroupInfoList.filter(
-      item => item.strategyName !== strategyInfo.strategyName
-    );
+      strategyGroupInfoList = strategyGroupInfoList.filter(
+        item => item.strategyName !== strategyInfo.strategyName
+      );
 
 
 
-    strategyGroupInfoList.push({ ...strategyInfo });
+      strategyGroupInfoList.push({ ...strategyInfo });
 
-    renderStrategies();
+      renderStrategies();
 
+    }
+  } catch (error) {
+    notifyError(error, 'Watcher - دریافت استراتژی');
   }
 });
 
@@ -312,6 +357,7 @@ saveBtn.addEventListener('click', () => {
       localStorage.setItem(cacheKey, JSON.stringify(strategyGroupInfoList));
     } catch (error) {
       console.error('خطا در ذخیره‌سازی:', error);
+      notifyError(error, 'ذخیره‌سازی استراتژی‌ها');
     }
 });
 
@@ -323,6 +369,7 @@ loadBtn.addEventListener('click', () => {
       renderStrategies();
     } catch (error) {
       console.error('خطا در بازیابی:', error);
+      notifyError(error, 'بازیابی استراتژی‌ها');
 
     }
 });

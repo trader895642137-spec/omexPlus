@@ -5241,6 +5241,20 @@ const preventWhellScrollOnChart = ()=>{
     
     domContextWindow.document.querySelector('client-option-strategy-estimation-chart').addEventListener('wheel', preventWheel, { passive: false, capture: true });
 }
+const setModalHeaders = (strategyPositions)=>{
+
+     for (const strategyPosition of strategyPositions) {
+
+        const headerTitleElement  = strategyPosition.ordersModal.querySelector('client-option-instruments-favorites-item-header main > span');
+
+        if(strategyPosition.getDaysLeftToSettlement()!=null){
+
+            headerTitleElement.innerHTML = `<span>${strategyPosition.strikePrice}</span> ----  <span>${strategyPosition.getDaysLeftToSettlement()} روز</span>`
+            headerTitleElement.style.fontSize = '14px';
+        }
+
+     }
+}
 
 
 const Run = async (_window = window) => {
@@ -5307,6 +5321,8 @@ const Run = async (_window = window) => {
 
 
     getAndSetStrategyTitleOnUrl();
+
+    setModalHeaders(strategyPositions);
 
 
     
