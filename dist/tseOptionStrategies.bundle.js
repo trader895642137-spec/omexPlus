@@ -13580,18 +13580,7 @@ const CONFIG_TYPE_EXPANSIONS = {
         { type: 'BUCS_LONG_PUT' },
         { type: 'BUCS_BEPS_LongPut' },
         { type: 'SYNTHETIC_COVERED_CALL' },
-        {
-            type: 'COVERED',
-            modify: config => ({
-                ...config,
-                toSarBeSar: config.toSarBeSar
-                    ? {
-                        ...config.toSarBeSar,
-                        max: config.toSarBeSar.max / 1.15,
-                    }
-                    : null,
-            }),
-        },
+        { type: 'COVERED'},
         { type: 'BECS_Ratio' },
         { type: 'BESRatio_BUCS' },
         {
