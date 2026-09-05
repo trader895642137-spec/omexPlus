@@ -50,7 +50,7 @@ const CONFIG_TYPE_EXPANSIONS = {
                 toSarBeSar: config.toSarBeSar
                     ? {
                         ...config.toSarBeSar,
-                        max: config.toSarBeSar.max / 1.2,
+                        max: config.toSarBeSar.max / 1.3,
                     }
                     : null,
             }),
@@ -62,7 +62,7 @@ const CONFIG_TYPE_EXPANSIONS = {
                 toSarBeSar: config.toSarBeSar
                     ? {
                         ...config.toSarBeSar,
-                        max: config.toSarBeSar.max / 1.2,
+                        max: config.toSarBeSar.max / 1.3,
                     }
                     : null,
                 name: config.name ? config.name.replace(/^ض/, 'ط') : null
@@ -102,6 +102,15 @@ const CONFIG_TYPE_EXPANSIONS = {
         },
         {
             type: 'BES_With_BUCS_BEPS',
+            modify: config => ({
+                ...config,
+                toSarBeSar: config.toSarBeSar
+                    ? {
+                        ...config.toSarBeSar,
+                        min: config.toSarBeSar.min / 1.3,
+                    }
+                    : null,
+            }),
         },
         {
             type: 'BES_With_BUPS_BECS',
@@ -110,7 +119,7 @@ const CONFIG_TYPE_EXPANSIONS = {
                 toSarBeSar: config.toSarBeSar
                     ? {
                         ...config.toSarBeSar,
-                        min: config.toSarBeSar.min / 1.2,
+                        min: config.toSarBeSar.min / 1.3,
                     }
                     : null,
                 name: config.name ? config.name.replace(/^ض/, 'ط') : null
