@@ -8026,6 +8026,7 @@ const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMo
 
             const _enrichedList = optionListOfSameDate.map(option => {
 
+
                 if (!option.optionDetails?.stockSymbolDetails)
                     return option
 
@@ -9575,6 +9576,7 @@ const filterStrategiesByConfig = ({
 }) => {
 
 
+
     const calcProfitPercentOfSettlement = ({ totalCost, strategyPositions, stockPrice,nokoolOrNoRequestFactor }) => {
 
 
@@ -9600,12 +9602,19 @@ const filterStrategiesByConfig = ({
 
     let allStrategies = strategies.allStrategies.filter(strategy => {
 
+
         const settlementTimeDiff = strategy.option.settlementTimeDiff;
         
         if (settlementTimeDiff < min_time_to_settlement || settlementTimeDiff > max_time_to_settlement) return
 
-        const isToSarBeSarGood = strategy.stockPriceToSarBeSarPercent >= minStockPriceToSarBeSar && strategy.stockPriceToSarBeSarPercent <= maxStockPriceToSarBeSar;
-        if (!isToSarBeSarGood && !strategy.isWholeProfitable) return
+        if (
+            strategy.stockPriceToSarBeSarPercent != null &&
+            (
+                strategy.stockPriceToSarBeSarPercent < minStockPriceToSarBeSar ||
+                strategy.stockPriceToSarBeSarPercent > maxStockPriceToSarBeSar
+            ) &&
+            !strategy.isWholeProfitable
+        ) return;
 
         if (isWholeProfitable ===true && !strategy.isWholeProfitable) return
         if (isWholeProfitable ===false && strategy.isWholeProfitable) return
@@ -11147,7 +11156,10 @@ const createList = ()=>{
             settlementTimeDiff = moment(
                 optionDetails.date,
                 'jYYYY/jMM/jDD'
-            ).diff(now);
+            ).diff(now) ;
+            if (settlementTimeDiff <= 0) {
+                settlementTimeDiff = 1;
+            }
         }
 
 
