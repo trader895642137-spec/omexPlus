@@ -14876,8 +14876,8 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth,
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BOX",
         priceType,
         min_time_to_settlement,
@@ -15084,8 +15084,8 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth,
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BOX_BUPS_BECS",
         priceType,
         min_time_to_settlement,
@@ -15259,8 +15259,8 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "LongGUTS_STRANGLE",
         priceType,
         min_time_to_settlement,
@@ -15459,8 +15459,8 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "SHORT_GUTS",
         priceType,
         min_time_to_settlement,
@@ -15649,8 +15649,8 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
 
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "SHORT_STRANGLE",
         priceType,
         min_time_to_settlement,
@@ -15861,8 +15861,8 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BUCS",
         priceType,
         min_time_to_settlement,
@@ -16094,8 +16094,8 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BUPS",
         priceType,
         min_time_to_settlement,
@@ -16329,8 +16329,8 @@ const calcSyntheticCoveredCallStrategies = (list,
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "SYNTHETIC_COVERED_CALL",
         priceType,
         min_time_to_settlement,
@@ -16641,8 +16641,8 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "CALL_BUTT_CONDOR",
         priceType,
         min_time_to_settlement,
@@ -17106,8 +17106,8 @@ const calcIRON_BUTT_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainCh
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "IRON_BUTT_CONDOR_BUCS",
         priceType,
         min_time_to_settlement,
@@ -17445,8 +17445,8 @@ const calcIRON_BUTT_CONDOR_BUPS_Strategies = (list, {priceType,
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "IRON_BUTT_CONDOR_BUPS",
         priceType,
         min_time_to_settlement,
@@ -17781,8 +17781,8 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "PUT_BUTT_CONDOR",
         priceType,
         min_time_to_settlement,
@@ -18069,8 +18069,8 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BUCS_RATIO",
         priceType,
         min_time_to_settlement,
@@ -18356,8 +18356,8 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BUPS_Ratio",
         priceType,
         min_time_to_settlement,
@@ -18650,8 +18650,8 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BECS_Ratio",
         priceType,
         min_time_to_settlement,
@@ -18941,8 +18941,8 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BEPS_Ratio",
         priceType,
         min_time_to_settlement,
@@ -19167,8 +19167,8 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BUPS_COLLAR",
         priceType,
         min_time_to_settlement,
@@ -19353,8 +19353,8 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BUCS_COLLAR",
         priceType,
         min_time_to_settlement,
@@ -19560,8 +19560,8 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BEPS_COLLAR",
         priceType,
         min_time_to_settlement,
@@ -19771,8 +19771,8 @@ const calcBECS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BECS_COLLAR",
         priceType,
         min_time_to_settlement,
@@ -19891,8 +19891,8 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
     }
 
     return {
-        enrichedList,
-        allStrategiesSorted: getAllPossibleStrategiesSorted(enrichedList),
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "COVERED",
         priceType,
         min_time_to_settlement,
@@ -20021,8 +20021,8 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
     }
 
     return {
-        enrichedList,
-        allStrategiesSorted: getAllPossibleStrategiesSorted(enrichedList),
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "CONVERSION",
         priceType,
         min_time_to_settlement,
@@ -20169,8 +20169,8 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
     }
 
     return {
-        enrichedList,
-        allStrategiesSorted: getAllPossibleStrategiesSorted(enrichedList),
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "COVERED_COLLAR",
         priceType,
         min_time_to_settlement,
@@ -20362,8 +20362,8 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BEPS",
         priceType,
         min_time_to_settlement,
@@ -20561,8 +20561,8 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BECS",
         priceType,
         min_time_to_settlement,
@@ -20948,8 +20948,8 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BUS_With_BUCS_BEPS",
         priceType,
         min_time_to_settlement,
@@ -21117,8 +21117,8 @@ const calcBUCS_BEPS_LongPutStrategies = ({ filteredBusList, priceType, strategyS
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BUCS_BEPS_LongPut",
         priceType,
         min_time_to_settlement,
@@ -21298,8 +21298,8 @@ const calcBESRatio_BY_BUS_BES_Strategies = ({ filteredBesList, priceType, strate
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BESRatio_BY_BUS_BES",
         priceType,
         min_time_to_settlement,
@@ -21563,8 +21563,8 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BUS_With_BUPS_BECS",
         priceType,
         min_time_to_settlement,
@@ -21827,8 +21827,8 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BES_With_BUCS_BEPS",
         priceType,
         min_time_to_settlement,
@@ -22099,8 +22099,8 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BES_With_BUPS_BECS",
         priceType,
         min_time_to_settlement,
@@ -22251,8 +22251,8 @@ const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMo
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BuyByCallNokoolGain",
         priceType,
         min_time_to_settlement,
@@ -22379,8 +22379,8 @@ const calcBuyStockByPutStrategies = (list, {priceType, expectedProfitPerMonth,
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BuyStockByPut",
         priceType,
         min_time_to_settlement,
@@ -22508,8 +22508,8 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
     }
 
     return {
-        enrichedList,
-        allStrategiesSorted: getAllPossibleStrategiesSorted(enrichedList),
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "ARBITRAGE_PUT",
         priceType,
         min_time_to_settlement,
@@ -22631,8 +22631,8 @@ const calcSellCallNokoolGainStrategies = (list, { priceType, expectedProfitPerMo
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "SellCallNokoolGain",
         priceType,
         min_time_to_settlement,
@@ -22882,8 +22882,8 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BUCS_LONG_PUT",
         priceType,
         min_time_to_settlement,
@@ -23140,8 +23140,8 @@ const calcBECS_Long_CallStrategies = (list, {priceType, strategySubName,
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BECS_LONG_CALL",
         priceType,
         min_time_to_settlement,
@@ -23396,8 +23396,8 @@ const calcBEPS_Long_CallStrategies = (list, {priceType, strategySubName,
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BEPS_LONG_CALL",
         priceType,
         min_time_to_settlement,
@@ -23654,8 +23654,8 @@ const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName,
     const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
 
     return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BUPS_LONG_PUT",
         priceType,
         min_time_to_settlement,
@@ -23723,7 +23723,7 @@ const filterStrategiesByConfig = ({
 
 
 
-    let allStrategiesSorted = strategies.allStrategiesSorted.filter(strategy => {
+    let allStrategies = strategies.allStrategies.filter(strategy => {
 
         const settlementTimeDiff = strategy.option.settlementTimeDiff;
         
@@ -23757,21 +23757,21 @@ const filterStrategiesByConfig = ({
     });
 
     if (minProfitToFilter != null) {
-        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, minProfitToFilter }))
+        allStrategies = allStrategies.map(strategy => ({ ...strategy, minProfitToFilter }))
     }
     if (expectedProfitPerMonth != null) {
-        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, expectedProfitPerMonth }))
+        allStrategies = allStrategies.map(strategy => ({ ...strategy, expectedProfitPerMonth }))
     }
     if (isProfitEnoughFn != null) {
-        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, isProfitEnough: isProfitEnoughFn(strategy) }))
+        allStrategies = allStrategies.map(strategy => ({ ...strategy, isProfitEnough: isProfitEnoughFn(strategy) }))
     }
     if (expectedProfitNotif != null) {
-        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, expectedProfitNotif }));
+        allStrategies = allStrategies.map(strategy => ({ ...strategy, expectedProfitNotif }));
 
     }
     
     if (strategyTypeTitle != null) {
-        allStrategiesSorted = allStrategiesSorted.map(strategy => ({ ...strategy, strategyTypeTitle }));
+        allStrategies = allStrategies.map(strategy => ({ ...strategy, strategyTypeTitle }));
 
     }
 
@@ -23784,7 +23784,7 @@ const filterStrategiesByConfig = ({
         strategyName : strategyTypeTitle || strategies.strategyName,
         expectedProfitNotif : expectedProfitNotif!=null ? expectedProfitNotif : strategies.expectedProfitNotif,
         expectedProfitPerMonth : expectedProfitPerMonth!=null ? expectedProfitPerMonth : strategies.expectedProfitPerMonth,
-        allStrategiesSorted ,
+        allStrategies ,
         htmlTitle: configsToHtmlTitle({
             ...strategies,
             strategyName : strategyTypeTitle || strategies.strategyName,
@@ -23988,7 +23988,7 @@ const createListFilterContetnByList=(list)=>{
             filteredBesList: filterStrategiesByConfig({
                 strategies: BES_With_BUCS_BEPSStrategies,
                 minStockPriceToSarBeSar : 0.01
-            }).allStrategiesSorted,
+            }).allStrategies,
             expectedProfitNotif: true 
         });
 
@@ -24000,7 +24000,7 @@ const createListFilterContetnByList=(list)=>{
             filteredBesList: filterStrategiesByConfig({
                 strategies: BES_With_BUPS_BECSStrategies,
                 minStockPriceToSarBeSar : 0.01
-            }).allStrategiesSorted,
+            }).allStrategies,
             expectedProfitNotif: true 
         });
 
@@ -24268,12 +24268,12 @@ const createListFilterContetnByList=(list)=>{
                 ...CALL_BUTT_CONDORStrategies,
                 strategyName,
                 htmlTitle: CALL_BUTT_CONDORStrategies.htmlTitle.replace("CALL_BUTT_CONDOR",strategyName),
-                allStrategiesSorted: CALL_BUTT_CONDORStrategies.allStrategiesSorted.filter(st => st.isButterFly).map(strategy=>({...strategy,strategyTypeTitle:strategyName})),
+                allStrategies: CALL_BUTT_CONDORStrategies.allStrategies.filter(st => st.isButterFly).map(strategy=>({...strategy,strategyTypeTitle:strategyName})),
             }
         })()
         , {
             ...CALL_BUTT_CONDORStrategies,
-            allStrategiesSorted: CALL_BUTT_CONDORStrategies.allStrategiesSorted.filter(st => !st.isButterFly)
+            allStrategies: CALL_BUTT_CONDORStrategies.allStrategies.filter(st => !st.isButterFly)
         },
 
 
@@ -24285,7 +24285,7 @@ const createListFilterContetnByList=(list)=>{
                 ...PUT_BUTT_CONDORStrategies,
                 strategyName,
                 htmlTitle: PUT_BUTT_CONDORStrategies.htmlTitle.replace("PUT_BUTT_CONDOR",strategyName),
-                allStrategiesSorted: PUT_BUTT_CONDORStrategies.allStrategiesSorted.filter(st => st.isButterFly).map(strategy=>({...strategy,strategyTypeTitle:strategyName})),
+                allStrategies: PUT_BUTT_CONDORStrategies.allStrategies.filter(st => st.isButterFly).map(strategy=>({...strategy,strategyTypeTitle:strategyName})),
             }
         })()
 
@@ -24293,7 +24293,7 @@ const createListFilterContetnByList=(list)=>{
 
         , {
             ...PUT_BUTT_CONDORStrategies,
-            allStrategiesSorted: PUT_BUTT_CONDORStrategies.allStrategiesSorted.filter(st => !st.isButterFly)
+            allStrategies: PUT_BUTT_CONDORStrategies.allStrategies.filter(st => !st.isButterFly)
         } 
 
         
@@ -24429,7 +24429,7 @@ const createListFilterContetnByList=(list)=>{
             filteredBusList: filterStrategiesByConfig({
                 strategies: BUS_With_BUCS_BEPSStrategies,
                 maxStockPriceToSarBeSar : -0.01
-            }).allStrategiesSorted,
+            }).allStrategies,
             max_time_to_settlement: 61 * 24 * 3600000,
         }),
 
@@ -25169,8 +25169,8 @@ const createListFilterContetnByList=(list)=>{
     const filterSymbolList = getFilterSymbols();
     const ignoreStrategyList = getIgnoreStrategyNames();
 
-    let allStrategyListObject = strategyMapList.map(({ allStrategiesSorted, htmlTitle, expectedProfitNotif }) => {
-        let filteredStrategies = allStrategiesSorted.filter(strategy => isProfitEnough({ strategy, profitPercent: strategy.profitPercent }));
+    let allStrategyListObject = strategyMapList.map(({ allStrategies, htmlTitle, expectedProfitNotif }) => {
+        let filteredStrategies = allStrategies.filter(strategy => isProfitEnough({ strategy, profitPercent: strategy.profitPercent }));
         
 
         filteredStrategies = filteredStrategies.filter(strategy => {
