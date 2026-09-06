@@ -4775,11 +4775,13 @@ const injectStyles = () => {
                 border-bottom: 2px solid red !important;
             }
 
-            client-option-instruments-favorites-item-header  main span{
-                display: inline-block !important;; 
-                word-wrap: break-word !important;; 
-                white-space: normal !important;;   
-                max-width: 100% !important;;    
+            client-option-instruments-favorites-item-header  main > span{
+                word-wrap: break-word !important;
+                white-space: normal !important;  
+                max-width: 100% !important;
+                font-size: 14px !important;
+                display: flex !important;
+                column-gap: 20px !important;    
             }
         `;
 
@@ -5250,8 +5252,7 @@ const setModalHeaders = (strategyPositions)=>{
 
         if(strategyPosition.getDaysLeftToSettlement()!=null){
 
-            headerTitleElement.innerHTML = `<span>${strategyPosition.strikePrice}</span> ----  <span>${strategyPosition.getDaysLeftToSettlement()} روز</span>`
-            headerTitleElement.style.fontSize = '14px';
+            headerTitleElement.innerHTML = `<span>${strategyPosition.strikePrice}</span><span>${strategyPosition.getDaysLeftToSettlement()} روز</span>`
         }
 
      }
