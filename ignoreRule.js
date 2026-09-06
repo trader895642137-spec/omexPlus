@@ -39,7 +39,7 @@ const CONFIG_TYPE_EXPANSIONS = {
                 toSarBeSar: config.toSarBeSar
                     ? {
                         ...config.toSarBeSar,
-                        max: config.toSarBeSar.max / 1.3,
+                        max: config.toSarBeSar.max / 1.2,
                     }
                     : null,
             }),
@@ -51,7 +51,7 @@ const CONFIG_TYPE_EXPANSIONS = {
                 toSarBeSar: config.toSarBeSar
                     ? {
                         ...config.toSarBeSar,
-                        max: config.toSarBeSar.max / 1.3,
+                        max: config.toSarBeSar.max / 1.2,
                     }
                     : null,
                 name: config.name ? config.name.replace(/^ض/, 'ط') : null
@@ -96,7 +96,7 @@ const CONFIG_TYPE_EXPANSIONS = {
                 toSarBeSar: config.toSarBeSar
                     ? {
                         ...config.toSarBeSar,
-                        min: config.toSarBeSar.min / 1.3,
+                        min: config.toSarBeSar.min / 1.2,
                     }
                     : null,
             }),
@@ -108,7 +108,7 @@ const CONFIG_TYPE_EXPANSIONS = {
                 toSarBeSar: config.toSarBeSar
                     ? {
                         ...config.toSarBeSar,
-                        min: config.toSarBeSar.min / 1.3,
+                        min: config.toSarBeSar.min / 1.2,
                     }
                     : null,
                 name: config.name ? config.name.replace(/^ض/, 'ط') : null
