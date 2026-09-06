@@ -1912,13 +1912,14 @@ const observePriceChanges = () => {
 
 
 export const isProfitEnough = ({ strategyPositions, totalProfitPercent, daysLeftToSettlement,expectedProfit }) => {
-    if (typeof strategyPositions.daysLeftToSettlement !== 'number' || Number.isNaN(daysLeftToSettlement)) {
+    if (typeof daysLeftToSettlement !== 'number' || Number.isNaN(daysLeftToSettlement)) {
         daysLeftToSettlement = strategyPositions.find(sp => {
             sp.daysLeftToSettlement = sp.getDaysLeftToSettlement()
             return (typeof sp.daysLeftToSettlement === 'number' && !Number.isNaN(sp.daysLeftToSettlement))
         })?.daysLeftToSettlement ?? defaultDaysLeftToSettlement;
-
     }
+
+    daysLeftToSettlement = daysLeftToSettlement>=1 ? daysLeftToSettlement : 1;
 
     const percentPerDay = Math.pow((1 + (totalProfitPercent / 100)), 1 / daysLeftToSettlement);
     const percentPerMonth = Math.pow(percentPerDay, 30);
