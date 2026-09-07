@@ -22170,7 +22170,7 @@ const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMo
                 const currentStockPrice = option.optionDetails.stockSymbolDetails?.close;
 
 
-                const percentDifference = ((currentStockPrice - buyingPriceOfStock) / buyingPriceOfStock) * 100
+                const percentDifference = ((currentStockPrice - buyingPriceOfStock) / buyingPriceOfStock)
 
                 if(percentDifference<-1 ) return option
                 
@@ -22230,7 +22230,8 @@ const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMo
                         expectedProfitPerMonth,
                         name: createStrategyName([option]),
                         isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(option),
-                        profitPercent : profitPercent
+                        // profitPercent : profitPercent
+                        profitPercent : percentDifference
                     }
 
                 return {
