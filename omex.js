@@ -694,8 +694,8 @@ const getBreakevenExecutedPriceDiffIssueInAllPortfolioLogs = ({ strategyPosition
 
 }
 
-export const isReachedToExpectedOffsetProfit = ({profitLossByOffsetOrdersPercent,profitPercentOfCurrentPositionsByNearSettlementPrices,_expectedProfit=expectedProfit})=>{
-    return (profitLossByOffsetOrdersPercent > (_expectedProfit?.currentPositions || 1) 
+export const isReachedToExpectedOffsetProfit = ({profitLossByOffsetOrdersPercent,profitPercentOfCurrentPositionsByNearSettlementPrices,expectedProfit: customExpectedProfit = expectedProfit})=>{
+    return (profitLossByOffsetOrdersPercent > (customExpectedProfit?.currentPositions || 1) 
         || 
     ((profitLossByOffsetOrdersPercent>0) &&  profitLossByOffsetOrdersPercent > (profitPercentOfCurrentPositionsByNearSettlementPrices*0.8)))
 }
