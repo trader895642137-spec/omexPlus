@@ -1,7 +1,8 @@
 import { showNotification, totalCostCalculatorForPriceTypes } from "../common";
 import { calcOffsetProfitOfStrategy, isProfitEnough, isReachedToExpectedOffsetProfit, STRATEGY_NAME_PROFIT_CALCULATOR } from "../omex";
 
-
+let lastDataReceivedAt = Date.now();
+const DATA_TIMEOUT = 10_000; // 10 seconds
 
 const notifyError = (error, context = '') => {
   console.error(`[WATCHER ERROR] ${context}`, error);
@@ -260,6 +261,7 @@ try {
 
       try {
 
+        lastDataReceivedAt = Date.now();
         strategyGroupInfoList = enrichStrategyGroupInfoListByInstrumentPrices(strategyGroupInfoList, list);
         renderStrategies();
         checkProfitPercentAndInform({ strategyGroupInfoList })
@@ -268,6 +270,19 @@ try {
       }
 
     } );
+
+    setInterval(() => {
+
+        const elapsed = Date.now() - lastDataReceivedAt;
+
+        if (elapsed > DATA_TIMEOUT ) {
+            
+            notifyError(new Error(), `دریافت قیمت‌ها بیش از ${DATA_TIMEOUT / 1000} ثانیه متوقف شده`);
+        }
+
+    }, 5000);
+
+
 } catch(err) {
     console.error("Cannot connect to background:", err);
      notifyError(err, 'Cannot connect to background');
@@ -437,18 +452,23 @@ function renderStrategies() {
     box.innerHTML = `
       <h4 class="title">${strategyGroupInfo?.strategyName}</h4>
 
-      ${strategyGroupInfo.offsetProfitOfStrategy ? `<div style="color:${strategyGroupInfo?.offsetProfitOfStrategy?.profitLossByOffsetOrdersPercent >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
-                ${strategyGroupInfo.offsetProfitOfStrategy.profitLossByOffsetOrdersPercent.toLocaleString('en-US', {
+      ${strategyGroupInfo.offsetProfitOfStrategy?.profitLossByOffsetOrdersPercent!=null ? `<div style="margin-right: 10px;">
+      <label>موقعیت باز: </label>
+      <span style="color:${strategyGroupInfo?.offsetProfitOfStrategy?.profitLossByOffsetOrdersPercent >= 0 ? 'green' : 'red'};">${strategyGroupInfo.offsetProfitOfStrategy.profitLossByOffsetOrdersPercent.toLocaleString('en-US', {
                     minimumFractionDigits: 1,
                     maximumFractionDigits: 1
-                })}
+                })}</span>
+                
       </div>`:``}
-      ----
-      ${profitPercentByBestPrices ?`<div style="color:${profitPercentByBestPrices >= 0 ? 'green' : 'red'};margin-right: 10px;"> 
-                ${profitPercentByBestPrices.toLocaleString('en-US', {
-                    minimumFractionDigits: 1,
-                    maximumFractionDigits: 1
-                })}
+      ${profitPercentByBestPrices ?`<div style="margin-right: 10px;"> 
+        <label>موقعیت جدید: </label>
+        <span style="color:${profitPercentByBestPrices >= 0 ? 'green' : 'red'};"> 
+          ${profitPercentByBestPrices.toLocaleString('en-US', {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1
+                  })}
+        </span>
+               
       </div>`:``}
       <button class="delete-btn">حذف</button>
       <button class="silent-btn">سکوت</button>
