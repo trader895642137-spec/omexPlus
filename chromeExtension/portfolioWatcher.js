@@ -291,7 +291,6 @@ try {
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   try {
-    console.log(totalCostCalculatorForPriceTypes);
 
     if (message.type === "addToWatcher") {
       console.log("📨 پیام دریافت شد از:", sender.tab?.url || "اکستنشن");

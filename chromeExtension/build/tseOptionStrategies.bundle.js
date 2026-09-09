@@ -348,16 +348,15 @@ const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolOrNoRequ
 
     sellStockValuablePositions.sort((posA, posB) => {
 
-        const isCallSellA = posA.isCall && !posA.isBuy;
-        const isCallSellB = posB.isCall && !posB.isBuy;
-
-        // اول Call Sell
-        if (isCallSellA !== isCallSellB) {
-            return isCallSellA ? -1 : 1;
+        // کال‌ها (فروش) اول، پوت‌ها (خرید) آخر
+        if (posA.isCall !== posB.isCall) {
+            return posA.isCall ? -1 : 1;
         }
 
-        // داخل هر گروه، Strike بزرگ‌تر اول
-        return posB.strikePrice - posA.strikePrice;
+        // مرتب‌سازی داخل هر گروه
+        return posA.isCall
+            ? posA.strikePrice - posB.strikePrice  // کال: صعودی
+            : posB.strikePrice - posA.strikePrice; // پوت: نزولی
     });
 
 
