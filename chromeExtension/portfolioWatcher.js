@@ -175,7 +175,7 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
         nokoolOrNoRequestFactor: strategyGroupInfo.nokoolOrNoRequestFactor
       });
       
-      strategyGroupInfo.offsetProfitOfStrategy = calcOffsetProfitOfStrategy(strategyGroupInfo.strategyPositions);
+      strategyGroupInfo.offsetProfitOfStrategy = calcOffsetProfitOfStrategy({strategyPositions: strategyGroupInfo.strategyPositions, stockPrice: strategyGroupInfo.stockPrice});
     } catch (error) {
       console.error(error, strategyGroupInfo);
       notifyError(

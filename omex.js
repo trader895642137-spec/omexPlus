@@ -244,7 +244,7 @@ const sumOfQuantityOfSamePosition = (position,strategyPositions)=>{
 
 }
 
-const totalOffsetGainOfCurrentPositionsCalculator = ({ strategyPositions }) => {
+const totalOffsetGainOfCurrentPositionsCalculator = ({ strategyPositions,stockPrice=getBaseInstrumentPriceOfOption() }) => {
 
 
 
@@ -289,7 +289,8 @@ const totalOffsetGainOfCurrentPositionsCalculator = ({ strategyPositions }) => {
     });
 
     const totalOffsetGainNearSettlement =totalOffsetGainNearSettlementOfEstimationPanel({
-            strategyPositions
+            strategyPositions,
+            stockPrice
     });
 
     return {
@@ -583,7 +584,7 @@ const checkStrategyInProfit = async (_strategyPositions)=>{
         totalOffsetGainOfCurrentPositionObj,
         profitLossByOffsetOrdersPercent,
         profitLossByInsertedPricesPercent,
-        unreliableTotalCostOfCurrentPositions, profitPercentOfCurrentPositionsByNearSettlementPrices } = calcOffsetProfitOfStrategy(_strategyPositions);
+        unreliableTotalCostOfCurrentPositions, profitPercentOfCurrentPositionsByNearSettlementPrices } = calcOffsetProfitOfStrategy({strategyPositions:_strategyPositions});
 
 
 
@@ -624,21 +625,22 @@ const getRecentExactDecimalPricesOfPortFolio = ({instrumentId,instrumentName}) =
 }
 
 
-export const calcOffsetProfitOfStrategy = (_strategyPositions) => {
+export const calcOffsetProfitOfStrategy = ({strategyPositions,stockPrice=getBaseInstrumentPriceOfOption()}) => {
 
 
-    const totalCostInfoObj = totalCostCalculatorForPriceTypes(_strategyPositions);
+    const totalCostInfoObj = totalCostCalculatorForPriceTypes(strategyPositions);
 
     const totalCurrentPositionCost = totalCostInfoObj.totalCostOfCurrentPositions;
     const unreliableTotalCostOfCurrentPositions = totalCostInfoObj.unreliableTotalCostOfCurrentPositions;
     const totalCostOfChunkOfEstimationQuantity = totalCostInfoObj.totalCostOfChunkOfEstimationQuantity;
 
     const totalOffsetGainOfChunkOfEstimation = totalOffsetGainOfChunkOfEstimationQuantityCalculator({
-        strategyPositions: _strategyPositions
+        strategyPositions: strategyPositions
     });
 
     const totalOffsetGainOfCurrentPositionObj = totalOffsetGainOfCurrentPositionsCalculator({
-        strategyPositions: _strategyPositions
+        strategyPositions: strategyPositions,
+        stockPrice
     });
 
 

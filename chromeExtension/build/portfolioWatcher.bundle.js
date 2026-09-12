@@ -1289,7 +1289,7 @@ const sumOfQuantityOfSamePosition = (position,strategyPositions)=>{
 
 }
 
-const totalOffsetGainOfCurrentPositionsCalculator = ({ strategyPositions }) => {
+const totalOffsetGainOfCurrentPositionsCalculator = ({ strategyPositions,stockPrice=getBaseInstrumentPriceOfOption() }) => {
 
 
 
@@ -1334,7 +1334,8 @@ const totalOffsetGainOfCurrentPositionsCalculator = ({ strategyPositions }) => {
     });
 
     const totalOffsetGainNearSettlement =totalOffsetGainNearSettlementOfEstimationPanel({
-            strategyPositions
+            strategyPositions,
+            stockPrice
     });
 
     return {
@@ -1628,7 +1629,7 @@ const checkStrategyInProfit = async (_strategyPositions)=>{
         totalOffsetGainOfCurrentPositionObj,
         profitLossByOffsetOrdersPercent,
         profitLossByInsertedPricesPercent,
-        unreliableTotalCostOfCurrentPositions, profitPercentOfCurrentPositionsByNearSettlementPrices } = calcOffsetProfitOfStrategy(_strategyPositions);
+        unreliableTotalCostOfCurrentPositions, profitPercentOfCurrentPositionsByNearSettlementPrices } = calcOffsetProfitOfStrategy({strategyPositions:_strategyPositions});
 
 
 
@@ -1669,21 +1670,22 @@ const getRecentExactDecimalPricesOfPortFolio = ({instrumentId,instrumentName}) =
 }
 
 
-const calcOffsetProfitOfStrategy = (_strategyPositions) => {
+const calcOffsetProfitOfStrategy = ({strategyPositions,stockPrice=getBaseInstrumentPriceOfOption()}) => {
 
 
-    const totalCostInfoObj = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculatorForPriceTypes)(_strategyPositions);
+    const totalCostInfoObj = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.totalCostCalculatorForPriceTypes)(strategyPositions);
 
     const totalCurrentPositionCost = totalCostInfoObj.totalCostOfCurrentPositions;
     const unreliableTotalCostOfCurrentPositions = totalCostInfoObj.unreliableTotalCostOfCurrentPositions;
     const totalCostOfChunkOfEstimationQuantity = totalCostInfoObj.totalCostOfChunkOfEstimationQuantity;
 
     const totalOffsetGainOfChunkOfEstimation = totalOffsetGainOfChunkOfEstimationQuantityCalculator({
-        strategyPositions: _strategyPositions
+        strategyPositions: strategyPositions
     });
 
     const totalOffsetGainOfCurrentPositionObj = totalOffsetGainOfCurrentPositionsCalculator({
-        strategyPositions: _strategyPositions
+        strategyPositions: strategyPositions,
+        stockPrice
     });
 
 
@@ -5526,7 +5528,7 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
         nokoolOrNoRequestFactor: strategyGroupInfo.nokoolOrNoRequestFactor
       });
       
-      strategyGroupInfo.offsetProfitOfStrategy = (0,_omex__WEBPACK_IMPORTED_MODULE_1__.calcOffsetProfitOfStrategy)(strategyGroupInfo.strategyPositions);
+      strategyGroupInfo.offsetProfitOfStrategy = (0,_omex__WEBPACK_IMPORTED_MODULE_1__.calcOffsetProfitOfStrategy)({strategyPositions: strategyGroupInfo.strategyPositions, stockPrice: strategyGroupInfo.stockPrice});
     } catch (error) {
       console.error(error, strategyGroupInfo);
       notifyError(
