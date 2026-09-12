@@ -4973,19 +4973,31 @@ const openWindowAndSelectGroup = (groupTitle,_origin=origin) => {
 }
 
 
-const setTradeModalUiPositions = () => {
+const setTradeModalUiPositions = ({strategyPositions}) => {
 
     let left = 1200;
     const top = 55;
-    Array.from(domContextWindow.document.querySelectorAll('client-modal-main client-option-modal-trade-layout')).forEach((tradeModal,i) => {
+
+    const setPosition = ({tradeModal,index,isOption})=>{
         tradeModal.style.left =`${left}px`;
         tradeModal.style.top =`${top}px`;
+        !isOption && tradeModal.style.setProperty('width', '310px', 'important');
 
         left-= (tradeModal.offsetWidth + 1);
 
-        i===1 &&  (left-=330)
+        index===1 &&  (left-=330)
 
-    });
+    }
+    if(strategyPositions){
+        strategyPositions.forEach((strategyPosition,i)=>{
+            setPosition({tradeModal:strategyPosition.ordersModal,index:i,isOption:strategyPosition.isOption});
+        });
+
+    }else{
+        Array.from(domContextWindow.document.querySelectorAll('client-modal-main client-option-modal-trade-layout')).forEach((tradeModal,i) => {
+            setPosition({tradeModal,index:i,isOption:true})
+        });
+    }
 }
 
 const getStrategyName = ()=>{
@@ -5306,7 +5318,7 @@ const Run = async (_window = window) => {
 
     setTradeModalQuantityOfAllTradeModals();
 
-    setTradeModalUiPositions();
+    setTradeModalUiPositions({strategyPositions});
     setDaysFromToday();
 
     initLoggers();
