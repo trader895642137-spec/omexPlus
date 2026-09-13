@@ -13795,40 +13795,46 @@ const isSameConfigTarget = (generatedConfig, userConfig) => {
 };
 
 const mergeConfig = (generatedConfig, userConfig) => {
-    return {
+
+
+    const hasUserConfig = Object.entries(userConfig).some(
+        ([key, value]) =>
+            !['type', 'name'].includes(key) &&
+            value !== null
+    );
+
+    // هیچ تنظیمی توسط کاربر تعیین نشده
+    if (!hasUserConfig) {
+        return {
+            ...userConfig,
+        };
+    }
+
+
+    const result = {
         ...generatedConfig,
-
-        profitPercent:
-            userConfig.profitPercent !== null
-                ? userConfig.profitPercent
-                : generatedConfig.profitPercent,
-
-        toSarBeSar: userConfig.toSarBeSar
-            ? {
-                ...generatedConfig.toSarBeSar,
-                ...userConfig.toSarBeSar,
-            }
-            : generatedConfig.toSarBeSar,
-
-        toLowSarBeSar: userConfig.toLowSarBeSar
-            ? {
-                ...generatedConfig.toLowSarBeSar,
-                ...userConfig.toLowSarBeSar,
-            }
-            : generatedConfig.toLowSarBeSar,
-
-        toHighSarBeSar: userConfig.toHighSarBeSar
-            ? {
-                ...generatedConfig.toHighSarBeSar,
-                ...userConfig.toHighSarBeSar,
-            }
-            : generatedConfig.toHighSarBeSar,
-
-        allProfit:
-            userConfig.allProfit !== null
-                ? userConfig.allProfit
-                : generatedConfig.allProfit,
     };
+
+
+   Object.entries(userConfig).forEach(([key, userValue]) => {
+        if (userValue === null) {
+            return;
+        }
+
+        if (
+            typeof userValue === 'object' &&
+            !Array.isArray(userValue)
+        ) {
+            result[key] = {
+                ...(generatedConfig[key] || {}),
+                ...userValue,
+            };
+        } else {
+            result[key] = userValue;
+        }
+    });
+
+    return result;
 };
 
 const resolveGeneratedConfigOverrides = ({
@@ -14032,6 +14038,7 @@ const isStrategyIgnored = (strategy, ignoreStrategyList) => {
         const isTypeIgnored = ignoreStrategyObj.type === 'ALL' || (ignoreStrategyObj.type === strategy.strategyTypeTitle);
 
         if (!isTypeIgnored) return false
+
 
         const isSymbolNameIgnored = isSymbolNameIgnoredChecker({ ignoreStrategyObj, strategy, strategySymbols });
         if (!isSymbolNameIgnored) return false
@@ -25759,18 +25766,53 @@ const createFilterPanel = () => {
 }
 
 
-let senderToBackgroundPort;
 
-try {
-    senderToBackgroundPort = chrome.runtime.connect({ name: "sender" });
-    
-} catch(err) {
-    console.error("Cannot connect to background:", err);
-     (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.showNotification)({
+let senderToBackgroundPort;
+function connectToBackground() {
+    try {
+        senderToBackgroundPort = chrome.runtime.connect({
+            name: "sender"
+        });
+
+        senderToBackgroundPort.onDisconnect.addListener(() => {
+            console.warn("Sender port disconnected");
+
+            senderToBackgroundPort = null;
+        });
+
+    } catch (err) {
+        console.error("Cannot connect to background:", err);
+
+        senderToBackgroundPort = null;
+
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.showNotification)({
             title: 'Cannot connect to background',
             body: 'Cannot connect to background',
-            tag: `cannotConnectToBackground`
+            tag: 'cannotConnectToBackground'
         });
+    }
+}
+
+const sendToBackGround = (list)=>{
+
+    try {
+
+        if (!senderToBackgroundPort) {
+            connectToBackground();
+        }
+
+        if (!senderToBackgroundPort) {
+            return;
+        }
+
+        senderToBackgroundPort.postMessage({ list });
+
+    } catch (err) {
+
+        console.error("Error sending list to background:", err);
+
+    }
+
 }
 
 
@@ -25781,7 +25823,9 @@ const interval = async () => {
 
         const list = createList();
         // const list = await createList2();
-        senderToBackgroundPort.postMessage({list});
+
+         
+        sendToBackGround(list);
 
         if (list?.length > 0) {
             createListFilterContetnByList(list);

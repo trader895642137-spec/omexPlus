@@ -220,40 +220,46 @@ const isSameConfigTarget = (generatedConfig, userConfig) => {
 };
 
 const mergeConfig = (generatedConfig, userConfig) => {
-    return {
+
+
+    const hasUserConfig = Object.entries(userConfig).some(
+        ([key, value]) =>
+            !['type', 'name'].includes(key) &&
+            value !== null
+    );
+
+    // هیچ تنظیمی توسط کاربر تعیین نشده
+    if (!hasUserConfig) {
+        return {
+            ...userConfig,
+        };
+    }
+
+
+    const result = {
         ...generatedConfig,
-
-        profitPercent:
-            userConfig.profitPercent !== null
-                ? userConfig.profitPercent
-                : generatedConfig.profitPercent,
-
-        toSarBeSar: userConfig.toSarBeSar
-            ? {
-                ...generatedConfig.toSarBeSar,
-                ...userConfig.toSarBeSar,
-            }
-            : generatedConfig.toSarBeSar,
-
-        toLowSarBeSar: userConfig.toLowSarBeSar
-            ? {
-                ...generatedConfig.toLowSarBeSar,
-                ...userConfig.toLowSarBeSar,
-            }
-            : generatedConfig.toLowSarBeSar,
-
-        toHighSarBeSar: userConfig.toHighSarBeSar
-            ? {
-                ...generatedConfig.toHighSarBeSar,
-                ...userConfig.toHighSarBeSar,
-            }
-            : generatedConfig.toHighSarBeSar,
-
-        allProfit:
-            userConfig.allProfit !== null
-                ? userConfig.allProfit
-                : generatedConfig.allProfit,
     };
+
+
+   Object.entries(userConfig).forEach(([key, userValue]) => {
+        if (userValue === null) {
+            return;
+        }
+
+        if (
+            typeof userValue === 'object' &&
+            !Array.isArray(userValue)
+        ) {
+            result[key] = {
+                ...(generatedConfig[key] || {}),
+                ...userValue,
+            };
+        } else {
+            result[key] = userValue;
+        }
+    });
+
+    return result;
 };
 
 const resolveGeneratedConfigOverrides = ({
@@ -457,6 +463,7 @@ export const isStrategyIgnored = (strategy, ignoreStrategyList) => {
         const isTypeIgnored = ignoreStrategyObj.type === 'ALL' || (ignoreStrategyObj.type === strategy.strategyTypeTitle);
 
         if (!isTypeIgnored) return false
+
 
         const isSymbolNameIgnored = isSymbolNameIgnoredChecker({ ignoreStrategyObj, strategy, strategySymbols });
         if (!isSymbolNameIgnored) return false

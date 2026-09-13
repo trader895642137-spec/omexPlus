@@ -11624,18 +11624,53 @@ const createFilterPanel = () => {
 }
 
 
-let senderToBackgroundPort;
 
-try {
-    senderToBackgroundPort = chrome.runtime.connect({ name: "sender" });
-    
-} catch(err) {
-    console.error("Cannot connect to background:", err);
-     showNotification({
+let senderToBackgroundPort;
+function connectToBackground() {
+    try {
+        senderToBackgroundPort = chrome.runtime.connect({
+            name: "sender"
+        });
+
+        senderToBackgroundPort.onDisconnect.addListener(() => {
+            console.warn("Sender port disconnected");
+
+            senderToBackgroundPort = null;
+        });
+
+    } catch (err) {
+        console.error("Cannot connect to background:", err);
+
+        senderToBackgroundPort = null;
+
+        showNotification({
             title: 'Cannot connect to background',
             body: 'Cannot connect to background',
-            tag: `cannotConnectToBackground`
+            tag: 'cannotConnectToBackground'
         });
+    }
+}
+
+const sendToBackGround = (list)=>{
+
+    try {
+
+        if (!senderToBackgroundPort) {
+            connectToBackground();
+        }
+
+        if (!senderToBackgroundPort) {
+            return;
+        }
+
+        senderToBackgroundPort.postMessage({ list });
+
+    } catch (err) {
+
+        console.error("Error sending list to background:", err);
+
+    }
+
 }
 
 
@@ -11646,7 +11681,9 @@ const interval = async () => {
 
         const list = createList();
         // const list = await createList2();
-        senderToBackgroundPort.postMessage({list});
+
+         
+        sendToBackGround(list);
 
         if (list?.length > 0) {
             createListFilterContetnByList(list);
