@@ -247,6 +247,29 @@ const getIgnoreStrategyNames = ()=>{
 
 
 
+const showNotificationForOpportunities = (opportunities)=>{
+
+    const foundSpecialProfit = opportunities.find(o=>o.strategyTypeTitle==='BECS' && o.profitPercent>1);
+
+    if(foundSpecialProfit){
+
+        showNotification({
+            title: 'سود فیلتر ویژه',
+            body: `${foundSpecialProfit.strategyTypeTitle}@${foundSpecialProfit.name} %${((foundSpecialProfit.profitPercent) * 100).toFixed()}`,
+            tag: `special-profit`,
+            requireInteraction: true
+        });
+
+    }else{
+
+        showNotification({
+            title: `سود فیلتر`,
+            tag: `profit`
+        })
+    }
+
+}
+
 
 
 const checkProfitsAnNotif = ({sortedStrategies}) => {
@@ -291,11 +314,8 @@ const checkProfitsAnNotif = ({sortedStrategies}) => {
 
     notifiedStrategyList = [].concat(opportunities);
 
-    showNotification({
-        title: `سود ${foundStrategy.strategyTypeTitle} بالای ${((foundStrategy.profitPercent) * 100).toFixed()} درصد`,
-        body: `${foundStrategy.strategyTypeTitle} ${foundStrategy.name}`,
-        tag: `profit`
-    })
+    showNotificationForOpportunities(opportunities);
+
 
 }
 
