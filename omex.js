@@ -2610,7 +2610,7 @@ const setTradeModalUiPositions = ({strategyPositions}) => {
     const setPosition = ({tradeModal,index,isOption})=>{
         tradeModal.style.left =`${left}px`;
         tradeModal.style.top =`${top}px`;
-        !isOption && tradeModal.style.setProperty('width', '310px', 'important');
+        !isOption && tradeModal.style.setProperty('width', '350px', 'important');
 
         left-= (tradeModal.offsetWidth + 1);
 
