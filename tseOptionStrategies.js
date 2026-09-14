@@ -249,7 +249,7 @@ const getIgnoreStrategyNames = ()=>{
 
 const showNotificationForOpportunities = (opportunities)=>{
 
-    const foundSpecialProfit = opportunities.find(o=>o.strategyTypeTitle==='BECS' && o.profitPercent>1);
+    const foundSpecialProfit = opportunities.find(o=>['BECS','BEPS'].includes(o.strategyTypeTitle)  && o.profitPercent>1);
 
     if(foundSpecialProfit){
 
