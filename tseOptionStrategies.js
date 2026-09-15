@@ -252,13 +252,15 @@ const showNotificationForOpportunities = (opportunities)=>{
     const foundSpecialProfit = opportunities.find(o=>['BECS','BEPS'].includes(o.strategyTypeTitle)  && o.profitPercent>1);
 
     if(foundSpecialProfit){
-
+        const  strategyFullName = `${foundSpecialProfit.strategyTypeTitle}@${foundSpecialProfit.positions.map(opt=>opt.symbol).join('-')}` ;
         showNotification({
             title: 'سود فیلتر ویژه',
             body: `${foundSpecialProfit.strategyTypeTitle}@${foundSpecialProfit.name} %${((foundSpecialProfit.profitPercent) * 100).toFixed()}`,
+            copyToClipboardText: strategyFullName,
             tag: `special-profit`,
             requireInteraction: true
         });
+        console.log(strategyFullName)
 
     }else{
 

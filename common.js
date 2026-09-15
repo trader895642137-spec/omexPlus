@@ -71,7 +71,7 @@ async function ensureNotificationPermission() {
 // اصلاح گارد با قفل (lock)
 const notificationLocks = {};
 
-export const showNotification = async ({ title, body, tag, requireInteraction }) => {
+export const showNotification = async ({ title, body, tag, requireInteraction ,copyToClipboardText}) => {
     if (_isSilentNotificationModeActive) return;
     
     // گارد اول: بررسی زمان
@@ -97,8 +97,14 @@ export const showNotification = async ({ title, body, tag, requireInteraction })
             requireInteraction
         });
         
-        notification.onclick = function () {
+        notification.onclick = async function () {
+
             window.parent.parent.focus();
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            if (copyToClipboardText != null) {
+                await navigator.clipboard.writeText(copyToClipboardText);
+            }
         };
         
         // پاک کردن لاگ بعد از ۵ ثانیه
