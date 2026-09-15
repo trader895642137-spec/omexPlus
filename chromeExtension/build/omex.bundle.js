@@ -2433,7 +2433,7 @@ const doJob=()=>{
 let expectedProfit = {
     expectedProfitPerMonth: 1.04,
     minExpectedProfitOfStrategy: 1,
-    currentPositions: 0.9,
+    defaultCurrentPositions: 0.9,
     // strategy:3
 }
 
@@ -2453,7 +2453,7 @@ const createStatusCnt = () => {
     `;
 
     statusCnt.addEventListener('click', function(event) {
-        doubleCheckProfitByExactDecimalPricesOfPortFolio(strategyPositions,true)
+        doubleCheckProfitByExactDecimalPricesOfPortFolio({strategyPositions,isForce:true})
     });
     domContextWindow.document.querySelector('client-option-layout-action-bar').append(statusCnt)
     return statusCnt
@@ -2818,19 +2818,22 @@ const checkSumOfMoneyAndAssets = async (isForce)=>{
 }
 
 
-const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositions,isForce)=>{
+const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async ({strategyPositions,isForce,profitPercentOfCurrentPositionsByNearSettlementPrices})=>{
     if(!isForce  && lastCheckProfitByExactDecimalPricesOfPortFolio.time && (Date.now() - lastCheckProfitByExactDecimalPricesOfPortFolio.time)<60000 ) return lastCheckProfitByExactDecimalPricesOfPortFolio.isGood
     lastCheckProfitByExactDecimalPricesOfPortFolio.time = Date.now();
     
 
-    const {totalOffsetGainOfChunkOfEstimation,
+    const { totalOffsetGainOfChunkOfEstimation,
         profitLossByOffsetOrdersPercent,
-        totalCostOfChunkOfEstimationQuantity} = await calcProfitLossByExactDecimalPricesOfPortFolio(_strategyPositions)
+        totalCostOfChunkOfEstimationQuantity } = await calcProfitLossByExactDecimalPricesOfPortFolio(strategyPositions)
 
 
 
-        // TODO:use isReachedToExpectedOffsetProfit
-    const isGood = profitLossByOffsetOrdersPercent > (expectedProfit?.currentPositions || 1);
+    if (profitPercentOfCurrentPositionsByNearSettlementPrices == null) {
+        profitPercentOfCurrentPositionsByNearSettlementPrices = calcOffsetProfitOfStrategy({ strategyPositions })?.profitPercentOfCurrentPositionsByNearSettlementPrices;
+    }
+
+    const isGood = isReachedToExpectedOffsetProfit({ profitLossByOffsetOrdersPercent, profitPercentOfCurrentPositionsByNearSettlementPrices, expectedProfit })
 
 
     lastCheckProfitByExactDecimalPricesOfPortFolio.isGood =isGood;
@@ -2849,7 +2852,7 @@ const doubleCheckProfitByExactDecimalPricesOfPortFolio  =async (_strategyPositio
 
     
 
-    checkStrategyInProfit(_strategyPositions)
+    checkStrategyInProfit(strategyPositions)
 
     return isGood
 
@@ -3067,17 +3070,28 @@ const getBreakevenExecutedPriceDiffIssueInAllPortfolioLogs = ({ strategyPosition
 
 }
 
-const isReachedToExpectedOffsetProfit = ({profitLossByOffsetOrdersPercent,profitPercentOfCurrentPositionsByNearSettlementPrices,expectedProfit: customExpectedProfit = expectedProfit})=>{
-    return (profitLossByOffsetOrdersPercent > (customExpectedProfit?.currentPositions || 1) 
-        || 
-    ((profitLossByOffsetOrdersPercent>0) &&  profitLossByOffsetOrdersPercent > (profitPercentOfCurrentPositionsByNearSettlementPrices*0.8)))
-}
+const isReachedToExpectedOffsetProfit = ({
+    profitLossByOffsetOrdersPercent,
+    profitPercentOfCurrentPositionsByNearSettlementPrices,
+    expectedProfit: customExpectedProfit = expectedProfit
+}) => {
+
+    if (customExpectedProfit?.currentPositions != null) {
+        return profitLossByOffsetOrdersPercent > customExpectedProfit.currentPositions;
+    }
+
+    return profitLossByOffsetOrdersPercent > 0 &&
+        (
+            profitLossByOffsetOrdersPercent > customExpectedProfit?.defaultCurrentPositions ||
+            profitLossByOffsetOrdersPercent > (profitPercentOfCurrentPositionsByNearSettlementPrices * 0.8)
+        );
+};
 
 const checkProfitPercentAndInform =async ({strategyPositions,profitLossByOffsetOrdersPercent,profitPercentOfCurrentPositionsByNearSettlementPrices})=>{
 
     let hasProfit=false
     if (isReachedToExpectedOffsetProfit({profitLossByOffsetOrdersPercent,profitPercentOfCurrentPositionsByNearSettlementPrices})) {
-        const isDoubleCheckOk = await doubleCheckProfitByExactDecimalPricesOfPortFolio(strategyPositions)
+        const isDoubleCheckOk = await doubleCheckProfitByExactDecimalPricesOfPortFolio({strategyPositions,profitPercentOfCurrentPositionsByNearSettlementPrices})
         if(!isDoubleCheckOk){
             hasProfit=false;
             uninformExtremeOrderPrice(strategyPositions, 'offset');
