@@ -2633,6 +2633,7 @@ const openModalOfAllPositionsRows = async (documentOfWindow=document) => {
 
         openModalButton.click();
         await new Promise(r => setTimeout(r, 300)); 
+        
     }
    
 }
@@ -2740,13 +2741,13 @@ const getAndSetStrategyTitleOnUrl = ()=>{
 
 
 
-export const openGroupInNewTab = async (groupName,_origin) => {
+export const openGroupInNewTab = async ({ groupName, _origin, groups, portfolioList, strategies }) => {
 
 
     const childWindow = await openWindowAndSelectGroup(groupName,_origin);
     
 
-    const { strategyRowLength,strategyTitle } = await OMEXApi.selectStrategy(childWindow.document);
+    const { strategyRowLength,strategyTitle } = await OMEXApi.selectStrategy({documentOfWindow:childWindow.document,groups, portfolioList, strategies});
 
     setStrategyTitleOnUrl({strategyTitle,_window:childWindow});
 
@@ -2757,7 +2758,7 @@ export const openGroupInNewTab = async (groupName,_origin) => {
 
     }, 60000);
 
-    // await new Promise(r => setTimeout(r, 10000));
+    // await new Promise(r => setTimeout(r, 5000));
 
 
     await openModalOfAllPositionsRows(childWindow.document);
@@ -2779,10 +2780,19 @@ export const openAllGroupsInNewTabs = async ()=>{
 
     const groups = await OMEXApi.getGroups();
 
+    const portfolioList = await OMEXApi.getOptionPortfolioList();
+    
+    const strategies = await OMEXApi.getCustomerOptionStrategyEstimationWithItems();
+
     // for (const group of groups.slice(0, 1)) {
     for (const group of groups) {
 
-        openGroupInNewTab(group.name);
+        openGroupInNewTab({
+            groupName:group.name, 
+            groups, 
+            portfolioList, 
+            strategies
+        });
         await new Promise(r => setTimeout(r, 100));
         
     }

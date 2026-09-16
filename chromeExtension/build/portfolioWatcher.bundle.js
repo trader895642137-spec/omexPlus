@@ -3684,6 +3684,7 @@ const openModalOfAllPositionsRows = async (documentOfWindow=document) => {
 
         openModalButton.click();
         await new Promise(r => setTimeout(r, 300)); 
+        
     }
    
 }
@@ -3791,13 +3792,13 @@ const getAndSetStrategyTitleOnUrl = ()=>{
 
 
 
-const openGroupInNewTab = async (groupName,_origin) => {
+const openGroupInNewTab = async ({ groupName, _origin, groups, portfolioList, strategies }) => {
 
 
     const childWindow = await openWindowAndSelectGroup(groupName,_origin);
     
 
-    const { strategyRowLength,strategyTitle } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.selectStrategy(childWindow.document);
+    const { strategyRowLength,strategyTitle } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.selectStrategy({documentOfWindow:childWindow.document,groups, portfolioList, strategies});
 
     setStrategyTitleOnUrl({strategyTitle,_window:childWindow});
 
@@ -3808,7 +3809,7 @@ const openGroupInNewTab = async (groupName,_origin) => {
 
     }, 60000);
 
-    // await new Promise(r => setTimeout(r, 10000));
+    // await new Promise(r => setTimeout(r, 5000));
 
 
     await openModalOfAllPositionsRows(childWindow.document);
@@ -3830,10 +3831,19 @@ const openAllGroupsInNewTabs = async ()=>{
 
     const groups = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getGroups();
 
+    const portfolioList = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionPortfolioList();
+    
+    const strategies = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getCustomerOptionStrategyEstimationWithItems();
+
     // for (const group of groups.slice(0, 1)) {
     for (const group of groups) {
 
-        openGroupInNewTab(group.name);
+        openGroupInNewTab({
+            groupName:group.name, 
+            groups, 
+            portfolioList, 
+            strategies
+        });
         await new Promise(r => setTimeout(r, 100));
         
     }
@@ -4127,6 +4137,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   fillEstimationPanelByStrategyName: () => (/* binding */ fillEstimationPanelByStrategyName),
 /* harmony export */   findDuplicationsInGroups: () => (/* binding */ findDuplicationsInGroups),
 /* harmony export */   getBlockedAmount: () => (/* binding */ getBlockedAmount),
+/* harmony export */   getCustomerOptionStrategyEstimationWithItems: () => (/* binding */ getCustomerOptionStrategyEstimationWithItems),
 /* harmony export */   getOptionPortfolioList: () => (/* binding */ getOptionPortfolioList),
 /* harmony export */   getStockPortfolioList: () => (/* binding */ getStockPortfolioList),
 /* harmony export */   getSumOfPositionsOfGroups: () => (/* binding */ getSumOfPositionsOfGroups),
@@ -4175,7 +4186,6 @@ const getWalletInfo = async () => {
 
 const getOptionPortfolioList = async () => {
 
-    
 
     const list = await fetch(`${redOrigin}/api/optionOpenPositions/get`, {
         "headers": {
@@ -4577,6 +4587,7 @@ const calcAveragePrice = async (instrumentId)=>{
 
 
 const getGroups =async () => {
+    
     return fetch(`${redOrigin}/api/AssetGrouping/GetGroups`, {
         "headers": {
             "accept": "application/json, text/plain, */*",
@@ -4679,18 +4690,17 @@ const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
 
 
 
-const selectStrategy =async (documentOfWindow)=>{
+const selectStrategy =async ({documentOfWindow=document,groups,portfolioList,strategies}={})=>{
     const _document  = documentOfWindow || document;
     const selectedGroupTitle = _document.querySelector('client-option-positions-filter-bar .-is-group ng-select .u-ff-number').innerHTML;
 
-    const groups = await getGroups();
+    groups ??= await getGroups();
 
     let selectedGroup = groups.find(group=>selectedGroupTitle.includes(group.name));
 
-    const portfolioList = await getOptionPortfolioList();
+    portfolioList ??= await getOptionPortfolioList();
 
-
-    const strategies = await getCustomerOptionStrategyEstimationWithItems();
+    strategies ??= await getCustomerOptionStrategyEstimationWithItems();
 
 
     const foundStrategy  = findStrategyOfGroup({group:selectedGroup,strategies,portfolioList});
@@ -5203,7 +5213,8 @@ const OMEXApi = {
     calculateSumOfMoneyAndAssets,
     calcAveragePrice,
     findDuplicationsInGroups,
-    getVariableMargin
+    getVariableMargin,
+    getCustomerOptionStrategyEstimationWithItems
 }
 
 /***/ }),

@@ -39,7 +39,6 @@ export const getWalletInfo = async () => {
 
 export const getOptionPortfolioList = async () => {
 
-    
 
     const list = await fetch(`${redOrigin}/api/optionOpenPositions/get`, {
         "headers": {
@@ -441,6 +440,7 @@ const calcAveragePrice = async (instrumentId)=>{
 
 
 const getGroups =async () => {
+    
     return fetch(`${redOrigin}/api/AssetGrouping/GetGroups`, {
         "headers": {
             "accept": "application/json, text/plain, */*",
@@ -465,7 +465,7 @@ const getGroups =async () => {
         return groups
     });
 }
-const getCustomerOptionStrategyEstimationWithItems = async () => {
+export const getCustomerOptionStrategyEstimationWithItems = async () => {
     return fetch(`${redOrigin}/api/OptionStrategyEstimations/GetCustomerOptionStrategyEstimationWithItems`, {
         "headers": {
             "accept": "application/json, text/plain, */*",
@@ -543,18 +543,17 @@ const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
 
 
 
-const selectStrategy =async (documentOfWindow)=>{
+const selectStrategy =async ({documentOfWindow=document,groups,portfolioList,strategies}={})=>{
     const _document  = documentOfWindow || document;
     const selectedGroupTitle = _document.querySelector('client-option-positions-filter-bar .-is-group ng-select .u-ff-number').innerHTML;
 
-    const groups = await getGroups();
+    groups ??= await getGroups();
 
     let selectedGroup = groups.find(group=>selectedGroupTitle.includes(group.name));
 
-    const portfolioList = await getOptionPortfolioList();
+    portfolioList ??= await getOptionPortfolioList();
 
-
-    const strategies = await getCustomerOptionStrategyEstimationWithItems();
+    strategies ??= await getCustomerOptionStrategyEstimationWithItems();
 
 
     const foundStrategy  = findStrategyOfGroup({group:selectedGroup,strategies,portfolioList});
@@ -1067,5 +1066,6 @@ export const OMEXApi = {
     calculateSumOfMoneyAndAssets,
     calcAveragePrice,
     findDuplicationsInGroups,
-    getVariableMargin
+    getVariableMargin,
+    getCustomerOptionStrategyEstimationWithItems
 }
