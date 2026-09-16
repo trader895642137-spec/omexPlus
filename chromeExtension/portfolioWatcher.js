@@ -223,7 +223,7 @@ const checkProfitPercentAndInform = ({ strategyGroupInfoList }) => {
       showNotification({
         title: 'به سود رسید',
         body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
-        tag: `${strategyPositions[0].instrumentName}-expectedProfitForCurrentPositionsPrecent`
+        tag: `expectedProfitForCurrentPositionsPrecent`
       });
     }
 
@@ -238,7 +238,7 @@ const checkProfitPercentAndInform = ({ strategyGroupInfoList }) => {
       showNotification({
         title: `سود %${profitPercentByBestPrices.toFixed()}`,
         body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
-        tag: `${strategyPositions[0].instrumentName}-expectedProfitPrecent`
+        tag: `expectedProfitPrecent`
       });
 
 

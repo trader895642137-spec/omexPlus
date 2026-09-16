@@ -3119,7 +3119,7 @@ const checkProfitPercentAndInform =async ({strategyPositions,profitLossByOffsetO
         (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
             title: 'به سود رسید',
             body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
-            tag: `${strategyPositions[0].instrumentName}-expectedProfitForCurrentPositionsPrecent`
+            tag: `expectedProfitForCurrentPositionsPrecent`
         });
     } else {
         hasProfit=false;
@@ -4183,17 +4183,60 @@ const observeMyOrderInOrdersModal = () => {
 }
 
 
+let isCheckingOffsetProfit = false;
+let pendingOffsetProfitCheck = false;
 let calcOffsetProfitOfStrategyInformUntilNotProfitTimeout;
 
 const calcOffsetProfitOfStrategyInformUntilNotProfit = async () => {
-    const isProfit = await checkStrategyInProfit(strategyPositions);
-    if (isProfit) {
-        clearTimeout(calcOffsetProfitOfStrategyInformUntilNotProfitTimeout);
-        calcOffsetProfitOfStrategyInformUntilNotProfitTimeout = setTimeout(calcOffsetProfitOfStrategyInformUntilNotProfit, 10000);
-    } else {
-        clearTimeout(calcOffsetProfitOfStrategyInformUntilNotProfitTimeout);
+
+    if (isCheckingOffsetProfit) {
+        // یک درخواست جدید آمده؛ اجرای فعلی تمام شد،
+        // دوباره با آخرین وضعیت بررسی کن.
+        pendingOffsetProfitCheck = true;
+        return;
     }
-}
+
+    isCheckingOffsetProfit = true;
+    pendingOffsetProfitCheck = false;
+
+    try {
+
+        const isProfit =
+            await checkStrategyInProfit(strategyPositions);
+
+        if (isProfit) {
+
+            clearTimeout(
+                calcOffsetProfitOfStrategyInformUntilNotProfitTimeout
+            );
+
+            calcOffsetProfitOfStrategyInformUntilNotProfitTimeout =
+                setTimeout(
+                    calcOffsetProfitOfStrategyInformUntilNotProfit,
+                    10000
+                );
+
+        } else {
+
+            clearTimeout(
+                calcOffsetProfitOfStrategyInformUntilNotProfitTimeout
+            );
+
+            calcOffsetProfitOfStrategyInformUntilNotProfitTimeout = null;
+        }
+
+    } finally {
+
+        isCheckingOffsetProfit = false;
+
+        if (pendingOffsetProfitCheck) {
+            pendingOffsetProfitCheck = false;
+
+            // اجرای بعدی با آخرین state/price
+            calcOffsetProfitOfStrategyInformUntilNotProfit();
+        }
+    }
+};
 
 let calcProfitOfStrategyInformUntilNotProfitTimeout;
 
@@ -4403,7 +4446,7 @@ const informForExpectedProfitOnStrategy = ({ _strategyPositions, profitPercentBy
         (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
             title: `سود %${profitPercentByBestPrices.defaultQueue.toFixed()}`,
             body: `${_strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
-            tag: `${_strategyPositions[0].instrumentName}-expectedProfitPrecent`
+            tag: `expectedProfitPrecent`
         });
     } else {
         isProfitGood =false;
@@ -4468,24 +4511,43 @@ const STRATEGY_NAME_PROFIT_CALCULATOR = {
 
 }
 
+let calcProfitOfStrategyVersion = 0;
 let prevCalcProfitOfStrategyTimeout;
 
 const calcProfitOfStrategy = async (_strategyPositions) => {
-    // getStrategyName
 
-    clearTimeout(prevCalcProfitOfStrategyTimeout)
+    const version = ++calcProfitOfStrategyVersion;
 
-    const profitCalculator = STRATEGY_NAME_PROFIT_CALCULATOR[_strategyPositions[0].getStrategyType() || 'OTHERS'];
+    clearTimeout(prevCalcProfitOfStrategyTimeout);
+
+    const profitCalculator =
+        STRATEGY_NAME_PROFIT_CALCULATOR[
+            _strategyPositions[0].getStrategyType() || 'OTHERS'
+        ];
+
     if (!profitCalculator)
-        return
+        return;
 
+    // صبر می‌کنیم قیمت در UI بنشیند
     await new Promise(resolve => setTimeout(resolve, 200));
 
-    const { 
-        profitPercentByBestPrices, 
+    // اگر در این 200ms درخواست جدیدتری آمده،
+    // این اجرای قدیمی دیگر حق ادامه ندارد
+    if (version !== calcProfitOfStrategyVersion)
+        return;
+
+    const {
+        profitPercentByBestPrices,
         profitPercentByInsertedPrices,
         settlementProfitByBestPrices,
-        settlementProfitByInsertedPrices } = profitCalculator({strategyPositions:_strategyPositions});
+        settlementProfitByInsertedPrices
+    } = profitCalculator({
+        strategyPositions: _strategyPositions
+    });
+
+    // دوباره چک می‌کنیم، برای احتیاط
+    if (version !== calcProfitOfStrategyVersion)
+        return;
 
     const isProfitable = informForExpectedProfitOnStrategy({
         _strategyPositions,
@@ -4495,16 +4557,16 @@ const calcProfitOfStrategy = async (_strategyPositions) => {
         settlementProfitByInsertedPrices
     });
 
-    if(isProfitable){
+    
+
+    if (isProfitable) {
         prevCalcProfitOfStrategyTimeout = setTimeout(() => {
             calcProfitOfStrategy(_strategyPositions);
-
-            
         }, 5000);
     }
- 
-    return isProfitable
-}
+
+    return isProfitable;
+};
 
 
 const higherQuantityOfInsertedOrderInformer = ({ orderModalQuantityGetter, informer, informCleaner })=>{

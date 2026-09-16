@@ -14404,8 +14404,7 @@ const showNotificationForOpportunities = (opportunities)=>{
             title: 'سود فیلتر ویژه',
             body: `${foundSpecialProfit.strategyTypeTitle}@${foundSpecialProfit.name} %${((foundSpecialProfit.profitPercent) * 100).toFixed()}`,
             copyToClipboardText: strategyFullName,
-            tag: `special-profit`,
-            requireInteraction: true
+            tag: `profit`,
         });
         console.log(strategyFullName)
 
