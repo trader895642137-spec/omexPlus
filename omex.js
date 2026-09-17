@@ -837,12 +837,13 @@ const getnokoolOrNoRequestFactor = () => {
 
 
 
-const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
-    return assetRowLementList.map(optionRowEl => {
+const createPositionObjectArray  = (strategyItemList) => {
+    return strategyItemList.map(strategyItem => {
+        const isDOM = strategyItem instanceof Element;
 
-        const instrumentName = optionRowEl.querySelector('.instrument-title span').innerHTML;
-        let optionID = Array.from(domContextWindow.document.querySelectorAll('client-option-positions-main .ag-pinned-right-cols-container .ag-row'))?.find(optionNameCellEl => Array.from(optionNameCellEl.querySelectorAll('span'))?.find(span => span.innerHTML === instrumentName))?.getAttribute('row-id');
-        const isBuy = optionRowEl.querySelector('client-option-strategy-estimation-main-ui-order-side .-isActive')?.classList?.contains('buy');
+        const instrumentName =  isDOM ? strategyItem.querySelector('.instrument-title span').innerHTML:strategyItem.portfolioAssetInfo?.instrumentName;
+        let optionID = isDOM ? Array.from(domContextWindow.document.querySelectorAll('client-option-positions-main .ag-pinned-right-cols-container .ag-row'))?.find(optionNameCellEl => Array.from(optionNameCellEl.querySelectorAll('span'))?.find(span => span.innerHTML === instrumentName))?.getAttribute('row-id') : strategyItem.portfolioAssetInfo?.instrumentId;
+        const isBuy = isDOM ? strategyItem.querySelector('client-option-strategy-estimation-main-ui-order-side .-isActive')?.classList?.contains('buy') : strategyItem.side==="Buy";
 
         const isOption = isInstrumentNameOfOption(instrumentName);
 
@@ -852,30 +853,32 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         let cSize = isOption ? defaultCSize : 1;
         let daysLeftToSettlement = defaultDaysLeftToSettlement;
 
-        const ordersModal = Array.from(domContextWindow.document.querySelectorAll('client-option-modal-trade-layout')).find(modal => {
+        const ordersModal =isDOM ? Array.from(domContextWindow.document.querySelectorAll('client-option-modal-trade-layout')).find(modal => {
             return Array.from(modal.querySelectorAll('label')).find(label => label.innerHTML === instrumentName)
         }
-        );
+        ):null;
 
-        const instrumentFullTitle = ordersModal && ordersModal.querySelector('client-option-instruments-favorites-item-header main > span').innerHTML;
+        const instrumentFullTitle = isDOM?  ordersModal && ordersModal.querySelector('client-option-instruments-favorites-item-header main > span').innerHTML : strategyItem.portfolioAssetInfo?.lVal30;
 
         const getOffsetOrderPriceElements = () => (ordersModal && ordersModal.querySelectorAll(`client-instrument-best-limit-ui-option client-instrument-price-position-row[orderside="${isBuy ? 'Buy' : 'Sell'}"] .-is-price span`)) || [];
 
         const getOpenMoreOrderPriceElements = () => (ordersModal && ordersModal.querySelectorAll(`client-instrument-best-limit-ui-option client-instrument-price-position-row[orderside="${isBuy ? 'Sell' : 'Buy'}"] .-is-price span`)) || [];
 
         const getBestOffsetPrice = () => {
+            if(!isDOM) return 
             const priceElement = getOffsetOrderPriceElements()[0];
             return priceElement && convertStringToInt(priceElement.innerHTML);
         }
 
         const getBestOpenMorePrice = () => {
+            if(!isDOM) return 
             const priceElement = getOpenMoreOrderPriceElements()[0];
             return priceElement && convertStringToInt(priceElement.innerHTML);
         }
 
         const getQuantity = () => {
             const cSize = getCSize();
-            const quantity = convertStringToInt(optionRowEl.querySelector('[formcontrolname="quantity"] input').value);
+            const quantity = isDOM? convertStringToInt(strategyItem.querySelector('[formcontrolname="quantity"] input').value): strategyItem.quantity;
             const quantityMultiplier = isOption ? cSize : 1;
             return quantity * quantityMultiplier;
         }
@@ -883,35 +886,65 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
         let cachedCurrentPositionQuantityElement;
         const getCSize = ()=>{
-            const instrumentExtraData = instrumentExtraDataMap[instrumentName];
-            return instrumentExtraData?.cSize || cSize;
+            let size;
+            if(instrumentExtraDataMap[instrumentName]){
+                const instrumentExtraData = instrumentExtraDataMap[instrumentName];
+                size = instrumentExtraData?.cSize ;
+
+            }else if(!isDOM){
+                size =  strategyItem.portfolioAssetInfo?.cSize;
+            }
+            return size || cSize
         }
         const getOptionID = ()=>{
-            const instrumentExtraData = instrumentExtraDataMap[instrumentName];
-            return instrumentExtraData?.optionID || optionID;
+            let id;
+            if(instrumentExtraDataMap[instrumentName]){
+                const instrumentExtraData = instrumentExtraDataMap[instrumentName];
+                id = instrumentExtraData?.optionID;
+            }else if(!isDOM){
+                id = strategyItem.instrumentId
+            }
+            return id || optionID
         }
         const getInstrumentID = ()=>{
-            const instrumentExtraData = instrumentExtraDataMap[instrumentName];
-            return instrumentExtraData?.instrumentId;
+            if(instrumentExtraDataMap[instrumentName]){
+                const instrumentExtraData = instrumentExtraDataMap[instrumentName];
+                return instrumentExtraData?.instrumentId;
+            }else if(!isDOM){
+                return strategyItem.instrumentId
+            }
         }
         const getDaysLeftToSettlement= ()=>{
-            const instrumentExtraData = instrumentExtraDataMap[instrumentName];
-            return instrumentExtraData?.daysLeftToSettlement;
+            if(instrumentExtraDataMap[instrumentName]){
+                const instrumentExtraData = instrumentExtraDataMap[instrumentName];
+                return instrumentExtraData?.daysLeftToSettlement;
+
+            }else if(!isDOM){
+                const daysLeftToSettlement = isOption ? Math.ceil((new Date(strategyItem.portfolioAssetInfo?.psDate).valueOf() - Date.now()) / (24 * 60 * 60000)): null;
+                return daysLeftToSettlement
+
+            }
+
+
         }
         const getCurrentPositionQuantity = () => {
 
             optionID = getOptionID();
             const cSize = getCSize();
 
-
-            cachedCurrentPositionQuantityElement = domContextWindow.document.body.contains(cachedCurrentPositionQuantityElement) ? cachedCurrentPositionQuantityElement : domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy ? 'buyCount' : 'sellCount'}"]`);
-
             let currentPositionQuantity
-            if (cachedCurrentPositionQuantityElement) {
-                currentPositionQuantity = convertStringToInt(cachedCurrentPositionQuantityElement?.innerHTML);
-            } else {
-                currentPositionQuantity = getOrderModalPortfolioQuantity();
+            if(isDOM){
+
+                cachedCurrentPositionQuantityElement = domContextWindow.document.body.contains(cachedCurrentPositionQuantityElement) ? cachedCurrentPositionQuantityElement : domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy ? 'buyCount' : 'sellCount'}"]`);
+                if (cachedCurrentPositionQuantityElement) {
+                    currentPositionQuantity = convertStringToInt(cachedCurrentPositionQuantityElement?.innerHTML);
+                } else {
+                    currentPositionQuantity = getOrderModalPortfolioQuantity();
+                }
+            }else{
+                currentPositionQuantity = strategyItem.portfolioAssetInfo?.count;
             }
+
 
             const quantityMultiplier = isOption ? cSize : 1;
             return currentPositionQuantity * quantityMultiplier;
@@ -921,12 +954,14 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
         let cachedOrderModalPortfolioQuantityElement;
         const getOrderModalPortfolioQuantity = () => {
+            if(!domContextWindow || !ordersModal) return 
             cachedOrderModalPortfolioQuantityElement = domContextWindow.document.body.contains(cachedOrderModalPortfolioQuantityElement) ? cachedOrderModalPortfolioQuantityElement : ordersModal.querySelector('.o-quantityContainer footer span');
             return convertStringToInt(cachedOrderModalPortfolioQuantityElement?.innerHTML) || 0
 
         }
         let cachedOrderModalQuantityFooterElement
         const getOrderModalQuantityFooterElement = () => {
+            if(!domContextWindow || !ordersModal) return 
             if (!domContextWindow.document.body.contains(cachedOrderModalQuantityFooterElement)) {
                 cachedOrderModalQuantityFooterElement = ordersModal.querySelector('.o-quantityContainer footer')
             }
@@ -938,6 +973,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
         let cachedOrderModalTradePanelElement
         const getOrderModalTradePanelElement = () => {
+             if(!domContextWindow || !ordersModal) return 
             if (!domContextWindow.document.body.contains(cachedOrderModalTradePanelElement)) {
                 cachedOrderModalTradePanelElement = ordersModal.querySelector('client-instrument-favorites-item-trade-panel')
             }
@@ -950,6 +986,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
         let cachedOrderModalStrategyDropdownElement;
         const getOrderModalStrategyDropdownElement = ()=>{
+             if(!domContextWindow || !ordersModal) return 
             if (!domContextWindow.document.body.contains(cachedOrderModalTradePanelElement)) {
                 cachedOrderModalStrategyDropdownElement = ordersModal.querySelector('client-instrument-favorites-item-trade-panel ng-select.-is-strategyDropdown');
             }
@@ -964,6 +1001,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
          let cachedOrderModalQuantityInputElement;
         const getOrderModalQuantityInputElement = ()=>{
+             if(!domContextWindow || !ordersModal) return 
             if (!domContextWindow.document.body.contains(cachedOrderModalQuantityInputElement)) {
                 cachedOrderModalQuantityInputElement =ordersModal.querySelector('#tabKey-optionTradeQuantityInput');
             }
@@ -977,6 +1015,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         
          let cachedOrderModalQuantityInputArrowUpElement;
         const getOrderModalQuantityInputArrowUpElement = ()=>{
+             if(!domContextWindow || !ordersModal) return 
             if (!domContextWindow.document.body.contains(cachedOrderModalQuantityInputArrowUpElement)) {
                 cachedOrderModalQuantityInputArrowUpElement = ordersModal.querySelector('[iconname="arrow-up-filled"]');
             }
@@ -988,6 +1027,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
          let cachedOrderModalPriceElement;
         const getOrderModalPriceInputElement = ()=>{
+             if(!domContextWindow || !ordersModal) return 
             if (!domContextWindow.document.body.contains(cachedOrderModalPriceElement)) {
                  cachedOrderModalPriceElement =ordersModal.querySelector('#tabKey-optionTradePriceInput');
             }
@@ -997,28 +1037,31 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
         const getRequiredMargin = () => {
 
-            const isMarginRequired = optionRowEl.querySelector('input[formcontrolname="requiredMarginIsSelected"]')?.checked;
+            const isMarginRequired = isDOM ? strategyItem.querySelector('input[formcontrolname="requiredMarginIsSelected"]')?.checked: strategyItem.requiredMarginIsSelected;
             const cSize = getCSize()
 
             if (!isMarginRequired)
                 return 0
 
-            const requiredMargin = convertStringToInt(optionRowEl.querySelector('[formcontrolname="requiredMargin"] input').value) / cSize;
+            const requiredMargin = (isDOM? convertStringToInt(strategyItem.querySelector('[formcontrolname="requiredMargin"] input').value) : strategyItem.requiredMargin) / cSize;
 
             return requiredMargin
         }
 
         const getInsertedPrice = () => {
-            const insertedPrice = convertStringToInt(optionRowEl.querySelector('[formcontrolname="price"] input').value);
+            if(!isDOM) return 
+            const insertedPrice = convertStringToInt(strategyItem.querySelector('[formcontrolname="price"] input').value);
             return insertedPrice;
         }
 
         const getInsertedQuantity = () => {
-            const insertedQuantity = convertStringToInt(optionRowEl.querySelector('[formcontrolname="quantity"] input').value);
+            if(!isDOM) return 
+            const insertedQuantity = convertStringToInt(strategyItem.querySelector('[formcontrolname="quantity"] input').value);
             return insertedQuantity;
         }
 
         const calcBestSecondOrderPriceRatioDiff = (priceOrderElements) => {
+            if(!isDOM) return 
             if (!priceOrderElements || priceOrderElements.length < 2)
                 return
 
@@ -1037,6 +1080,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         }
 
         const getBestSecondPriceRatioDiff = (chooseBestPriceType) => {
+            if(!isDOM) return 
             return calcBestSecondOrderPriceRatioDiff(chooseBestPriceType === 'offset' ? getOffsetOrderPriceElements() : getOpenMoreOrderPriceElements());
         }
 
@@ -1064,10 +1108,19 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
                 executedPrice = recentExactDecimalPricesOfPortFolioObj.executedPrice;
                 breakEvenPrice = recentExactDecimalPricesOfPortFolioObj.breakEvenPrice;
             }else{
-                const executedPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="executedPrice"]`;
-                const breakEvenPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="breakEvenPrice"]`;
-                executedPrice = convertStringToInt(domContextWindow.document.querySelector(executedPriceSelector)?.innerHTML);
-                breakEvenPrice = convertStringToInt(domContextWindow.document.querySelector(breakEvenPriceSelector)?.innerHTML);
+
+                if(isDOM){
+                    const executedPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="executedPrice"]`;
+                    const breakEvenPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="breakEvenPrice"]`;
+                    executedPrice = convertStringToInt(domContextWindow.document.querySelector(executedPriceSelector)?.innerHTML);
+                    breakEvenPrice = convertStringToInt(domContextWindow.document.querySelector(breakEvenPriceSelector)?.innerHTML);
+
+                }else{
+
+                    executedPrice = strategyItem.portfolioAssetInfo?.executedPrice;
+                    breakEvenPrice = strategyItem.portfolioAssetInfo?.breakEvenPrice;
+
+                }
             }
             if (executedPrice && breakEvenPrice && hasBreakevenExecutedPriceDiffIssue({executedPrice,breakEvenPrice})) {
 
@@ -1092,6 +1145,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
         const getUnreliableCurrentPositionAvgPrice = () => {
              
  
+            if(!isDOM) return 
 
             if (!domContextWindow.document.body.contains(cachedUnreliableCurrentPositionAvgPriceElement)) {
                 const labelText = 'میانگین';
@@ -1120,7 +1174,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
 
         const getStrategyName = () => {
-            return domContextWindow.document.querySelector('client-option-strategy-estimation-header c-k-input-text input')?.value
+            return isDOM ? domContextWindow.document.querySelector('client-option-strategy-estimation-header c-k-input-text input')?.value : strategyItem.strategyTitle
         }
 
         const getBestOpenMorePriceWithSideSign = () => {
@@ -1130,7 +1184,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
             return bestOpenMorePrice * (isBuy ? -1 : 1);
         }
 
-        const strikePrice = convertStringToInt(domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="strikePrice"]`)?.innerHTML) || convertStringToInt(optionRowEl.querySelectorAll('.o-item-row > div')[5].innerHTML);
+        const strikePrice = isDOM ? convertStringToInt(domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="strikePrice"]`)?.innerHTML) || convertStringToInt(strategyItem.querySelectorAll('.o-item-row > div')[5].innerHTML) : strategyItem.portfolioAssetInfo?.strikePrice;
         
 
        
@@ -1151,7 +1205,7 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
 
 
         let strategyPosition = {
-            optionRowEl,
+            optionRowEl:isDOM ?strategyItem : null,
             // TODO: is not just option meybe stock
             instrumentName,
             instrumentFullTitle,
@@ -1199,11 +1253,34 @@ const createPositionObjectArrayByElementRowArray = (assetRowLementList) => {
     );
 }
 
+const prepareForSerialization = (obj) => {
+
+    const result = { ...obj };
+
+    for (const [key, value] of Object.entries(result)) {
+        if (typeof value === 'function') {
+            const returnValue = value();
+            // ذخیره تابع به صورت string
+            result[key] = {
+                __isFunction: true,
+                __returnValue: returnValue,
+                __functionString: `function() { return ${JSON.stringify(returnValue)}; }`
+            };
+        }
+    }
 
 
+    return result
 
-export const getStrategyInfoForExport = ()=>{
-    
+}
+
+
+const prepareStrategyForExport = ({
+    strategyPositions,
+    strategyName = getStrategyName() ,
+    stockPrice = getBaseInstrumentPriceOfOption(),
+    nokoolOrNoRequestFactor = getnokoolOrNoRequestFactor()})=>{
+
     const strategyPositionsForExport = strategyPositions.map(sp => {
 
         let spForExport = {...sp};
@@ -1218,22 +1295,51 @@ export const getStrategyInfoForExport = ()=>{
         return spForExport
 
     });
-
-
     return {
-        strategyPositionsForExport,
-        strategyName: getStrategyName(),
+        positionsPrepareForSerialization: strategyPositionsForExport.map(
+            prepareForSerialization
+        ),
+        strategyName,
         expectedProfit,
-        stockPrice: getBaseInstrumentPriceOfOption(),
-        nokoolOrNoRequestFactor: getnokoolOrNoRequestFactor()
+        stockPrice,
+        nokoolOrNoRequestFactor
     }
 
-    
-    
-    
-    
+}
 
 
+export const getStrategyInfoForExport = ()=>{
+    
+    return prepareStrategyForExport({strategyPositions})
+
+}
+
+export const getAllGroupStrategyListForExport = async ()=>{
+ try {
+
+    const  groupStrategyInfoList = await enrichGroupByStrategyInfo();
+
+
+    const groupStrategyInfoListPrepareForExport =groupStrategyInfoList.map(groupStrategyInfo=>{
+        if(!groupStrategyInfo?.strategy?.strategyPositions) return null
+        return prepareStrategyForExport({
+            strategyPositions:groupStrategyInfo.strategy.strategyPositions,
+            strategyName: groupStrategyInfo.strategy.title,
+            stockPrice : groupStrategyInfo.strategy.stockPrice
+        });
+    }).filter(Boolean);
+
+    return groupStrategyInfoListPrepareForExport
+    } catch (error) {
+
+        console.error(
+            '[getAllGroupStrategyListForExport] خطا:',
+            error
+        );
+
+         showToast(`خطای getAllGroupStrategyListForExport`);
+
+    }
 }
 
 
@@ -2799,6 +2905,51 @@ export const openAllGroupsInNewTabs = async ()=>{
 
 }
 
+export const enrichGroupByStrategyInfo = async ()=>{
+
+    const groups = await OMEXApi.getGroups();
+
+    const portfolioList = await OMEXApi.getOptionPortfolioList();
+    
+    const strategies = await OMEXApi.getCustomerOptionStrategyEstimationWithItems();
+
+  
+
+    const stockPriceList = await OMEXApi.getStockPricesData(portfolioList.map(asset=>asset.baseInstrumentId));
+
+
+    return groups.map(group=>{
+
+        const strategy  = OMEXApi.findStrategyOfGroup({group,strategies,portfolioList});
+
+        if(!strategy){
+            showToast(`استراتژی یافت نشد`);
+            console.log(`${group.name}`)
+            return {...group,strategy}
+        }
+
+        strategy.items = strategy.items.map(strategyitem => {
+            return {
+                ...strategyitem,
+                strategyTitle: strategy.title,
+                portfolioAssetInfo: portfolioList.find(p => p.instrumentId === strategyitem.instrumentId)
+            }
+        });
+        const baseInstrumentId = strategy.items.find(
+            item => item.portfolioAssetInfo?.baseInstrumentId
+        )?.portfolioAssetInfo.baseInstrumentId;
+
+
+        strategy.baseInstrumentId = baseInstrumentId;
+        strategy.strategyPositions = createPositionObjectArray(strategy.items);
+        strategy.stockPrice = stockPriceList.find(asset=>asset.instrumentId===baseInstrumentId)?.pDrCotVal;
+
+
+        return {...group,strategy}
+    });
+
+}
+
 
 export const getSummaryNameOfStrategy = () => {
 
@@ -3003,7 +3154,7 @@ export const Run = async (_window = window) => {
 
     domContextWindow = _window
     
-    strategyPositions = createPositionObjectArrayByElementRowArray(Array.from(domContextWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')));
+    strategyPositions = createPositionObjectArray(Array.from(domContextWindow.document.querySelectorAll('client-option-strategy-estimation-main .o-items .o-item-body')));
 
 
     injectStyles()

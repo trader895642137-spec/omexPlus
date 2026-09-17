@@ -148,7 +148,7 @@ const deleteOrder = ({orderId,id}) => {
 
 
 
-const getStockPricesData = async (instrumentIds)=>{
+export const getStockPricesData = async (instrumentIds)=>{
 
     return fetch(`${redOrigin}/api/PublicMessages/InstTrades`, {
         "headers": {
@@ -520,7 +520,7 @@ const getOptionStrategies = async () => {
 
 
 
-const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
+export const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
 
     const groupPositions = group.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId));
 
@@ -1067,5 +1067,7 @@ export const OMEXApi = {
     calcAveragePrice,
     findDuplicationsInGroups,
     getVariableMargin,
-    getCustomerOptionStrategyEstimationWithItems
+    getCustomerOptionStrategyEstimationWithItems,
+    findStrategyOfGroup,
+    getStockPricesData
 }

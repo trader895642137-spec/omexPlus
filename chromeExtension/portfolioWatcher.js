@@ -15,7 +15,7 @@ const notifyError = (error, context = '') => {
   showNotification({
     title: '❌ خطا در Watcher',
     body: `${context ? context + ': ' : ''}${message}`.slice(0, 500),
-    tag: `watcher-error-${Date.now()}`
+    tag: `watcher-error`
   });
 };
 
@@ -198,7 +198,7 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
 const checkProfitPercentAndInform = ({ strategyGroupInfoList }) => {
 
 
-  if(isSilentAllActive) return 
+  
 
   for (let i = 0; i < strategyGroupInfoList.length; i++) {
     const strategyGroupInfo = strategyGroupInfoList[i];
@@ -220,7 +220,7 @@ const checkProfitPercentAndInform = ({ strategyGroupInfoList }) => {
 
       hasAlarmProfit = true;
 
-      showNotification({
+      !isSilentAllActive && showNotification({
         title: 'به سود رسید',
         body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
         tag: `expectedProfitForCurrentPositionsPrecent`
@@ -235,7 +235,7 @@ const checkProfitPercentAndInform = ({ strategyGroupInfoList }) => {
 
 
       hasAlarmProfit = true;
-      showNotification({
+      !isSilentAllActive && showNotification({
         title: `سود %${profitPercentByBestPrices.toFixed()}`,
         body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
         tag: `expectedProfitPrecent`
@@ -307,6 +307,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       renderStrategies();
 
     }
+
+    if (message.type === "addAllToWatcher") {
+
+      const allGroupsStrategyInfo = message.payload.allGroupsStrategyInfo;
+
+
+      allGroupsStrategyInfo.map(serializedStrategyInfo => {
+
+        const strategyInfo = deserializeStrategyInfo(serializedStrategyInfo);
+
+        strategyGroupInfoList = strategyGroupInfoList.filter(
+          item => item.strategyName !== strategyInfo.strategyName
+        );
+
+
+
+        strategyGroupInfoList.push({ ...strategyInfo });
+
+      });
+
+      renderStrategies();
+
+    }
+
+
   } catch (error) {
     notifyError(error, 'Watcher - دریافت استراتژی');
   }

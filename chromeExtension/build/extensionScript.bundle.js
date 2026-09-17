@@ -1,4 +1,66 @@
+/******/ // The require scope
+/******/ var __webpack_require__ = {};
+/******/ 
+/************************************************************************/
+/******/ /* webpack/runtime/define property getters */
+/******/ (() => {
+/******/ 	// define getter functions for harmony exports
+/******/ 	__webpack_require__.d = (exports, definition) => {
+/******/ 		for(var key in definition) {
+/******/ 			if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 				Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 			}
+/******/ 		}
+/******/ 	};
+/******/ })();
+/******/ 
+/******/ /* webpack/runtime/hasOwnProperty shorthand */
+/******/ (() => {
+/******/ 	__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ })();
+/******/ 
+/******/ /* webpack/runtime/make namespace object */
+/******/ (() => {
+/******/ 	// define __esModule on exports
+/******/ 	__webpack_require__.r = (exports) => {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 		}
+/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 	};
+/******/ })();
+/******/ 
+/************************************************************************/
+var __webpack_exports__ = {};
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   simpleNotifyError: () => (/* binding */ simpleNotifyError)
+/* harmony export */ });
 
+const simpleNotifyError = (error, context = '') => {
+    console.error(`[POPUP ERROR] ${context}`, error);
+
+    let message;
+
+    if (error instanceof Error) {
+        message = `${error.message}\n${error.stack || ''}`;
+    } else if (typeof error === 'object' && error !== null) {
+        try {
+            message = JSON.stringify(error, null, 2);
+        } catch {
+            message = String(error);
+        }
+    } else {
+        message = String(error);
+    }
+
+    chrome.notifications.create(`notification-${Date.now()}`, {
+        type: 'basic',
+        iconUrl: 'icon.png',
+        title: '❌ خطا در popup',
+        message: `${context ? context + ': ' : ''}${message}`.slice(0, 500),
+    });
+};
 document.getElementById('mainButton').addEventListener('click', () => {
 
 
@@ -353,6 +415,31 @@ document.getElementById('showVariableMargin').addEventListener('click', () => {
 
 });
 
+const getStrategyInfo = async (tabId) => {
+    const result = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            return window.omexLib?.getStrategyInfoForExport() || null;
+        },
+        world: "MAIN"
+    });
+
+    return result[0]?.result;
+};
+
+
+const getAllGroupsStrategyInfo = async (tabId) => {
+    const result = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: async () => {
+            return await window.omexLib?.getAllGroupStrategyListForExport() || null;
+        },
+        world: "MAIN"
+    });
+
+    return result[0]?.result;
+};
+
 
 
 
@@ -361,57 +448,10 @@ document.getElementById('addToWatcher').addEventListener('click', async () => {
         // ۱. تب فعال رو بگیر
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         
-        // ۲. از تب فعلی داده‌ها رو بگیر (اگه نیاز داری)
-        const result = await chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: () => {
-
-                const strategyInfo = window.omexLib?.getStrategyInfoForExport() || null;
-                if(!strategyInfo) return
-
-                const positions = strategyInfo.strategyPositionsForExport;
-                if(!positions) return
-
-
-                const prepareForSerialization = (obj) => {
-
-                    const result = { ...obj };
-
-                    for (const [key, value] of Object.entries(result)) {
-                        if (typeof value === 'function') {
-                            const returnValue = value();
-                            // ذخیره تابع به صورت string
-                            result[key] = {
-                                __isFunction: true,
-                                __returnValue: returnValue,
-                                __functionString: `function() { return ${JSON.stringify(returnValue)}; }`
-                            };
-                        }
-                    }
-
-
-                    return result
-
-                }
-                
-                const positionsPrepareForSerialization = positions.map(position => {
-                    return prepareForSerialization(position)
-                });
-
-                return {
-
-                    ...strategyInfo,
-                    positionsPrepareForSerialization
-
-                }
-               
-                
-            },
-            world: "MAIN"
-        });
+        const strategyInfo = await getStrategyInfo(tab.id);
         
-        let strategyInfo = result[0]?.result;
         if(!strategyInfo) return
+
 
         // ۳. مستقیم از popup به watcher بفرست
         chrome.runtime.sendMessage({
@@ -432,5 +472,49 @@ document.getElementById('addToWatcher').addEventListener('click', async () => {
         
     } catch (error) {
         console.error("❌ خطا:", error);
+    }
+});
+
+
+
+
+document.getElementById('addAllGroupStrategyToWatcher').addEventListener('click', async () => {
+    try {
+        // ۱. تب فعال رو بگیر
+        
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        const allGroupsStrategyInfo = await getAllGroupsStrategyInfo(tab.id);
+        
+        if(!allGroupsStrategyInfo) return
+
+
+        // ۳. مستقیم از popup به watcher بفرست
+        chrome.runtime.sendMessage({
+            type: "addAllToWatcher",
+            payload: {
+                allGroupsStrategyInfo,
+                tabId: tab.id,
+                url: tab.url,
+                title: tab.title
+            }
+        }, (response) => {
+            if (chrome.runtime.lastError) {
+                console.error("❌ خطا:", chrome.runtime.lastError);
+                simpleNotifyError(
+                    chrome.runtime.lastError,
+                    'addAllToWatcher response'
+                );
+            } else {
+                console.log("✅ پیام ارسال شد:", response);
+            }
+        });
+
+    } catch (error) {
+        console.error("❌ خطا:", error);
+        simpleNotifyError(
+            error,
+            `اضافه کردن همه گروه ها`
+        );
     }
 });

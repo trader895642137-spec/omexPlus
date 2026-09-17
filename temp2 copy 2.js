@@ -1,179 +1,78 @@
-const calcBESRatio_BY_BUS_BES_Strategies = ({ filteredBesList, priceType, strategySubName,
-    minProfitToFilter,
-    isProfitEnoughFn,
-    min_time_to_settlement = -Infinity, max_time_to_settlement = Infinity,
-    minStockPriceToSarBeSar = -Infinity, maxStockPriceToSarBeSar = Infinity,
-    minVol = CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif = false, ...restConfig }) => {
-
-    const enrichedList = filteredBesList.map(bes => {
-
-
-        const { optionListOfSameDate, strategyPositions, maxLoss: maxLossOfBES, positions: besPositions } = bes;
-
+document.getElementById('addToWatcher').addEventListener('click', async () => {
+    try {
+        // ۱. تب فعال رو بگیر
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         
-        const strikes = strategyPositions.map(strategyPosition => strategyPosition.strikePrice);
+        // ۲. از تب فعلی داده‌ها رو بگیر (اگه نیاز داری)
+        const result = await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
 
-        // شمارش تعداد تکرار هر آیتم
-        const countMap = strikes.reduce((acc, item) => {
-            acc[item] = (acc[item] || 0) + 1;
-            return acc;
-        }, {});
+                const strategyInfo = window.omexLib?.getStrategyInfoForExport() || null;
+                if(!strategyInfo) return
 
-       // فقط آیتم‌هایی که دقیقاً یک بار ظاهر شده‌اند
-        const noRepeatedStrikes = strikes.filter(item => countMap[item] === 1);
-        const maxStrikePrice = Math.max(...noRepeatedStrikes);
-        const maxStrikeOption = strategyPositions.find(sp=>sp.strikePrice===maxStrikePrice);
+                const positions = strategyInfo.strategyPositionsForExport;
+                if(!positions) return
 
 
-        
+                const prepareForSerialization = (obj) => {
 
-        
+                    const result = { ...obj };
 
-
-
-
-
-
-
-
-        const lowerStrikePuts = optionListOfSameDate.filter(_option => {
-            if (!_option.isPut)
-                return false
-            if (_option.optionDetails?.strikePrice > maxStrikePrice)
-                return false
-            if (_option.symbol ===maxStrikeOption.symbol && maxStrikeOption.isPut && maxStrikeOption.isBuy)
-                return false
-
-            if (!_option.optionDetails.stockSymbolDetails) return false
-
-            return true
-        }
-        );
-
-
-        const allPossibleStrategies = lowerStrikePuts.reduce((_allPossibleStrategies, sellingPut) => {
-            const sellingPutPrice = getPriceOfAsset({
-                asset: sellingPut,
-                priceType,
-                sideType: 'SELL'
-            });
-
-            if (sellingPutPrice === 0) return _allPossibleStrategies
-
-            const quantityFactorOfsellingPut = Math.abs(maxLossOfBES / sellingPutPrice);
-
-
-            const strategyPositionsOfBESRatio_BY_BUS_BES = [
-                ...strategyPositions,
-                {
-                    ...sellingPut,
-                    isSell: true,
-                    getQuantity: () => 1 * quantityFactorOfsellingPut * 1.1,
-                    getRequiredMargin: () => {
-                        return (calculateOptionMargin({
-                            priceSpot: sellingPut.optionDetails.stockSymbolDetails.last,
-                            strikePrice: sellingPut.optionDetails.strikePrice,
-                            contractSize: 1000,
-                            optionPremium: sellingPut.last,
-                            optionType: sellingPut.isCall ? "call" : "put"
-                        })?.required || 0) / 1000;
+                    for (const [key, value] of Object.entries(result)) {
+                        if (typeof value === 'function') {
+                            const returnValue = value();
+                            // ذخیره تابع به صورت string
+                            result[key] = {
+                                __isFunction: true,
+                                __returnValue: returnValue,
+                                __functionString: `function() { return ${JSON.stringify(returnValue)}; }`
+                            };
+                        }
                     }
-                },
-            ]
 
 
-            const totalCost = totalCostCalculatorCommon({
-                strategyPositions:strategyPositionsOfBESRatio_BY_BUS_BES,
-                getPrice: (strategyPosition) => getPriceOfAsset({
-                    asset: strategyPosition,
-                    priceType,
-                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                })
-            });
+                    return result
 
-            const breakevenList = findBreakevenList({
-                positions: strategyPositionsOfBESRatio_BY_BUS_BES,
-                getPrice: (strategyPosition) => getPriceOfAsset({
-                    asset: strategyPosition,
-                    priceType,
-                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                })
-            });
+                }
+                
+                const positionsPrepareForSerialization = positions.map(position => {
+                    return prepareForSerialization(position)
+                });
 
-            const breakeven = breakevenList.length ? Math.max(...breakevenList) : null;
+                return {
 
-            const priceThatCauseMinProfit = Math.max(...strategyPositionsOfBESRatio_BY_BUS_BES.map(strategyPosition => strategyPosition.strikePrice)) * 1.2;
-            const minProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions:strategyPositionsOfBESRatio_BY_BUS_BES, stockPrice: priceThatCauseMinProfit });
-            const minProfitPercent = minProfit / Math.abs(totalCost);
+                    ...strategyInfo,
+                    positionsPrepareForSerialization
 
-            let isFullBodyProfitable, stockPriceToSarBeSarPercent;
-            if (!breakeven && quantityFactorOfsellingPut > 0) {
-                isFullBodyProfitable = true;
-            } else if (!breakeven) {
-                return _allPossibleStrategies
+                }
+               
+                
+            },
+            world: "MAIN"
+        });
+        
+        let strategyInfo = result[0]?.result;
+        if(!strategyInfo) return
+
+        // ۳. مستقیم از popup به watcher بفرست
+        chrome.runtime.sendMessage({
+            type: "addToWatcher",
+            payload: {
+                strategyInfo,
+                tabId: tab.id,
+                url: tab.url,
+                title: tab.title
             }
-            else {
-                if (!sellingPut?.optionDetails?.stockSymbolDetails?.last) return _allPossibleStrategies
-
-                stockPriceToSarBeSarPercent = (breakeven / sellingPut.optionDetails.stockSymbolDetails.last) - 1;
-                if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSar || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSar)
-                    return _allPossibleStrategies
+        }, (response) => {
+            if (chrome.runtime.lastError) {
+                console.error("❌ خطا:", chrome.runtime.lastError);
+            } else {
+                console.log("✅ پیام ارسال شد:", response);
             }
-
-
-
-            return _allPossibleStrategies.concat([{
-                option: {
-                    ...sellingPut
-                },
-                positions: [...besPositions, sellingPut],
-                strategyTypeTitle: "BESRatio_BY_BUS_BES",
-                expectedProfitNotif,
-                minProfitToFilter,
-                stockPriceToSarBeSarPercent,
-                isWholeProfitable: isFullBodyProfitable,
-                isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(minProfitPercent),
-                name: createStrategyName([...besPositions, sellingPut],),
-                // profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
-                profitPercent: minProfitPercent
-            }])
-
-
-
-
-        }, []);
-
-        return {
-            ...strategyPositions[0],
-            allPossibleStrategies
-        }
-
-
-    })
-
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
-
-    return {
-        enrichedList,
-        allStrategiesSorted: sortedStrategies,
-        strategyName: "BESRatio_BY_BUS_BES",
-        priceType,
-        min_time_to_settlement,
-        max_time_to_settlement,
-        minStockPriceToSarBeSar,
-        maxStockPriceToSarBeSar,
-        minVol,
-        expectedProfitNotif,
-        ...restConfig,
-        htmlTitle: configsToHtmlTitle({
-            strategyName: "BESRatio_BY_BUS_BES",
-            strategySubName,
-            priceType,
-            min_time_to_settlement,
-            max_time_to_settlement,
-            minStockPriceToSarBeSar,
-            maxStockPriceToSarBeSar,
-            minVol
-        })
+        });
+        
+    } catch (error) {
+        console.error("❌ خطا:", error);
     }
-}
+});
