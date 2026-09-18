@@ -6408,14 +6408,35 @@ const sortList = (list) => {
 
 
 
+const getUniquePositions = ({ strategyGroupInfoList }) => {
+
+  const uniqueInstruments = new Set();
+
+  strategyGroupInfoList.forEach(strategy => {
+    strategy.strategyPositions.forEach(pos => {
+      uniqueInstruments.add(pos.instrumentName);
+    });
+  });
+
+  return uniqueInstruments.size
+
+}
+
 
 
 /* ---------- render ---------- */
 function renderStrategies() {
+
+  
   strategyGroupInfoList= strategyGroupInfoList.map(strategyGroupInfo=>({...strategyGroupInfo,daysLeftToSettlement:strategyGroupInfo.strategyPositions.find(sp => sp.getDaysLeftToSettlement() !== null)?.getDaysLeftToSettlement()}))
 
   strategyGroupInfoList = sortList(strategyGroupInfoList);
   list.innerHTML = '';
+
+  const uniquePositionsCount = getUniquePositions({strategyGroupInfoList});
+
+
+  document.querySelector('#totalPositionsCount').innerHTML = uniquePositionsCount;
 
   strategyGroupInfoList.forEach((strategyGroupInfo, index) => {
     const box = document.createElement('div');

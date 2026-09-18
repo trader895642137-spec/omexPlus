@@ -32,7 +32,7 @@
       gap: 12px;
       flex-wrap: wrap;
       overflow: auto;
-      border: 1px solid;
+      border-top: 1px solid;
     }
 
     .strategy-box {
@@ -88,10 +88,13 @@
       height: 120px;
     }
     .has-alarm-profit{
-      border: 5px solid #4fcd4f;
+      border: 7px solid #00d820;
+      background: #f4fdf4;
+      
     }
     .has-error{
-      border: 5px solid red;
+      border: 7px solid red;
+      background: #f6dede;
     }
     .action-buttons-cnt{
       display: flex;
@@ -106,6 +109,11 @@
   <!-- <button id="addStrategyBtn">➕ افزودن استراتژی</button> -->
    <div class="action-buttons-cnt">
      <button id="saveGroupsBtn">ذخیره</button>
+     <div>
+      <label >تعداد موقعیت باز : </label>
+      <span id="totalPositionsCount"></span>
+
+     </div>
      <button style="margin-right: auto;" id="loadGroupsBtn">بازیابی</button>
 
     <label>
