@@ -4878,12 +4878,12 @@ const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
 
 
         strategy.rowLength = strategy.items.length;
-        strategy.items = Array.from(new Map(strategy.items.map(sItem => [sItem.instrumentId, sItem])).values());
+        const strategyItems = Array.from(new Map(strategy.items.map(sItem => [sItem.instrumentId, sItem])).values());
 
-        const hasAllInstrumentId = groupPositions.every(groupPosition => strategy.items.find(sItem => groupPosition && sItem && groupPosition.instrumentId === sItem.instrumentId && groupPosition.orderSide === sItem.side));
+        const hasAllInstrumentId = groupPositions.every(groupPosition => strategyItems.find(sItem => groupPosition && sItem && groupPosition.instrumentId === sItem.instrumentId && groupPosition.orderSide === sItem.side));
 
 
-        return hasAllInstrumentId && strategy.items.length === group.instrumentIds.length
+        return hasAllInstrumentId && strategyItems.length === group.instrumentIds.length
 
     });
 
