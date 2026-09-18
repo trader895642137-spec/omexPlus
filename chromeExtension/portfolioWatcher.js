@@ -1,5 +1,5 @@
 import { calculateExerciseCost, showNotification, totalCostCalculatorForPriceTypes } from "../common";
-import { calcOffsetProfitOfStrategy, isProfitEnough, isReachedToExpectedOffsetProfit, STRATEGY_NAME_PROFIT_CALCULATOR } from "../omex";
+import { calcOffsetProfitOfStrategy, hasCurrentQuantityIssue, isProfitEnough, isReachedToExpectedOffsetProfit, STRATEGY_NAME_PROFIT_CALCULATOR } from "../omex";
 import { showStrategyExerciseCostSummary } from "../strategyExerciseCostSummary";
 
 let lastDataReceivedAt = Date.now();
@@ -205,7 +205,7 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
 }
 
 
-const checkProfitPercentAndInform = ({ strategyGroupInfoList }) => {
+const checkAndInform = ({ strategyGroupInfoList }) => {
 
 
   
@@ -220,9 +220,21 @@ const checkProfitPercentAndInform = ({ strategyGroupInfoList }) => {
 
 
 
+    const hasQuantityIssue = hasCurrentQuantityIssue({
+      strategyPositions,
+      currentQuantityGetter : (sp)=> sp.getCurrentPositionQuantity(),
+      strategyQuantityGetter : (sp)=> sp.getQuantity(),
+    });
     
-    // strategyName
 
+    if(hasQuantityIssue){
+      !isSilentAllActive && showNotification({
+        title: 'تعداد بالانس نیست',
+        body: `${strategyPositions.map(_strategyPosition => _strategyPosition.instrumentName).join('-')}`,
+        tag: `currentPositionQuantityUnbalance`
+      });
+
+    }
 
     let hasAlarmProfit = false;
     
@@ -259,6 +271,7 @@ const checkProfitPercentAndInform = ({ strategyGroupInfoList }) => {
     }
 
     strategyGroupInfo.hasAlarmProfit = hasAlarmProfit;
+    strategyGroupInfo.hasQuantityIssue = hasQuantityIssue;
 
   }
 
@@ -278,7 +291,7 @@ try {
         lastDataReceivedAt = Date.now();
         strategyGroupInfoList = enrichStrategyGroupInfoListByInstrumentPrices(strategyGroupInfoList, list);
         renderStrategies();
-        checkProfitPercentAndInform({ strategyGroupInfoList })
+        checkAndInform({ strategyGroupInfoList })
       } catch (error) {
         notifyError(error, 'Watcher - دریافت قیمت‌ها');
       }
@@ -535,6 +548,7 @@ function renderStrategies() {
     box.className = 'strategy-box';
 
     strategyGroupInfo.hasAlarmProfit &&  box.classList.add('has-alarm-profit');
+    strategyGroupInfo.hasQuantityIssue &&  box.classList.add('has-error');
 
     const profitPercentByBestPrices = strategyGroupInfo?.openPositionProfitInfo?.profitPercentByBestPrices?.defaultQueue;
     const {

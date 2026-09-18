@@ -2359,26 +2359,37 @@ const highSumValueOfInsertedOrderInformer = ({ orderModalQuantityGetter,orderMod
     });
 }
 
+export const hasCurrentQuantityIssue = ({strategyPositions,currentQuantityGetter,strategyQuantityGetter})=>{
+
+
+    let prevRatio;
+    const hasQuantityIssue = strategyPositions.some(strategyPosition => {
+        const currentQuantity = currentQuantityGetter(strategyPosition);
+        const sumOfSameOptionStrategyQuantity = strategyPositions.filter(sp => sp.instrumentName === strategyPosition.instrumentName).reduce((sumOfQuantity, sp) => sumOfQuantity + strategyQuantityGetter(sp), 0);
+        const ratio = currentQuantity / sumOfSameOptionStrategyQuantity;
+        if(prevRatio!=null){
+            return  prevRatio != ratio
+        }else{
+            prevRatio = ratio;
+            return
+        }
+        
+    });
+
+    return hasQuantityIssue;
+
+}
+
 
 const quantityUnbalanceInformer = ({ orderModalQuantityGetter, informer, informCleaner }) => {
 
-    if (!strategyPositions[0].ordersModal) return
 
-    const position1ModalQuantity = orderModalQuantityGetter(strategyPositions[0]);
-    const position1InsertedQuantity = strategyPositions[0].getInsertedQuantity();
-    const p1Ratio = position1ModalQuantity / position1InsertedQuantity;
+    const hasModalInsertedQuantityIssue = hasCurrentQuantityIssue({
+        strategyPositions,
+        currentQuantityGetter : orderModalQuantityGetter,
+        strategyQuantityGetter :  (strategyPosition) => strategyPosition.getInsertedQuantity()
 
-
-    const hasModalInsertedQuantityIssue = strategyPositions.some(strategyPosition => {
-        if (!strategyPosition?.ordersModal) return true
-        const positionModalQuantity = orderModalQuantityGetter(strategyPosition);
-        const sumOfSameOptionInsertedQuantity = strategyPositions.filter(_position => _position.instrumentName === strategyPosition.instrumentName).reduce((sumOfQuantity, _position) => sumOfQuantity + _position.getInsertedQuantity(), 0);
-
-        const positionInsertedQuantity = sumOfSameOptionInsertedQuantity;
-        const ratio = positionModalQuantity / positionInsertedQuantity;
-        return p1Ratio != ratio
-    })
-
+    });
 
     if (hasModalInsertedQuantityIssue) {
         strategyPositions.forEach(informer);
