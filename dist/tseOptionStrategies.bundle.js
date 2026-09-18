@@ -12,6 +12,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   QueueScenario: () => (/* binding */ QueueScenario),
 /* harmony export */   TAX_FREE_SYMBOLS: () => (/* binding */ TAX_FREE_SYMBOLS),
 /* harmony export */   calcAveragePriceByExecutedOrders: () => (/* binding */ calcAveragePriceByExecutedOrders),
+/* harmony export */   calculateExerciseCost: () => (/* binding */ calculateExerciseCost),
 /* harmony export */   calculateOptionMargin: () => (/* binding */ calculateOptionMargin),
 /* harmony export */   configs: () => (/* binding */ configs),
 /* harmony export */   createDeferredPromise: () => (/* binding */ createDeferredPromise),
@@ -1026,6 +1027,23 @@ const  startMarketCountdown = ({
     update();
 
     timer = setInterval(update, 250);
+}
+
+
+const calculateExerciseCost =({strategyPositions, stockPrice}) => {
+    let total = 0;
+
+    for (const item of strategyPositions) {
+        const isCallBuyInMoney = item.isCall && item.isBuy && item.strikePrice < stockPrice;
+        const isPutSellInMoney = item.isPut && !item.isBuy && item.strikePrice > stockPrice;
+
+        if (isCallBuyInMoney || isPutSellInMoney) {
+            const qty = item.getCurrentPositionQuantity();
+            total += item.strikePrice * qty ;
+        }
+    }
+
+    return total;
 }
 
 /***/ }),

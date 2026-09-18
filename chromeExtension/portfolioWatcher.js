@@ -1,5 +1,6 @@
-import { showNotification, totalCostCalculatorForPriceTypes } from "../common";
+import { calculateExerciseCost, showNotification, totalCostCalculatorForPriceTypes } from "../common";
 import { calcOffsetProfitOfStrategy, isProfitEnough, isReachedToExpectedOffsetProfit, STRATEGY_NAME_PROFIT_CALCULATOR } from "../omex";
+import { showStrategyExerciseCostSummary } from "../strategyExerciseCostSummary";
 
 let lastDataReceivedAt = Date.now();
 const DATA_TIMEOUT = 10_000; // 10 seconds
@@ -168,7 +169,16 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
 
     
 
+    
+
+    
+
     try {
+      strategyGroupInfo.daysLeftToSettlement = strategyGroupInfo.strategyPositions.find(sp => sp.getDaysLeftToSettlement() !== null)?.getDaysLeftToSettlement();
+
+
+      strategyGroupInfo.exerciseCost = calculateExerciseCost({strategyPositions:strategyGroupInfo.strategyPositions,stockPrice:strategyGroupInfo.stockPrice});
+
       strategyGroupInfo.openPositionProfitInfo = STRATEGY_NAME_PROFIT_CALCULATOR.OTHERS({
         strategyPositions: strategyGroupInfo.strategyPositions,
         stockPrice: strategyGroupInfo.stockPrice,
@@ -206,7 +216,11 @@ const checkProfitPercentAndInform = ({ strategyGroupInfoList }) => {
     const strategyPositions = strategyGroupInfo.strategyPositions;
     const expectedProfit = strategyGroupInfo.expectedProfit;
     const profitPercentByBestPrices = strategyGroupInfo?.openPositionProfitInfo?.profitPercentByBestPrices?.defaultQueue;
-    const profitPercentOfCurrentPositionsByNearSettlementPrices = strategyGroupInfo.offsetProfitOfStrategy.profitPercentOfCurrentPositionsByNearSettlementPrices;
+    const {profitPercentOfCurrentPositionsByNearSettlementPrices} =  strategyGroupInfo?.offsetProfitOfStrategy ?? {};
+
+
+
+    
     // strategyName
 
 
@@ -414,6 +428,12 @@ loadBtn.addEventListener('click', () => {
 });
 
 
+
+document.getElementById("strategyExerciseCostSummary").addEventListener("click", () => {
+  showStrategyExerciseCostSummary(strategyGroupInfoList);
+});
+
+
 /* ---------- modal ---------- */
 // addBtn.addEventListener('click', () => {
 //   input.value = '';
@@ -461,8 +481,53 @@ const openOmexStrategyTab = ({strategyName}) => {
   window.open(fullURL);
 }
 
+
+
+
+const sortList = (list) => {
+    const sortType = document.querySelector(
+        'input[name="sortType"]:checked'
+    )?.value;
+
+    if (sortType === 'positionCost') {
+        list.sort((a, b) => {
+            const costA = Math.abs(
+                a.offsetProfitOfStrategy?.totalCurrentPositionCost ?? 0
+            );
+
+            const costB = Math.abs(
+                b.offsetProfitOfStrategy?.totalCurrentPositionCost ?? 0
+            );
+
+            return costB - costA;
+        });
+    }
+
+    if (sortType === 'daysLeft') {
+
+        
+        list.sort((a, b) => {
+            return (
+                (a.daysLeftToSettlement ?? Infinity) -
+                (b.daysLeftToSettlement ?? Infinity)
+            );
+        });
+
+        
+    }
+
+    return list;
+};
+
+
+
+
+
 /* ---------- render ---------- */
 function renderStrategies() {
+  strategyGroupInfoList= strategyGroupInfoList.map(strategyGroupInfo=>({...strategyGroupInfo,daysLeftToSettlement:strategyGroupInfo.strategyPositions.find(sp => sp.getDaysLeftToSettlement() !== null)?.getDaysLeftToSettlement()}))
+
+  strategyGroupInfoList = sortList(strategyGroupInfoList);
   list.innerHTML = '';
 
   strategyGroupInfoList.forEach((strategyGroupInfo, index) => {
@@ -472,19 +537,56 @@ function renderStrategies() {
     strategyGroupInfo.hasAlarmProfit &&  box.classList.add('has-alarm-profit');
 
     const profitPercentByBestPrices = strategyGroupInfo?.openPositionProfitInfo?.profitPercentByBestPrices?.defaultQueue;
+    const {
+        totalCurrentPositionCost,
+        totalOffsetGainOfCurrentPositionObj,
+        profitLossByOffsetOrdersPercent,
+        unreliableTotalCostOfCurrentPositions, profitPercentOfCurrentPositionsByNearSettlementPrices }  = strategyGroupInfo?.offsetProfitOfStrategy ?? {};
 
     box.innerHTML = `
       <h4 class="title">${strategyGroupInfo?.strategyName}</h4>
 
-      ${strategyGroupInfo.offsetProfitOfStrategy?.profitLossByOffsetOrdersPercent!=null ? `<div style="margin-right: 10px;">
+
+      <div >
+        <label>تا سررسید: </label>
+        <span >${strategyGroupInfo.daysLeftToSettlement}
+        </span>
+      </div>
+
+
+      
+
+
+      
+
+      <div >
+        <label>سرمایه درگیر: </label>
+        <span style="color:${totalCurrentPositionCost >= 0 ? 'green' : 'red'};">${totalCurrentPositionCost?.toLocaleString('en-US', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        })}
+        </span>
+      </div>
+
+      <div >
+        <label>سود بالقوه: </label>
+        <span style="color:${profitPercentOfCurrentPositionsByNearSettlementPrices >= 0 ? 'green' : 'red'};">${profitPercentOfCurrentPositionsByNearSettlementPrices?.toLocaleString('en-US', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2
+        })}
+        </span>
+      </div>
+
+
+      ${profitLossByOffsetOrdersPercent!=null ? `<div >
       <label>موقعیت باز: </label>
-      <span style="color:${strategyGroupInfo?.offsetProfitOfStrategy?.profitLossByOffsetOrdersPercent >= 0 ? 'green' : 'red'};">${strategyGroupInfo.offsetProfitOfStrategy.profitLossByOffsetOrdersPercent.toLocaleString('en-US', {
-                    minimumFractionDigits: 1,
-                    maximumFractionDigits: 1
+      <span style="color:${profitLossByOffsetOrdersPercent >= 0 ? 'green' : 'red'};">${profitLossByOffsetOrdersPercent.toLocaleString('en-US', {
+                    minimumFractionDigits: 0,
+                    maximumFractionDigits: 0
                 })}</span>
                 
       </div>`:``}
-      ${profitPercentByBestPrices ?`<div style="margin-right: 10px;"> 
+      ${profitPercentByBestPrices ?`<div > 
         <label>موقعیت جدید: </label>
         <span style="color:${profitPercentByBestPrices >= 0 ? 'green' : 'red'};"> 
           ${profitPercentByBestPrices.toLocaleString('en-US', {
@@ -494,6 +596,18 @@ function renderStrategies() {
         </span>
                
       </div>`:``}
+
+
+      <div >
+        <label>هزینه اعمال: </label>
+        <span >${strategyGroupInfo?.exerciseCost?.toLocaleString('en-US', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        })}
+        </span>
+      </div>
+
+
       <button class="delete-btn">حذف</button>
       <button class="silent-btn">سکوت</button>
     `;
@@ -550,3 +664,12 @@ function setupHoldToDelete(btn, index) {
   btn.addEventListener('mouseleave', cancel);
   btn.addEventListener('touchend', cancel);
 }
+
+
+const radios = document.querySelectorAll('input[name="sortType"]');
+  
+  radios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+      renderStrategies()
+    });
+  });

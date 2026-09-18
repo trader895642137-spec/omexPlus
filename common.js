@@ -988,3 +988,20 @@ export const  startMarketCountdown = ({
 
     timer = setInterval(update, 250);
 }
+
+
+export const calculateExerciseCost =({strategyPositions, stockPrice}) => {
+    let total = 0;
+
+    for (const item of strategyPositions) {
+        const isCallBuyInMoney = item.isCall && item.isBuy && item.strikePrice < stockPrice;
+        const isPutSellInMoney = item.isPut && !item.isBuy && item.strikePrice > stockPrice;
+
+        if (isCallBuyInMoney || isPutSellInMoney) {
+            const qty = item.getCurrentPositionQuantity();
+            total += item.strikePrice * qty ;
+        }
+    }
+
+    return total;
+}
