@@ -1071,6 +1071,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   isReachedToExpectedOffsetProfit: () => (/* binding */ isReachedToExpectedOffsetProfit),
 /* harmony export */   openAllGroupsInNewTabs: () => (/* binding */ openAllGroupsInNewTabs),
 /* harmony export */   openGroupInNewTab: () => (/* binding */ openGroupInNewTab),
+/* harmony export */   openStrategyExerciseCostSummaryModal: () => (/* binding */ openStrategyExerciseCostSummaryModal),
 /* harmony export */   portfolioLogger: () => (/* binding */ portfolioLogger),
 /* harmony export */   showToast: () => (/* binding */ showToast),
 /* harmony export */   showVariableMargin: () => (/* binding */ showVariableMargin),
@@ -1081,6 +1082,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _omexApi_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4);
 /* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(5);
 /* harmony import */ var _createIntervalLogger_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(7);
+/* harmony import */ var _strategyExerciseCostSummary_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(8);
 
 
 
@@ -1091,6 +1093,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 ;
+
 
 
  
@@ -2383,6 +2386,14 @@ const getStrategyInfoForExport = ()=>{
     
     return prepareStrategyForExport({strategyPositions})
 
+}
+
+
+const openStrategyExerciseCostSummaryModal = async ()=>{
+    const  groupStrategyInfoList = await enrichGroupByStrategyInfo();
+    console.log(groupStrategyInfoList);
+    
+    (0,_strategyExerciseCostSummary_js__WEBPACK_IMPORTED_MODULE_4__.showStrategyExerciseCostSummary)(groupStrategyInfoList.map(groupStrategyInfo=>groupStrategyInfo.strategy).filter(Boolean));
 }
 
 const getAllGroupStrategyListForExport = async ()=>{
@@ -4020,7 +4031,8 @@ const enrichGroupByStrategyInfo = async ()=>{
         strategy.baseInstrumentId = baseInstrumentId;
         strategy.strategyPositions = createPositionObjectArray(strategy.items);
         strategy.stockPrice = stockPriceList.find(asset=>asset.instrumentId===baseInstrumentId)?.pDrCotVal;
-
+        strategy.daysLeftToSettlement = strategy.strategyPositions.find(sp => sp.getDaysLeftToSettlement() !== null)?.getDaysLeftToSettlement();
+        strategy.exerciseCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.calculateExerciseCost)({strategyPositions:strategy.strategyPositions,stockPrice:strategy.stockPrice});
 
         return {...group,strategy}
     });

@@ -1126,7 +1126,8 @@ function flashTitle(message = "🔔 توجه!") {
 /***/ }),
 /* 5 */,
 /* 6 */,
-/* 7 */
+/* 7 */,
+/* 8 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -13381,7 +13382,7 @@ const  moment = function(e) {
 
 
 /***/ }),
-/* 8 */
+/* 9 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -13453,7 +13454,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -13587,7 +13588,7 @@ function findBreakevenList({positions,getPrice}) {
 // console.log(findBreakevenList({positions:examplePositions, getPrice:(p)=>p.getPrice()}));
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
@@ -14157,12 +14158,12 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   openNewTab: () => (/* binding */ openNewTab),
 /* harmony export */   openPortfolioWatcher: () => (/* binding */ openPortfolioWatcher)
 /* harmony export */ });
-/* harmony import */ var _jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(7);
-/* harmony import */ var _hookFetch_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(8);
+/* harmony import */ var _jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(8);
+/* harmony import */ var _hookFetch_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(9);
 /* harmony import */ var _desktopNotificationCheck_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(3);
 /* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(1);
-/* harmony import */ var _findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(9);
-/* harmony import */ var _ignoreRule_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(10);
+/* harmony import */ var _findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(10);
+/* harmony import */ var _ignoreRule_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(11);
 
 
 

@@ -11,7 +11,8 @@ import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalc
     hasBreakevenExecutedPriceDiffIssue,
     hasGreaterRatio,
     QueueScenario,
-    startMarketCountdown} from './common.js';
+    startMarketCountdown,
+    calculateExerciseCost} from './common.js';
 import { isInstrumentNameOfOption,  OMEXApi } from './omexApi.js';
 
 
@@ -21,6 +22,7 @@ export { configs } from './common.js';
 
 import './desktopNotificationCheck.js'
 import { createIntervalLogger } from './createIntervalLogger.js';
+import { showStrategyExerciseCostSummary } from './strategyExerciseCostSummary.js';
 
 export {silentNotificationForMoment} from './common.js'; 
 
@@ -1312,6 +1314,14 @@ export const getStrategyInfoForExport = ()=>{
     
     return prepareStrategyForExport({strategyPositions})
 
+}
+
+
+export const openStrategyExerciseCostSummaryModal = async ()=>{
+    const  groupStrategyInfoList = await enrichGroupByStrategyInfo();
+    console.log(groupStrategyInfoList);
+    
+    showStrategyExerciseCostSummary(groupStrategyInfoList.map(groupStrategyInfo=>groupStrategyInfo.strategy).filter(Boolean));
 }
 
 export const getAllGroupStrategyListForExport = async ()=>{
@@ -2949,7 +2959,8 @@ export const enrichGroupByStrategyInfo = async ()=>{
         strategy.baseInstrumentId = baseInstrumentId;
         strategy.strategyPositions = createPositionObjectArray(strategy.items);
         strategy.stockPrice = stockPriceList.find(asset=>asset.instrumentId===baseInstrumentId)?.pDrCotVal;
-
+        strategy.daysLeftToSettlement = strategy.strategyPositions.find(sp => sp.getDaysLeftToSettlement() !== null)?.getDaysLeftToSettlement();
+        strategy.exerciseCost = calculateExerciseCost({strategyPositions:strategy.strategyPositions,stockPrice:strategy.stockPrice});
 
         return {...group,strategy}
     });
