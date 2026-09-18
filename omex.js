@@ -2586,6 +2586,12 @@ const injectStyles = () => {
             .current-position-quantity-unbalance-error{
                 border-bottom: 2px solid red !important;
             }
+            client-option-instruments-favorites-item-header{
+                background-color: #34396d !important;
+            }
+            client-option-instruments-favorites-item-header main{
+                color: yellow !important;;
+            }
 
             client-option-instruments-favorites-item-header  main > span{
                 word-wrap: break-word !important;
