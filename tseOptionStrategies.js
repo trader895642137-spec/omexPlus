@@ -116,7 +116,7 @@ const baseQuantity = 10 * cSize;
 const CONSTS = {
 
     DEFAULTS: {
-        MIN_VOL: 10 * 1000 * 1000,
+        MIN_VOL: 0,
     },
 
     COMMISSION_FACTOR: {

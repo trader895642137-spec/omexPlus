@@ -2868,7 +2868,6 @@ const setStrategyTitleOnUrl = ({strategyTitle,_window=domContextWindow}) => {
 const getAndSetStrategyTitleOnUrl = ()=>{
 
     const strategyTitle = getStrategyName();
-    console.log(strategyTitle)
     setStrategyTitleOnUrl({strategyTitle});
 }
 
