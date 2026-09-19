@@ -876,6 +876,13 @@ export const isBuyQueue = (stock) => {
   return isPriceNearCeil && isQueue
 
 }
+export const isSellQueue = (stock) => {
+  if(!stock?.bestSell || !stock.beforeTodayPrice || !stock.bestSellQ) return 
+  const isPriceNearFloor = stock.bestSell / stock.beforeTodayPrice < 0.974;
+  const isQueue = (stock.bestSellQ * stock.bestSell) > 100000000000;
+  return isPriceNearFloor && isQueue
+
+}
 
 
 export const  startMarketCountdown = ({

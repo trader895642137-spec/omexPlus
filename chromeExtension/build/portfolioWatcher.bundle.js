@@ -23,6 +23,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   isBuyQueue: () => (/* binding */ isBuyQueue),
 /* harmony export */   isETF: () => (/* binding */ isETF),
 /* harmony export */   isHourMinGreaterThan: () => (/* binding */ isHourMinGreaterThan),
+/* harmony export */   isSellQueue: () => (/* binding */ isSellQueue),
 /* harmony export */   isTaxFree: () => (/* binding */ isTaxFree),
 /* harmony export */   mainTotalOffsetGainCalculator: () => (/* binding */ mainTotalOffsetGainCalculator),
 /* harmony export */   profitPercentCalculator: () => (/* binding */ profitPercentCalculator),
@@ -913,6 +914,13 @@ const isBuyQueue = (stock) => {
   const isPriceNearCeil = stock.bestBuy / stock.beforeTodayPrice > 1.026;
   const isQueue = (stock.bestBuyQ * stock.bestBuy) > 100000000000;
   return isPriceNearCeil && isQueue
+
+}
+const isSellQueue = (stock) => {
+  if(!stock?.bestSell || !stock.beforeTodayPrice || !stock.bestSellQ) return 
+  const isPriceNearFloor = stock.bestSell / stock.beforeTodayPrice < 0.974;
+  const isQueue = (stock.bestSellQ * stock.bestSell) > 100000000000;
+  return isPriceNearFloor && isQueue
 
 }
 
@@ -5871,8 +5879,6 @@ var __webpack_exports__ = {};
 __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _common__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(2);
 /* harmony import */ var _omex__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3);
-/* harmony import */ var _strategyExerciseCostSummary__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(8);
-
 
 
 
@@ -6033,9 +6039,45 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
       const tradedInstrument = tradedInstrumentList.find(tradedInstrument=>tradedInstrument.instrumentName.replaceAll('ي', 'ی') === strategyPosition.instrumentName.replaceAll('ي', 'ی'));
 
       
-      strategyPosition.getBestOffsetPrice = ()=> (strategyPosition.isBuy ? tradedInstrument?.bestBuy : tradedInstrument?.bestSell) || NaN
+      strategyPosition.getBestOffsetPrice = () => {
+        if (!strategyPosition.isOption) {
+          const isOffsetDirectionQueue = strategyPosition.isBuy
+            ? (0,_common__WEBPACK_IMPORTED_MODULE_0__.isSellQueue)(tradedInstrument)
+            : (0,_common__WEBPACK_IMPORTED_MODULE_0__.isBuyQueue)(tradedInstrument);
 
-      strategyPosition.getBestOpenMorePrice = ()=>(strategyPosition.isBuy ? tradedInstrument?.bestSell : tradedInstrument?.bestBuy) || NaN;
+          if (isOffsetDirectionQueue) {
+            return NaN;
+          }
+        }
+
+        return (
+          strategyPosition.isBuy
+            ? tradedInstrument?.bestBuy
+            : tradedInstrument?.bestSell
+        ) || NaN;
+      };
+
+
+
+      strategyPosition.getBestOpenMorePrice = () => {
+        if (!strategyPosition.isOption) {
+          const isSameDirectionQueue = strategyPosition.isBuy
+            ? (0,_common__WEBPACK_IMPORTED_MODULE_0__.isBuyQueue)(tradedInstrument)
+            : (0,_common__WEBPACK_IMPORTED_MODULE_0__.isSellQueue)(tradedInstrument);
+
+          if (isSameDirectionQueue) {
+            return NaN;
+          }
+        }
+
+        return (
+          strategyPosition.isBuy
+            ? tradedInstrument?.bestSell
+            : tradedInstrument?.bestBuy
+        ) || NaN;
+      };
+
+
 
       return strategyPosition
 
@@ -6316,9 +6358,7 @@ loadBtn.addEventListener('click', () => {
 
 
 
-document.getElementById("strategyExerciseCostSummary").addEventListener("click", () => {
-  (0,_strategyExerciseCostSummary__WEBPACK_IMPORTED_MODULE_2__.showStrategyExerciseCostSummary)(strategyGroupInfoList);
-});
+
 
 
 /* ---------- modal ---------- */

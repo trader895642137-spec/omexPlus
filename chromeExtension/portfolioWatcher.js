@@ -1,6 +1,5 @@
-import { calculateExerciseCost, showNotification, totalCostCalculatorForPriceTypes } from "../common";
+import { calculateExerciseCost, isBuyQueue, isSellQueue, showNotification, totalCostCalculatorForPriceTypes } from "../common";
 import { calcOffsetProfitOfStrategy, hasCurrentQuantityIssue, isProfitEnough, isReachedToExpectedOffsetProfit, STRATEGY_NAME_PROFIT_CALCULATOR } from "../omex";
-import { showStrategyExerciseCostSummary } from "../strategyExerciseCostSummary";
 
 let lastDataReceivedAt = Date.now();
 const DATA_TIMEOUT = 10_000; // 10 seconds
@@ -159,9 +158,45 @@ const enrichStrategyGroupInfoListByInstrumentPrices = (strategyGroupInfoList,tra
       const tradedInstrument = tradedInstrumentList.find(tradedInstrument=>tradedInstrument.instrumentName.replaceAll('ي', 'ی') === strategyPosition.instrumentName.replaceAll('ي', 'ی'));
 
       
-      strategyPosition.getBestOffsetPrice = ()=> (strategyPosition.isBuy ? tradedInstrument?.bestBuy : tradedInstrument?.bestSell) || NaN
+      strategyPosition.getBestOffsetPrice = () => {
+        if (!strategyPosition.isOption) {
+          const isOffsetDirectionQueue = strategyPosition.isBuy
+            ? isSellQueue(tradedInstrument)
+            : isBuyQueue(tradedInstrument);
 
-      strategyPosition.getBestOpenMorePrice = ()=>(strategyPosition.isBuy ? tradedInstrument?.bestSell : tradedInstrument?.bestBuy) || NaN;
+          if (isOffsetDirectionQueue) {
+            return NaN;
+          }
+        }
+
+        return (
+          strategyPosition.isBuy
+            ? tradedInstrument?.bestBuy
+            : tradedInstrument?.bestSell
+        ) || NaN;
+      };
+
+
+
+      strategyPosition.getBestOpenMorePrice = () => {
+        if (!strategyPosition.isOption) {
+          const isSameDirectionQueue = strategyPosition.isBuy
+            ? isBuyQueue(tradedInstrument)
+            : isSellQueue(tradedInstrument);
+
+          if (isSameDirectionQueue) {
+            return NaN;
+          }
+        }
+
+        return (
+          strategyPosition.isBuy
+            ? tradedInstrument?.bestSell
+            : tradedInstrument?.bestBuy
+        ) || NaN;
+      };
+
+
 
       return strategyPosition
 
@@ -442,9 +477,7 @@ loadBtn.addEventListener('click', () => {
 
 
 
-document.getElementById("strategyExerciseCostSummary").addEventListener("click", () => {
-  showStrategyExerciseCostSummary(strategyGroupInfoList);
-});
+
 
 
 /* ---------- modal ---------- */

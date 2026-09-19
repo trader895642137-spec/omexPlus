@@ -24,6 +24,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   isBuyQueue: () => (/* binding */ isBuyQueue),
 /* harmony export */   isETF: () => (/* binding */ isETF),
 /* harmony export */   isHourMinGreaterThan: () => (/* binding */ isHourMinGreaterThan),
+/* harmony export */   isSellQueue: () => (/* binding */ isSellQueue),
 /* harmony export */   isTaxFree: () => (/* binding */ isTaxFree),
 /* harmony export */   mainTotalOffsetGainCalculator: () => (/* binding */ mainTotalOffsetGainCalculator),
 /* harmony export */   profitPercentCalculator: () => (/* binding */ profitPercentCalculator),
@@ -914,6 +915,13 @@ const isBuyQueue = (stock) => {
   const isPriceNearCeil = stock.bestBuy / stock.beforeTodayPrice > 1.026;
   const isQueue = (stock.bestBuyQ * stock.bestBuy) > 100000000000;
   return isPriceNearCeil && isQueue
+
+}
+const isSellQueue = (stock) => {
+  if(!stock?.bestSell || !stock.beforeTodayPrice || !stock.bestSellQ) return 
+  const isPriceNearFloor = stock.bestSell / stock.beforeTodayPrice < 0.974;
+  const isQueue = (stock.bestSellQ * stock.bestSell) > 100000000000;
+  return isPriceNearFloor && isQueue
 
 }
 
