@@ -4337,6 +4337,7 @@ const Run = async (_window = window) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   GetBaseDerivativeInstruments: () => (/* binding */ GetBaseDerivativeInstruments),
 /* harmony export */   OMEXApi: () => (/* binding */ OMEXApi),
 /* harmony export */   cacheItemsTemporarily: () => (/* binding */ cacheItemsTemporarily),
 /* harmony export */   calculateSumOfMoneyAndAssets: () => (/* binding */ calculateSumOfMoneyAndAssets),
@@ -4362,6 +4363,7 @@ const origin = window.location.origin;
 const redOrigin = origin.replace('.tsetab','-red.tsetab');
 const deltaOrigin = origin.replace('.tsetab','-delta.tsetab');
 
+// TODO: // https://khobregan-red.tsetab.ir
 
 
 const getWalletInfo = async () => {
@@ -4447,6 +4449,35 @@ const getStockPortfolioList = async () => {
 
     return list
 }
+
+const GetBaseDerivativeInstruments = async () => {
+
+    // https://khobregan-red.tsetab.ir/api/PublicMessages/GetBaseDerivativeInstruments
+    const list = await fetch(`${redOrigin}/api/PublicMessages/GetBaseDerivativeInstruments`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": "",
+            "priority": "u=1, i",
+            "sec-ch-ua": "\"Chromium\";v=\"142\", \"Google Chrome\";v=\"142\", \"Not_A Brand\";v=\"99\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "same-site"
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "GET",
+        "mode": "cors",
+        "credentials": "include"
+    }).then(response => response.json()).then(res => res.response?.data);
+
+    return list
+}
+
+
 
 
 function formatDateToYyyymmdd(date) {
@@ -5426,7 +5457,8 @@ const OMEXApi = {
     getVariableMargin,
     getCustomerOptionStrategyEstimationWithItems,
     findStrategyOfGroup,
-    getStockPricesData
+    getStockPricesData,
+    GetBaseDerivativeInstruments
 }
 
 /***/ }),
