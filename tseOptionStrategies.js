@@ -806,7 +806,7 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth,
         enrichedList = enrichedList.concat(enrichedListOfStock)
 
     }
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -1014,7 +1014,7 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth,
         enrichedList = enrichedList.concat(enrichedListOfStock)
 
     }
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -1189,7 +1189,7 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -1389,7 +1389,7 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -1575,7 +1575,7 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
 
 
@@ -1791,7 +1791,7 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -2024,7 +2024,7 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -2259,7 +2259,7 @@ const calcSyntheticCoveredCallStrategies = (list,
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -2571,7 +2571,7 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -3036,7 +3036,7 @@ const calcIRON_BUTT_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainCh
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -3375,7 +3375,7 @@ const calcIRON_BUTT_CONDOR_BUPS_Strategies = (list, {priceType,
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -3711,7 +3711,7 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -3999,7 +3999,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -4286,7 +4286,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -4580,7 +4580,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -4871,7 +4871,7 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -5097,7 +5097,7 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -5283,7 +5283,7 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -5490,7 +5490,7 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -5701,7 +5701,7 @@ const calcBECS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -6292,7 +6292,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -6491,7 +6491,7 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -6617,7 +6617,7 @@ const createAndCalcBUS_BES_Strategy = ({ buyingCall, sellingCall, buyingPut, sel
             return null
         
     } 
-    
+
     profitPercent = currentPriceProfit / Math.abs(totalCost);
 
 
@@ -6875,7 +6875,7 @@ const calcBUS_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -7044,7 +7044,7 @@ const calcBUCS_BEPS_LongPutStrategies = ({ filteredBusList, priceType, strategyS
 
     })
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -7225,7 +7225,7 @@ const calcBESRatio_BY_BUS_BES_Strategies = ({ filteredBesList, priceType, strate
 
     })
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -7490,7 +7490,7 @@ const calcBUS_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -7754,7 +7754,7 @@ const calcBES_With_BUCS_BEPSStrategies = (list, {priceType, expectedProfitPerMon
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -8026,7 +8026,7 @@ const calcBES_With_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMon
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -8180,7 +8180,7 @@ const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMo
         enrichedList = enrichedList.concat(enrichedListOfStock)
 
     }
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -8308,7 +8308,7 @@ const calcBuyStockByPutStrategies = (list, {priceType, expectedProfitPerMonth,
         enrichedList = enrichedList.concat(enrichedListOfStock)
 
     }
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -8560,7 +8560,7 @@ const calcSellCallNokoolGainStrategies = (list, { priceType, expectedProfitPerMo
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -8811,7 +8811,7 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -9069,7 +9069,7 @@ const calcBECS_Long_CallStrategies = (list, {priceType, strategySubName,
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -9325,7 +9325,7 @@ const calcBEPS_Long_CallStrategies = (list, {priceType, strategySubName,
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
@@ -9583,7 +9583,7 @@ const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName,
 
     }
 
-    const sortedStrategies = getAllPossibleStrategiesSorted(enrichedList);
+    
 
     return {
         
