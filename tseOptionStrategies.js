@@ -249,13 +249,50 @@ const getIgnoreStrategyNames = ()=>{
 
 const showNotificationForOpportunities = (opportunities)=>{
 
-    const foundSpecialProfit = opportunities.find(o=>['BECS','BEPS'].includes(o.strategyTypeTitle)  && o.profitPercent>1);
+
+    let foundSpecialProfit;
+    let foundBoxProfit;
+
+    for (const o of opportunities) {
+        if (
+            !foundSpecialProfit &&
+            ['BECS', 'BEPS'].includes(o.strategyTypeTitle) &&
+            o.profitPercent > 1
+        ) {
+            foundSpecialProfit = o;
+        }
+
+        if (
+            !foundBoxProfit &&
+            ['BOX', 'BOX_BUPS_BECS'].includes(o.strategyTypeTitle) &&
+            o.profitPercent > 0.08
+        ) {
+            foundBoxProfit = o;
+        }
+
+        if (foundSpecialProfit) {
+            break;
+        }
+    }
+
+
 
     if(foundSpecialProfit){
         const  strategyFullName = `${foundSpecialProfit.strategyTypeTitle}@${foundSpecialProfit.positions.map(opt=>opt.symbol).join('-')}` ;
         showNotification({
             title: 'سود فیلتر ویژه',
             body: `${foundSpecialProfit.strategyTypeTitle}@${foundSpecialProfit.name} %${((foundSpecialProfit.profitPercent) * 100).toFixed()}`,
+            copyToClipboardText: strategyFullName,
+            tag: `profit`,
+        });
+        console.log(strategyFullName)
+
+    }else if(foundBoxProfit){
+
+         const  strategyFullName = `${foundBoxProfit.strategyTypeTitle}@${foundBoxProfit.positions.map(opt=>opt.symbol).join('-')}` ;
+        showNotification({
+            title: 'سود BOX ویژه',
+            body: `${foundBoxProfit.strategyTypeTitle}@${foundBoxProfit.name} %${((foundBoxProfit.profitPercent) * 100).toFixed()}`,
             copyToClipboardText: strategyFullName,
             tag: `profit`,
         });
