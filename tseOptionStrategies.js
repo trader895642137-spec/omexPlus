@@ -6600,12 +6600,12 @@ const createAndCalcBUS_BES_Strategy = ({ buyingCall, sellingCall, buyingPut, sel
     const maxProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxProfit });
     const maxLoss = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxLoss });
 
+    if (maxProfit <= 0) return null
 
     const currentPriceProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: buyingPut.optionDetails.stockSymbolDetails.last });
     let profitPercent;
 
 
-    if (maxProfit <= 0) return null
 
 
     let stockPriceToSarBeSarPercent;
@@ -6615,13 +6615,10 @@ const createAndCalcBUS_BES_Strategy = ({ buyingCall, sellingCall, buyingPut, sel
 
         if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSar || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSar)
             return null
-
-        profitPercent = maxProfit / Math.abs(totalCost);
-    } else {
-
-        profitPercent = currentPriceProfit / Math.abs(totalCost);
-    }
-
+        
+    } 
+    
+    profitPercent = currentPriceProfit / Math.abs(totalCost);
 
 
 
