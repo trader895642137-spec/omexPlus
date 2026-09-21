@@ -9696,27 +9696,28 @@ const filterStrategiesByConfig = ({
 
     });
 
-    if (minProfitToFilter != null) {
-        allStrategies = allStrategies.map(strategy => ({ ...strategy, minProfitToFilter }))
-    }
-    if (expectedProfitPerMonth != null) {
-        allStrategies = allStrategies.map(strategy => ({ ...strategy, expectedProfitPerMonth }))
-    }
-    if (isProfitEnoughFn != null) {
-        allStrategies = allStrategies.map(strategy => ({ ...strategy, isProfitEnough: isProfitEnoughFn(strategy) }))
-    }
-    if (expectedProfitNotif != null) {
-        allStrategies = allStrategies.map(strategy => ({ ...strategy, expectedProfitNotif }));
-
-    }
-    
-    if (strategyTypeTitle != null) {
-        allStrategies = allStrategies.map(strategy => ({ ...strategy, strategyTypeTitle }));
-
-    }
 
 
 
+    const hasMinProfit = minProfitToFilter != null;
+    const hasExpectedProfit = expectedProfitPerMonth != null;
+    const hasIsProfitEnough = isProfitEnoughFn != null;
+    const hasNotif = expectedProfitNotif != null;
+    const hasStrategyType = strategyTypeTitle != null;
+
+
+
+    if (hasMinProfit || hasExpectedProfit || hasIsProfitEnough || hasNotif || hasStrategyType) {
+        allStrategies = allStrategies.map(strategy => {
+            const newStrategy = { ...strategy };
+            if (hasMinProfit) newStrategy.minProfitToFilter = minProfitToFilter;
+            if (hasExpectedProfit) newStrategy.expectedProfitPerMonth = expectedProfitPerMonth;
+            if (hasIsProfitEnough) newStrategy.isProfitEnough = isProfitEnoughFn(strategy);
+            if (hasNotif) newStrategy.expectedProfitNotif = expectedProfitNotif;
+            if (hasStrategyType) newStrategy.strategyTypeTitle = strategyTypeTitle;
+            return newStrategy;
+        });
+    }
 
 
     return {
