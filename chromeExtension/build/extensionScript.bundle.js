@@ -64,7 +64,13 @@ const simpleNotifyError = (error, context = '') => {
 document.getElementById('mainButton').addEventListener('click', () => {
 
 
+    chrome.runtime.sendMessage({
+        type: 'START_AVERAGE_MONITORING'
+    });
+
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+
+        
 
         chrome.scripting.executeScript({
             target: { tabId: tabs[0].id },
@@ -72,10 +78,7 @@ document.getElementById('mainButton').addEventListener('click', () => {
             world: "MAIN"
         }, async () => {
 
-            chrome.runtime.sendMessage({
-                type: "CHECK_JOB",
-                tabId: tabs[0].id
-            });
+            
 
             // await new Promise(r => setTimeout(r, 3000)); 
             chrome.scripting.executeScript({

@@ -756,23 +756,46 @@ export const isETF = (instrumentName)=>{
 
 
 
+export const hasSignificantPriceMismatch = (price1, price2) => {
+    const num1 = Number(price1);
+    const num2 = Number(price2);
+
+    if (!Number.isFinite(num1) || !Number.isFinite(num2)) {
+        return false;
+    }
+
+    const diff = Math.abs(num1 - num2);
+
+    // تعداد ارقام قسمت صحیح
+    const maxIntegerDigits = Math.max(
+        Math.abs(Math.trunc(num1)).toString().length,
+        Math.abs(Math.trunc(num2)).toString().length
+    );
+
+    // کمتر از 3 رقم
+    if (maxIntegerDigits < 3) {
+        return diff > 1;
+    }
+
+    // 3 رقم یا بیشتر:
+    // اختلاف نسبت به عدد کوچک‌تر
+    const smaller = Math.min(Math.abs(num1), Math.abs(num2));
+
+    // جلوگیری از تقسیم بر صفر
+    if (smaller === 0) {
+        return diff > 1;
+    }
+
+    return (diff / smaller) > 0.03;
+};
+
 export const hasBreakevenExecutedPriceDiffIssue =({executedPrice,breakEvenPrice})=>{
 
-
-  const diffPrices = Math.abs(breakEvenPrice - executedPrice);
-  const breakEvenPriceNumLength = breakEvenPrice.toString().length;
-  const hasIssue = () => {
-    if ((breakEvenPriceNumLength > 3) && ((diffPrices / executedPrice) > 0.03)) {
-      return true
-    } else if ((breakEvenPriceNumLength < 3) && (diffPrices > 1)) {
-      return true
-    }
-    return false
-  }
-
-  return hasIssue()
+    return hasSignificantPriceMismatch(executedPrice,breakEvenPrice)
   
 }
+
+
 
 
 export const calcAveragePriceByExecutedOrders = (orders)=>{
@@ -866,6 +889,33 @@ export const calcAveragePriceByExecutedOrders = (orders)=>{
     };
 
 }
+
+
+export const calcAveragePriceByExecutedOrdersByInstrument = (orders) => {
+
+    // گروه‌بندی بر اساس instrumentId
+    const groupedOrders = orders.reduce((acc, order) => {
+        const instrumentId = order.instrumentId || 'UNKNOWN';
+
+        if (!acc[instrumentId]) {
+            acc[instrumentId] = [];
+        }
+
+        acc[instrumentId].push(order);
+
+        return acc;
+    }, {});
+
+    // محاسبه برای هر نماد
+    const result = {};
+
+    for (const [instrumentId, instrumentOrders] of Object.entries(groupedOrders)) {
+        result[instrumentId] =
+            calcAveragePriceByExecutedOrders(instrumentOrders);
+    }
+
+    return result;
+};
 
 
 

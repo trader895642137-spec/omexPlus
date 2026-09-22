@@ -12,7 +12,8 @@ import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalc
     hasGreaterRatio,
     QueueScenario,
     startMarketCountdown,
-    calculateExerciseCost} from './common.js';
+    calculateExerciseCost,
+    hasSignificantPriceMismatch} from './common.js';
 import { isInstrumentNameOfOption,  OMEXApi } from './omexApi.js';
 
 
@@ -3162,6 +3163,49 @@ const setModalHeaders = (strategyPositions)=>{
         }
 
      }
+}
+
+
+
+export const checkCalculatedAvgPriceMismatchForAll = async ()=>{
+
+    const portfolioOptionsWithAvgPricesList = await OMEXApi.calcAveragePriceForAll();
+
+    console.log(portfolioOptionsWithAvgPricesList);
+    let hasIssue;
+
+    for (let optionWithAvgInfo of portfolioOptionsWithAvgPricesList) {
+        
+        const hasPriceMismatchIssue = hasSignificantPriceMismatch(optionWithAvgInfo.calculatedAverageInfo.averagePrice,optionWithAvgInfo.executedPrice);
+        const hasQuantityIssue = optionWithAvgInfo.calculatedAverageInfo.quantity!== optionWithAvgInfo.count;
+
+        if(hasPriceMismatchIssue){
+            console.log('hasPriceMismatchIssue' , optionWithAvgInfo);
+            hasIssue = true;
+        }
+        if(hasQuantityIssue){
+            console.log('hasQuantityIssue' , optionWithAvgInfo);
+            hasIssue = true;
+        }
+
+        
+
+
+    }
+
+
+    if (hasIssue) {
+
+        showNotification({
+            title: 'مشکل میانگین محاسباتی',
+            body: ``,
+            requireInteraction: true,
+            tag: `checkCalculatedAvgPriceMismatchForAll`
+        });
+    }
+
+    
+
 }
 
 

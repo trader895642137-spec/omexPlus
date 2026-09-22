@@ -1,4 +1,3 @@
-console.log('background')
 
 const childPortsByTab = new Map();
 
@@ -45,9 +44,126 @@ chrome.runtime.onConnect.addListener((port) => {
   }
 });
 
+
+const AVERAGE_ALARM = 'average-monitoring';
+
+async function startAverageMonitoring() {
+
+    const existingAlarm = await chrome.alarms.get(AVERAGE_ALARM);
+
+    // اگر قبلاً از یکی از تب‌ها شروع شده، دوباره ایجاد نکن
+    if (existingAlarm) {
+        return;
+    }
+
+    chrome.alarms.create(AVERAGE_ALARM, {
+        periodInMinutes: 30
+    });
+    await checkCalculatedAvgPriceMismatchForAll();
+}
+
+async function waitForOmexLib(tabId, timeout = 10000) {
+
+    const start = Date.now();
+
+    while (Date.now() - start < timeout) {
+
+        const result = await chrome.scripting.executeScript({
+            target: { tabId },
+            world: 'MAIN',
+            func: () => {
+                return !!window.omexLib
+            }
+        });
+
+        if (result?.[0]?.result === true) {
+            return true;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    return false;
+}
+
+async function findOmexTab(timeout = 10000) {
+    const start = Date.now();
+
+    while (Date.now() - start < timeout) {
+
+        const tabs = await chrome.tabs.query({
+            url: '*://khobregan.tsetab.ir//*'
+        });
+
+        for (const tab of tabs) {
+            if (!tab.id) continue;
+
+            try {
+                const result = await chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    world: 'MAIN',
+                    func: () => {
+                        return !!window?.omexLib;
+                    }
+                });
+
+                if (result?.[0]?.result === true) {
+                    return tab;
+                }
+            } catch (e) {
+                // ignore
+            }
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    return null;
+}
+
+async function checkCalculatedAvgPriceMismatchForAll() {
+  const tab = await findOmexTab();
+
+  if (!tab?.id) {
+    return;
+  }
+
+
+  return await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    world: 'MAIN',
+    func: async() => {
+      return await window.omexLib?.checkCalculatedAvgPriceMismatchForAll();
+    }
+  });
+}
+
+chrome.alarms.onAlarm.addListener(async alarm => {
+
+  if (alarm.name !== AVERAGE_ALARM) {
+    return;
+  }
+
+
+
+  const now = new Date();
+  const minutes = now.getHours() * 60 + now.getMinutes();
+
+  const start = 8 * 60;       // 08:00
+  const end = 12 * 60 + 30;   // 12:30
+
+  if (minutes < start || minutes > end) {
+    await chrome.alarms.clear(AVERAGE_ALARM);
+    return;
+  }
+
+  
+  await checkCalculatedAvgPriceMismatchForAll();
+});
+
 chrome.runtime.onMessage.addListener((msg, sender) => {
   if (msg.type === "FROM_FILTER_TAB") {
-    
+
     for (const port of childPortsByTab.values()) {
       port.postMessage(msg.payload);
     }
@@ -62,7 +178,10 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
         window.omexLib.doJob();
       }
     });
-    
+
+  }
+  if (msg.type === 'START_AVERAGE_MONITORING') {
+    startAverageMonitoring();
   }
 
 });

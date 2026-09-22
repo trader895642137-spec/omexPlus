@@ -11,6 +11,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   QueueScenario: () => (/* binding */ QueueScenario),
 /* harmony export */   TAX_FREE_SYMBOLS: () => (/* binding */ TAX_FREE_SYMBOLS),
 /* harmony export */   calcAveragePriceByExecutedOrders: () => (/* binding */ calcAveragePriceByExecutedOrders),
+/* harmony export */   calcAveragePriceByExecutedOrdersByInstrument: () => (/* binding */ calcAveragePriceByExecutedOrdersByInstrument),
 /* harmony export */   calculateExerciseCost: () => (/* binding */ calculateExerciseCost),
 /* harmony export */   calculateOptionMargin: () => (/* binding */ calculateOptionMargin),
 /* harmony export */   configs: () => (/* binding */ configs),
@@ -20,6 +21,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getReservedMarginOfEstimationQuantity: () => (/* binding */ getReservedMarginOfEstimationQuantity),
 /* harmony export */   hasBreakevenExecutedPriceDiffIssue: () => (/* binding */ hasBreakevenExecutedPriceDiffIssue),
 /* harmony export */   hasGreaterRatio: () => (/* binding */ hasGreaterRatio),
+/* harmony export */   hasSignificantPriceMismatch: () => (/* binding */ hasSignificantPriceMismatch),
 /* harmony export */   isBuyQueue: () => (/* binding */ isBuyQueue),
 /* harmony export */   isETF: () => (/* binding */ isETF),
 /* harmony export */   isHourMinGreaterThan: () => (/* binding */ isHourMinGreaterThan),
@@ -796,23 +798,46 @@ const isETF = (instrumentName)=>{
 
 
 
+const hasSignificantPriceMismatch = (price1, price2) => {
+    const num1 = Number(price1);
+    const num2 = Number(price2);
+
+    if (!Number.isFinite(num1) || !Number.isFinite(num2)) {
+        return false;
+    }
+
+    const diff = Math.abs(num1 - num2);
+
+    // تعداد ارقام قسمت صحیح
+    const maxIntegerDigits = Math.max(
+        Math.abs(Math.trunc(num1)).toString().length,
+        Math.abs(Math.trunc(num2)).toString().length
+    );
+
+    // کمتر از 3 رقم
+    if (maxIntegerDigits < 3) {
+        return diff > 1;
+    }
+
+    // 3 رقم یا بیشتر:
+    // اختلاف نسبت به عدد کوچک‌تر
+    const smaller = Math.min(Math.abs(num1), Math.abs(num2));
+
+    // جلوگیری از تقسیم بر صفر
+    if (smaller === 0) {
+        return diff > 1;
+    }
+
+    return (diff / smaller) > 0.03;
+};
+
 const hasBreakevenExecutedPriceDiffIssue =({executedPrice,breakEvenPrice})=>{
 
-
-  const diffPrices = Math.abs(breakEvenPrice - executedPrice);
-  const breakEvenPriceNumLength = breakEvenPrice.toString().length;
-  const hasIssue = () => {
-    if ((breakEvenPriceNumLength > 3) && ((diffPrices / executedPrice) > 0.03)) {
-      return true
-    } else if ((breakEvenPriceNumLength < 3) && (diffPrices > 1)) {
-      return true
-    }
-    return false
-  }
-
-  return hasIssue()
+    return hasSignificantPriceMismatch(executedPrice,breakEvenPrice)
   
 }
+
+
 
 
 const calcAveragePriceByExecutedOrders = (orders)=>{
@@ -906,6 +931,33 @@ const calcAveragePriceByExecutedOrders = (orders)=>{
     };
 
 }
+
+
+const calcAveragePriceByExecutedOrdersByInstrument = (orders) => {
+
+    // گروه‌بندی بر اساس instrumentId
+    const groupedOrders = orders.reduce((acc, order) => {
+        const instrumentId = order.instrumentId || 'UNKNOWN';
+
+        if (!acc[instrumentId]) {
+            acc[instrumentId] = [];
+        }
+
+        acc[instrumentId].push(order);
+
+        return acc;
+    }, {});
+
+    // محاسبه برای هر نماد
+    const result = {};
+
+    for (const [instrumentId, instrumentOrders] of Object.entries(groupedOrders)) {
+        result[instrumentId] =
+            calcAveragePriceByExecutedOrders(instrumentOrders);
+    }
+
+    return result;
+};
 
 
 
@@ -1065,6 +1117,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   calcAvgPricesByExecutenList: () => (/* binding */ calcAvgPricesByExecutenList),
 /* harmony export */   calcOffsetProfitOfStrategy: () => (/* binding */ calcOffsetProfitOfStrategy),
 /* harmony export */   calcProfitOfStrategy: () => (/* binding */ calcProfitOfStrategy),
+/* harmony export */   checkCalculatedAvgPriceMismatchForAll: () => (/* binding */ checkCalculatedAvgPriceMismatchForAll),
 /* harmony export */   checkSumOfMoneyAndAssets: () => (/* binding */ checkSumOfMoneyAndAssets),
 /* harmony export */   configs: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.configs),
 /* harmony export */   createGroupOfCurrentStrategy: () => (/* binding */ createGroupOfCurrentStrategy),
@@ -4246,6 +4299,49 @@ const setModalHeaders = (strategyPositions)=>{
 }
 
 
+
+const checkCalculatedAvgPriceMismatchForAll = async ()=>{
+
+    const portfolioOptionsWithAvgPricesList = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calcAveragePriceForAll();
+
+    console.log(portfolioOptionsWithAvgPricesList);
+    let hasIssue;
+
+    for (let optionWithAvgInfo of portfolioOptionsWithAvgPricesList) {
+        
+        const hasPriceMismatchIssue = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.hasSignificantPriceMismatch)(optionWithAvgInfo.calculatedAverageInfo.averagePrice,optionWithAvgInfo.executedPrice);
+        const hasQuantityIssue = optionWithAvgInfo.calculatedAverageInfo.quantity!== optionWithAvgInfo.count;
+
+        if(hasPriceMismatchIssue){
+            console.log('hasPriceMismatchIssue' , optionWithAvgInfo);
+            hasIssue = true;
+        }
+        if(hasQuantityIssue){
+            console.log('hasQuantityIssue' , optionWithAvgInfo);
+            hasIssue = true;
+        }
+
+        
+
+
+    }
+
+
+    if (hasIssue) {
+
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
+            title: 'مشکل میانگین محاسباتی',
+            body: ``,
+            requireInteraction: true,
+            tag: `checkCalculatedAvgPriceMismatchForAll`
+        });
+    }
+
+    
+
+}
+
+
 const Run = async (_window = window) => {
 
     try {
@@ -4790,7 +4886,7 @@ const getOrders = async (instrumentId,daysAgo = 120)=>{
 
     const fromDate = formatDate(fromDateObj);
 
-    return fetch(`${redOrigin}/api/Orders/GetHistoryOrders?$count=true&instrumentId=${instrumentId}&fromDate=${fromDate}`, {
+    return fetch(`${redOrigin}/api/Orders/GetHistoryOrders?$count=true${instrumentId!=null ? `&instrumentId=${instrumentId}` :'' }&fromDate=${fromDate}`, {
         "headers": {
             "accept": "application/json, text/plain, */*",
             "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
@@ -4825,6 +4921,35 @@ const calcAveragePrice = async (instrumentId)=>{
     return  averageInfo
 
 }
+
+const calcAveragePriceForAll = async () => {
+
+    const orders = await getOrders();
+
+    const calculatedAverageInfo = (0,_common__WEBPACK_IMPORTED_MODULE_0__.calcAveragePriceByExecutedOrdersByInstrument)(orders);
+
+    const options = await getOptionPortfolioList();
+
+
+
+    const result = options.map(option => {
+
+        return {
+            symbol: option.instrumentName,
+            calculatedAverageInfo: calculatedAverageInfo[option.instrumentId],
+            executedPrice: option.executedPrice,
+            breakEvenPrice: option.breakEvenPrice,
+            count: option.orderSide==='Sell' ? -option.count : option.count,
+            orderSide : option.orderSide
+        }
+
+    });
+    console.log(result);
+
+    return result
+
+}
+
 
 
 const getGroups =async () => {
@@ -5453,6 +5578,7 @@ const OMEXApi = {
     createStrategyListForAllGroups,
     calculateSumOfMoneyAndAssets,
     calcAveragePrice,
+    calcAveragePriceForAll,
     findDuplicationsInGroups,
     getVariableMargin,
     getCustomerOptionStrategyEstimationWithItems,

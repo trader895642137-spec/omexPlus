@@ -4,7 +4,7 @@
   "author": "TRADER",
   "version": "1.0",
   "description": "OMEX Chrome extension.",
-  "permissions": ["scripting","tabs","notifications"],
+  "permissions": ["scripting","tabs","notifications","alarms"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"

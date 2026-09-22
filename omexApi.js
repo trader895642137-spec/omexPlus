@@ -1,4 +1,4 @@
-import { isETF, waitForElement ,COMMISSION_FACTOR, calcAveragePriceByExecutedOrders} from "./common"
+import { isETF, waitForElement ,COMMISSION_FACTOR, calcAveragePriceByExecutedOrders, calcAveragePriceByExecutedOrdersByInstrument} from "./common"
 
 // https://khobregan.tsetab.ir
 const origin = window.location.origin;
@@ -432,7 +432,7 @@ const getOrders = async (instrumentId,daysAgo = 120)=>{
 
     const fromDate = formatDate(fromDateObj);
 
-    return fetch(`${redOrigin}/api/Orders/GetHistoryOrders?$count=true&instrumentId=${instrumentId}&fromDate=${fromDate}`, {
+    return fetch(`${redOrigin}/api/Orders/GetHistoryOrders?$count=true${instrumentId!=null ? `&instrumentId=${instrumentId}` :'' }&fromDate=${fromDate}`, {
         "headers": {
             "accept": "application/json, text/plain, */*",
             "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
@@ -467,6 +467,35 @@ const calcAveragePrice = async (instrumentId)=>{
     return  averageInfo
 
 }
+
+const calcAveragePriceForAll = async () => {
+
+    const orders = await getOrders();
+
+    const calculatedAverageInfo = calcAveragePriceByExecutedOrdersByInstrument(orders);
+
+    const options = await getOptionPortfolioList();
+
+
+
+    const result = options.map(option => {
+
+        return {
+            symbol: option.instrumentName,
+            calculatedAverageInfo: calculatedAverageInfo[option.instrumentId],
+            executedPrice: option.executedPrice,
+            breakEvenPrice: option.breakEvenPrice,
+            count: option.orderSide==='Sell' ? -option.count : option.count,
+            orderSide : option.orderSide
+        }
+
+    });
+    console.log(result);
+
+    return result
+
+}
+
 
 
 const getGroups =async () => {
@@ -1095,6 +1124,7 @@ export const OMEXApi = {
     createStrategyListForAllGroups,
     calculateSumOfMoneyAndAssets,
     calcAveragePrice,
+    calcAveragePriceForAll,
     findDuplicationsInGroups,
     getVariableMargin,
     getCustomerOptionStrategyEstimationWithItems,
