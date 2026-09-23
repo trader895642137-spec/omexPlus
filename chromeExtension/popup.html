@@ -26,25 +26,33 @@
 
 <body>
   <h1>عملیات</h1>
-  <button id="mainButton">نمایش سود و زیان</button>
-  <button id="selectStrategyButton">انتخاب استراتژی متناسب با گروه</button>
+  <button id="mainButton"> ▶️ نمایش سود و زیان</button>
+  <button id="selectStrategyButton">
+    
+    ✨🔎انتخاب استراتژی متناسب با گروه</button>
   <button id="fillEstimationPanelByStrategyName">پر کردن اتوماتیک فرم با نام استراتژِی</button>
 
   <div style="height: 2px;background-color: gray;"></div>
   <div class="display:flex;">
-      <button id="createFilterWatcher">فیلتر</button>
-      <button id="portfolioWatcher">رصدگر پرتفوی</button>
-      <button id="openAllGroupsInNewTabs">باز کردن همه گروه ها (hold 3 sec)</button>
-      <button id="calculateSumOfMoneyAndAssets">مجموع دارایی</button>
-      <button id="calcAvgPricesByExecutenList">قیمت میانگین</button>
-      <button id="findDuplicationsInGroups">تکراری ها در گروه ها</button>
-      <button id="showVariableMargin">وجه تضمین متغیر</button>
-      <button id="addToWatcher">اضافه به رصدگر</button>
-      <button id="addAllGroupStrategyToWatcher">اضافه همه به رصدگر</button>
-      <button id="strategyExerciseCostSummary">هزینه اعمال</button>
+    <button id="createFilterWatcher">فیلتر</button>
+    <button id="portfolioWatcher">رصدگر پرتفوی</button>
+    <button id="openAllGroupsInNewTabs">باز کردن همه گروه ها (hold 3 sec)</button>
+    <button id="calculateSumOfMoneyAndAssets">مجموع دارایی</button>
+    <button id="calcAvgPricesByExecutenList">قیمت میانگین</button>
+    <button id="findDuplicationsInGroups">تکراری ها در گروه ها</button>
+    <button id="showVariableMargin">وجه تضمین متغیر</button>
+    <button id="addToWatcher">➕ اضافه به رصدگر</button>
+    <button id="addAllGroupStrategyToWatcher">➕➕ اضافه همه به رصدگر</button>
+    <button id="strategyExerciseCostSummary">هزینه اعمال</button>
   </div>
-  <button id="createGroup">ساخت گروه</button>
-  <button id="silentNotificationForMoment">سکوت موقت</button>
+ <button id="createGroup">💾+ساخت گروه</button>
+  <button id="silentNotificationForMoment" class="icon-button">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M11 5L6 9H2V15H6L11 19V5Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+      <path d="M17 9L22 15M22 9L17 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+    </svg>
+    <span>سکوت موقت</span>
+  </button>
   <script src="build/extensionScript.bundle.js"></script>
 
 </body>

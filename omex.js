@@ -2630,21 +2630,23 @@ const injectStyles = () => {
     domContextWindow.document.head.appendChild(style);
 }
 
-const fillCurrentStockPriceByStrikes = (strategyPositions)=>{
+const fillCurrentStockPriceByStrikes = (strategyPositions) => {
 
-    const greaterThanStrikes = Math.max(...strategyPositions.map(sp=>sp.strikePrice)) * 1.2;
+    const greaterThanStrikes =
+        Math.max(...strategyPositions.map(sp => sp.strikePrice)) * 1.2;
 
-    const stockPrice = instrumentExtraDataMap[strategyPositions[0].instrumentName]?.stockPrice || greaterThanStrikes;
-
-
-    const baseInstrumentPriceInputEl = domContextWindow.document.querySelector('.current-stock-price');
-
-
-    baseInstrumentPriceInputEl.value = stockPrice
-
+    const stockPrice =
+        strategyPositions
+            .map(sp => instrumentExtraDataMap[sp.instrumentName]?.stockPrice)
+            .find(price => price != null)
+        || greaterThanStrikes;
 
 
-}
+    const baseInstrumentPriceInputEl =
+        domContextWindow.document.querySelector('.current-stock-price');
+
+    baseInstrumentPriceInputEl.value = stockPrice;
+};
 
 const  instrumentExtraDataMap = {};
 
