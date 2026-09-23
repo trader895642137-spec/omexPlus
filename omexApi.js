@@ -608,9 +608,15 @@ const getOptionStrategies = async () => {
 
 
 
-export const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
+export const findStrategyOfGroup = ({ group, strategies,optionPortfolioList,stockPortfolioList }) => {
 
-    const groupPositions = group.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId));
+    const groupPositions = group.instrumentIds.map(instrumentId=>{
+        const foundOption = optionPortfolioList.find(option=>option.instrumentId===instrumentId);
+        if(foundOption) return foundOption
+        const foundStock = stockPortfolioList.find(stock=>stock.instrumentId===instrumentId);
+        return foundStock || null
+    });
+
 
     const foundStrategy = strategies.find(strategy => {
 
@@ -618,7 +624,7 @@ export const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
         strategy.rowLength = strategy.items.length;
         const strategyItems = Array.from(new Map(strategy.items.map(sItem => [sItem.instrumentId, sItem])).values());
 
-        const hasAllInstrumentId = groupPositions.every(groupPosition => strategyItems.find(sItem => groupPosition && sItem && groupPosition.instrumentId === sItem.instrumentId && groupPosition.orderSide === sItem.side));
+        const hasAllInstrumentId = groupPositions.every(groupPosition => strategyItems.find(sItem => groupPosition && sItem && groupPosition.instrumentId === sItem.instrumentId && (groupPosition.orderSide==null || groupPosition.orderSide === sItem.side)));
 
 
         return hasAllInstrumentId && strategyItems.length === group.instrumentIds.length
@@ -631,7 +637,7 @@ export const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
 
 
 
-const selectStrategy =async ({documentOfWindow=document,groups,portfolioList,strategies}={})=>{
+const selectStrategy =async ({documentOfWindow=document,groups,optionPortfolioList,strategies}={})=>{
     const _document  = documentOfWindow || document;
     const selectedGroupTitle = _document.querySelector('client-option-positions-filter-bar .-is-group ng-select .u-ff-number').innerHTML;
 
@@ -639,12 +645,12 @@ const selectStrategy =async ({documentOfWindow=document,groups,portfolioList,str
 
     let selectedGroup = groups.find(group=>selectedGroupTitle.includes(group.name));
 
-    portfolioList ??= await getOptionPortfolioList();
+    optionPortfolioList ??= await getOptionPortfolioList();
 
     strategies ??= await getCustomerOptionStrategyEstimationWithItems();
 
 
-    const foundStrategy  = findStrategyOfGroup({group:selectedGroup,strategies,portfolioList});
+    const foundStrategy  = findStrategyOfGroup({group:selectedGroup,strategies,optionPortfolioList});
 
     if(!foundStrategy) return
 
@@ -814,82 +820,6 @@ export const createGroup = ({ name, instrumentIds }) => {
 
 
 
-export const createStrategyListForAllGroups = async ()=>{
-
-
-    const groups = await getGroups();
-
-
-    const portfolioList = await getOptionPortfolioList();
-
-
-    const strategies = await getCustomerOptionStrategyEstimationWithItems();
-
-
-
-    const strategyListForAllGroups = groups.map(group=>{
-        const positions = group.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId))
-        const strategy  = findStrategyOfGroup({group,strategies,portfolioList});;
-
-
-        if(!strategy?.items) {
-            console.log(group);
-            return null
-        }
-
-        const strategyPositions = strategy.items.map(strategyItem=>{
-
-            const portfolioPosition = positions.find(pos=>pos.instrumentId===strategyItem.instrumentId)
-
-            const instrumentName = portfolioPosition.instrumentName;
-           
-            return {
-                instrumentName,
-                isBuy: strategyItem.side === 'Buy',
-                isETF: isETF(instrumentName),
-                isOption: isInstrumentNameOfOption(instrumentName),
-                isCall: portfolioPosition.optionSide==="Call",
-                isPut: portfolioPosition.optionSide==="Put",
-                cSize: portfolioPosition.cSize,
-                // getBaseInstrumentPriceOfOption,
-
-
-                quantityOfEstimationPositionRow: strategyItem.quantity,
-                // getQuantity:()=>strategyItem.quantity,
-                portfolioPositionQuantity:portfolioPosition.blockedStrategyQuantity,
-                // getCurrentPositionQuantity:()=>portfolioPosition.blockedStrategyQuantity,
-
-
-                requiredMargin : strategyItem.requiredMargin / portfolioPosition.cSize,
-                // getRequiredMargin : strategyItem.requiredMargin / portfolioPosition.cSize,
-                currentPositionAvgPrice: portfolioPosition.executedPrice,
-                strikePrice : portfolioPosition.strikePrice,
-                daysLeftToSettlement : portfolioPosition.remainCsDateDays,
-                // getBestOffsetPrice,
-                // getBestOpenMorePrice,
-                // getBestOpenMorePriceWithSideSign,
-                // getStrategyName,
-                // getStrategyType,
-
-            }
-        })
-
-        return {group,strategy,strategyPositions}
-
-       
-
-        
-    }).filter(Boolean)
-
-
-
-    console.log(strategyListForAllGroups);
-    
-
-
-
-
-}
 
 export const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
 
@@ -1151,7 +1081,6 @@ export const OMEXApi = {
     getBlockedAmount,
     fillEstimationPanelByStrategyName,
     createGroup,
-    createStrategyListForAllGroups,
     calculateSumOfMoneyAndAssets,
     calcAveragePrice,
     calcAveragePriceForAll,

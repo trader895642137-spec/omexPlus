@@ -945,7 +945,7 @@ const createPositionObjectArray  = (strategyItemList) => {
                     currentPositionQuantity = getOrderModalPortfolioQuantity();
                 }
             }else{
-                currentPositionQuantity = strategyItem.portfolioAssetInfo?.count;
+                currentPositionQuantity = strategyItem.portfolioAssetInfo?.count || strategyItem.portfolioAssetInfo?.quantity;
             }
 
 
@@ -2938,18 +2938,19 @@ export const enrichGroupByStrategyInfo = async ()=>{
 
     const groups = await OMEXApi.getGroups();
 
-    const portfolioList = await OMEXApi.getOptionPortfolioList();
+    const optionPortfolioList = await OMEXApi.getOptionPortfolioList();
+    const stockPortfolioList = await OMEXApi.getStockPortfolioList();
     
     const strategies = await OMEXApi.getCustomerOptionStrategyEstimationWithItems();
 
   
 
-    const stockPriceList = await OMEXApi.getStockPricesData(portfolioList.map(asset=>asset.baseInstrumentId));
+    const stockPriceList = await OMEXApi.getStockPricesData(optionPortfolioList.map(asset=>asset.baseInstrumentId));
 
 
     return groups.map(group=>{
 
-        const strategy  = OMEXApi.findStrategyOfGroup({group,strategies,portfolioList});
+        const strategy  = OMEXApi.findStrategyOfGroup({group,strategies,optionPortfolioList,stockPortfolioList});
 
         if(!strategy){
             showToast(`استراتژی یافت نشد`);
@@ -2961,7 +2962,7 @@ export const enrichGroupByStrategyInfo = async ()=>{
             return {
                 ...strategyitem,
                 strategyTitle: strategy.title,
-                portfolioAssetInfo: portfolioList.find(p => p.instrumentId === strategyitem.instrumentId)
+                portfolioAssetInfo: optionPortfolioList.find(p => p.instrumentId === strategyitem.instrumentId) || stockPortfolioList.find(p => p.instrumentId === strategyitem.instrumentId)
             }
         });
         const baseInstrumentId = strategy.items.find(

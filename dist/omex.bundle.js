@@ -1213,7 +1213,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   cacheItemsTemporarily: () => (/* binding */ cacheItemsTemporarily),
 /* harmony export */   calculateSumOfMoneyAndAssets: () => (/* binding */ calculateSumOfMoneyAndAssets),
 /* harmony export */   createGroup: () => (/* binding */ createGroup),
-/* harmony export */   createStrategyListForAllGroups: () => (/* binding */ createStrategyListForAllGroups),
 /* harmony export */   fillEstimationPanelByStrategyName: () => (/* binding */ fillEstimationPanelByStrategyName),
 /* harmony export */   findDuplicationsInGroups: () => (/* binding */ findDuplicationsInGroups),
 /* harmony export */   findStrategyOfGroup: () => (/* binding */ findStrategyOfGroup),
@@ -1838,9 +1837,15 @@ const getOptionStrategies = async () => {
 
 
 
-const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
+const findStrategyOfGroup = ({ group, strategies,optionPortfolioList,stockPortfolioList }) => {
 
-    const groupPositions = group.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId));
+    const groupPositions = group.instrumentIds.map(instrumentId=>{
+        const foundOption = optionPortfolioList.find(option=>option.instrumentId===instrumentId);
+        if(foundOption) return foundOption
+        const foundStock = stockPortfolioList.find(stock=>stock.instrumentId===instrumentId);
+        return foundStock || null
+    });
+
 
     const foundStrategy = strategies.find(strategy => {
 
@@ -1848,7 +1853,7 @@ const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
         strategy.rowLength = strategy.items.length;
         const strategyItems = Array.from(new Map(strategy.items.map(sItem => [sItem.instrumentId, sItem])).values());
 
-        const hasAllInstrumentId = groupPositions.every(groupPosition => strategyItems.find(sItem => groupPosition && sItem && groupPosition.instrumentId === sItem.instrumentId && groupPosition.orderSide === sItem.side));
+        const hasAllInstrumentId = groupPositions.every(groupPosition => strategyItems.find(sItem => groupPosition && sItem && groupPosition.instrumentId === sItem.instrumentId && (groupPosition.orderSide==null || groupPosition.orderSide === sItem.side)));
 
 
         return hasAllInstrumentId && strategyItems.length === group.instrumentIds.length
@@ -1861,7 +1866,7 @@ const findStrategyOfGroup = ({ group, strategies,portfolioList }) => {
 
 
 
-const selectStrategy =async ({documentOfWindow=document,groups,portfolioList,strategies}={})=>{
+const selectStrategy =async ({documentOfWindow=document,groups,optionPortfolioList,strategies}={})=>{
     const _document  = documentOfWindow || document;
     const selectedGroupTitle = _document.querySelector('client-option-positions-filter-bar .-is-group ng-select .u-ff-number').innerHTML;
 
@@ -1869,12 +1874,12 @@ const selectStrategy =async ({documentOfWindow=document,groups,portfolioList,str
 
     let selectedGroup = groups.find(group=>selectedGroupTitle.includes(group.name));
 
-    portfolioList ??= await getOptionPortfolioList();
+    optionPortfolioList ??= await getOptionPortfolioList();
 
     strategies ??= await getCustomerOptionStrategyEstimationWithItems();
 
 
-    const foundStrategy  = findStrategyOfGroup({group:selectedGroup,strategies,portfolioList});
+    const foundStrategy  = findStrategyOfGroup({group:selectedGroup,strategies,optionPortfolioList});
 
     if(!foundStrategy) return
 
@@ -2044,82 +2049,6 @@ const createGroup = ({ name, instrumentIds }) => {
 
 
 
-const createStrategyListForAllGroups = async ()=>{
-
-
-    const groups = await getGroups();
-
-
-    const portfolioList = await getOptionPortfolioList();
-
-
-    const strategies = await getCustomerOptionStrategyEstimationWithItems();
-
-
-
-    const strategyListForAllGroups = groups.map(group=>{
-        const positions = group.instrumentIds.map(instrumentId=>portfolioList.find(position=>position.instrumentId===instrumentId))
-        const strategy  = findStrategyOfGroup({group,strategies,portfolioList});;
-
-
-        if(!strategy?.items) {
-            console.log(group);
-            return null
-        }
-
-        const strategyPositions = strategy.items.map(strategyItem=>{
-
-            const portfolioPosition = positions.find(pos=>pos.instrumentId===strategyItem.instrumentId)
-
-            const instrumentName = portfolioPosition.instrumentName;
-           
-            return {
-                instrumentName,
-                isBuy: strategyItem.side === 'Buy',
-                isETF: (0,_common__WEBPACK_IMPORTED_MODULE_0__.isETF)(instrumentName),
-                isOption: isInstrumentNameOfOption(instrumentName),
-                isCall: portfolioPosition.optionSide==="Call",
-                isPut: portfolioPosition.optionSide==="Put",
-                cSize: portfolioPosition.cSize,
-                // getBaseInstrumentPriceOfOption,
-
-
-                quantityOfEstimationPositionRow: strategyItem.quantity,
-                // getQuantity:()=>strategyItem.quantity,
-                portfolioPositionQuantity:portfolioPosition.blockedStrategyQuantity,
-                // getCurrentPositionQuantity:()=>portfolioPosition.blockedStrategyQuantity,
-
-
-                requiredMargin : strategyItem.requiredMargin / portfolioPosition.cSize,
-                // getRequiredMargin : strategyItem.requiredMargin / portfolioPosition.cSize,
-                currentPositionAvgPrice: portfolioPosition.executedPrice,
-                strikePrice : portfolioPosition.strikePrice,
-                daysLeftToSettlement : portfolioPosition.remainCsDateDays,
-                // getBestOffsetPrice,
-                // getBestOpenMorePrice,
-                // getBestOpenMorePriceWithSideSign,
-                // getStrategyName,
-                // getStrategyType,
-
-            }
-        })
-
-        return {group,strategy,strategyPositions}
-
-       
-
-        
-    }).filter(Boolean)
-
-
-
-    console.log(strategyListForAllGroups);
-    
-
-
-
-
-}
 
 const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar => instrumentName && instrumentName.charAt(0) === optionChar);
 
@@ -2381,7 +2310,6 @@ const OMEXApi = {
     getBlockedAmount,
     fillEstimationPanelByStrategyName,
     createGroup,
-    createStrategyListForAllGroups,
     calculateSumOfMoneyAndAssets,
     calcAveragePrice,
     calcAveragePriceForAll,
@@ -3809,7 +3737,7 @@ const createPositionObjectArray  = (strategyItemList) => {
                     currentPositionQuantity = getOrderModalPortfolioQuantity();
                 }
             }else{
-                currentPositionQuantity = strategyItem.portfolioAssetInfo?.count;
+                currentPositionQuantity = strategyItem.portfolioAssetInfo?.count || strategyItem.portfolioAssetInfo?.quantity;
             }
 
 
@@ -5802,18 +5730,19 @@ const enrichGroupByStrategyInfo = async ()=>{
 
     const groups = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getGroups();
 
-    const portfolioList = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionPortfolioList();
+    const optionPortfolioList = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionPortfolioList();
+    const stockPortfolioList = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getStockPortfolioList();
     
     const strategies = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getCustomerOptionStrategyEstimationWithItems();
 
   
 
-    const stockPriceList = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getStockPricesData(portfolioList.map(asset=>asset.baseInstrumentId));
+    const stockPriceList = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getStockPricesData(optionPortfolioList.map(asset=>asset.baseInstrumentId));
 
 
     return groups.map(group=>{
 
-        const strategy  = _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.findStrategyOfGroup({group,strategies,portfolioList});
+        const strategy  = _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.findStrategyOfGroup({group,strategies,optionPortfolioList,stockPortfolioList});
 
         if(!strategy){
             showToast(`استراتژی یافت نشد`);
@@ -5825,7 +5754,7 @@ const enrichGroupByStrategyInfo = async ()=>{
             return {
                 ...strategyitem,
                 strategyTitle: strategy.title,
-                portfolioAssetInfo: portfolioList.find(p => p.instrumentId === strategyitem.instrumentId)
+                portfolioAssetInfo: optionPortfolioList.find(p => p.instrumentId === strategyitem.instrumentId) || stockPortfolioList.find(p => p.instrumentId === strategyitem.instrumentId)
             }
         });
         const baseInstrumentId = strategy.items.find(
