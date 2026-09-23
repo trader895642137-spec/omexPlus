@@ -637,7 +637,7 @@ export const findStrategyOfGroup = ({ group, strategies,optionPortfolioList,stoc
 
 
 
-const selectStrategy =async ({documentOfWindow=document,groups,optionPortfolioList,strategies}={})=>{
+const selectStrategy =async ({documentOfWindow=document,groups,optionPortfolioList,stockPortfolioList,strategies}={})=>{
     const _document  = documentOfWindow || document;
     const selectedGroupTitle = _document.querySelector('client-option-positions-filter-bar .-is-group ng-select .u-ff-number').innerHTML;
 
@@ -646,11 +646,12 @@ const selectStrategy =async ({documentOfWindow=document,groups,optionPortfolioLi
     let selectedGroup = groups.find(group=>selectedGroupTitle.includes(group.name));
 
     optionPortfolioList ??= await getOptionPortfolioList();
+    stockPortfolioList ??= await getStockPortfolioList();
 
     strategies ??= await getCustomerOptionStrategyEstimationWithItems();
 
 
-    const foundStrategy  = findStrategyOfGroup({group:selectedGroup,strategies,optionPortfolioList});
+    const foundStrategy  = findStrategyOfGroup({group:selectedGroup,strategies,optionPortfolioList,stockPortfolioList});
 
     if(!foundStrategy) return
 

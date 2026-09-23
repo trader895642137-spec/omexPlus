@@ -1866,7 +1866,7 @@ const findStrategyOfGroup = ({ group, strategies,optionPortfolioList,stockPortfo
 
 
 
-const selectStrategy =async ({documentOfWindow=document,groups,optionPortfolioList,strategies}={})=>{
+const selectStrategy =async ({documentOfWindow=document,groups,optionPortfolioList,stockPortfolioList,strategies}={})=>{
     const _document  = documentOfWindow || document;
     const selectedGroupTitle = _document.querySelector('client-option-positions-filter-bar .-is-group ng-select .u-ff-number').innerHTML;
 
@@ -1875,11 +1875,12 @@ const selectStrategy =async ({documentOfWindow=document,groups,optionPortfolioLi
     let selectedGroup = groups.find(group=>selectedGroupTitle.includes(group.name));
 
     optionPortfolioList ??= await getOptionPortfolioList();
+    stockPortfolioList ??= await getStockPortfolioList();
 
     strategies ??= await getCustomerOptionStrategyEstimationWithItems();
 
 
-    const foundStrategy  = findStrategyOfGroup({group:selectedGroup,strategies,optionPortfolioList});
+    const foundStrategy  = findStrategyOfGroup({group:selectedGroup,strategies,optionPortfolioList,stockPortfolioList});
 
     if(!foundStrategy) return
 
@@ -5607,7 +5608,7 @@ const openWindowAndSelectGroup = (groupTitle,_origin=origin) => {
 }
 
 
-const setTradeModalUiPositions = ({strategyPositions}) => {
+const setTradeModalUiPositions = ({strategyPositions}={}) => {
 
     let left = 1200;
     const top = 55;
@@ -5668,13 +5669,13 @@ const getAndSetStrategyTitleOnUrl = ()=>{
 
 
 
-const openGroupInNewTab = async ({ groupName, _origin, groups, portfolioList, strategies }) => {
+const openGroupInNewTab = async ({ groupName, _origin, groups, optionPortfolioList,stockPortfolioList, strategies }) => {
 
 
     const childWindow = await openWindowAndSelectGroup(groupName,_origin);
     
 
-    const { strategyRowLength,strategyTitle } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.selectStrategy({documentOfWindow:childWindow.document,groups, portfolioList, strategies});
+    const { strategyRowLength,strategyTitle } = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.selectStrategy({documentOfWindow:childWindow.document,groups, optionPortfolioList,stockPortfolioList, strategies});
 
     setStrategyTitleOnUrl({strategyTitle,_window:childWindow});
 
@@ -5707,17 +5708,19 @@ const openAllGroupsInNewTabs = async ()=>{
 
     const groups = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getGroups();
 
-    const portfolioList = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionPortfolioList();
+    const optionPortfolioList = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionPortfolioList();
+    const stockPortfolioList = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getStockPortfolioList();
     
     const strategies = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getCustomerOptionStrategyEstimationWithItems();
 
-    // for (const group of groups.slice(0, 1)) {
+    // for (const group of groups.slice(0, 10)) {
     for (const group of groups) {
 
         openGroupInNewTab({
             groupName:group.name, 
             groups, 
-            portfolioList, 
+            optionPortfolioList,
+            stockPortfolioList,
             strategies
         });
         await new Promise(r => setTimeout(r, 100));

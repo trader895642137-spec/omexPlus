@@ -2815,7 +2815,7 @@ const openWindowAndSelectGroup = (groupTitle,_origin=origin) => {
 }
 
 
-const setTradeModalUiPositions = ({strategyPositions}) => {
+const setTradeModalUiPositions = ({strategyPositions}={}) => {
 
     let left = 1200;
     const top = 55;
@@ -2876,13 +2876,13 @@ const getAndSetStrategyTitleOnUrl = ()=>{
 
 
 
-export const openGroupInNewTab = async ({ groupName, _origin, groups, portfolioList, strategies }) => {
+export const openGroupInNewTab = async ({ groupName, _origin, groups, optionPortfolioList,stockPortfolioList, strategies }) => {
 
 
     const childWindow = await openWindowAndSelectGroup(groupName,_origin);
     
 
-    const { strategyRowLength,strategyTitle } = await OMEXApi.selectStrategy({documentOfWindow:childWindow.document,groups, portfolioList, strategies});
+    const { strategyRowLength,strategyTitle } = await OMEXApi.selectStrategy({documentOfWindow:childWindow.document,groups, optionPortfolioList,stockPortfolioList, strategies});
 
     setStrategyTitleOnUrl({strategyTitle,_window:childWindow});
 
@@ -2915,17 +2915,19 @@ export const openAllGroupsInNewTabs = async ()=>{
 
     const groups = await OMEXApi.getGroups();
 
-    const portfolioList = await OMEXApi.getOptionPortfolioList();
+    const optionPortfolioList = await OMEXApi.getOptionPortfolioList();
+    const stockPortfolioList = await OMEXApi.getStockPortfolioList();
     
     const strategies = await OMEXApi.getCustomerOptionStrategyEstimationWithItems();
 
-    // for (const group of groups.slice(0, 1)) {
+    // for (const group of groups.slice(0, 10)) {
     for (const group of groups) {
 
         openGroupInNewTab({
             groupName:group.name, 
             groups, 
-            portfolioList, 
+            optionPortfolioList,
+            stockPortfolioList,
             strategies
         });
         await new Promise(r => setTimeout(r, 100));
