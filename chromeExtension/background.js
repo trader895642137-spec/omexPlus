@@ -138,6 +138,36 @@ async function checkCalculatedAvgPriceMismatchForAll() {
   });
 }
 
+async function showOmexNotification({
+  title,
+  body,
+  requireInteraction,
+  tag
+}) {
+  const tab = await findOmexTab();
+
+  if (!tab?.id) {
+    return;
+  }
+
+  return await chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    world: 'MAIN',
+    func: async (notification) => {
+      return await window.omexLib?.showNotification(notification);
+    },
+    args: [{
+      title,
+      body,
+      requireInteraction,
+      tag
+    }]
+  });
+}
+
+
+
+
 chrome.alarms.onAlarm.addListener(async alarm => {
 
   if (alarm.name !== AVERAGE_ALARM) {
@@ -162,27 +192,32 @@ chrome.alarms.onAlarm.addListener(async alarm => {
 });
 
 chrome.runtime.onMessage.addListener((msg, sender) => {
-  if (msg.type === "FROM_FILTER_TAB") {
+  (async () => {
+    try {
 
-    for (const port of childPortsByTab.values()) {
-      port.postMessage(msg.payload);
-    }
-  }
-  if (msg.type === "CHECK_JOB") {
-    const tabId = msg.tabId;
-
-    chrome.scripting.executeScript({
-      target: { tabId },
-      world: "MAIN",
-      func: () => {
-        window.omexLib.doJob();
+      if (msg.type === "FROM_FILTER_TAB") {
+        for (const port of childPortsByTab.values()) {
+          port.postMessage(msg.payload);
+        }
       }
-    });
 
-  }
-  if (msg.type === 'START_AVERAGE_MONITORING') {
-    startAverageMonitoring();
-  }
 
+      if (msg.type === 'START_AVERAGE_MONITORING') {
+        await startAverageMonitoring();
+      }
+
+    } catch (error) {
+
+      await showOmexNotification({
+        title: 'OMEX Background Error',
+        body: error?.message || String(error),
+        requireInteraction: true,
+        tag: 'background-error'
+      });
+
+    }
+  })();
+
+  return true;
 });
 

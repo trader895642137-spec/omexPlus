@@ -891,7 +891,95 @@ export const calcAveragePriceByExecutedOrders = (orders)=>{
 }
 
 
-export const calcAveragePriceByExecutedOrdersByInstrument = (orders) => {
+export const calcStockAveragePriceByExecutedOrders = (
+   { orders,
+    targetQuantity}
+) => {
+
+    const validOrders = orders
+        .filter(order =>
+            order.orderStatus === "CompletelySettled" &&
+            order.executedQuantity > 0
+        )
+        .sort((a, b) =>
+            new Date(b.createdDate) - new Date(a.createdDate)
+        );
+
+    const target = Math.abs(targetQuantity);
+    const isLong = targetQuantity > 0;
+
+    let remainingQuantity = target;
+    let matchedQuantity = 0;
+    let totalCost = 0;
+
+    for (const order of validOrders) {
+
+        const quantity = order.executedQuantity;
+        const price = order.executedPrice;
+        const isBuy = order.orderSide === "Buy";
+
+        // اگر Long هستیم:
+        // Buy  => ایجاد سهم
+        // Sell => مصرف سهم
+        //
+        // اگر Short هستیم:
+        // Sell => ایجاد موقعیت
+        // Buy  => مصرف موقعیت
+        const positionEffect = isLong
+            ? (isBuy ? quantity : -quantity)
+            : (isBuy ? -quantity : quantity);
+
+        if (positionEffect > 0) {
+
+            const usedQuantity = Math.min(
+                positionEffect,
+                remainingQuantity
+            );
+
+            totalCost += usedQuantity * price;
+            matchedQuantity += usedQuantity;
+            remainingQuantity -= usedQuantity;
+
+            if (remainingQuantity === 0) {
+                break;
+            }
+
+        } else {
+
+            // این معامله بخشی از پوزیشن فعلی را مصرف کرده
+            remainingQuantity += positionEffect;
+
+            if (remainingQuantity < 0) {
+                remainingQuantity = 0;
+            }
+        }
+    }
+
+    const averagePrice = matchedQuantity > 0
+        ? totalCost / matchedQuantity
+        : 0;
+
+    const to3Decimal = (num) => {
+        if (isNaN(num) || num === 0) return 0;
+        return Math.floor(num * 1000) / 1000;
+    };
+
+    return {
+        quantity: targetQuantity,
+        averagePrice: to3Decimal(averagePrice),
+        totalValue: to3Decimal(matchedQuantity * averagePrice),
+        side: targetQuantity > 0
+            ? "Long"
+            : targetQuantity < 0
+                ? "Short"
+                : "Neutral",
+
+        matchedQuantity,
+        missingQuantity: target - matchedQuantity
+    };
+};
+
+export const calcAveragePriceByExecutedOrdersByInstrument = ({orders,portfolioStocks}={}) => {
 
     // گروه‌بندی بر اساس instrumentId
     const groupedOrders = orders.reduce((acc, order) => {
@@ -910,8 +998,15 @@ export const calcAveragePriceByExecutedOrdersByInstrument = (orders) => {
     const result = {};
 
     for (const [instrumentId, instrumentOrders] of Object.entries(groupedOrders)) {
-        result[instrumentId] =
-            calcAveragePriceByExecutedOrders(instrumentOrders);
+        const marketType = instrumentOrders[0].marketType;
+        if(marketType==="Option"){
+            result[instrumentId] = calcAveragePriceByExecutedOrders(instrumentOrders);
+        }
+        if(marketType==="Stock"){
+            const stock = portfolioStocks.find(stock=>stock.instrumentId===instrumentId);
+            result[instrumentId] = stock ? calcStockAveragePriceByExecutedOrders({orders:instrumentOrders,targetQuantity: stock.quantity}) : null;
+        }
+        
     }
 
     return result;

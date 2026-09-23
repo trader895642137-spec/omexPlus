@@ -3171,12 +3171,12 @@ const setModalHeaders = (strategyPositions)=>{
 
 export const checkCalculatedAvgPriceMismatchForAll = async ()=>{
 
-    const portfolioOptionsWithAvgPricesList = await OMEXApi.calcAveragePriceForAll();
+    const {optionsWithAvgPrice:portfolioOptionsWithAvgPricesList , stocksWithAvgPrice:portfolioStocksWithAvgPrices} = await OMEXApi.calcAveragePriceForAll();
 
-    console.log(portfolioOptionsWithAvgPricesList);
+    const allCalcPortfolioList = [...portfolioOptionsWithAvgPricesList,...portfolioStocksWithAvgPrices.filter(stock=>!OMEXApi.isAutomaticFreeETF(stock.instrumentId))]
     let hasIssue;
 
-    for (let optionWithAvgInfo of portfolioOptionsWithAvgPricesList) {
+    for (let optionWithAvgInfo of allCalcPortfolioList) {
         
         const hasPriceMismatchIssue = hasSignificantPriceMismatch(optionWithAvgInfo.calculatedAverageInfo.averagePrice,optionWithAvgInfo.executedPrice);
         const hasQuantityIssue = optionWithAvgInfo.calculatedAverageInfo.quantity!== optionWithAvgInfo.count;
@@ -3190,20 +3190,20 @@ export const checkCalculatedAvgPriceMismatchForAll = async ()=>{
             hasIssue = true;
         }
 
-        
-
-
     }
 
 
     if (hasIssue) {
 
         showNotification({
-            title: 'مشکل میانگین محاسباتی',
+            title: 'مشکل میانگین و تعداد محاسباتی',
             body: ``,
             requireInteraction: true,
             tag: `checkCalculatedAvgPriceMismatchForAll`
         });
+    }else{
+        showToast('میانگین درسته');
+        console.log('checkCalculatedAvgPriceMismatchForAll is ok!');
     }
 
     

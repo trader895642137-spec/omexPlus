@@ -7,6 +7,8 @@ const deltaOrigin = origin.replace('.tsetab','-delta.tsetab');
 
 // TODO: // https://khobregan-red.tsetab.ir
 
+export const isAutomaticFreeETF = (instrumentId)=> instrumentId==='IRT3KMDF0001';
+
 
 export const getWalletInfo = async () => {
 
@@ -60,7 +62,7 @@ export const getOptionPortfolioList = async () => {
         "method": "GET",
         "mode": "cors",
         "credentials": "include"
-    }).then(response => response.json()).then(res => res.response.data)
+    }).then(response => response.json()).then(res => res.response.data);
 
     return list
 
@@ -68,7 +70,7 @@ export const getOptionPortfolioList = async () => {
 
 export const getStockPortfolioList = async () => {
 
-    const list = await fetch(`${deltaOrigin}/api/assets/portfolio-info`, {
+    let stocks = await fetch(`${deltaOrigin}/api/assets/portfolio-info`, {
         "headers": {
             "accept": "application/json, text/plain, */*",
             "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
@@ -89,7 +91,12 @@ export const getStockPortfolioList = async () => {
         "credentials": "include"
     }).then(response => response.json()).then(res => res.response?.data?.items);
 
-    return list
+    const stockInfos = await getStockInfos(stocks.map(stock=>stock.instrumentId));
+
+    stocks = stocks.map(stock=>({...stock,instrumentName:stockInfos.find(stockInfo=>stockInfo.instrumentId===stock.instrumentId)?.lVal18AFC}))
+
+
+    return stocks
 }
 
 export const GetBaseDerivativeInstruments = async () => {
@@ -424,7 +431,7 @@ const formatDate = (date) => {
         return `${year}-${month}-${day}`;
 };
 
-const getOrders = async (instrumentId,daysAgo = 120)=>{
+const getOrders = async ({instrumentId,daysAgo = 120})=>{
 
     const today = new Date();
     const fromDateObj = new Date(today);
@@ -460,7 +467,7 @@ const getOrders = async (instrumentId,daysAgo = 120)=>{
 
 const calcAveragePrice = async (instrumentId)=>{
 
-    const orders = await getOrders(instrumentId);
+    const orders = await getOrders({instrumentId});
 
     const averageInfo  = calcAveragePriceByExecutedOrders(orders);
 
@@ -470,29 +477,51 @@ const calcAveragePrice = async (instrumentId)=>{
 
 const calcAveragePriceForAll = async () => {
 
-    const orders = await getOrders();
-
-    const calculatedAverageInfo = calcAveragePriceByExecutedOrdersByInstrument(orders);
+    const orders = await getOrders({daysAgo:120});
+    console.log({orders});
+    
+    const stocks = await getStockPortfolioList();
+    console.log({portfolioStocks:stocks});
+    
+    const calculatedAverageInfo = calcAveragePriceByExecutedOrdersByInstrument({orders,portfolioStocks:stocks});
 
     const options = await getOptionPortfolioList();
+    console.log({portfolioOptions:options});
 
 
-
-    const result = options.map(option => {
+    const optionsWithAvgPrice = options.map(option => {
 
         return {
+            instrumentId:option.instrumentId,
             symbol: option.instrumentName,
             calculatedAverageInfo: calculatedAverageInfo[option.instrumentId],
             executedPrice: option.executedPrice,
             breakEvenPrice: option.breakEvenPrice,
             count: option.orderSide==='Sell' ? -option.count : option.count,
-            orderSide : option.orderSide
+            orderSide : option.orderSide,
         }
 
     });
-    console.log(result);
+    const stocksWithAvgPrice = stocks.map(stock => {
 
-    return result
+        return {
+            instrumentId:stock.instrumentId,
+            symbol: stock.instrumentName,
+            calculatedAverageInfo: calculatedAverageInfo[stock.instrumentId],
+            executedPrice: stock.executedPrice,
+            breakEvenPrice: stock.breakEvenPrice,
+            count: stock.quantity,
+            orderSide : 'Buy',
+        }
+
+    });
+    console.log({optionsWithAvgPrice,stocksWithAvgPrice});
+    
+
+    return {
+        optionsWithAvgPrice,
+        stocksWithAvgPrice
+    }
 
 }
 
@@ -867,6 +896,7 @@ export const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(opt
 
 
 
+
 export const calculateSumOfMoneyAndAssets  = async ()=>{
 
 
@@ -897,7 +927,7 @@ export const calculateSumOfMoneyAndAssets  = async ()=>{
     const sumCostOfAssetsWithoutFreeRiskETF = assetPortfolioList.reduce((sumCostOfAssetsWithoutFreeRiskETF,asset)=>{
 
         const {quantity,executedPrice,instrumentId} = asset;
-        if(instrumentId==='IRT3KMDF0001'){
+        if(isAutomaticFreeETF(instrumentId)){
             isThereFreeRiskETF=true;
             return sumCostOfAssetsWithoutFreeRiskETF
         }
@@ -1130,5 +1160,6 @@ export const OMEXApi = {
     getCustomerOptionStrategyEstimationWithItems,
     findStrategyOfGroup,
     getStockPricesData,
-    GetBaseDerivativeInstruments
+    GetBaseDerivativeInstruments,
+    isAutomaticFreeETF
 }

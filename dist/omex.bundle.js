@@ -13,6 +13,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   TAX_FREE_SYMBOLS: () => (/* binding */ TAX_FREE_SYMBOLS),
 /* harmony export */   calcAveragePriceByExecutedOrders: () => (/* binding */ calcAveragePriceByExecutedOrders),
 /* harmony export */   calcAveragePriceByExecutedOrdersByInstrument: () => (/* binding */ calcAveragePriceByExecutedOrdersByInstrument),
+/* harmony export */   calcStockAveragePriceByExecutedOrders: () => (/* binding */ calcStockAveragePriceByExecutedOrders),
 /* harmony export */   calculateExerciseCost: () => (/* binding */ calculateExerciseCost),
 /* harmony export */   calculateOptionMargin: () => (/* binding */ calculateOptionMargin),
 /* harmony export */   configs: () => (/* binding */ configs),
@@ -934,7 +935,95 @@ const calcAveragePriceByExecutedOrders = (orders)=>{
 }
 
 
-const calcAveragePriceByExecutedOrdersByInstrument = (orders) => {
+const calcStockAveragePriceByExecutedOrders = (
+   { orders,
+    targetQuantity}
+) => {
+
+    const validOrders = orders
+        .filter(order =>
+            order.orderStatus === "CompletelySettled" &&
+            order.executedQuantity > 0
+        )
+        .sort((a, b) =>
+            new Date(b.createdDate) - new Date(a.createdDate)
+        );
+
+    const target = Math.abs(targetQuantity);
+    const isLong = targetQuantity > 0;
+
+    let remainingQuantity = target;
+    let matchedQuantity = 0;
+    let totalCost = 0;
+
+    for (const order of validOrders) {
+
+        const quantity = order.executedQuantity;
+        const price = order.executedPrice;
+        const isBuy = order.orderSide === "Buy";
+
+        // اگر Long هستیم:
+        // Buy  => ایجاد سهم
+        // Sell => مصرف سهم
+        //
+        // اگر Short هستیم:
+        // Sell => ایجاد موقعیت
+        // Buy  => مصرف موقعیت
+        const positionEffect = isLong
+            ? (isBuy ? quantity : -quantity)
+            : (isBuy ? -quantity : quantity);
+
+        if (positionEffect > 0) {
+
+            const usedQuantity = Math.min(
+                positionEffect,
+                remainingQuantity
+            );
+
+            totalCost += usedQuantity * price;
+            matchedQuantity += usedQuantity;
+            remainingQuantity -= usedQuantity;
+
+            if (remainingQuantity === 0) {
+                break;
+            }
+
+        } else {
+
+            // این معامله بخشی از پوزیشن فعلی را مصرف کرده
+            remainingQuantity += positionEffect;
+
+            if (remainingQuantity < 0) {
+                remainingQuantity = 0;
+            }
+        }
+    }
+
+    const averagePrice = matchedQuantity > 0
+        ? totalCost / matchedQuantity
+        : 0;
+
+    const to3Decimal = (num) => {
+        if (isNaN(num) || num === 0) return 0;
+        return Math.floor(num * 1000) / 1000;
+    };
+
+    return {
+        quantity: targetQuantity,
+        averagePrice: to3Decimal(averagePrice),
+        totalValue: to3Decimal(matchedQuantity * averagePrice),
+        side: targetQuantity > 0
+            ? "Long"
+            : targetQuantity < 0
+                ? "Short"
+                : "Neutral",
+
+        matchedQuantity,
+        missingQuantity: target - matchedQuantity
+    };
+};
+
+const calcAveragePriceByExecutedOrdersByInstrument = ({orders,portfolioStocks}={}) => {
 
     // گروه‌بندی بر اساس instrumentId
     const groupedOrders = orders.reduce((acc, order) => {
@@ -953,8 +1042,15 @@ const calcAveragePriceByExecutedOrdersByInstrument = (orders) => {
     const result = {};
 
     for (const [instrumentId, instrumentOrders] of Object.entries(groupedOrders)) {
-        result[instrumentId] =
-            calcAveragePriceByExecutedOrders(instrumentOrders);
+        const marketType = instrumentOrders[0].marketType;
+        if(marketType==="Option"){
+            result[instrumentId] = calcAveragePriceByExecutedOrders(instrumentOrders);
+        }
+        if(marketType==="Stock"){
+            const stock = portfolioStocks.find(stock=>stock.instrumentId===instrumentId);
+            result[instrumentId] = stock ? calcStockAveragePriceByExecutedOrders({orders:instrumentOrders,targetQuantity: stock.quantity}) : null;
+        }
+        
     }
 
     return result;
@@ -1128,6 +1224,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getStockPricesData: () => (/* binding */ getStockPricesData),
 /* harmony export */   getSumOfPositionsOfGroups: () => (/* binding */ getSumOfPositionsOfGroups),
 /* harmony export */   getWalletInfo: () => (/* binding */ getWalletInfo),
+/* harmony export */   isAutomaticFreeETF: () => (/* binding */ isAutomaticFreeETF),
 /* harmony export */   isInstrumentNameOfOption: () => (/* binding */ isInstrumentNameOfOption)
 /* harmony export */ });
 /* harmony import */ var _common__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
@@ -1139,6 +1236,8 @@ const redOrigin = origin.replace('.tsetab','-red.tsetab');
 const deltaOrigin = origin.replace('.tsetab','-delta.tsetab');
 
 // TODO: // https://khobregan-red.tsetab.ir
+
+const isAutomaticFreeETF = (instrumentId)=> instrumentId==='IRT3KMDF0001';
 
 
 const getWalletInfo = async () => {
@@ -1193,7 +1292,7 @@ const getOptionPortfolioList = async () => {
         "method": "GET",
         "mode": "cors",
         "credentials": "include"
-    }).then(response => response.json()).then(res => res.response.data)
+    }).then(response => response.json()).then(res => res.response.data);
 
     return list
 
@@ -1201,7 +1300,7 @@ const getOptionPortfolioList = async () => {
 
 const getStockPortfolioList = async () => {
 
-    const list = await fetch(`${deltaOrigin}/api/assets/portfolio-info`, {
+    let stocks = await fetch(`${deltaOrigin}/api/assets/portfolio-info`, {
         "headers": {
             "accept": "application/json, text/plain, */*",
             "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
@@ -1222,7 +1321,12 @@ const getStockPortfolioList = async () => {
         "credentials": "include"
     }).then(response => response.json()).then(res => res.response?.data?.items);
 
-    return list
+    const stockInfos = await getStockInfos(stocks.map(stock=>stock.instrumentId));
+
+    stocks = stocks.map(stock=>({...stock,instrumentName:stockInfos.find(stockInfo=>stockInfo.instrumentId===stock.instrumentId)?.lVal18AFC}))
+
+
+    return stocks
 }
 
 const GetBaseDerivativeInstruments = async () => {
@@ -1557,7 +1661,7 @@ const formatDate = (date) => {
         return `${year}-${month}-${day}`;
 };
 
-const getOrders = async (instrumentId,daysAgo = 120)=>{
+const getOrders = async ({instrumentId,daysAgo = 120})=>{
 
     const today = new Date();
     const fromDateObj = new Date(today);
@@ -1593,7 +1697,7 @@ const getOrders = async (instrumentId,daysAgo = 120)=>{
 
 const calcAveragePrice = async (instrumentId)=>{
 
-    const orders = await getOrders(instrumentId);
+    const orders = await getOrders({instrumentId});
 
     const averageInfo  = (0,_common__WEBPACK_IMPORTED_MODULE_0__.calcAveragePriceByExecutedOrders)(orders);
 
@@ -1603,29 +1707,51 @@ const calcAveragePrice = async (instrumentId)=>{
 
 const calcAveragePriceForAll = async () => {
 
-    const orders = await getOrders();
-
-    const calculatedAverageInfo = (0,_common__WEBPACK_IMPORTED_MODULE_0__.calcAveragePriceByExecutedOrdersByInstrument)(orders);
+    const orders = await getOrders({daysAgo:120});
+    console.log({orders});
+    
+    const stocks = await getStockPortfolioList();
+    console.log({portfolioStocks:stocks});
+    
+    const calculatedAverageInfo = (0,_common__WEBPACK_IMPORTED_MODULE_0__.calcAveragePriceByExecutedOrdersByInstrument)({orders,portfolioStocks:stocks});
 
     const options = await getOptionPortfolioList();
+    console.log({portfolioOptions:options});
 
 
-
-    const result = options.map(option => {
+    const optionsWithAvgPrice = options.map(option => {
 
         return {
+            instrumentId:option.instrumentId,
             symbol: option.instrumentName,
             calculatedAverageInfo: calculatedAverageInfo[option.instrumentId],
             executedPrice: option.executedPrice,
             breakEvenPrice: option.breakEvenPrice,
             count: option.orderSide==='Sell' ? -option.count : option.count,
-            orderSide : option.orderSide
+            orderSide : option.orderSide,
         }
 
     });
-    console.log(result);
+    const stocksWithAvgPrice = stocks.map(stock => {
 
-    return result
+        return {
+            instrumentId:stock.instrumentId,
+            symbol: stock.instrumentName,
+            calculatedAverageInfo: calculatedAverageInfo[stock.instrumentId],
+            executedPrice: stock.executedPrice,
+            breakEvenPrice: stock.breakEvenPrice,
+            count: stock.quantity,
+            orderSide : 'Buy',
+        }
+
+    });
+    console.log({optionsWithAvgPrice,stocksWithAvgPrice});
+    
+
+    return {
+        optionsWithAvgPrice,
+        stocksWithAvgPrice
+    }
 
 }
 
@@ -2000,6 +2126,7 @@ const isInstrumentNameOfOption = (instrumentName)=> ['ض', 'ط'].some(optionChar
 
 
 
+
 const calculateSumOfMoneyAndAssets  = async ()=>{
 
 
@@ -2030,7 +2157,7 @@ const calculateSumOfMoneyAndAssets  = async ()=>{
     const sumCostOfAssetsWithoutFreeRiskETF = assetPortfolioList.reduce((sumCostOfAssetsWithoutFreeRiskETF,asset)=>{
 
         const {quantity,executedPrice,instrumentId} = asset;
-        if(instrumentId==='IRT3KMDF0001'){
+        if(isAutomaticFreeETF(instrumentId)){
             isThereFreeRiskETF=true;
             return sumCostOfAssetsWithoutFreeRiskETF
         }
@@ -2263,7 +2390,8 @@ const OMEXApi = {
     getCustomerOptionStrategyEstimationWithItems,
     findStrategyOfGroup,
     getStockPricesData,
-    GetBaseDerivativeInstruments
+    GetBaseDerivativeInstruments,
+    isAutomaticFreeETF
 }
 
 /***/ }),
@@ -5907,12 +6035,12 @@ const setModalHeaders = (strategyPositions)=>{
 
 const checkCalculatedAvgPriceMismatchForAll = async ()=>{
 
-    const portfolioOptionsWithAvgPricesList = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calcAveragePriceForAll();
+    const {optionsWithAvgPrice:portfolioOptionsWithAvgPricesList , stocksWithAvgPrice:portfolioStocksWithAvgPrices} = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calcAveragePriceForAll();
 
-    console.log(portfolioOptionsWithAvgPricesList);
+    const allCalcPortfolioList = [...portfolioOptionsWithAvgPricesList,...portfolioStocksWithAvgPrices.filter(stock=>!_omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.isAutomaticFreeETF(stock.instrumentId))]
     let hasIssue;
 
-    for (let optionWithAvgInfo of portfolioOptionsWithAvgPricesList) {
+    for (let optionWithAvgInfo of allCalcPortfolioList) {
         
         const hasPriceMismatchIssue = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.hasSignificantPriceMismatch)(optionWithAvgInfo.calculatedAverageInfo.averagePrice,optionWithAvgInfo.executedPrice);
         const hasQuantityIssue = optionWithAvgInfo.calculatedAverageInfo.quantity!== optionWithAvgInfo.count;
@@ -5926,20 +6054,20 @@ const checkCalculatedAvgPriceMismatchForAll = async ()=>{
             hasIssue = true;
         }
 
-        
-
-
     }
 
 
     if (hasIssue) {
 
         (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
-            title: 'مشکل میانگین محاسباتی',
+            title: 'مشکل میانگین و تعداد محاسباتی',
             body: ``,
             requireInteraction: true,
             tag: `checkCalculatedAvgPriceMismatchForAll`
         });
+    }else{
+        showToast('میانگین درسته');
+        console.log('checkCalculatedAvgPriceMismatchForAll is ok!');
     }
 
     
