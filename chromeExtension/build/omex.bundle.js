@@ -5542,12 +5542,41 @@ const showVariableMargin = async () => {
     }), 5000);
 }
 
-const getRecentCalculatedAvgPrices = ({instrumentId,instrumentName})=>{
-    if (!lastCalculatedAvgPrices.results || !lastCalculatedAvgPrices.time || (Date.now() - lastCalculatedAvgPrices.time) > (60000 * 3)) return null
-    if(!lastCalculatedAvgPrices.results.length) return 
-    return lastCalculatedAvgPrices.results.find(avgInfo=>avgInfo.instrumentName===instrumentName)
+const getRecentCalculatedAvgPrices = ({ instrumentId, instrumentName }) => {
 
-}
+    const maxAge = 60000 * 3;
+
+    // 1. آخرین محاسبه فعلی
+    if (
+        lastCalculatedAvgPrices.results?.length &&
+        lastCalculatedAvgPrices.time &&
+        (Date.now() - lastCalculatedAvgPrices.time) <= maxAge
+    ) {
+        const avgInfo = lastCalculatedAvgPrices.results.find(
+            avgInfo => avgInfo.instrumentName === instrumentName
+        );
+
+        if (avgInfo) return avgInfo;
+    }
+
+    // 2. کش localStorage
+    const cached = JSON.parse(
+        localStorage.getItem('calculatedAvgPrices') || 'null'
+    );
+
+    if (
+        !cached?.data?.length ||
+        !cached.calculatedAt ||
+        (Date.now() - cached.calculatedAt) > maxAge
+    ) {
+        return null;
+    }
+
+    // 3. پیدا کردن instrument موردنظر در کش
+    return cached.data.find(
+        item => item.instrumentId === instrumentId
+    )?.calculatedAverageInfo ?? null;
+};
 
 
 const openModalOfAllPositionsRows = async (documentOfWindow=document) => {
@@ -5977,7 +6006,13 @@ const checkCalculatedAvgPriceMismatchForAll = async ()=>{
 
     const {optionsWithAvgPrice:portfolioOptionsWithAvgPricesList , stocksWithAvgPrice:portfolioStocksWithAvgPrices} = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calcAveragePriceForAll();
 
-    const allCalcPortfolioList = [...portfolioOptionsWithAvgPricesList,...portfolioStocksWithAvgPrices.filter(stock=>!_omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.isAutomaticFreeETF(stock.instrumentId))]
+    const allCalcPortfolioList = [...portfolioOptionsWithAvgPricesList,...portfolioStocksWithAvgPrices.filter(stock=>!_omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.isAutomaticFreeETF(stock.instrumentId))];
+
+    localStorage.setItem('calculatedAvgPrices', JSON.stringify({
+        calculatedAt: Date.now(),
+        data: allCalcPortfolioList
+    }));
+
     let hasIssue = false;
     const priceMismatchIssueList =[];
     const quantityMismatchIssueList =[];
