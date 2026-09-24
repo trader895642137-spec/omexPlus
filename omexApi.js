@@ -460,7 +460,7 @@ const getOrders = async ({instrumentId,daysAgo = 120})=>{
         "credentials": "include"
     }).then(response => response.json()).then(res => {
         const orders = res.response.data;
-        if (!orders?.length) return null
+        if (!orders?.length) return []
         return orders
     });
 }

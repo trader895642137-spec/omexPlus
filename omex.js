@@ -3187,8 +3187,14 @@ export const checkCalculatedAvgPriceMismatchForAll = async ()=>{
     let hasIssue = false;
     const priceMismatchIssueList =[];
     const quantityMismatchIssueList =[];
+    const calculatedAverageInfoNotExists = [];
 
     for (let optionWithAvgInfo of allCalcPortfolioList) {
+        if(!optionWithAvgInfo.calculatedAverageInfo){
+            hasIssue = true;
+            calculatedAverageInfoNotExists.push(optionWithAvgInfo);
+            continue;
+        }
         
         const hasPriceMismatchIssue = hasSignificantPriceMismatch(optionWithAvgInfo.calculatedAverageInfo.averagePrice,optionWithAvgInfo.executedPrice);
         const hasQuantityIssue = optionWithAvgInfo.calculatedAverageInfo.quantity!== optionWithAvgInfo.count;
@@ -3226,6 +3232,7 @@ export const checkCalculatedAvgPriceMismatchForAll = async ()=>{
         payload: {
             priceMismatchIssueList,
             quantityMismatchIssueList,
+            calculatedAverageInfoNotExists,
             hasIssue
 
         }

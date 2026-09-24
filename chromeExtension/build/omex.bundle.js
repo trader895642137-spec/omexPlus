@@ -1689,7 +1689,7 @@ const getOrders = async ({instrumentId,daysAgo = 120})=>{
         "credentials": "include"
     }).then(response => response.json()).then(res => {
         const orders = res.response.data;
-        if (!orders?.length) return null
+        if (!orders?.length) return []
         return orders
     });
 }
@@ -5981,8 +5981,14 @@ const checkCalculatedAvgPriceMismatchForAll = async ()=>{
     let hasIssue = false;
     const priceMismatchIssueList =[];
     const quantityMismatchIssueList =[];
+    const calculatedAverageInfoNotExists = [];
 
     for (let optionWithAvgInfo of allCalcPortfolioList) {
+        if(!optionWithAvgInfo.calculatedAverageInfo){
+            hasIssue = true;
+            calculatedAverageInfoNotExists.push(optionWithAvgInfo);
+            continue;
+        }
         
         const hasPriceMismatchIssue = (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.hasSignificantPriceMismatch)(optionWithAvgInfo.calculatedAverageInfo.averagePrice,optionWithAvgInfo.executedPrice);
         const hasQuantityIssue = optionWithAvgInfo.calculatedAverageInfo.quantity!== optionWithAvgInfo.count;
@@ -6020,6 +6026,7 @@ const checkCalculatedAvgPriceMismatchForAll = async ()=>{
         payload: {
             priceMismatchIssueList,
             quantityMismatchIssueList,
+            calculatedAverageInfoNotExists,
             hasIssue
 
         }
