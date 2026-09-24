@@ -59,7 +59,7 @@ async function startAverageMonitoring() {
     chrome.alarms.create(AVERAGE_ALARM, {
         periodInMinutes: 30
     });
-    await checkCalculatedAvgPriceMismatchForAll();
+    await checkOMEXCalculatedAvgPriceMismatchForAll();
 }
 
 async function waitForOmexLib(tabId, timeout = 10000) {
@@ -121,7 +121,7 @@ async function findOmexTab(timeout = 10000) {
     return null;
 }
 
-async function checkCalculatedAvgPriceMismatchForAll() {
+async function checkOMEXCalculatedAvgPriceMismatchForAll() {
   const tab = await findOmexTab();
 
   if (!tab?.id) {
@@ -129,13 +129,16 @@ async function checkCalculatedAvgPriceMismatchForAll() {
   }
 
 
-  return await chrome.scripting.executeScript({
+  const result = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
     world: 'MAIN',
     func: async() => {
       return await window.omexLib?.checkCalculatedAvgPriceMismatchForAll();
     }
   });
+
+
+  return result
 }
 
 async function showOmexNotification({
@@ -188,7 +191,7 @@ chrome.alarms.onAlarm.addListener(async alarm => {
   }
 
   
-  await checkCalculatedAvgPriceMismatchForAll();
+  await checkOMEXCalculatedAvgPriceMismatchForAll();
 });
 
 chrome.runtime.onMessage.addListener((msg, sender) => {

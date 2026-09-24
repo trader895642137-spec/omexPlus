@@ -2,6 +2,7 @@ import { calculateExerciseCost, isBuyQueue, isSellQueue, showNotification, total
 import { calcOffsetProfitOfStrategy, hasCurrentQuantityIssue, isProfitEnough, isReachedToExpectedOffsetProfit, STRATEGY_NAME_PROFIT_CALCULATOR } from "../omex";
 
 let lastDataReceivedAt = Date.now();
+let calculatedAvgPriceMismatchForAllResult;
 const DATA_TIMEOUT = 10_000; // 10 seconds
 
 const notifyError = (error, context = '') => {
@@ -392,10 +393,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       renderStrategies();
 
     }
+    if (message.type === "calculatedAvgPriceMismatchForAllResult") {
+      console.log(message.payload);
+       calculatedAvgPriceMismatchForAllResult = message.payload;
 
+
+    }
 
   } catch (error) {
-    notifyError(error, 'Watcher - دریافت استراتژی');
+    notifyError(error, 'Watcher - دریافت پیغام');
   }
 });
 
@@ -474,7 +480,16 @@ loadBtn.addEventListener('click', () => {
 
     }
 });
+document.getElementById('showLastCalcAvgCountBtn').addEventListener('click', () => {
+  try {
 
+    console.log(calculatedAvgPriceMismatchForAllResult)
+      
+    } catch (error) {
+      console.error('خطای نمایش میانگین:', error);
+      notifyError(error, 'خطای نمایش میانگین');
+    }
+});
 
 
 
@@ -596,6 +611,18 @@ function renderStrategies() {
 
 
   document.querySelector('#totalPositionsCount').innerHTML = uniquePositionsCount;
+
+  if(calculatedAvgPriceMismatchForAllResult?.hasIssue){
+    document
+    .getElementById('showLastCalcAvgCountBtn')
+    .classList.add('error');
+
+  }else{
+    document
+    .getElementById('showLastCalcAvgCountBtn')
+    .classList.remove('error');
+
+  }
 
   strategyGroupInfoList.forEach((strategyGroupInfo, index) => {
     const box = document.createElement('div');

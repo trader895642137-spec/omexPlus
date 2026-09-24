@@ -54,6 +54,12 @@ document.getElementById('mainButton').addEventListener('click', () => {
                 world: "MAIN"
             });
         });
+
+        // ISOLATED
+        chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            files: ["omexBridge.js"]
+        });
     });
 
 
@@ -347,6 +353,33 @@ document.getElementById('calcAvgPricesByExecutenList').addEventListener('click',
                     window.omexLib.calcAvgPricesByExecutenList();
                 },
                 args: ['GET-AVG-PRICES'],
+                world: "MAIN"
+            });
+        });
+    });
+
+
+});
+
+
+document.getElementById('checkCalculatedAvgPriceMismatchForAll').addEventListener('click', () => {
+
+
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+
+        chrome.scripting.executeScript({
+            target: { tabId: tabs[0].id },
+            files: [],
+            world: "MAIN"
+        }, async () => {
+
+            // await new Promise(r => setTimeout(r, 3000)); 
+            chrome.scripting.executeScript({
+                target: { tabId: tabs[0].id },
+                func: () => {
+                    window.omexLib.checkCalculatedAvgPriceMismatchForAll();
+                },
+                args: [],
                 world: "MAIN"
             });
         });

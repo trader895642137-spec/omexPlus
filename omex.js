@@ -3170,6 +3170,13 @@ const setModalHeaders = (strategyPositions)=>{
      }
 }
 
+export function sendToBackground(data) {
+    window.postMessage({
+        source: 'OMEX_PAGE_TO_EXTENSION',
+        ...data
+    }, '*');
+}
+
 
 
 export const checkCalculatedAvgPriceMismatchForAll = async ()=>{
@@ -3177,7 +3184,9 @@ export const checkCalculatedAvgPriceMismatchForAll = async ()=>{
     const {optionsWithAvgPrice:portfolioOptionsWithAvgPricesList , stocksWithAvgPrice:portfolioStocksWithAvgPrices} = await OMEXApi.calcAveragePriceForAll();
 
     const allCalcPortfolioList = [...portfolioOptionsWithAvgPricesList,...portfolioStocksWithAvgPrices.filter(stock=>!OMEXApi.isAutomaticFreeETF(stock.instrumentId))]
-    let hasIssue;
+    let hasIssue = false;
+    const priceMismatchIssueList =[];
+    const quantityMismatchIssueList =[];
 
     for (let optionWithAvgInfo of allCalcPortfolioList) {
         
@@ -3186,10 +3195,12 @@ export const checkCalculatedAvgPriceMismatchForAll = async ()=>{
 
         if(hasPriceMismatchIssue){
             console.log('hasPriceMismatchIssue' , optionWithAvgInfo);
+            priceMismatchIssueList.push(optionWithAvgInfo);
             hasIssue = true;
         }
         if(hasQuantityIssue){
             console.log('hasQuantityIssue' , optionWithAvgInfo);
+            quantityMismatchIssueList.push(optionWithAvgInfo);
             hasIssue = true;
         }
 
@@ -3209,7 +3220,17 @@ export const checkCalculatedAvgPriceMismatchForAll = async ()=>{
         console.log('checkCalculatedAvgPriceMismatchForAll is ok!');
     }
 
-    
+
+    sendToBackground({
+        type: "calculatedAvgPriceMismatchForAllResult",
+        payload: {
+            priceMismatchIssueList,
+            quantityMismatchIssueList,
+            hasIssue
+
+        }
+    })
+
 
 }
 

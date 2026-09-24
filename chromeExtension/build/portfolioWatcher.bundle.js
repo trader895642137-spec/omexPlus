@@ -1231,6 +1231,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   openGroupInNewTab: () => (/* binding */ openGroupInNewTab),
 /* harmony export */   openStrategyExerciseCostSummaryModal: () => (/* binding */ openStrategyExerciseCostSummaryModal),
 /* harmony export */   portfolioLogger: () => (/* binding */ portfolioLogger),
+/* harmony export */   sendToBackground: () => (/* binding */ sendToBackground),
 /* harmony export */   showToast: () => (/* binding */ showToast),
 /* harmony export */   showVariableMargin: () => (/* binding */ showVariableMargin),
 /* harmony export */   silentNotificationForMoment: () => (/* reexport safe */ _common_js__WEBPACK_IMPORTED_MODULE_0__.silentNotificationForMoment),
@@ -4399,6 +4400,13 @@ const setModalHeaders = (strategyPositions)=>{
      }
 }
 
+function sendToBackground(data) {
+    window.postMessage({
+        source: 'OMEX_PAGE_TO_EXTENSION',
+        ...data
+    }, '*');
+}
+
 
 
 const checkCalculatedAvgPriceMismatchForAll = async ()=>{
@@ -4406,7 +4414,9 @@ const checkCalculatedAvgPriceMismatchForAll = async ()=>{
     const {optionsWithAvgPrice:portfolioOptionsWithAvgPricesList , stocksWithAvgPrice:portfolioStocksWithAvgPrices} = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.calcAveragePriceForAll();
 
     const allCalcPortfolioList = [...portfolioOptionsWithAvgPricesList,...portfolioStocksWithAvgPrices.filter(stock=>!_omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.isAutomaticFreeETF(stock.instrumentId))]
-    let hasIssue;
+    let hasIssue = false;
+    const priceMismatchIssueList =[];
+    const quantityMismatchIssueList =[];
 
     for (let optionWithAvgInfo of allCalcPortfolioList) {
         
@@ -4415,10 +4425,12 @@ const checkCalculatedAvgPriceMismatchForAll = async ()=>{
 
         if(hasPriceMismatchIssue){
             console.log('hasPriceMismatchIssue' , optionWithAvgInfo);
+            priceMismatchIssueList.push(optionWithAvgInfo);
             hasIssue = true;
         }
         if(hasQuantityIssue){
             console.log('hasQuantityIssue' , optionWithAvgInfo);
+            quantityMismatchIssueList.push(optionWithAvgInfo);
             hasIssue = true;
         }
 
@@ -4438,7 +4450,17 @@ const checkCalculatedAvgPriceMismatchForAll = async ()=>{
         console.log('checkCalculatedAvgPriceMismatchForAll is ok!');
     }
 
-    
+
+    sendToBackground({
+        type: "calculatedAvgPriceMismatchForAllResult",
+        payload: {
+            priceMismatchIssueList,
+            quantityMismatchIssueList,
+            hasIssue
+
+        }
+    })
+
 
 }
 
@@ -6102,6 +6124,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 let lastDataReceivedAt = Date.now();
+let calculatedAvgPriceMismatchForAllResult;
 const DATA_TIMEOUT = 10_000; // 10 seconds
 
 const notifyError = (error, context = '') => {
@@ -6492,10 +6515,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       renderStrategies();
 
     }
+    if (message.type === "calculatedAvgPriceMismatchForAllResult") {
+      console.log(message.payload);
+       calculatedAvgPriceMismatchForAllResult = message.payload;
 
+
+    }
 
   } catch (error) {
-    notifyError(error, 'Watcher - دریافت استراتژی');
+    notifyError(error, 'Watcher - دریافت پیغام');
   }
 });
 
@@ -6574,7 +6602,16 @@ loadBtn.addEventListener('click', () => {
 
     }
 });
+document.getElementById('showLastCalcAvgCountBtn').addEventListener('click', () => {
+  try {
 
+    console.log(calculatedAvgPriceMismatchForAllResult)
+      
+    } catch (error) {
+      console.error('خطای نمایش میانگین:', error);
+      notifyError(error, 'خطای نمایش میانگین');
+    }
+});
 
 
 
@@ -6696,6 +6733,18 @@ function renderStrategies() {
 
 
   document.querySelector('#totalPositionsCount').innerHTML = uniquePositionsCount;
+
+  if(calculatedAvgPriceMismatchForAllResult?.hasIssue){
+    document
+    .getElementById('showLastCalcAvgCountBtn')
+    .classList.add('error');
+
+  }else{
+    document
+    .getElementById('showLastCalcAvgCountBtn')
+    .classList.remove('error');
+
+  }
 
   strategyGroupInfoList.forEach((strategyGroupInfo, index) => {
     const box = document.createElement('div');

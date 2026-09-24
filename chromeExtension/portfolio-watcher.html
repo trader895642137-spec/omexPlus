@@ -1,17 +1,18 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Strategy Manager</title>
 
   <style>
-
-    html{
+    html {
       overflow: hidden;
       height: 100%;
 
     }
+
     body {
       font-family: sans-serif;
       background: #f5f5f5;
@@ -40,13 +41,14 @@
       border-radius: 8px;
       padding: 12px;
       width: 200px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
       position: relative;
       display: flex;
       flex-direction: column;
       row-gap: 10px;
     }
-    .silent-btn{
+
+    .silent-btn {
       margin-right: auto;
     }
 
@@ -87,19 +89,33 @@
       width: 100%;
       height: 120px;
     }
-    .has-alarm-profit{
+
+    .has-alarm-profit {
       border: 7px solid #00d820;
       background: #f4fdf4;
-      
+
     }
-    .has-error{
+
+    .has-error {
       border: 7px solid red;
       background: #f6dede;
     }
-    .action-buttons-cnt{
+
+    .action-buttons-cnt {
       display: flex;
       column-gap: 100px;
       padding: 10px;
+    }
+
+    #showLastCalcAvgCountBtn.error {
+      background-color: #dc2626;
+      color: white;
+      border-color: #b91c1c;
+      font-weight: bold;
+    }
+
+    #showLastCalcAvgCountBtn.error:hover {
+      background-color: #b91c1c;
     }
   </style>
 </head>
@@ -107,37 +123,43 @@
 <body>
 
   <!-- <button id="addStrategyBtn">➕ افزودن استراتژی</button> -->
-   <div class="action-buttons-cnt">
-     <button id="saveGroupsBtn">ذخیره</button>
-     <div>
-      <label >تعداد موقعیت باز : </label>
-      <span id="totalPositionsCount"></span>
+  <div class="action-buttons-cnt">
+    <button id="saveGroupsBtn">ذخیره</button>
+    <div style="display: flex;flex-direction: column;row-gap: 5px;">
+      <div >
+        <label>تعداد موقعیت باز : </label>
+        <span id="totalPositionsCount"></span>
+      </div>
+      <div>
+        <button id="showLastCalcAvgCountBtn" style="font-size: 12px;padding: 4px 8px;">نتیجه آخرین محاسبه
+          میانگین</button>
+      </div>
 
-     </div>
-     <button style="margin-right: auto;" id="loadGroupsBtn">بازیابی</button>
+    </div>
+    <button style="margin-right: auto;" id="loadGroupsBtn">بازیابی</button>
 
-     <div>
-       <label>
-         <input type="radio" name="sortType" value="positionCost" >
-         هزینه
-       </label>
-       
-       <label>
-         <input type="radio" name="sortType" value="daysLeft" >
-         تا سررسید
-       </label>
-       <label>
-         <input type="radio" name="sortType" value="none" >
-         بدون ترتیب
-       </label>
+    <div>
+      <label>
+        <input type="radio" name="sortType" value="positionCost">
+        هزینه
+      </label>
 
-
-     </div>
+      <label>
+        <input type="radio" name="sortType" value="daysLeft">
+        تا سررسید
+      </label>
+      <label>
+        <input type="radio" name="sortType" value="none">
+        بدون ترتیب
+      </label>
 
 
+    </div>
 
-     <button id="silentAllBtn" style="float: left;">سکوت موقت</button>
-   </div>
+
+
+    <button id="silentAllBtn" style="float: left;">سکوت موقت</button>
+  </div>
 
   <div id="strategyList"></div>
 
@@ -158,7 +180,8 @@
     </div>
   </div> -->
 
-  <script src="./build/portfolioWatcher.bundle.js"  defer></script>
+  <script src="./build/portfolioWatcher.bundle.js" defer></script>
   <script src="./build/omex.bundle.js" defer></script>
 </body>
+
 </html>
