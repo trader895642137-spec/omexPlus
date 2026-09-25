@@ -209,6 +209,28 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
         await startAverageMonitoring();
       }
 
+      if (msg.type === "portfolioOptionList") {
+        chrome.tabs.query({
+          url: "https://old.tsetmc.com/*"
+        }).then(tabs => {
+
+          for (const tab of tabs) {
+            if (!tab.id) continue;
+
+            chrome.tabs.sendMessage(tab.id, msg)
+              .catch(error => {
+                console.log(
+                  `⚠️ ارسال به تب ${tab.id} ناموفق بود:`,
+                  error.message
+                );
+              });
+          }
+
+        }).catch(error => {
+          console.error("❌ خطا در پیدا کردن تب‌های TSETMC:", error);
+        });
+      }
+
     } catch (error) {
 
       await showOmexNotification({
@@ -221,6 +243,5 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
     }
   })();
 
-  return true;
 });
 

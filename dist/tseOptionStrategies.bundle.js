@@ -14547,6 +14547,17 @@ const calcOffsetGainOfPositions = ({ strategyPositions, stockPrice }) => {
 }
 
 
+const setPrivateIgnoreListText = (text) => {
+
+    const textarea = document.querySelector(
+        '.amin-filter-cnt textarea.amin-ignoreList.amin-ignoreList--private'
+    );
+
+    if (textarea) {
+        textarea.value = text;
+    }
+}
+
 
 const getIgnoreStrategyNames = ()=>{
 
@@ -24245,27 +24256,27 @@ const createListFilterContetnByList=(list)=>{
 
 
 
-        const BESRatio_BUCS_Strategies  = calcBESRatio_BY_BUS_BES_Strategies({
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            strategyTypeTitle:"BESRatio_BUCS",
-            filteredBesList: filterStrategiesByConfig({
-                strategies: BES_With_BUCS_BEPSStrategies,
-                minStockPriceToSarBeSar : 0.01
-            }).allStrategies,
-            expectedProfitNotif: true 
-        });
+        // const BESRatio_BUCS_Strategies  = calcBESRatio_BY_BUS_BES_Strategies({
+        //     priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        //     strategyTypeTitle:"BESRatio_BUCS",
+        //     filteredBesList: filterStrategiesByConfig({
+        //         strategies: BES_With_BUCS_BEPSStrategies,
+        //         minStockPriceToSarBeSar : 0.01
+        //     }).allStrategies,
+        //     expectedProfitNotif: true 
+        // });
 
 
        
-        const BESRatio_BUPS_Strategies  = calcBESRatio_BY_BUS_BES_Strategies({
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            strategyTypeTitle:"BESRatio_BUPS",
-            filteredBesList: filterStrategiesByConfig({
-                strategies: BES_With_BUPS_BECSStrategies,
-                minStockPriceToSarBeSar : 0.01
-            }).allStrategies,
-            expectedProfitNotif: true 
-        });
+        // const BESRatio_BUPS_Strategies  = calcBESRatio_BY_BUS_BES_Strategies({
+        //     priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        //     strategyTypeTitle:"BESRatio_BUPS",
+        //     filteredBesList: filterStrategiesByConfig({
+        //         strategies: BES_With_BUPS_BECSStrategies,
+        //         minStockPriceToSarBeSar : 0.01
+        //     }).allStrategies,
+        //     expectedProfitNotif: true 
+        // });
 
 
         const BUCS_COLLAR_Strategies = calcBUCS_COLLAR_Strategies(list, {
@@ -24681,13 +24692,13 @@ const createListFilterContetnByList=(list)=>{
             isWholeProfitable:true,
         }),
 
-        calcBUCS_BEPS_LongPutStrategies({
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            filteredBusList: filterStrategiesByConfig({
-                strategies: BUS_With_BUCS_BEPSStrategies,
-                maxStockPriceToSarBeSar : -0.01
-            }).allStrategies,
-        }),
+        // calcBUCS_BEPS_LongPutStrategies({
+        //     priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+        //     filteredBusList: filterStrategiesByConfig({
+        //         strategies: BUS_With_BUCS_BEPSStrategies,
+        //         maxStockPriceToSarBeSar : -0.01
+        //     }).allStrategies,
+        // }),
 
 
 
@@ -24695,15 +24706,15 @@ const createListFilterContetnByList=(list)=>{
         
 
 
-        filterStrategiesByConfig({
-            strategies: BESRatio_BUCS_Strategies,
-            strategyTypeTitle:"BESRatio_BUCS",
-        }),
+        // filterStrategiesByConfig({
+        //     strategies: BESRatio_BUCS_Strategies,
+        //     strategyTypeTitle:"BESRatio_BUCS",
+        // }),
 
-        filterStrategiesByConfig({
-            strategies: BESRatio_BUPS_Strategies,
-            strategyTypeTitle:"BESRatio_BUPS",
-        }),
+        // filterStrategiesByConfig({
+        //     strategies: BESRatio_BUPS_Strategies,
+        //     strategyTypeTitle:"BESRatio_BUPS",
+        // }),
 
         
 
@@ -26141,8 +26152,42 @@ const injectStyles = ()=>{
 
 
 
+const listenToBackgroundMessages = () => {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        try {
+
+            if (message.type === "portfolioOptionList") {
+                console.log(message.payload);
+                const {portfolioOptionList} = message.payload;
+                setPrivateIgnoreListText(portfolioOptionList.map(instrumentInfo=>`ALL@${instrumentInfo.instrumentName}`).join(' '));
+
+            }
+
+
+        } catch (error) {
+            console.error(`[tse ERROR]`, error);
+
+            const message =
+                error instanceof Error
+                    ? `${error.message}\n${error.stack || ''}`
+                    : String(error);
+
+            (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.showNotification)({
+                title: '❌ خطا در Watcher',
+                body: `${message}`.slice(0, 500),
+                tag: `tse-error`
+            });
+
+        }
+    });
+}
+
+
+
 
 const RUN = () => {
+
+    
     // var momentJalaliScriptTag = document.createElement('script');
     // momentJalaliScriptTag.src = "https://cdn.jsdelivr.net/npm/jalali-moment@3.2.3/dist/jalali-moment.browser.js";
     // document.head.appendChild(momentJalaliScriptTag);
@@ -26185,6 +26230,9 @@ const RUN = () => {
         e.returnValue = '';
         return 'آیا مطمئن هستید که می‌خواهید صفحه را ترک کنید؟';
     });
+
+
+    listenToBackgroundMessages();
 
 
     // chrome.runtime.sendMessage({ type: "FROM_FILTER_TAB", payload: {a:"23"} });

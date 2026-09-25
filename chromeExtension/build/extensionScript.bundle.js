@@ -463,6 +463,18 @@ const getStrategyInfo = async (tabId) => {
     return result[0]?.result;
 };
 
+const getPortfolioOptionList = async (tabId) => {
+    const result = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: async() => {
+            return await window.omexLib?.OMEXApi?.getOptionPortfolioList() || null;
+        },
+        world: "MAIN"
+    });
+
+    return result[0]?.result;
+};
+
 
 const getAllGroupsStrategyInfo = async (tabId) => {
     const result = await chrome.scripting.executeScript({
@@ -581,4 +593,38 @@ document.getElementById('strategyExerciseCostSummary').addEventListener('click',
     });
 
 
+});
+
+
+
+document.getElementById('tellAllOptionPortfolioListToFilter').addEventListener('click', async () => {
+    try {
+        // ۱. تب فعال رو بگیر
+        
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        const portfolioOptionList = await getPortfolioOptionList(tab.id);
+        
+        if(!portfolioOptionList) return
+
+
+        chrome.runtime.sendMessage({
+            type: "portfolioOptionList",
+            payload: {
+                portfolioOptionList,
+                tabId: tab.id,
+                url: tab.url,
+                title: tab.title
+            }
+        }, (response) => {
+            
+        });
+
+    } catch (error) {
+        console.error("❌ خطا:", error);
+        simpleNotifyError(
+            error,
+            `اعلام پرتفوی به فیلتر`
+        );
+    }
 });
