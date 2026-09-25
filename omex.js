@@ -2694,6 +2694,7 @@ const getAndSetInstrumentData = async (strategyPositions)=>{
 }
 
 const lastCalculatedAvgPrices={}
+let isClickedToUseCalculatedAvgPrices= false;
 
 
 export const calcAvgPricesByExecutenList =async ()=>{
@@ -2719,6 +2720,7 @@ export const calcAvgPricesByExecutenList =async ()=>{
     const results = await Promise.all(requests);
 
 
+    isClickedToUseCalculatedAvgPrices = true;
     lastCalculatedAvgPrices.results= results;
     lastCalculatedAvgPrices.time = Date.now();
     console.log('همه نتایج:', results);
@@ -2749,6 +2751,8 @@ export const showVariableMargin = async () => {
 }
 
 const getRecentCalculatedAvgPrices = ({ instrumentId, instrumentName }) => {
+
+    if(!isClickedToUseCalculatedAvgPrices) return null
 
     const maxAge = 60000 * 3;
 
