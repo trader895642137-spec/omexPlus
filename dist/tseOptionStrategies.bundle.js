@@ -24671,6 +24671,15 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitNotif:false,
             strategyTypeTitle:"BUCS_goodPL"
         }),
+        filterStrategiesByConfig({
+            strategies: BUCSStrategies,
+            minProfitLossRatio: 0.95,
+            isProfitEnoughFn(strategy){
+                return strategy.profitPercent>0
+            },
+            expectedProfitNotif:true,
+            strategyTypeTitle:"BUCS_goodPL"
+        }),
 
 
         
@@ -25274,6 +25283,17 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitNotif:false,
             strategyTypeTitle:"BECS_goodPL"
         }),
+
+        filterStrategiesByConfig({
+            strategies: BECSStrategies,
+            minProfitLossRatio: 0.95,
+            isProfitEnoughFn(strategy){
+                return strategy.profitPercent>0
+            },
+            expectedProfitNotif:true,
+            strategyTypeTitle:"BECS_goodPL"
+        }),
+
 
 
 
