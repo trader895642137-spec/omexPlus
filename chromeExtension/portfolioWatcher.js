@@ -368,6 +368,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       strategyGroupInfoList.push({ ...strategyInfo });
 
       renderStrategies();
+      sendResponse({ isAdded: true });
+
+      return true;
 
     }
 
@@ -391,11 +394,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
 
       renderStrategies();
+      sendResponse({ isAdded: true });
+
+      return true;
 
     }
     if (message.type === "calculatedAvgPriceMismatchForAllResult") {
       console.log(message.payload);
-       calculatedAvgPriceMismatchForAllResult = message.payload;
+      calculatedAvgPriceMismatchForAllResult = message.payload;
 
 
     }

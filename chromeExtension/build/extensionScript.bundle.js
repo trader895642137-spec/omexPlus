@@ -510,16 +510,34 @@ document.getElementById('addToWatcher').addEventListener('click', async () => {
                 url: tab.url,
                 title: tab.title
             }
-        }, (response) => {
-            if (chrome.runtime.lastError) {
-                console.error("❌ خطا:", chrome.runtime.lastError);
+        }, ({isAdded}) => {
+            if (isAdded) {
+
+                 chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    func: (actionName) => {
+                        window.omexLib.showToast('به رصدگر اضافه شد');
+                    },
+                    args: [],
+                    world: "MAIN"
+                });
+               
             } else {
-                console.log("✅ پیام ارسال شد:", response);
+
+                console.error("❌ خطا:", chrome.runtime.lastError);
+                simpleNotifyError(
+                    chrome.runtime.lastError,
+                    'addToWatcher response'
+                );
             }
         });
         
     } catch (error) {
         console.error("❌ خطا:", error);
+        simpleNotifyError(
+                    error,
+                    'addToWatcher error'
+                );
     }
 });
 
@@ -546,16 +564,8 @@ document.getElementById('addAllGroupStrategyToWatcher').addEventListener('click'
                 url: tab.url,
                 title: tab.title
             }
-        }, (response) => {
-            if (chrome.runtime.lastError) {
-                console.error("❌ خطا:", chrome.runtime.lastError);
-                simpleNotifyError(
-                    chrome.runtime.lastError,
-                    'addAllToWatcher response'
-                );
-            } else {
-                console.log("✅ پیام ارسال شد:", response);
-            }
+        }, () => {
+            
         });
 
     } catch (error) {
