@@ -2551,8 +2551,42 @@ const getStrategyInfoForExport = ()=>{
 const openStrategyExerciseCostSummaryModal = async ()=>{
     const  groupStrategyInfoList = await enrichGroupByStrategyInfo();
     console.log(groupStrategyInfoList);
+
+    const uniquePositions = [
+        ...new Map(
+            groupStrategyInfoList
+                .map(groupStrategyInfo => groupStrategyInfo.strategy)
+                .filter(Boolean)
+                .flatMap(strategy =>
+                    strategy.strategyPositions.map(position => [
+                        position.optionID,
+                        {
+                            position,
+                            stockPrice: strategy.stockPrice,
+                            daysLeftToSettlement: strategy.daysLeftToSettlement
+                        }
+                    ])
+                )
+        ).values()
+    ];
+
+    const positionsBySettlement = Object.groupBy(
+        uniquePositions,
+        item => item.daysLeftToSettlement
+    );
+
+    const exerciseCostBySettlement = Object.values(
+        positionsBySettlement
+    ).map(items => ({
+        daysLeftToSettlement: items[0].daysLeftToSettlement,
+        exerciseCost: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.calculateExerciseCost)({
+            strategyPositions: items.map(item => item.position),
+            stockPrice: items[0].stockPrice
+        }),
+        positionCount: items.length
+    }));
     
-    (0,_strategyExerciseCostSummary_js__WEBPACK_IMPORTED_MODULE_4__.showStrategyExerciseCostSummary)(groupStrategyInfoList.map(groupStrategyInfo=>groupStrategyInfo.strategy).filter(Boolean));
+    (0,_strategyExerciseCostSummary_js__WEBPACK_IMPORTED_MODULE_4__.showStrategyExerciseCostSummary)(exerciseCostBySettlement);
 }
 
 const getAllGroupStrategyListForExport = async ()=>{
@@ -5923,10 +5957,12 @@ function injectStyles() {
       z-index: 9999;
       animation: ss-fade 0.2s ease;
     }
+
     @keyframes ss-fade {
       from { opacity: 0; }
       to   { opacity: 1; }
     }
+
     .ss-modal {
       background: #fff;
       border-radius: 14px;
@@ -5940,21 +5976,31 @@ function injectStyles() {
       direction: rtl;
       animation: ss-slide 0.2s ease;
     }
+
     @keyframes ss-slide {
-      from { transform: translateY(-10px); opacity: 0; }
-      to   { transform: translateY(0);     opacity: 1; }
+      from {
+        transform: translateY(-10px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
     }
+
     .ss-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 16px;
     }
+
     .ss-header h2 {
       margin: 0;
       font-size: 17px;
       color: #111827;
     }
+
     .ss-close {
       background: none;
       border: none;
@@ -5963,7 +6009,10 @@ function injectStyles() {
       cursor: pointer;
       line-height: 1;
     }
-    .ss-close:hover { color: #374151; }
+
+    .ss-close:hover {
+      color: #374151;
+    }
 
     .ss-group {
       border: 1px solid #e5e7eb;
@@ -5972,20 +6021,30 @@ function injectStyles() {
       margin-bottom: 12px;
       background: #f9fafb;
     }
+
     .ss-group-title {
       font-weight: bold;
       color: #1d4ed8;
       margin-bottom: 10px;
       font-size: 15px;
     }
+
     .ss-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(2, 1fr);
       gap: 8px;
       font-size: 13px;
     }
-    .ss-label { color: #6b7280; margin-bottom: 4px; }
-    .ss-value { font-weight: bold; color: #111827; }
+
+    .ss-label {
+      color: #6b7280;
+      margin-bottom: 4px;
+    }
+
+    .ss-value {
+      font-weight: bold;
+      color: #111827;
+    }
 
     .ss-empty {
       text-align: center;
@@ -5993,32 +6052,8 @@ function injectStyles() {
       padding: 20px;
     }
   `;
+
   document.head.appendChild(style);
-}
-
-// ===== گروه‌بندی داده‌ها =====
-function groupByDays(data) {
-  const map = new Map();
-
-  data.forEach(item => {
-    const key = item.daysLeftToSettlement;
-    if (!map.has(key)) {
-      map.set(key, {
-        daysLeftToSettlement: key,
-        totalExerciseCost: 0,
-        totalPositions: 0,
-        strategyCount: 0
-      });
-    }
-    const g = map.get(key);
-    g.totalExerciseCost += item.exerciseCost || 0;
-    g.totalPositions += (item.strategyPositions || []).length;
-    g.strategyCount += 1;
-  });
-
-  return Array.from(map.values()).sort(
-    (a, b) => a.daysLeftToSettlement - b.daysLeftToSettlement
-  );
 }
 
 // ===== ساخت HTML مودال =====
@@ -6027,9 +6062,10 @@ function buildModalHTML() {
     <div class="ss-overlay" id="${MODAL_ID}">
       <div class="ss-modal">
         <div class="ss-header">
-          <h2>خلاصه بر اساس روز تا تسویه</h2>
+          <h2>خلاصه هزینه اعمال بر اساس سررسید</h2>
           <button class="ss-close" data-ss-close>&times;</button>
         </div>
+
         <div class="ss-content"></div>
       </div>
     </div>
@@ -6037,52 +6073,76 @@ function buildModalHTML() {
 }
 
 // ===== پر کردن محتوا =====
-function renderContent(modal, strategies) {
+function renderContent(modal, exerciseCostBySettlement) {
   const content = modal.querySelector(".ss-content");
-  const grouped = groupByDays(strategies);
 
-  if (grouped.length === 0) {
-    content.innerHTML = '<div class="ss-empty">داده‌ای موجود نیست</div>';
+  if (!exerciseCostBySettlement?.length) {
+    content.innerHTML = `
+      <div class="ss-empty">
+        داده‌ای موجود نیست
+      </div>
+    `;
     return;
   }
 
-  content.innerHTML = grouped.map(g => `
+  const sortedData = [...exerciseCostBySettlement].sort(
+    (a, b) =>
+      a.daysLeftToSettlement - b.daysLeftToSettlement
+  );
+
+  content.innerHTML = sortedData.map(item => `
     <div class="ss-group">
-      <div class="ss-group-title">${g.daysLeftToSettlement} روز تا تسویه</div>
+
+      <div class="ss-group-title">
+        ${item.daysLeftToSettlement} روز تا تسویه
+      </div>
+
       <div class="ss-grid">
+
         <div>
-          <div class="ss-label">مجموع هزینه اعمال</div>
-          <div class="ss-value">${g.totalExerciseCost.toLocaleString("fa-IR")}</div>
+          <div class="ss-label">
+            مجموع هزینه اعمال
+          </div>
+
+          <div class="ss-value">
+            ${(item.exerciseCost || 0).toLocaleString("fa-IR")}
+          </div>
         </div>
+
         <div>
-          <div class="ss-label">تعداد پوزیشن‌ها</div>
-          <div class="ss-value">${g.totalPositions}</div>
+          <div class="ss-label">
+            تعداد موقعیت‌ها
+          </div>
+
+          <div class="ss-value">
+            ${(item.positionCount || 0).toLocaleString("fa-IR")}
+          </div>
         </div>
-        <div>
-          <div class="ss-label">تعداد استراتژی‌ها</div>
-          <div class="ss-value">${g.strategyCount}</div>
-        </div>
+
       </div>
     </div>
   `).join("");
 }
 
-// ===== تابع اصلی که export می‌شه =====
-function showStrategyExerciseCostSummary(strategies) {
+// ===== تابع اصلی =====
+function showStrategyExerciseCostSummary(
+  exerciseCostBySettlement
+) {
   injectStyles();
 
-  // اگه قبلاً باز بود، پاک کن
+  // اگر قبلاً باز بود، پاک کن
   const existing = document.getElementById(MODAL_ID);
   if (existing) existing.remove();
 
   // ساخت و اضافه کردن مودال
   const wrapper = document.createElement("div");
   wrapper.innerHTML = buildModalHTML().trim();
+
   const modal = wrapper.firstElementChild;
   document.body.appendChild(modal);
 
   // رندر محتوا
-  renderContent(modal, strategies);
+  renderContent(modal, exerciseCostBySettlement);
 
   // بستن
   const close = () => {
@@ -6090,7 +6150,10 @@ function showStrategyExerciseCostSummary(strategies) {
     document.removeEventListener("keydown", onKey);
   };
 
-  modal.querySelector("[data-ss-close]").addEventListener("click", close);
+  modal
+    .querySelector("[data-ss-close]")
+    .addEventListener("click", close);
+
   modal.addEventListener("click", (e) => {
     if (e.target === modal) close();
   });
@@ -6098,9 +6161,10 @@ function showStrategyExerciseCostSummary(strategies) {
   const onKey = (e) => {
     if (e.key === "Escape") close();
   };
+
   document.addEventListener("keydown", onKey);
 
-  return close; // برگردوندن تابع بستن (اختیاری)
+  return close;
 }
 
 /***/ })

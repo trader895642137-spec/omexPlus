@@ -1321,8 +1321,42 @@ export const getStrategyInfoForExport = ()=>{
 export const openStrategyExerciseCostSummaryModal = async ()=>{
     const  groupStrategyInfoList = await enrichGroupByStrategyInfo();
     console.log(groupStrategyInfoList);
+
+    const uniquePositions = [
+        ...new Map(
+            groupStrategyInfoList
+                .map(groupStrategyInfo => groupStrategyInfo.strategy)
+                .filter(Boolean)
+                .flatMap(strategy =>
+                    strategy.strategyPositions.map(position => [
+                        position.optionID,
+                        {
+                            position,
+                            stockPrice: strategy.stockPrice,
+                            daysLeftToSettlement: strategy.daysLeftToSettlement
+                        }
+                    ])
+                )
+        ).values()
+    ];
+
+    const positionsBySettlement = Object.groupBy(
+        uniquePositions,
+        item => item.daysLeftToSettlement
+    );
+
+    const exerciseCostBySettlement = Object.values(
+        positionsBySettlement
+    ).map(items => ({
+        daysLeftToSettlement: items[0].daysLeftToSettlement,
+        exerciseCost: calculateExerciseCost({
+            strategyPositions: items.map(item => item.position),
+            stockPrice: items[0].stockPrice
+        }),
+        positionCount: items.length
+    }));
     
-    showStrategyExerciseCostSummary(groupStrategyInfoList.map(groupStrategyInfo=>groupStrategyInfo.strategy).filter(Boolean));
+    showStrategyExerciseCostSummary(exerciseCostBySettlement);
 }
 
 export const getAllGroupStrategyListForExport = async ()=>{
