@@ -5135,7 +5135,7 @@ const calcAveragePrice = async (instrumentId)=>{
 
 const calcAveragePriceForAll = async () => {
 
-    const orders = await getOrders({daysAgo:120});
+    const orders = await getOrders({daysAgo:40});
     console.log({orders});
     
     const stocks = await getStockPortfolioList();
