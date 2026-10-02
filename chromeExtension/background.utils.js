@@ -114,3 +114,27 @@ export const simpleNotifyError = (error, context = '') => {
     message: `${context ? context + ': ' : ''}${message}`.slice(0, 500),
   });
 };
+
+
+
+export async function tellPortfolioOptionsToFilter() {
+  const tab = await getOmexTab();
+
+  if (!tab?.id) {
+    throw new Error("تب OMEX پیدا نشد");
+  }
+
+  const portfolioOptionList = await getPortfolioOptionList(tab.id);
+
+  if (!portfolioOptionList) return;
+
+  await sendMessageToFilter({
+    type: "portfolioOptionList",
+    payload: {
+      portfolioOptionList,
+      tabId: tab.id,
+      url: tab.url,
+      title: tab.title
+    }
+  });
+}

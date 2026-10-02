@@ -8,7 +8,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getOmexTab: () => (/* binding */ getOmexTab),
 /* harmony export */   getPortfolioOptionList: () => (/* binding */ getPortfolioOptionList),
 /* harmony export */   sendMessageToFilter: () => (/* binding */ sendMessageToFilter),
-/* harmony export */   simpleNotifyError: () => (/* binding */ simpleNotifyError)
+/* harmony export */   simpleNotifyError: () => (/* binding */ simpleNotifyError),
+/* harmony export */   tellPortfolioOptionsToFilter: () => (/* binding */ tellPortfolioOptionsToFilter)
 /* harmony export */ });
 const getPortfolioOptionList = async (tabId) => {
   const result = await chrome.scripting.executeScript({
@@ -126,6 +127,30 @@ const simpleNotifyError = (error, context = '') => {
     message: `${context ? context + ': ' : ''}${message}`.slice(0, 500),
   });
 };
+
+
+
+async function tellPortfolioOptionsToFilter() {
+  const tab = await getOmexTab();
+
+  if (!tab?.id) {
+    throw new Error("تب OMEX پیدا نشد");
+  }
+
+  const portfolioOptionList = await getPortfolioOptionList(tab.id);
+
+  if (!portfolioOptionList) return;
+
+  await sendMessageToFilter({
+    type: "portfolioOptionList",
+    payload: {
+      portfolioOptionList,
+      tabId: tab.id,
+      url: tab.url,
+      title: tab.title
+    }
+  });
+}
 
 /***/ })
 /******/ ]);
@@ -388,7 +413,18 @@ window.addEventListener('blur', cancelHold);
 
 
 
-document.getElementById('createGroup').addEventListener('click', () => {
+document.getElementById('createGroup').addEventListener('click', async () => {
+
+    try {
+        await tellPortfolioOptionsToFilter();
+
+    } catch (error) {
+        console.error("❌ خطا:", error);
+        (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(
+            error,
+            `اعلام پرتفوی به فیلتر`
+        );
+    }
 
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -733,26 +769,7 @@ document.getElementById('strategyExerciseCostSummary').addEventListener('click',
 
 document.getElementById('tellAllOptionPortfolioListToFilter').addEventListener('click', async () => {
     try {
-        // ۱. تب فعال رو بگیر
-        
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        
-        const portfolioOptionList = await (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.getPortfolioOptionList)(tab.id);
-        
-        if(!portfolioOptionList) return
-
-
-        chrome.runtime.sendMessage({
-            type: "portfolioOptionList",
-            payload: {
-                portfolioOptionList,
-                tabId: tab.id,
-                url: tab.url,
-                title: tab.title
-            }
-        }, (response) => {
-            
-        });
+        await tellPortfolioOptionsToFilter();
 
     } catch (error) {
         console.error("❌ خطا:", error);

@@ -8,7 +8,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getOmexTab: () => (/* binding */ getOmexTab),
 /* harmony export */   getPortfolioOptionList: () => (/* binding */ getPortfolioOptionList),
 /* harmony export */   sendMessageToFilter: () => (/* binding */ sendMessageToFilter),
-/* harmony export */   simpleNotifyError: () => (/* binding */ simpleNotifyError)
+/* harmony export */   simpleNotifyError: () => (/* binding */ simpleNotifyError),
+/* harmony export */   tellPortfolioOptionsToFilter: () => (/* binding */ tellPortfolioOptionsToFilter)
 /* harmony export */ });
 const getPortfolioOptionList = async (tabId) => {
   const result = await chrome.scripting.executeScript({
@@ -126,6 +127,30 @@ const simpleNotifyError = (error, context = '') => {
     message: `${context ? context + ': ' : ''}${message}`.slice(0, 500),
   });
 };
+
+
+
+async function tellPortfolioOptionsToFilter() {
+  const tab = await getOmexTab();
+
+  if (!tab?.id) {
+    throw new Error("تب OMEX پیدا نشد");
+  }
+
+  const portfolioOptionList = await getPortfolioOptionList(tab.id);
+
+  if (!portfolioOptionList) return;
+
+  await sendMessageToFilter({
+    type: "portfolioOptionList",
+    payload: {
+      portfolioOptionList,
+      tabId: tab.id,
+      url: tab.url,
+      title: tab.title
+    }
+  });
+}
 
 /***/ })
 /******/ ]);
@@ -288,55 +313,23 @@ const TELLING_PORTFOLIO_ALARM = 'telling-portfolio-alarm';
 
 async function startTellingLoopPortfolioToFilter() {
 
-    const tellingPortfolioAlarm = await chrome.alarms.get(TELLING_PORTFOLIO_ALARM);
+  const tellingPortfolioAlarm = await chrome.alarms.get(TELLING_PORTFOLIO_ALARM);
 
-    if (tellingPortfolioAlarm) {
-        return;
-    }
+  if (tellingPortfolioAlarm) {
+    return;
+  }
 
-    chrome.alarms.create(TELLING_PORTFOLIO_ALARM, {
-        periodInMinutes: 5
-    });
-    await tellPortfolioOptionsToFilter();
-}
-
-async function tellPortfolioOptionsToFilter() {
-
+  chrome.alarms.create(TELLING_PORTFOLIO_ALARM, {
+    periodInMinutes: 5
+  });
   try {
-    const tab = await (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.getOmexTab)();
-
-    if (!tab?.id) {
-      (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(
-        new Error("تب OMEX پیدا نشد"),
-        "اعلام پرتفوی به فیلتر"
-      );
-      return;
-    }
-
-    const portfolioOptionList = await (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.getPortfolioOptionList)(tab.id);
-
-    if (!portfolioOptionList) return
-
-
-    await (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.sendMessageToFilter)({
-      type: "portfolioOptionList",
-      payload: {
-        portfolioOptionList,
-        tabId: tab.id,
-        url: tab.url,
-        title: tab.title
-      }
-    });
-
-
+    await (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.tellPortfolioOptionsToFilter)();
   } catch (error) {
-    console.error("❌ خطا:", error);
-    (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(
-      error,
-      `اعلام پرتفوی به فیلتر`
-    );
+    (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(error, "اعلام پرتفوی به فیلتر");
   }
 }
+
+
 
 
 async function showOmexNotification({
@@ -398,7 +391,11 @@ chrome.alarms.onAlarm.addListener(async alarm => {
         return;
       }
 
-      await tellPortfolioOptionsToFilter();
+      try {
+        await (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.tellPortfolioOptionsToFilter)();
+      } catch (error) {
+        (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(error, "اعلام پرتفوی به فیلتر");
+      }
       return;
     }
 
@@ -411,7 +408,7 @@ chrome.alarms.onAlarm.addListener(async alarm => {
   }
 });
 
-chrome.runtime.onMessage.addListener((msg, sender) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   (async () => {
     try {
 
@@ -435,27 +432,25 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
       }
 
       if (msg.type === "addToWatcher") {
-        const {tabId} = msg.payload;
+        const { tabId } = msg.payload;
         const response = await chrome.tabs.sendMessage(
-            tabId,
-            msg
+          tabId,
+          msg
         );
         sendResponse(response);
 
 
-      } 
+      }
 
     } catch (error) {
 
-      await showOmexNotification({
-        title: 'OMEX Background Error',
-        body: error?.message || String(error),
-        requireInteraction: true,
-        tag: 'background-error'
-      });
+      (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(error, "خطای Background");
+      sendResponse({ error: error?.message || String(error) });
 
     }
   })();
+
+  return true;
 
 });
 
