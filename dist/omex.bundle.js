@@ -1213,6 +1213,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   cacheItemsTemporarily: () => (/* binding */ cacheItemsTemporarily),
 /* harmony export */   calculateSumOfMoneyAndAssets: () => (/* binding */ calculateSumOfMoneyAndAssets),
 /* harmony export */   createGroup: () => (/* binding */ createGroup),
+/* harmony export */   deleteGroup: () => (/* binding */ deleteGroup),
 /* harmony export */   fillEstimationPanelByStrategyName: () => (/* binding */ fillEstimationPanelByStrategyName),
 /* harmony export */   findDuplicationsInGroups: () => (/* binding */ findDuplicationsInGroups),
 /* harmony export */   findStrategyOfGroup: () => (/* binding */ findStrategyOfGroup),
@@ -1810,6 +1811,25 @@ const getCustomerOptionStrategyEstimationWithItems = async () => {
 
 
 
+const deleteGroup = (groupID) => {
+
+    return fetch(`${redOrigin}/api/AssetGrouping/Delete?id=${groupID}`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": ""
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "DELETE",
+        "mode": "cors",
+        "credentials": "include"
+    });
+}
+
+
+
 const getOptionStrategies = async () => {
     return fetch(`${redOrigin}/api/OptionStrategies/Get`, {
         "headers": {
@@ -2320,7 +2340,8 @@ const OMEXApi = {
     findStrategyOfGroup,
     getStockPricesData,
     GetBaseDerivativeInstruments,
-    isAutomaticFreeETF
+    isAutomaticFreeETF,
+    deleteGroup
 }
 
 /***/ }),

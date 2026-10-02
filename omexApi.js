@@ -581,6 +581,25 @@ export const getCustomerOptionStrategyEstimationWithItems = async () => {
 
 
 
+export const deleteGroup = (groupID) => {
+
+    return fetch(`${redOrigin}/api/AssetGrouping/Delete?id=${groupID}`, {
+        "headers": {
+            "accept": "application/json, text/plain, */*",
+            "accept-language": "en-GB,en;q=0.9,fa-IR;q=0.8,fa;q=0.7,en-US;q=0.6",
+            "authorization": JSON.parse(localStorage.getItem('auth')),
+            "ngsw-bypass": ""
+        },
+        "referrer": `${origin}/`,
+        "body": null,
+        "method": "DELETE",
+        "mode": "cors",
+        "credentials": "include"
+    });
+}
+
+
+
 const getOptionStrategies = async () => {
     return fetch(`${redOrigin}/api/OptionStrategies/Get`, {
         "headers": {
@@ -1091,5 +1110,6 @@ export const OMEXApi = {
     findStrategyOfGroup,
     getStockPricesData,
     GetBaseDerivativeInstruments,
-    isAutomaticFreeETF
+    isAutomaticFreeETF,
+    deleteGroup
 }
