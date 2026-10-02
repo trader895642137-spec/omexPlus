@@ -91,7 +91,7 @@ export const getOmexTab = async () => {
 
 
 export const simpleNotifyError = (error, context = '') => {
-  console.error(`[POPUP ERROR] ${context}`, error);
+  console.error(`[Extension Error] ${context}`, error);
 
   let message;
 
@@ -110,7 +110,7 @@ export const simpleNotifyError = (error, context = '') => {
   chrome.notifications.create(`notification-${Date.now()}`, {
     type: 'basic',
     iconUrl: 'icon.png',
-    title: '❌ خطا در popup',
+    title: '❌ Extension Error',
     message: `${context ? context + ': ' : ''}${message}`.slice(0, 500),
   });
 };
