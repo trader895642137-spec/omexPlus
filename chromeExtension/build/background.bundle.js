@@ -33,8 +33,13 @@ const sendMessageToFilter = async (msg) => {
     tabs
       .filter(tab => tab.id)
       .map(tab =>
-        chrome.tabs.sendMessage(tab.id, msg).catch(() => {
-          // ignore disconnected/unavailable tabs
+        chrome.tabs.sendMessage(tab.id, msg).catch(error => {
+          console.error(`خطا در ارسال به تب ${tab.id}:`, error);
+
+          simpleNotifyError(
+            error,
+            `ارسال پیام به فیلتر (${tab.id})`
+          );
         })
       )
   );
@@ -258,6 +263,10 @@ async function checkOMEXCalculatedAvgPriceMismatchForAll() {
   const tab = await (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.getOmexTab)();
 
   if (!tab?.id) {
+    (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(
+      new Error("تب OMEX پیدا نشد"),
+      "بررسی مغایرت قیمت میانگین"
+    );
     return;
   }
 
@@ -297,6 +306,10 @@ async function tellPortfolioOptionsToFilter() {
     const tab = await (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.getOmexTab)();
 
     if (!tab?.id) {
+      (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(
+        new Error("تب OMEX پیدا نشد"),
+        "اعلام پرتفوی به فیلتر"
+      );
       return;
     }
 
@@ -391,6 +404,10 @@ chrome.alarms.onAlarm.addListener(async alarm => {
 
   } catch (error) {
     console.error("Alarm error:", error);
+    (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(
+      error,
+      `خطا در Alarm: ${alarm.name}`
+    );
   }
 });
 

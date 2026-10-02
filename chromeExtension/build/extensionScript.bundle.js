@@ -33,8 +33,13 @@ const sendMessageToFilter = async (msg) => {
     tabs
       .filter(tab => tab.id)
       .map(tab =>
-        chrome.tabs.sendMessage(tab.id, msg).catch(() => {
-          // ignore disconnected/unavailable tabs
+        chrome.tabs.sendMessage(tab.id, msg).catch(error => {
+          console.error(`خطا در ارسال به تب ${tab.id}:`, error);
+
+          simpleNotifyError(
+            error,
+            `ارسال پیام به فیلتر (${tab.id})`
+          );
         })
       )
   );

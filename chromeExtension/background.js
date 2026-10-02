@@ -72,6 +72,10 @@ async function checkOMEXCalculatedAvgPriceMismatchForAll() {
   const tab = await getOmexTab();
 
   if (!tab?.id) {
+    simpleNotifyError(
+      new Error("تب OMEX پیدا نشد"),
+      "بررسی مغایرت قیمت میانگین"
+    );
     return;
   }
 
@@ -111,6 +115,10 @@ async function tellPortfolioOptionsToFilter() {
     const tab = await getOmexTab();
 
     if (!tab?.id) {
+      simpleNotifyError(
+        new Error("تب OMEX پیدا نشد"),
+        "اعلام پرتفوی به فیلتر"
+      );
       return;
     }
 
@@ -205,6 +213,10 @@ chrome.alarms.onAlarm.addListener(async alarm => {
 
   } catch (error) {
     console.error("Alarm error:", error);
+    simpleNotifyError(
+      error,
+      `خطا در Alarm: ${alarm.name}`
+    );
   }
 });
 
