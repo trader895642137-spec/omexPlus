@@ -24481,7 +24481,7 @@ const createListFilterContetnByList=(list)=>{
             strategies: LongGUTS_STRANGLEStrategies,
             max_time_to_settlement: 2 * 24 * 3600000,
             minProfitToFilter : 0.01,
-            nokoolOrNoRequestFactor:0.7,
+            nokoolOrNoRequestFactor:0.5,
             minProfitPercentOfSettlement:0
         }),
 
