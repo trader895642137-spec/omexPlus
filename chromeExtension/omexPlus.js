@@ -1,4 +1,4 @@
-import { getPortfolioOptionList, simpleNotifyError } from "./background.utils";
+import {  simpleNotifyError, tellPortfolioOptionsToFilter } from "./background.utils";
 
 
 document.getElementById('mainButton').addEventListener('click', () => {

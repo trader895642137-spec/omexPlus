@@ -416,7 +416,7 @@ window.addEventListener('blur', cancelHold);
 document.getElementById('createGroup').addEventListener('click', async () => {
 
     try {
-        await tellPortfolioOptionsToFilter();
+        await (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.tellPortfolioOptionsToFilter)();
 
     } catch (error) {
         console.error("❌ خطا:", error);
@@ -769,7 +769,7 @@ document.getElementById('strategyExerciseCostSummary').addEventListener('click',
 
 document.getElementById('tellAllOptionPortfolioListToFilter').addEventListener('click', async () => {
     try {
-        await tellPortfolioOptionsToFilter();
+        await (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.tellPortfolioOptionsToFilter)();
 
     } catch (error) {
         console.error("❌ خطا:", error);
