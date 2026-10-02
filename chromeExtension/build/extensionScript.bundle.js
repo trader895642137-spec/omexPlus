@@ -1,5 +1,153 @@
-/******/ // The require scope
-/******/ var __webpack_require__ = {};
+/******/ var __webpack_modules__ = ([
+/* 0 */,
+/* 1 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   getOmexTab: () => (/* binding */ getOmexTab),
+/* harmony export */   getPortfolioOptionList: () => (/* binding */ getPortfolioOptionList),
+/* harmony export */   sendMessageToFilter: () => (/* binding */ sendMessageToFilter),
+/* harmony export */   simpleNotifyError: () => (/* binding */ simpleNotifyError)
+/* harmony export */ });
+const getPortfolioOptionList = async (tabId) => {
+  const result = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: async () => {
+      return await window.omexLib?.OMEXApi?.getOptionPortfolioList() || null;
+    },
+    world: "MAIN"
+  });
+
+  return result[0]?.result;
+};
+
+
+
+const sendMessageToFilter = async (msg) => {
+  const tabs = await chrome.tabs.query({
+    url: "https://old.tsetmc.com/*"
+  });
+
+  await Promise.all(
+    tabs
+      .filter(tab => tab.id)
+      .map(tab =>
+        chrome.tabs.sendMessage(tab.id, msg).catch(() => {
+          // ignore disconnected/unavailable tabs
+        })
+      )
+  );
+};
+
+
+
+let omexTabId = null;
+
+const getOmexTab = async () => {
+
+  if (omexTabId) {
+    try {
+      const tab = await chrome.tabs.get(omexTabId);
+
+      if (tab?.id) {
+        const result = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          world: 'MAIN',
+          func: () => !!window.omexLib
+        });
+
+        if (result?.[0]?.result) {
+          return tab;
+        } else {
+          omexTabId = null;
+        }
+      }
+    } catch (e) {
+      omexTabId = null;
+    }
+  }
+
+  // اگر cache معتبر نبود، دوباره پیدا کن
+  const tabs = await chrome.tabs.query({
+    url: '*://khobregan.tsetab.ir//*'
+  });
+
+  for (const tab of tabs) {
+    if (!tab.id) continue;
+
+    try {
+      const result = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        world: 'MAIN',
+        func: () => !!window.omexLib
+      });
+
+      if (result?.[0]?.result === true) {
+        omexTabId = tab.id;
+        return tab;
+      }
+
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  return null;
+};
+
+
+const simpleNotifyError = (error, context = '') => {
+  console.error(`[POPUP ERROR] ${context}`, error);
+
+  let message;
+
+  if (error instanceof Error) {
+    message = `${error.message}\n${error.stack || ''}`;
+  } else if (typeof error === 'object' && error !== null) {
+    try {
+      message = JSON.stringify(error, null, 2);
+    } catch {
+      message = String(error);
+    }
+  } else {
+    message = String(error);
+  }
+
+  chrome.notifications.create(`notification-${Date.now()}`, {
+    type: 'basic',
+    iconUrl: 'icon.png',
+    title: '❌ خطا در popup',
+    message: `${context ? context + ': ' : ''}${message}`.slice(0, 500),
+  });
+};
+
+/***/ })
+/******/ ]);
+/************************************************************************/
+/******/ // The module cache
+/******/ var __webpack_module_cache__ = {};
+/******/ 
+/******/ // The require function
+/******/ function __webpack_require__(moduleId) {
+/******/ 	// Check if module is in cache
+/******/ 	var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 	if (cachedModule !== undefined) {
+/******/ 		return cachedModule.exports;
+/******/ 	}
+/******/ 	// Create a new module (and put it into the cache)
+/******/ 	var module = __webpack_module_cache__[moduleId] = {
+/******/ 		// no module.id needed
+/******/ 		// no module.loaded needed
+/******/ 		exports: {}
+/******/ 	};
+/******/ 
+/******/ 	// Execute the module function
+/******/ 	__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 
+/******/ 	// Return the exports of the module
+/******/ 	return module.exports;
+/******/ }
 /******/ 
 /************************************************************************/
 /******/ /* webpack/runtime/define property getters */
@@ -32,40 +180,21 @@
 /******/ 
 /************************************************************************/
 var __webpack_exports__ = {};
+// This entry needs to be wrapped in an IIFE because it needs to be isolated against other modules in the chunk.
+(() => {
 __webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   simpleNotifyError: () => (/* binding */ simpleNotifyError)
-/* harmony export */ });
+/* harmony import */ var _background_utils__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(1);
 
-const simpleNotifyError = (error, context = '') => {
-    console.error(`[POPUP ERROR] ${context}`, error);
 
-    let message;
 
-    if (error instanceof Error) {
-        message = `${error.message}\n${error.stack || ''}`;
-    } else if (typeof error === 'object' && error !== null) {
-        try {
-            message = JSON.stringify(error, null, 2);
-        } catch {
-            message = String(error);
-        }
-    } else {
-        message = String(error);
-    }
-
-    chrome.notifications.create(`notification-${Date.now()}`, {
-        type: 'basic',
-        iconUrl: 'icon.png',
-        title: '❌ خطا در popup',
-        message: `${context ? context + ': ' : ''}${message}`.slice(0, 500),
-    });
-};
 document.getElementById('mainButton').addEventListener('click', () => {
 
 
     chrome.runtime.sendMessage({
         type: 'START_AVERAGE_MONITORING'
+    });
+    chrome.runtime.sendMessage({
+        type: 'START_TELLING_LOOP_PORTFOLIO_TO_FILTER'
     });
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -463,17 +592,7 @@ const getStrategyInfo = async (tabId) => {
     return result[0]?.result;
 };
 
-const getPortfolioOptionList = async (tabId) => {
-    const result = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: async() => {
-            return await window.omexLib?.OMEXApi?.getOptionPortfolioList() || null;
-        },
-        world: "MAIN"
-    });
 
-    return result[0]?.result;
-};
 
 
 const getAllGroupsStrategyInfo = async (tabId) => {
@@ -525,7 +644,7 @@ document.getElementById('addToWatcher').addEventListener('click', async () => {
             } else {
 
                 console.error("❌ خطا:", chrome.runtime.lastError);
-                simpleNotifyError(
+                (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(
                     chrome.runtime.lastError,
                     'addToWatcher response'
                 );
@@ -534,7 +653,7 @@ document.getElementById('addToWatcher').addEventListener('click', async () => {
         
     } catch (error) {
         console.error("❌ خطا:", error);
-        simpleNotifyError(
+        (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(
                     error,
                     'addToWatcher error'
                 );
@@ -570,7 +689,7 @@ document.getElementById('addAllGroupStrategyToWatcher').addEventListener('click'
 
     } catch (error) {
         console.error("❌ خطا:", error);
-        simpleNotifyError(
+        (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(
             error,
             `اضافه کردن همه گروه ها`
         );
@@ -613,7 +732,7 @@ document.getElementById('tellAllOptionPortfolioListToFilter').addEventListener('
         
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
         
-        const portfolioOptionList = await getPortfolioOptionList(tab.id);
+        const portfolioOptionList = await (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.getPortfolioOptionList)(tab.id);
         
         if(!portfolioOptionList) return
 
@@ -632,9 +751,11 @@ document.getElementById('tellAllOptionPortfolioListToFilter').addEventListener('
 
     } catch (error) {
         console.error("❌ خطا:", error);
-        simpleNotifyError(
+        (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(
             error,
             `اعلام پرتفوی به فیلتر`
         );
     }
 });
+})();
+

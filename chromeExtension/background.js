@@ -1,3 +1,5 @@
+import { getOmexTab, getPortfolioOptionList, sendMessageToFilter, simpleNotifyError } from "./background.utils";
+
 
 const childPortsByTab = new Map();
 
@@ -62,67 +64,12 @@ async function startAverageMonitoring() {
     await checkOMEXCalculatedAvgPriceMismatchForAll();
 }
 
-async function waitForOmexLib(tabId, timeout = 10000) {
 
-    const start = Date.now();
 
-    while (Date.now() - start < timeout) {
 
-        const result = await chrome.scripting.executeScript({
-            target: { tabId },
-            world: 'MAIN',
-            func: () => {
-                return !!window.omexLib
-            }
-        });
-
-        if (result?.[0]?.result === true) {
-            return true;
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 200));
-    }
-
-    return false;
-}
-
-async function findOmexTab(timeout = 10000) {
-    const start = Date.now();
-
-    while (Date.now() - start < timeout) {
-
-        const tabs = await chrome.tabs.query({
-            url: '*://khobregan.tsetab.ir//*'
-        });
-
-        for (const tab of tabs) {
-            if (!tab.id) continue;
-
-            try {
-                const result = await chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
-                    world: 'MAIN',
-                    func: () => {
-                        return !!window?.omexLib;
-                    }
-                });
-
-                if (result?.[0]?.result === true) {
-                    return tab;
-                }
-            } catch (e) {
-                // ignore
-            }
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 200));
-    }
-
-    return null;
-}
 
 async function checkOMEXCalculatedAvgPriceMismatchForAll() {
-  const tab = await findOmexTab();
+  const tab = await getOmexTab();
 
   if (!tab?.id) {
     return;
@@ -141,13 +88,65 @@ async function checkOMEXCalculatedAvgPriceMismatchForAll() {
   return result
 }
 
+
+const TELLING_PORTFOLIO_ALARM = 'telling-portfolio-alarm';
+
+async function startTellingLoopPortfolioToFilter() {
+
+    const tellingPortfolioAlarm = await chrome.alarms.get(TELLING_PORTFOLIO_ALARM);
+
+    if (tellingPortfolioAlarm) {
+        return;
+    }
+
+    chrome.alarms.create(TELLING_PORTFOLIO_ALARM, {
+        periodInMinutes: 5
+    });
+    await tellPortfolioOptionsToFilter();
+}
+
+async function tellPortfolioOptionsToFilter() {
+
+  try {
+    const tab = await getOmexTab();
+
+    if (!tab?.id) {
+      return;
+    }
+
+    const portfolioOptionList = await getPortfolioOptionList(tab.id);
+
+    if (!portfolioOptionList) return
+
+
+    await sendMessageToFilter({
+      type: "portfolioOptionList",
+      payload: {
+        portfolioOptionList,
+        tabId: tab.id,
+        url: tab.url,
+        title: tab.title
+      }
+    });
+
+
+  } catch (error) {
+    console.error("❌ خطا:", error);
+    simpleNotifyError(
+      error,
+      `اعلام پرتفوی به فیلتر`
+    );
+  }
+}
+
+
 async function showOmexNotification({
   title,
   body,
   requireInteraction,
   tag
 }) {
-  const tab = await findOmexTab();
+  const tab = await getOmexTab();
 
   if (!tab?.id) {
     return;
@@ -173,25 +172,40 @@ async function showOmexNotification({
 
 chrome.alarms.onAlarm.addListener(async alarm => {
 
-  if (alarm.name !== AVERAGE_ALARM) {
-    return;
-  }
-
-
-
   const now = new Date();
   const minutes = now.getHours() * 60 + now.getMinutes();
 
-  const start = 8 * 60;       // 08:00
-  const end = 12 * 60 + 30;   // 12:30
+  const isBetween8To1230 =
+    minutes >= 8 * 60 &&
+    minutes < 12 * 60 + 30;
 
-  if (minutes < start || minutes > end) {
-    await chrome.alarms.clear(AVERAGE_ALARM);
-    return;
+  try {
+
+    if (alarm.name === AVERAGE_ALARM) {
+
+      if (!isBetween8To1230) {
+        await chrome.alarms.clear(AVERAGE_ALARM);
+        return;
+      }
+
+      await checkOMEXCalculatedAvgPriceMismatchForAll();
+      return;
+    }
+
+    if (alarm.name === TELLING_PORTFOLIO_ALARM) {
+
+      if (!isBetween8To1230) {
+        await chrome.alarms.clear(TELLING_PORTFOLIO_ALARM);
+        return;
+      }
+
+      await tellPortfolioOptionsToFilter();
+      return;
+    }
+
+  } catch (error) {
+    console.error("Alarm error:", error);
   }
-
-  
-  await checkOMEXCalculatedAvgPriceMismatchForAll();
 });
 
 chrome.runtime.onMessage.addListener((msg, sender) => {
@@ -208,27 +222,13 @@ chrome.runtime.onMessage.addListener((msg, sender) => {
       if (msg.type === 'START_AVERAGE_MONITORING') {
         await startAverageMonitoring();
       }
+      if (msg.type === 'START_TELLING_LOOP_PORTFOLIO_TO_FILTER') {
+        await startTellingLoopPortfolioToFilter();
+      }
 
       if (msg.type === "portfolioOptionList") {
-        chrome.tabs.query({
-          url: "https://old.tsetmc.com/*"
-        }).then(tabs => {
 
-          for (const tab of tabs) {
-            if (!tab.id) continue;
-
-            chrome.tabs.sendMessage(tab.id, msg)
-              .catch(error => {
-                console.log(
-                  `⚠️ ارسال به تب ${tab.id} ناموفق بود:`,
-                  error.message
-                );
-              });
-          }
-
-        }).catch(error => {
-          console.error("❌ خطا در پیدا کردن تب‌های TSETMC:", error);
-        });
+        await sendMessageToFilter(msg);
       }
 
       if (msg.type === "addToWatcher") {

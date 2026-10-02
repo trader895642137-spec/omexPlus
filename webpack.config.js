@@ -52,7 +52,8 @@ module.exports = [
         mode: "none",
         entry: {
             extensionScript: "./chromeExtension/omexPlus.js",
-            portfolioWatcher: './chromeExtension/portfolioWatcher.js'
+            portfolioWatcher: './chromeExtension/portfolioWatcher.js',
+            background: './chromeExtension/background.js'
             // هر فایل دیگری که اکستنشن نیاز دارد
         },
         output: {

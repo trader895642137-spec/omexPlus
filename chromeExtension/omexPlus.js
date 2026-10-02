@@ -1,33 +1,14 @@
+import { getPortfolioOptionList, simpleNotifyError } from "./background.utils";
 
-export const simpleNotifyError = (error, context = '') => {
-    console.error(`[POPUP ERROR] ${context}`, error);
 
-    let message;
-
-    if (error instanceof Error) {
-        message = `${error.message}\n${error.stack || ''}`;
-    } else if (typeof error === 'object' && error !== null) {
-        try {
-            message = JSON.stringify(error, null, 2);
-        } catch {
-            message = String(error);
-        }
-    } else {
-        message = String(error);
-    }
-
-    chrome.notifications.create(`notification-${Date.now()}`, {
-        type: 'basic',
-        iconUrl: 'icon.png',
-        title: '❌ خطا در popup',
-        message: `${context ? context + ': ' : ''}${message}`.slice(0, 500),
-    });
-};
 document.getElementById('mainButton').addEventListener('click', () => {
 
 
     chrome.runtime.sendMessage({
         type: 'START_AVERAGE_MONITORING'
+    });
+    chrome.runtime.sendMessage({
+        type: 'START_TELLING_LOOP_PORTFOLIO_TO_FILTER'
     });
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -425,17 +406,7 @@ const getStrategyInfo = async (tabId) => {
     return result[0]?.result;
 };
 
-const getPortfolioOptionList = async (tabId) => {
-    const result = await chrome.scripting.executeScript({
-        target: { tabId },
-        func: async() => {
-            return await window.omexLib?.OMEXApi?.getOptionPortfolioList() || null;
-        },
-        world: "MAIN"
-    });
 
-    return result[0]?.result;
-};
 
 
 const getAllGroupsStrategyInfo = async (tabId) => {

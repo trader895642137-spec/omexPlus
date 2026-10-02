@@ -7,7 +7,7 @@
   "permissions": ["scripting","tabs","notifications","alarms"],
   "host_permissions": ["<all_urls>"],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "build/background.bundle.js"
   },
   "action": {
     "default_popup": "popup.html",
