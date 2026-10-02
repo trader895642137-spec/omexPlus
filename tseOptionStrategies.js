@@ -258,66 +258,104 @@ const getIgnoreStrategyNames = ()=>{
 
 
 
-const showNotificationForOpportunities = (opportunities)=>{
-
+const showNotificationForOpportunities = (opportunities) => {
 
     let foundSpecialProfit;
-    let foundBoxProfit;
+    let foundFreeRiskProfit;
+
+    const specialProfitStrategies = [
+        'BECS',
+        'BEPS'
+    ];
+
+    const freeRiskProfitStrategies = [
+        'BOX',
+        'BOX_BUPS_BECS',
+
+        'BUCS_COLLAR',
+        'BEPS_COLLAR',
+        'BECS_COLLAR',
+        'BUPS_COLLAR',
+
+        'BUCS_LONG_PUT',
+        'BECS_LONG_CALL',
+        'BEPS_LONG_CALL',
+        'BUPS_LONG_PUT',
+
+        'LongGUTS_STRANGLE'
+    ];
 
     for (const o of opportunities) {
+
+        // سود ویژه
         if (
             !foundSpecialProfit &&
-            ['BECS', 'BEPS'].includes(o.strategyTypeTitle) &&
+            specialProfitStrategies.includes(o.strategyTypeTitle) &&
             o.profitPercent > 1
         ) {
             foundSpecialProfit = o;
         }
 
+        // سود فری ریسک
         if (
-            !foundBoxProfit &&
-            ['BOX', 'BOX_BUPS_BECS'].includes(o.strategyTypeTitle) &&
+            !foundFreeRiskProfit &&
+            freeRiskProfitStrategies.includes(o.strategyTypeTitle) &&
             o.profitPercent > 0.08
         ) {
-            foundBoxProfit = o;
+            foundFreeRiskProfit = o;
         }
 
-        if (foundSpecialProfit) {
+        // اگر هر دو نوع پیدا شدند، دیگر نیازی به ادامه اسکن نیست
+        if (foundSpecialProfit && foundFreeRiskProfit) {
             break;
         }
     }
 
+    // اولویت با سود ویژه
+    if (foundSpecialProfit) {
 
+        const strategyFullName =
+            `${foundSpecialProfit.strategyTypeTitle}@${foundSpecialProfit.positions
+                .map(opt => opt.symbol)
+                .join('-')}`;
 
-    if(foundSpecialProfit){
-        const  strategyFullName = `${foundSpecialProfit.strategyTypeTitle}@${foundSpecialProfit.positions.map(opt=>opt.symbol).join('-')}` ;
         showNotification({
-            title: 'سود فیلتر ویژه',
-            body: `${foundSpecialProfit.strategyTypeTitle}@${foundSpecialProfit.name} %${((foundSpecialProfit.profitPercent) * 100).toFixed()}`,
+            title: 'سود ویژه',
+            body: `${foundSpecialProfit.strategyTypeTitle}@${foundSpecialProfit.name} %${(
+                foundSpecialProfit.profitPercent * 100
+            ).toFixed()}`,
             copyToClipboardText: strategyFullName,
-            tag: `profit`,
+            tag: 'profit',
         });
-        console.log(strategyFullName)
 
-    }else if(foundBoxProfit){
+        console.log(strategyFullName);
 
-         const  strategyFullName = `${foundBoxProfit.strategyTypeTitle}@${foundBoxProfit.positions.map(opt=>opt.symbol).join('-')}` ;
+    } else if (foundFreeRiskProfit) {
+
+        const strategyFullName =
+            `${foundFreeRiskProfit.strategyTypeTitle}@${foundFreeRiskProfit.positions
+                .map(opt => opt.symbol)
+                .join('-')}`;
+
         showNotification({
-            title: 'سود BOX ویژه',
-            body: `${foundBoxProfit.strategyTypeTitle}@${foundBoxProfit.name} %${((foundBoxProfit.profitPercent) * 100).toFixed()}`,
+            title: 'سود فری‌ریسک',
+            body: `${foundFreeRiskProfit.strategyTypeTitle}@${foundFreeRiskProfit.name} %${(
+                foundFreeRiskProfit.profitPercent * 100
+            ).toFixed()}`,
             copyToClipboardText: strategyFullName,
-            tag: `profit`,
+            tag: 'profit',
         });
-        console.log(strategyFullName)
 
-    }else{
+        console.log(strategyFullName);
+
+    } else {
 
         showNotification({
-            title: `سود فیلتر`,
-            tag: `profit`
-        })
+            title: 'سود فیلتر',
+            tag: 'profit'
+        });
     }
-
-}
+};
 
 
 
