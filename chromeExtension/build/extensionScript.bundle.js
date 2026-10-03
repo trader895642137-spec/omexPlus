@@ -655,13 +655,12 @@ document.getElementById('addToWatcher').addEventListener('click', async () => {
     try {
         // ۱. تب فعال رو بگیر
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        
+
         const strategyInfo = await getStrategyInfo(tab.id);
-        
-        if(!strategyInfo) return
+
+        if (!strategyInfo) return
 
 
-        // ۳. مستقیم از popup به watcher بفرست
         chrome.runtime.sendMessage({
             type: "addToWatcher",
             payload: {
@@ -670,34 +669,50 @@ document.getElementById('addToWatcher').addEventListener('click', async () => {
                 url: tab.url,
                 title: tab.title
             }
-        }, ({isAdded}) => {
-            if (isAdded) {
+        }, (response) => {
 
-                 chrome.scripting.executeScript({
+
+            if (chrome.runtime.lastError) {
+                console.error(
+                    "❌ runtime.lastError:",
+                    chrome.runtime.lastError.message
+                );
+
+                (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(
+                    chrome.runtime.lastError.message,
+                    'addToWatcher response'
+                );
+
+                return;
+            }
+
+            if (response?.isAdded) {
+
+                chrome.scripting.executeScript({
                     target: { tabId: tab.id },
-                    func: (actionName) => {
-                        window.omexLib.showToast('به رصدگر اضافه شد');
+                    func: () => {
+                        window.omexLib?.showToast('به رصدگر اضافه شد');
                     },
-                    args: [],
                     world: "MAIN"
                 });
-               
+
             } else {
 
-                console.error("❌ خطا:", chrome.runtime.lastError);
+                console.error("❌ Watcher response:", response);
+
                 (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(
-                    chrome.runtime.lastError,
+                    response?.error || 'Watcher پاسخ نامعتبر برگرداند',
                     'addToWatcher response'
                 );
             }
         });
-        
+
     } catch (error) {
         console.error("❌ خطا:", error);
         (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.simpleNotifyError)(
-                    error,
-                    'addToWatcher error'
-                );
+            error,
+            'addToWatcher error'
+        );
     }
 });
 

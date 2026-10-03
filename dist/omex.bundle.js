@@ -1707,7 +1707,7 @@ const calcAveragePrice = async (instrumentId)=>{
 
 const calcAveragePriceForAll = async () => {
 
-    const orders = await getOrders({daysAgo:40});
+    const orders = await getOrders({daysAgo:80});
     console.log({orders});
     
     const stocks = await getStockPortfolioList();
@@ -6118,12 +6118,10 @@ const checkCalculatedAvgPriceMismatchForAll = async ()=>{
         const hasQuantityIssue = optionWithAvgInfo.calculatedAverageInfo.quantity!== optionWithAvgInfo.count;
 
         if(hasPriceMismatchIssue){
-            console.log('hasPriceMismatchIssue' , optionWithAvgInfo);
             priceMismatchIssueList.push(optionWithAvgInfo);
             hasIssue = true;
         }
         if(hasQuantityIssue){
-            console.log('hasQuantityIssue' , optionWithAvgInfo);
             quantityMismatchIssueList.push(optionWithAvgInfo);
             hasIssue = true;
         }
@@ -6132,6 +6130,9 @@ const checkCalculatedAvgPriceMismatchForAll = async ()=>{
 
 
     if (hasIssue) {
+
+        console.log({calculatedAverageInfoNotExists,priceMismatchIssueList,quantityMismatchIssueList});
+        
 
         (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
             title: 'مشکل میانگین و تعداد محاسباتی',

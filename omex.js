@@ -3273,12 +3273,10 @@ export const checkCalculatedAvgPriceMismatchForAll = async ()=>{
         const hasQuantityIssue = optionWithAvgInfo.calculatedAverageInfo.quantity!== optionWithAvgInfo.count;
 
         if(hasPriceMismatchIssue){
-            console.log('hasPriceMismatchIssue' , optionWithAvgInfo);
             priceMismatchIssueList.push(optionWithAvgInfo);
             hasIssue = true;
         }
         if(hasQuantityIssue){
-            console.log('hasQuantityIssue' , optionWithAvgInfo);
             quantityMismatchIssueList.push(optionWithAvgInfo);
             hasIssue = true;
         }
@@ -3287,6 +3285,9 @@ export const checkCalculatedAvgPriceMismatchForAll = async ()=>{
 
 
     if (hasIssue) {
+
+        console.log({calculatedAverageInfoNotExists,priceMismatchIssueList,quantityMismatchIssueList});
+        
 
         showNotification({
             title: 'مشکل میانگین و تعداد محاسباتی',
