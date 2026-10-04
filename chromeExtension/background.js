@@ -215,16 +215,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         await sendMessageToFilter(msg);
       }
 
-      if (msg.type === "addToWatcher") {
-        const { tabId } = msg.payload;
-        const response = await chrome.tabs.sendMessage(
-          tabId,
-          msg
-        );
-        sendResponse(response);
-
-
-      }
+      
 
     } catch (error) {
 

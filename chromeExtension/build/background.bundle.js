@@ -431,16 +431,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         await (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.sendMessageToFilter)(msg);
       }
 
-      if (msg.type === "addToWatcher") {
-        const { tabId } = msg.payload;
-        const response = await chrome.tabs.sendMessage(
-          tabId,
-          msg
-        );
-        sendResponse(response);
-
-
-      }
+      
 
     } catch (error) {
 
