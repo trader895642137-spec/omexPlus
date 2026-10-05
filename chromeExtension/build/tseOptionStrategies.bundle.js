@@ -15414,10 +15414,10 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
     minProfitToFilter,
     settlementGainChoosePriceType="MIN", strategySubName,
     filteredList,
-            optionsGroupedByStock, 
+    optionsGroupedByStock, 
     min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
     minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
-    minStockPriceToSarBeSar=0, maxStockPriceToSarBeSar=Infinity, 
+    minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
 
@@ -15603,7 +15603,7 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
 
 const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPerMonth, settlementGainChoosePriceType="MIN",
      strategySubName, callListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
-     minStockPriceToLowBreakevenPercent=0, maxStockPriceToLowBreakevenPercent=Infinity, 
+     minStockPriceToLowBreakevenPercent=-Infinity, maxStockPriceToLowBreakevenPercent=Infinity, 
      minStockPriceToHighBreakevenPercent=-Infinity, maxStockPriceToHighBreakevenPercent=0, 
      minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -15692,22 +15692,16 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
                         })
                     });
 
-                    const lowBreakeven = Math.min(...breakevenList);
-                    const highBreakeven = Math.max(...breakevenList);
+                    let stockPriceToLowSarBeSarPercent, stockPriceToHighSarBeSarPercent;
 
+                    if (breakevenList?.length) {
+                        const lowBreakeven = Math.min(...breakevenList);
+                        const highBreakeven = Math.max(...breakevenList);
+                        stockPriceToLowSarBeSarPercent = (lowBreakeven / option.optionDetails.stockSymbolDetails.last) - 1;
+                        stockPriceToHighSarBeSarPercent = (highBreakeven / option.optionDetails.stockSymbolDetails.last) - 1;
 
+                    }
 
-
-
-                    const stockPriceToLowBreakevenPercent = (option.optionDetails.stockSymbolDetails.last / lowBreakeven) - 1;
-                    const stockPriceToHighBreakevenPercent = (option.optionDetails.stockSymbolDetails.last / highBreakeven) - 1;
-
-
-
-                    if (stockPriceToLowBreakevenPercent < minStockPriceToLowBreakevenPercent || stockPriceToLowBreakevenPercent > maxStockPriceToLowBreakevenPercent)
-                        return _allPossibleStrategies
-                    if (stockPriceToHighBreakevenPercent < minStockPriceToHighBreakevenPercent || stockPriceToHighBreakevenPercent > maxStockPriceToHighBreakevenPercent)
-                        return _allPossibleStrategies
 
 
 
@@ -15730,6 +15724,8 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
                         strategyTypeTitle: "SHORT_GUTS",
                         expectedProfitNotif,
                         minProfitToFilter,
+                        stockPriceToLowSarBeSarPercent,
+                        stockPriceToHighSarBeSarPercent,
                         expectedProfitPerMonth,
                         name: createStrategyName([option, _option]),
                         profitPercent
@@ -15795,7 +15791,7 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
 }
 const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", 
     strategySubName, callListIgnorer, min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
-    minStockPriceToLowBreakevenPercent=0, maxStockPriceToLowBreakevenPercent=Infinity, 
+    toLowBreakevenPercent=-Infinity, maxStockPriceToLowBreakevenPercent=Infinity, 
     minStockPriceToHighBreakevenPercent=-Infinity, maxStockPriceToHighBreakevenPercent=0, 
     minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
@@ -15881,23 +15877,15 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
                         })
                     });
 
-                    const lowBreakeven = Math.min(...breakevenList);
-                    const highBreakeven = Math.max(...breakevenList);
+                    let stockPriceToLowSarBeSarPercent, stockPriceToHighSarBeSarPercent;
 
+                    if (breakevenList?.length) {
+                        const lowBreakeven = Math.min(...breakevenList);
+                        const highBreakeven = Math.max(...breakevenList);
+                        stockPriceToLowSarBeSarPercent = (lowBreakeven / option.optionDetails.stockSymbolDetails.last) - 1;
+                        stockPriceToHighSarBeSarPercent = (highBreakeven / option.optionDetails.stockSymbolDetails.last) - 1;
 
-
-
-
-                    const stockPriceToLowBreakevenPercent = (option.optionDetails.stockSymbolDetails.last / lowBreakeven) - 1;
-                    const stockPriceToHighBreakevenPercent = (option.optionDetails.stockSymbolDetails.last / highBreakeven) - 1;
-
-
-
-                    if (stockPriceToLowBreakevenPercent < minStockPriceToLowBreakevenPercent || stockPriceToLowBreakevenPercent > maxStockPriceToLowBreakevenPercent)
-                        return _allPossibleStrategies
-                    if (stockPriceToHighBreakevenPercent < minStockPriceToHighBreakevenPercent || stockPriceToHighBreakevenPercent > maxStockPriceToHighBreakevenPercent)
-                        return _allPossibleStrategies
-
+                    }
 
                     const offsetPrice = (option.strikePrice + _option.strikePrice)/2
 
@@ -15916,6 +15904,8 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
                         strategyTypeTitle: "SHORT_STRANGLE",
                         expectedProfitNotif,
                         minProfitToFilter,
+                        stockPriceToLowSarBeSarPercent, 
+                        stockPriceToHighSarBeSarPercent,
                         expectedProfitPerMonth,
                         name: createStrategyName([option, _option]),
                         profitPercent
@@ -24534,8 +24524,6 @@ const createListFilterContetnByList=(list)=>{
             ,
             // min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 15 * 24 * 3600000,
-            minStockPriceToLowBreakevenPercent: .10,
-            maxStockPriceToHighBreakevenPercent: -.10
             // expectedProfitNotif: true
         }),
         
@@ -24551,8 +24539,6 @@ const createListFilterContetnByList=(list)=>{
             ,
             max_time_to_settlement: 15 * 24 * 3600000,
             // minVol: 1000 * 1000 * 1000,
-            minStockPriceToLowBreakevenPercent: .10,
-            maxStockPriceToHighBreakevenPercent: -.10
             // expectedProfitNotif: true
         }),
 
