@@ -1533,7 +1533,7 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
                             ..._option,
                             isSell: true,
                             getQuantity: () => baseQuantity,
-                            getRequiredMargin:()=>option.calculatedRequiredMargin/1000
+                            getRequiredMargin:()=>_option.calculatedRequiredMargin/1000
                         },
                       
                     ]
@@ -10211,28 +10211,12 @@ const createListFilterContetnByList=(list)=>{
             }
             ,
             // min_time_to_settlement: 15 * 24 * 3600000,
-            max_time_to_settlement: 35 * 24 * 3600000,
-            // minVol: 1000 * 1000 * 1000,
-            minStockPriceToLowBreakevenPercent: .25,
-            maxStockPriceToHighBreakevenPercent: -.25
+            max_time_to_settlement: 15 * 24 * 3600000,
+            minStockPriceToLowBreakevenPercent: .10,
+            maxStockPriceToHighBreakevenPercent: -.10
             // expectedProfitNotif: true
         }),
-        calcShortSTRANGLEStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            callListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') || option.optionDetails?.strikePrice <= option.optionDetails.stockSymbolDetails.last)
-                    return true
-
-                return false
-            }
-            ,
-            min_time_to_settlement: 25 * 24 * 3600000,
-            max_time_to_settlement: 35 * 24 * 3600000,
-            // minVol: 1000 * 1000 * 1000,
-            minStockPriceToLowBreakevenPercent: .25,
-            maxStockPriceToHighBreakevenPercent: -.25
-            // expectedProfitNotif: true
-        }),
+        
 
         calcShortSTRANGLEStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
@@ -10243,10 +10227,10 @@ const createListFilterContetnByList=(list)=>{
                 return false
             }
             ,
-            max_time_to_settlement: 25 * 24 * 3600000,
+            max_time_to_settlement: 15 * 24 * 3600000,
             // minVol: 1000 * 1000 * 1000,
-            minStockPriceToLowBreakevenPercent: .15,
-            maxStockPriceToHighBreakevenPercent: -.15
+            minStockPriceToLowBreakevenPercent: .10,
+            maxStockPriceToHighBreakevenPercent: -.10
             // expectedProfitNotif: true
         }),
 
