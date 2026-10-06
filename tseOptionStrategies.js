@@ -5801,9 +5801,9 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
 
             if (sellingOptionPrice === 0) return option
 
-            if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
+            if(option.optionDetails?.stockSymbol!=='ذوب' && !option.optionDetails?.stockSymbolDetails?.bestSell) return option
 
-            if(isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
+            if(option.optionDetails?.stockSymbol!=='ذوب' && isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
 
 
             const breakeven = option.optionDetails.stockSymbolDetails.last - sellingOptionPrice;
@@ -5919,9 +5919,11 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
 
             if (sellingOptionPrice === 0) return option
 
-            if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
 
-            if(isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
+            if(option.optionDetails?.stockSymbol!=='ذوب' && !option.optionDetails?.stockSymbolDetails?.bestSell) return option
+
+            if(option.optionDetails?.stockSymbol!=='ذوب' && isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
+
 
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
@@ -6049,9 +6051,12 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
 
             if (sellingOptionPrice === 0) return option
 
-            if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
+            
+            if(option.optionDetails?.stockSymbol!=='ذوب' && !option.optionDetails?.stockSymbolDetails?.bestSell) return option
 
-            if(isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
+            if(option.optionDetails?.stockSymbol!=='ذوب' && isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
+
+            
 
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
@@ -8405,10 +8410,11 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
             if (optionPrice === 0) return option
 
 
-            if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
-            
 
-            if(isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
+            if(option.optionDetails?.stockSymbol!=='ذوب' && !option.optionDetails?.stockSymbolDetails?.bestSell) return option
+
+            if(option.optionDetails?.stockSymbol!=='ذوب' && isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
+
 
 
             const strategyPositions = [

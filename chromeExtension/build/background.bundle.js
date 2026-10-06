@@ -9,6 +9,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   getPortfolioOptionList: () => (/* binding */ getPortfolioOptionList),
 /* harmony export */   sendMessageToFilter: () => (/* binding */ sendMessageToFilter),
 /* harmony export */   simpleNotifyError: () => (/* binding */ simpleNotifyError),
+/* harmony export */   takeScreenshot: () => (/* binding */ takeScreenshot),
 /* harmony export */   tellPortfolioOptionsToFilter: () => (/* binding */ tellPortfolioOptionsToFilter)
 /* harmony export */ });
 const getPortfolioOptionList = async (tabId) => {
@@ -150,6 +151,48 @@ async function tellPortfolioOptionsToFilter() {
       title: tab.title
     }
   });
+}
+
+
+async function takeScreenshot() {
+  try {
+    const dataUrl = await chrome.tabs.captureVisibleTab(null, {
+      format: 'png'
+    });
+
+    // تبدیل dataURL به Blob
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+
+    // Clipboard
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'image/png': blob
+        })
+      ]);
+
+      console.log('Screenshot copied to clipboard');
+    } catch (error) {
+      console.error('Clipboard error:', error);
+    }
+
+    // دانلود
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `screenshot-${Date.now()}.png`;
+
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    URL.revokeObjectURL(url);
+
+  } catch (error) {
+    console.error('Screenshot error:', error);
+  }
 }
 
 /***/ })

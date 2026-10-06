@@ -37,7 +37,6 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   silentNotificationForMoment: () => (/* binding */ silentNotificationForMoment),
 /* harmony export */   someOfNokoolGainCalculator: () => (/* binding */ someOfNokoolGainCalculator),
 /* harmony export */   startMarketCountdown: () => (/* binding */ startMarketCountdown),
-/* harmony export */   takeScreenshot: () => (/* binding */ takeScreenshot),
 /* harmony export */   totalCostCalculator: () => (/* binding */ totalCostCalculator),
 /* harmony export */   totalCostCalculatorForPriceTypes: () => (/* binding */ totalCostCalculatorForPriceTypes),
 /* harmony export */   waitForElement: () => (/* binding */ waitForElement)
@@ -733,60 +732,60 @@ function createDeferredPromise() {
 
 
 
-async function takeScreenshot() {
-  const stream = await navigator.mediaDevices.getDisplayMedia({
-    video: true,
-    audio: false,
-    preferCurrentTab: true,
-    selfBrowserSurface: "include",
-  });
+// export async function takeScreenshot() {
+//   const stream = await navigator.mediaDevices.getDisplayMedia({
+//     video: true,
+//     audio: false,
+//     preferCurrentTab: true,
+//     selfBrowserSurface: "include",
+//   });
 
-  const video = document.createElement('video');
-  video.srcObject = stream;
-  await video.play();
+//   const video = document.createElement('video');
+//   video.srcObject = stream;
+//   await video.play();
 
-  // کمی صبر برای آماده شدن فریم
-  await new Promise(r => setTimeout(r, 200));
+//   // کمی صبر برای آماده شدن فریم
+//   await new Promise(r => setTimeout(r, 200));
 
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+//   const canvas = document.createElement('canvas');
+//   canvas.width = video.videoWidth;
+//   canvas.height = video.videoHeight;
 
-  canvas.getContext('2d').drawImage(video, 0, 0);
+//   canvas.getContext('2d').drawImage(video, 0, 0);
 
-  // خیلی مهم: استریم رو ببند
-  stream.getTracks().forEach(t => t.stop());
+//   // خیلی مهم: استریم رو ببند
+//   stream.getTracks().forEach(t => t.stop());
 
-  // تبدیل به blob
-  const blob = await new Promise(res =>
-    canvas.toBlob(res, 'image/png')
-  );
+//   // تبدیل به blob
+//   const blob = await new Promise(res =>
+//     canvas.toBlob(res, 'image/png')
+//   );
 
 
-  try {
-    // نوشتن در clipboard
-    await navigator.clipboard.write([
-      new ClipboardItem({ 'image/png': blob })
-    ]);
-    console.log('Screenshot copied to clipboard');
+//   try {
+//     // نوشتن در clipboard
+//     await navigator.clipboard.write([
+//       new ClipboardItem({ 'image/png': blob })
+//     ]);
+//     console.log('Screenshot copied to clipboard');
     
-  } catch (error) {
+//   } catch (error) {
     
-  }
+//   }
   
 
-   // 👇 شروع دانلود
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `screenshot-${Date.now()}.png`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+//    // 👇 شروع دانلود
+//   const url = URL.createObjectURL(blob);
+//   const a = document.createElement('a');
+//   a.href = url;
+//   a.download = `screenshot-${Date.now()}.png`;
+//   document.body.appendChild(a);
+//   a.click();
+//   a.remove();
+//   URL.revokeObjectURL(url);
 
   
-}
+// }
 
 const ETF_LIST = ['اهرم', 'توان', 'موج', 'جهش','هم تراز','آساس','شتاب'];
 const TAX_FREE_SYMBOLS = ['ضهرم', 'طهرم', 'ضتوان', 'طتوان', 'ضموج', 'طموج','ضجهش','طجهش','ضراز','طراز',];
@@ -20123,9 +20122,9 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
 
             if (sellingOptionPrice === 0) return option
 
-            if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
+            if(option.optionDetails?.stockSymbol!=='ذوب' && !option.optionDetails?.stockSymbolDetails?.bestSell) return option
 
-            if((0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
+            if(option.optionDetails?.stockSymbol!=='ذوب' && (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
 
 
             const breakeven = option.optionDetails.stockSymbolDetails.last - sellingOptionPrice;
@@ -20241,9 +20240,11 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
 
             if (sellingOptionPrice === 0) return option
 
-            if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
 
-            if((0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
+            if(option.optionDetails?.stockSymbol!=='ذوب' && !option.optionDetails?.stockSymbolDetails?.bestSell) return option
+
+            if(option.optionDetails?.stockSymbol!=='ذوب' && (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
+
 
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
@@ -20371,9 +20372,12 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
 
             if (sellingOptionPrice === 0) return option
 
-            if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
+            
+            if(option.optionDetails?.stockSymbol!=='ذوب' && !option.optionDetails?.stockSymbolDetails?.bestSell) return option
 
-            if((0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
+            if(option.optionDetails?.stockSymbol!=='ذوب' && (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
+
+            
 
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
@@ -22727,10 +22731,11 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
             if (optionPrice === 0) return option
 
 
-            if(!option.optionDetails?.stockSymbolDetails?.bestSell) return option
-            
 
-            if((0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
+            if(option.optionDetails?.stockSymbol!=='ذوب' && !option.optionDetails?.stockSymbolDetails?.bestSell) return option
+
+            if(option.optionDetails?.stockSymbol!=='ذوب' && (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
+
 
 
             const strategyPositions = [

@@ -689,60 +689,60 @@ export function createDeferredPromise() {
 
 
 
-export async function takeScreenshot() {
-  const stream = await navigator.mediaDevices.getDisplayMedia({
-    video: true,
-    audio: false,
-    preferCurrentTab: true,
-    selfBrowserSurface: "include",
-  });
+// export async function takeScreenshot() {
+//   const stream = await navigator.mediaDevices.getDisplayMedia({
+//     video: true,
+//     audio: false,
+//     preferCurrentTab: true,
+//     selfBrowserSurface: "include",
+//   });
 
-  const video = document.createElement('video');
-  video.srcObject = stream;
-  await video.play();
+//   const video = document.createElement('video');
+//   video.srcObject = stream;
+//   await video.play();
 
-  // کمی صبر برای آماده شدن فریم
-  await new Promise(r => setTimeout(r, 200));
+//   // کمی صبر برای آماده شدن فریم
+//   await new Promise(r => setTimeout(r, 200));
 
-  const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+//   const canvas = document.createElement('canvas');
+//   canvas.width = video.videoWidth;
+//   canvas.height = video.videoHeight;
 
-  canvas.getContext('2d').drawImage(video, 0, 0);
+//   canvas.getContext('2d').drawImage(video, 0, 0);
 
-  // خیلی مهم: استریم رو ببند
-  stream.getTracks().forEach(t => t.stop());
+//   // خیلی مهم: استریم رو ببند
+//   stream.getTracks().forEach(t => t.stop());
 
-  // تبدیل به blob
-  const blob = await new Promise(res =>
-    canvas.toBlob(res, 'image/png')
-  );
+//   // تبدیل به blob
+//   const blob = await new Promise(res =>
+//     canvas.toBlob(res, 'image/png')
+//   );
 
 
-  try {
-    // نوشتن در clipboard
-    await navigator.clipboard.write([
-      new ClipboardItem({ 'image/png': blob })
-    ]);
-    console.log('Screenshot copied to clipboard');
+//   try {
+//     // نوشتن در clipboard
+//     await navigator.clipboard.write([
+//       new ClipboardItem({ 'image/png': blob })
+//     ]);
+//     console.log('Screenshot copied to clipboard');
     
-  } catch (error) {
+//   } catch (error) {
     
-  }
+//   }
   
 
-   // 👇 شروع دانلود
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `screenshot-${Date.now()}.png`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+//    // 👇 شروع دانلود
+//   const url = URL.createObjectURL(blob);
+//   const a = document.createElement('a');
+//   a.href = url;
+//   a.download = `screenshot-${Date.now()}.png`;
+//   document.body.appendChild(a);
+//   a.click();
+//   a.remove();
+//   URL.revokeObjectURL(url);
 
   
-}
+// }
 
 export const ETF_LIST = ['اهرم', 'توان', 'موج', 'جهش','هم تراز','آساس','شتاب'];
 export const TAX_FREE_SYMBOLS = ['ضهرم', 'طهرم', 'ضتوان', 'طتوان', 'ضموج', 'طموج','ضجهش','طجهش','ضراز','طراز',];

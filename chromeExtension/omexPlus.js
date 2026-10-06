@@ -1,4 +1,4 @@
-import {  simpleNotifyError, tellPortfolioOptionsToFilter } from "./background.utils";
+import {  simpleNotifyError, takeScreenshot, tellPortfolioOptionsToFilter } from "./background.utils";
 
 
 document.getElementById('mainButton').addEventListener('click', () => {
@@ -199,16 +199,7 @@ window.addEventListener('blur', cancelHold);
 
 document.getElementById('createGroup').addEventListener('click', async () => {
 
-    try {
-        await tellPortfolioOptionsToFilter();
-
-    } catch (error) {
-        console.error("❌ خطا:", error);
-        simpleNotifyError(
-            error,
-            `اعلام پرتفوی به فیلتر`
-        );
-    }
+    
 
 
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -230,6 +221,31 @@ document.getElementById('createGroup').addEventListener('click', async () => {
             });
         });
     });
+
+    const results = await Promise.allSettled([
+        takeScreenshot(),
+        tellPortfolioOptionsToFilter()
+    ]);
+
+    const [screenshotResult, portfolioResult] = results;
+
+    if (screenshotResult.status === 'rejected') {
+        console.error("❌ خطای Screenshot:", screenshotResult.reason);
+
+        simpleNotifyError(
+            screenshotResult.reason,
+            'گرفتن Screenshot'
+        );
+    }
+
+    if (portfolioResult.status === 'rejected') {
+        console.error("❌ خطای اعلام پرتفوی:", portfolioResult.reason);
+
+        simpleNotifyError(
+            portfolioResult.reason,
+            'اعلام پرتفوی به فیلتر'
+        );
+    }
 
 
 });

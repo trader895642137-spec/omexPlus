@@ -6,7 +6,6 @@ import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalc
     showNotification,
     createDeferredPromise,
     waitForElement,
-    takeScreenshot,
     isETF,
     hasBreakevenExecutedPriceDiffIssue,
     hasGreaterRatio,
@@ -3131,7 +3130,6 @@ export const createGroupOfCurrentStrategy = async ()=>{
         
     }
    
-    takeScreenshot();
 }
 
 export function showToast(message, duration = 2000,type ='default') {
