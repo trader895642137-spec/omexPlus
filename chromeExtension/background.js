@@ -1,4 +1,4 @@
-import { getOmexTab, getPortfolioOptionList, sendMessageToFilter, simpleNotifyError, tellPortfolioOptionsToFilter } from "./background.utils";
+import { getOmexTab, getPortfolioOptionList, sendMessageToFilter, simpleNotifyError, takeScreenshot, tellPortfolioOptionsToFilter } from "./background.utils";
 
 
 const childPortsByTab = new Map();
@@ -213,6 +213,27 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (msg.type === "portfolioOptionList") {
 
         await sendMessageToFilter(msg);
+      }
+
+      if (msg.type === 'TAKE_SCREENSHOT') {
+
+        try {
+          await takeScreenshot();
+
+          sendResponse({
+            success: true
+          });
+
+        } catch (error) {
+          console.error('❌ Screenshot error:', error);
+
+          sendResponse({
+            success: false,
+            error: error?.message || String(error)
+          });
+        }
+
+        return true;
       }
 
       

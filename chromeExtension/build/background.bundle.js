@@ -7,6 +7,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   getOmexTab: () => (/* binding */ getOmexTab),
 /* harmony export */   getPortfolioOptionList: () => (/* binding */ getPortfolioOptionList),
+/* harmony export */   requestScreenshot: () => (/* binding */ requestScreenshot),
 /* harmony export */   sendMessageToFilter: () => (/* binding */ sendMessageToFilter),
 /* harmony export */   simpleNotifyError: () => (/* binding */ simpleNotifyError),
 /* harmony export */   takeScreenshot: () => (/* binding */ takeScreenshot),
@@ -160,39 +161,47 @@ async function takeScreenshot() {
       format: 'png'
     });
 
-    // تبدیل dataURL به Blob
-    const response = await fetch(dataUrl);
-    const blob = await response.blob();
 
-    // Clipboard
-    try {
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'image/png': blob
-        })
-      ]);
+    await chrome.downloads.download({
+      url:dataUrl ,
+      filename: `screenshot-${Date.now()}.png`,
+      saveAs: false
+    });
 
-      console.log('Screenshot copied to clipboard');
-    } catch (error) {
-      console.error('Clipboard error:', error);
-    }
-
-    // دانلود
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `screenshot-${Date.now()}.png`;
-
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    URL.revokeObjectURL(url);
+    // اینجا دیگه زود revoke نکن
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 1000);
 
   } catch (error) {
     console.error('Screenshot error:', error);
+    throw error; // مهم برای اینکه بیرون تابع هم بتوانی خطا را بگیری
   }
+}
+
+
+
+function requestScreenshot() {
+    return new Promise((resolve, reject) => {
+
+        chrome.runtime.sendMessage(
+            { type: 'TAKE_SCREENSHOT' },
+            (response) => {
+
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                    return;
+                }
+
+                if (!response?.success) {
+                    reject(new Error(response?.error || 'Screenshot failed'));
+                    return;
+                }
+
+                resolve(response);
+            }
+        );
+    });
 }
 
 /***/ })
@@ -472,6 +481,27 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       if (msg.type === "portfolioOptionList") {
 
         await (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.sendMessageToFilter)(msg);
+      }
+
+      if (msg.type === 'TAKE_SCREENSHOT') {
+
+        try {
+          await (0,_background_utils__WEBPACK_IMPORTED_MODULE_0__.takeScreenshot)();
+
+          sendResponse({
+            success: true
+          });
+
+        } catch (error) {
+          console.error('❌ Screenshot error:', error);
+
+          sendResponse({
+            success: false,
+            error: error?.message || String(error)
+          });
+        }
+
+        return true;
       }
 
       

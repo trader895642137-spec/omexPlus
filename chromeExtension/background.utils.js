@@ -146,37 +146,41 @@ export async function takeScreenshot() {
       format: 'png'
     });
 
-    // تبدیل dataURL به Blob
-    const response = await fetch(dataUrl);
-    const blob = await response.blob();
 
-    // Clipboard
-    try {
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'image/png': blob
-        })
-      ]);
+    await chrome.downloads.download({
+      url:dataUrl ,
+      filename: `screenshot-${Date.now()}.png`,
+      saveAs: false
+    });
 
-      console.log('Screenshot copied to clipboard');
-    } catch (error) {
-      console.error('Clipboard error:', error);
-    }
-
-    // دانلود
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `screenshot-${Date.now()}.png`;
-
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-
-    URL.revokeObjectURL(url);
 
   } catch (error) {
     console.error('Screenshot error:', error);
+    throw error; // مهم برای اینکه بیرون تابع هم بتوانی خطا را بگیری
   }
+}
+
+
+
+export function requestScreenshot() {
+    return new Promise((resolve, reject) => {
+
+        chrome.runtime.sendMessage(
+            { type: 'TAKE_SCREENSHOT' },
+            (response) => {
+
+                if (chrome.runtime.lastError) {
+                    reject(chrome.runtime.lastError);
+                    return;
+                }
+
+                if (!response?.success) {
+                    reject(new Error(response?.error || 'Screenshot failed'));
+                    return;
+                }
+
+                resolve(response);
+            }
+        );
+    });
 }

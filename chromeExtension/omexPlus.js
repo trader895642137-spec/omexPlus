@@ -1,4 +1,4 @@
-import {  simpleNotifyError, takeScreenshot, tellPortfolioOptionsToFilter } from "./background.utils";
+import {  requestScreenshot, simpleNotifyError, tellPortfolioOptionsToFilter } from "./background.utils";
 
 
 document.getElementById('mainButton').addEventListener('click', () => {
@@ -223,7 +223,7 @@ document.getElementById('createGroup').addEventListener('click', async () => {
     });
 
     const results = await Promise.allSettled([
-        takeScreenshot(),
+        requestScreenshot(),
         tellPortfolioOptionsToFilter()
     ]);
 
