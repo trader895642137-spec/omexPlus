@@ -1185,21 +1185,40 @@ const  startMarketCountdown = ({
 }
 
 
-const calculateExerciseCost =({strategyPositions, stockPrice}) => {
+const calculateExerciseCost = ({
+    strategyPositions,
+    stockPrice,
+    optionStockPriceMap
+}) => {
     let total = 0;
 
     for (const item of strategyPositions) {
-        const isCallBuyInMoney = item.isCall && item.isBuy && item.strikePrice < stockPrice;
-        const isPutSellInMoney = item.isPut && !item.isBuy && item.strikePrice > stockPrice;
+
+        const currentStockPrice = stockPrice ?? (() => {
+            const optionID = item.optionID ?? item.getOptionID?.();
+            return optionStockPriceMap?.[optionID]?.stockPrice;
+        })();
+
+        if (currentStockPrice == null) continue;
+
+        const isCallBuyInMoney =
+            item.isCall &&
+            item.isBuy &&
+            item.strikePrice < currentStockPrice;
+
+        const isPutSellInMoney =
+            item.isPut &&
+            !item.isBuy &&
+            item.strikePrice > currentStockPrice;
 
         if (isCallBuyInMoney || isPutSellInMoney) {
             const qty = item.getCurrentPositionQuantity();
-            total += item.strikePrice * qty ;
+            total += item.strikePrice * qty;
         }
     }
 
     return total;
-}
+};
 
 /***/ }),
 /* 2 */
@@ -4191,14 +4210,28 @@ const openStrategyExerciseCostSummaryModal = async ()=>{
 
     const exerciseCostBySettlement = Object.values(
         positionsBySettlement
-    ).map(items => ({
-        daysLeftToSettlement: items[0].daysLeftToSettlement,
-        exerciseCost: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.calculateExerciseCost)({
-            strategyPositions: items.map(item => item.position),
-            stockPrice: items[0].stockPrice
-        }),
-        positionCount: items.length
-    }));
+    ).map(sameSettlementPositions => {
+
+        const optionStockPriceMap = {};
+
+        for (const positionInfo of sameSettlementPositions) {
+            const optionID = positionInfo.position.optionID;
+
+            optionStockPriceMap[optionID] = {
+                stockPrice: positionInfo.stockPrice,
+            };
+        }
+
+        return {
+            daysLeftToSettlement: sameSettlementPositions[0].daysLeftToSettlement,
+            exerciseCost: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.calculateExerciseCost)({
+                strategyPositions: sameSettlementPositions.map(item => item.position),
+                optionStockPriceMap
+            }),
+            positionCount: sameSettlementPositions.length
+
+        }
+    });
     
     (0,_strategyExerciseCostSummary_js__WEBPACK_IMPORTED_MODULE_4__.showStrategyExerciseCostSummary)(exerciseCostBySettlement);
 }

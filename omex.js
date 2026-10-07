@@ -1346,14 +1346,28 @@ export const openStrategyExerciseCostSummaryModal = async ()=>{
 
     const exerciseCostBySettlement = Object.values(
         positionsBySettlement
-    ).map(items => ({
-        daysLeftToSettlement: items[0].daysLeftToSettlement,
-        exerciseCost: calculateExerciseCost({
-            strategyPositions: items.map(item => item.position),
-            stockPrice: items[0].stockPrice
-        }),
-        positionCount: items.length
-    }));
+    ).map(sameSettlementPositions => {
+
+        const optionStockPriceMap = {};
+
+        for (const positionInfo of sameSettlementPositions) {
+            const optionID = positionInfo.position.optionID;
+
+            optionStockPriceMap[optionID] = {
+                stockPrice: positionInfo.stockPrice,
+            };
+        }
+
+        return {
+            daysLeftToSettlement: sameSettlementPositions[0].daysLeftToSettlement,
+            exerciseCost: calculateExerciseCost({
+                strategyPositions: sameSettlementPositions.map(item => item.position),
+                optionStockPriceMap
+            }),
+            positionCount: sameSettlementPositions.length
+
+        }
+    });
     
     showStrategyExerciseCostSummary(exerciseCostBySettlement);
 }

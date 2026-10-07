@@ -1142,18 +1142,37 @@ export const  startMarketCountdown = ({
 }
 
 
-export const calculateExerciseCost =({strategyPositions, stockPrice}) => {
+export const calculateExerciseCost = ({
+    strategyPositions,
+    stockPrice,
+    optionStockPriceMap
+}) => {
     let total = 0;
 
     for (const item of strategyPositions) {
-        const isCallBuyInMoney = item.isCall && item.isBuy && item.strikePrice < stockPrice;
-        const isPutSellInMoney = item.isPut && !item.isBuy && item.strikePrice > stockPrice;
+
+        const currentStockPrice = stockPrice ?? (() => {
+            const optionID = item.optionID ?? item.getOptionID?.();
+            return optionStockPriceMap?.[optionID]?.stockPrice;
+        })();
+
+        if (currentStockPrice == null) continue;
+
+        const isCallBuyInMoney =
+            item.isCall &&
+            item.isBuy &&
+            item.strikePrice < currentStockPrice;
+
+        const isPutSellInMoney =
+            item.isPut &&
+            !item.isBuy &&
+            item.strikePrice > currentStockPrice;
 
         if (isCallBuyInMoney || isPutSellInMoney) {
             const qty = item.getCurrentPositionQuantity();
-            total += item.strikePrice * qty ;
+            total += item.strikePrice * qty;
         }
     }
 
     return total;
-}
+};
