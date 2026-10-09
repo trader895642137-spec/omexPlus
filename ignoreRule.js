@@ -127,6 +127,18 @@ const CONFIG_TYPE_EXPANSIONS = {
     ],
 };
 
+
+const COMMON_CONFIG_TYPE_EXPANSIONS = [
+    {
+        type: 'SHORT_STRANGLE',
+        sources: ['BUS', 'BES'],
+    },
+    {
+        type: 'SHORT_GUTS',
+        sources: ['BUS', 'BES'],
+    },
+];
+
 const RULE_NAME_MAP = {
     toSar: 'toSarBeSar',
     toLSar: 'toLowSarBeSar',
@@ -262,11 +274,74 @@ const mergeConfig = (generatedConfig, userConfig) => {
     return result;
 };
 
+const mergeGeneratedConfigs = (existingConfig, generatedConfig) => {
+    const result = { ...existingConfig };
+
+    result._sourceTypes = [
+        ...new Set([
+            ...(existingConfig._sourceTypes || [existingConfig._sourceType]),
+            ...(generatedConfig._sourceTypes || [generatedConfig._sourceType]),
+        ].filter(Boolean)),
+    ];
+
+    Object.entries(generatedConfig).forEach(([key, value]) => {
+        if (
+            value === null ||
+            value === undefined ||
+            key === '_sourceType' ||
+            key === '_sourceTypes'
+        ) {
+            return;
+        }
+
+        if (
+            typeof value === 'object' &&
+            !Array.isArray(value)
+        ) {
+            result[key] = {
+                ...(result[key] || {}),
+                ...value,
+            };
+        } else {
+            result[key] = value;
+        }
+    });
+
+    delete result._sourceType;
+
+    return result;
+};
+
 const resolveGeneratedConfigOverrides = ({
     generatedConfigs,
     userConfigs,
 }) => {
-    const resolvedGeneratedConfigs = generatedConfigs.map(
+    const mergedGeneratedConfigs = [];
+
+    for (const generatedConfig of generatedConfigs) {
+        // کانفیگ تولیدشده با هدف یکسان را پیدا کن
+        const existingConfig = mergedGeneratedConfigs.find(
+            config =>
+                isSameConfigTarget(config, generatedConfig) &&
+                isSameConfigTarget(generatedConfig, config)
+        );
+
+        if (!existingConfig) {
+            mergedGeneratedConfigs.push({ ...generatedConfig });
+            continue;
+        }
+
+        // فیلدهای کانفیگ جدید را روی قبلی ادغام کن
+        const mergedConfig = mergeGeneratedConfigs(
+            existingConfig,
+            generatedConfig
+        );
+
+        Object.assign(existingConfig, mergedConfig);
+    }
+
+    // اعمال تنظیمات کاربر روی کانفیگ‌های ادغام‌شده
+    const resolvedGeneratedConfigs = mergedGeneratedConfigs.map(
         generatedConfig => {
             const matchingUserConfigs = userConfigs.filter(
                 userConfig =>
@@ -286,7 +361,7 @@ const resolveGeneratedConfigOverrides = ({
 
     const unmatchedUserConfigs = userConfigs.filter(
         userConfig =>
-            !generatedConfigs.some(generatedConfig =>
+            !mergedGeneratedConfigs.some(generatedConfig =>
                 isSameConfigTarget(
                     generatedConfig,
                     userConfig
@@ -299,7 +374,6 @@ const resolveGeneratedConfigOverrides = ({
         ...resolvedGeneratedConfigs,
     ];
 };
-
 
 
 
@@ -327,10 +401,21 @@ export const generateObjConfigByText = (text) => {
 
 
 
-const expandIgnoreStrategy = (config) => {
-    const expansions = CONFIG_TYPE_EXPANSIONS[config.type];
+const expandIgnoreStrategy = config => {
+    const specificExpansions =
+        CONFIG_TYPE_EXPANSIONS[config.type] || [];
 
-    if (!expansions) {
+    const commonExpansions =
+        COMMON_CONFIG_TYPE_EXPANSIONS.filter(
+            expansion => expansion.sources.includes(config.type)
+        );
+
+    const expansions = [
+        ...specificExpansions,
+        ...commonExpansions,
+    ];
+
+    if (!expansions.length) {
         return [config];
     }
 
@@ -342,9 +427,28 @@ const expandIgnoreStrategy = (config) => {
             _sourceType: config.type,
         };
 
-        return modify
-            ? modify(expandedConfig)
-            : expandedConfig;
+        // منطق عمومی استراتژی‌های خنثی
+        const isCommonExpansion = commonExpansions.some(
+            expansion => expansion.type === type
+        );
+
+        let result = { ...expandedConfig };
+
+        if (isCommonExpansion) {
+            const { toSarBeSar, ...rest } = result;
+
+            result = {
+                ...rest,
+                ...(toSarBeSar != null
+                    ? config.type === 'BUS'
+                        ? { toLowSarBeSar: toSarBeSar }
+                        : { toHighSarBeSar: toSarBeSar }
+                    : {}),
+            };
+        }
+
+        // تغییرات اختصاصی، فقط در صورت نیاز
+        return modify ? modify(result) : result;
     });
 };
 

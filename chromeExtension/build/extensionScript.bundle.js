@@ -168,10 +168,6 @@ async function takeScreenshot() {
       saveAs: false
     });
 
-    // اینجا دیگه زود revoke نکن
-    setTimeout(() => {
-      URL.revokeObjectURL(url);
-    }, 1000);
 
   } catch (error) {
     console.error('Screenshot error:', error);

@@ -10208,7 +10208,7 @@ const createListFilterContetnByList=(list)=>{
             ,
             // min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 15 * 24 * 3600000,
-            // expectedProfitNotif: true
+            expectedProfitNotif: true
         }),
         
 
@@ -10223,7 +10223,7 @@ const createListFilterContetnByList=(list)=>{
             ,
             max_time_to_settlement: 15 * 24 * 3600000,
             // minVol: 1000 * 1000 * 1000,
-            // expectedProfitNotif: true
+            expectedProfitNotif: true
         }),
 
         (()=>{
