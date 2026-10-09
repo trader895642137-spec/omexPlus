@@ -14213,9 +14213,11 @@ const expandIgnoreStrategy = config => {
 
             result = {
                 ...rest,
-                ...(config.type === 'BUS'
-                    ? { toLowSarBeSar: toSarBeSar }
-                    : { toHighSarBeSar: toSarBeSar }),
+                ...(toSarBeSar != null
+                    ? config.type === 'BUS'
+                        ? { toLowSarBeSar: toSarBeSar }
+                        : { toHighSarBeSar: toSarBeSar }
+                    : {}),
             };
         }
 
