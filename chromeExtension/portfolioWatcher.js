@@ -634,8 +634,7 @@ function renderStrategies() {
     const box = document.createElement('div');
     box.className = 'strategy-box';
 
-    strategyGroupInfo.hasAlarmProfit &&  box.classList.add('has-alarm-profit');
-    strategyGroupInfo.hasQuantityIssue &&  box.classList.add('has-error');
+    
 
     const profitPercentByBestPrices = strategyGroupInfo?.openPositionProfitInfo?.profitPercentByBestPrices?.defaultQueue;
     const {
@@ -643,6 +642,10 @@ function renderStrategies() {
         totalOffsetGainOfCurrentPositionObj,
         profitLossByOffsetOrdersPercent,
         unreliableTotalCostOfCurrentPositions, profitPercentOfCurrentPositionsByNearSettlementPrices }  = strategyGroupInfo?.offsetProfitOfStrategy ?? {};
+
+
+    strategyGroupInfo.hasAlarmProfit &&  box.classList.add('has-alarm-profit');
+    (strategyGroupInfo.hasQuantityIssue || profitPercentOfCurrentPositionsByNearSettlementPrices<0) &&  box.classList.add('has-error');
 
     box.innerHTML = `
       <h4 class="title">${strategyGroupInfo?.strategyName}</h4>
