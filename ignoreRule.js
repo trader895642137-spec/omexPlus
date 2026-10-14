@@ -1,6 +1,9 @@
 const CONFIG_TYPE_EXPANSIONS = {
     BUS: [
         { type: 'BUCS' },
+        {
+            type: 'SellPut',
+        },
         { type: 'BUCS_LONG_PUT' },
         { type: 'BUCS_BEPS_LongPut' },
         { type: 'SYNTHETIC_COVERED_CALL',  
@@ -69,6 +72,9 @@ const CONFIG_TYPE_EXPANSIONS = {
         },
     ],
     BES: [
+        {
+            type: 'SellCall',
+        },
         {
             type: 'BECS',
         },
