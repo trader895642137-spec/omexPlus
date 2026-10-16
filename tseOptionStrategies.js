@@ -268,97 +268,29 @@ const getIgnoreStrategyNames = ()=>{
 
 
 const showNotificationForOpportunities = (opportunities) => {
-
-    let foundSpecialProfit;
-    let foundFreeRiskProfit;
-
-    const specialProfitStrategies = [
-        'BECS',
-        'BEPS'
-    ];
-
-    const freeRiskProfitStrategies = [
-        'BOX',
-        'BOX_BUPS_BECS',
-
-        'BUCS_COLLAR',
-        'BEPS_COLLAR',
-        'BECS_COLLAR',
-        'BUPS_COLLAR',
-
-        'BUCS_LONG_PUT',
-        'BECS_LONG_CALL',
-        'BEPS_LONG_CALL',
-        'BUPS_LONG_PUT',
-
-        'LongGUTS_STRANGLE'
-    ];
-
-    for (const o of opportunities) {
-
-        // سود ویژه
-        if (
-            !foundSpecialProfit &&
-            specialProfitStrategies.includes(o.strategyTypeTitle) &&
-            o.profitPercent > 1
-        ) {
-            foundSpecialProfit = o;
-        }
-
-        // سود فری ریسک
-        if (
-            !foundFreeRiskProfit &&
-            freeRiskProfitStrategies.includes(o.strategyTypeTitle) &&
-            o.profitPercent > 0.08
-        ) {
-            foundFreeRiskProfit = o;
-        }
-
-        // اگر هر دو نوع پیدا شدند، دیگر نیازی به ادامه اسکن نیست
-        if (foundSpecialProfit && foundFreeRiskProfit) {
-            break;
-        }
-    }
+    const foundSpecialProfit = opportunities.find(o => o.hasSpecialProfit);
+    const foundFreeRiskProfit = opportunities.find(o => o.hasFreeRiskProfit);
 
     // اولویت با سود ویژه
-    if (foundSpecialProfit) {
+    const opportunity = foundSpecialProfit || foundFreeRiskProfit;
 
+    if (opportunity) {
         const strategyFullName =
-            `${foundSpecialProfit.strategyTypeTitle}@${foundSpecialProfit.positions
+            `${opportunity.strategyTypeTitle}@${opportunity.positions
                 .map(opt => opt.symbol)
                 .join('-')}`;
 
         showNotification({
-            title: 'سود ویژه',
-            body: `${foundSpecialProfit.strategyTypeTitle}@${foundSpecialProfit.name} %${(
-                foundSpecialProfit.profitPercent * 100
+            title: foundSpecialProfit ? 'سود ویژه' : 'سود فری‌ریسک',
+            body: `${opportunity.strategyTypeTitle}@${opportunity.name} %${(
+                opportunity.profitPercent * 100
             ).toFixed()}`,
             copyToClipboardText: strategyFullName,
             tag: 'profit',
         });
 
         console.log(strategyFullName);
-
-    } else if (foundFreeRiskProfit) {
-
-        const strategyFullName =
-            `${foundFreeRiskProfit.strategyTypeTitle}@${foundFreeRiskProfit.positions
-                .map(opt => opt.symbol)
-                .join('-')}`;
-
-        showNotification({
-            title: 'سود فری‌ریسک',
-            body: `${foundFreeRiskProfit.strategyTypeTitle}@${foundFreeRiskProfit.name} %${(
-                foundFreeRiskProfit.profitPercent * 100
-            ).toFixed()}`,
-            copyToClipboardText: strategyFullName,
-            tag: 'profit',
-        });
-
-        console.log(strategyFullName);
-
     } else {
-
         showNotification({
             title: 'سود فیلتر',
             tag: 'profit'
@@ -432,41 +364,51 @@ const configsToHtmlTitle = ({strategyName, strategySubName, priceType, min_time_
 
 }
 
-const htmlStrategyListCreator = ({strategyList, title, expectedProfitNotif}) => {
+const htmlStrategyListCreator = ({ strategyList, title, expectedProfitNotif }) => {
+    const hasStrategies = strategyList?.length > 0;
 
-    return `<div class="strategy-filter-list-cnt" data-base-strategy-type="${strategyList[0]?.strategyTypeTitle}" >
-                <div style="padding:5px;padding-right:10px;padding-left:10px; height: 50px;flex-shrink: 0;${expectedProfitNotif ? 'color:green' : ''}">
-                    ${title}
-                </div>
-                <div style="
-                    display: flex;
-                    flex-direction: column;
-                    row-gap: 10px;
-                    overflow: auto;
-                    padding: 5px;
-                    border: ${expectedProfitNotif && strategyList?.length ? '7px solid #00d820' : '1px solid'};
-                    flex-grow: 1;
-                    ${expectedProfitNotif ? 'background: #f4fdf4;' : ''}
-                    
-                ">
-                ${strategyList.map(_strategyObj => {
-                    const  strategyFullSymbolNames = _strategyObj.positions.map(opt=>opt.symbol).join('-'); 
-                    
-        return `
-                    <div style="display:flex;column-gap: 5px;    font-size: 16px;">
-                        <span class="strategy-name" data-base-strategy-type="${_strategyObj.strategyTypeTitle}" 
-                            data-base-strategy-full-symbol-names="${strategyFullSymbolNames}" >${_strategyObj.name}</span> 
-                        <span style="margin-right:auto ;color:${_strategyObj.profitPercent > 0 ? '#005d00' : 'red'}">%${(_strategyObj.profitPercent * 100).toFixed(1)}</span>
-                    </div>
-                            
-                    `
-    }
-    ).join('')}
+    const hasSpecialProfit = strategyList.some(s => s.hasSpecialProfit);
+    const hasFreeRiskProfit = strategyList.some(s => s.hasFreeRiskProfit);
+
+    return `
+        <div
+            class="strategy-filter-list-cnt ${expectedProfitNotif ? 'expected-profit' : ''} ${expectedProfitNotif && hasStrategies ? 'has-expected-profit' : ''}"
+            data-base-strategy-type="${strategyList[0]?.strategyTypeTitle ?? ''}"
+        >
+            <div class="strategy-filter-list-title ${expectedProfitNotif ? 'expected-profit-title' : ''}">
+                ${title}
             </div>
-        
-    </div>`
 
-}
+            <div class="strategy-filter-list-content
+                ${expectedProfitNotif ? 'expected-profit-content' : ''}
+                ${expectedProfitNotif && hasStrategies ? 'has-expected-profit-border' : ''}
+                ${hasSpecialProfit ? 'has-special-profit' : ''}
+                ${hasFreeRiskProfit ? 'has-free-risk-profit' : ''}"
+            >
+                ${strategyList.map(_strategyObj => {
+                    const strategyFullSymbolNames = _strategyObj.positions
+                        .map(opt => opt.symbol)
+                        .join('-');
+
+                    return `
+                        <div class="strategy-item">
+                            <span
+                                class="strategy-name"
+                                data-base-strategy-type="${_strategyObj.strategyTypeTitle}"
+                                data-base-strategy-full-symbol-names="${strategyFullSymbolNames}"
+                            >${_strategyObj.name}</span>
+
+                            <span class="strategy-profit ${_strategyObj.profitPercent > 0 ? 'profit-positive' : 'profit-negative'}">
+                                %${(_strategyObj.profitPercent * 100).toFixed(1)}
+                            </span>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        </div>
+    `;
+};
+
 const parseStringToNumber = (str) => {
     let number = parseFloat(str);
     // ابتدا عدد را استخراج می‌کنیم
@@ -10222,6 +10164,38 @@ const createGroupedStrategiesHtml = (allStrategyListObject) => {
 
 
 
+const enrichStrategiesWithProfitTypes = (strategies) => {
+
+    const specialProfitStrategies = ['BECS', 'BEPS'];
+
+    const freeRiskProfitStrategies = [
+        'BOX',
+        'BOX_BUPS_BECS',
+        'BUCS_COLLAR',
+        'BEPS_COLLAR',
+        'BECS_COLLAR',
+        'BUPS_COLLAR',
+        'BUCS_LONG_PUT',
+        'BECS_LONG_CALL',
+        'BEPS_LONG_CALL',
+        'BUPS_LONG_PUT',
+        'LongGUTS_STRANGLE'
+    ];
+
+    return strategies.map(strategy => ({
+        ...strategy,
+
+        hasSpecialProfit:
+            specialProfitStrategies.includes(strategy.strategyTypeTitle) &&
+            strategy.profitPercent > 1,
+
+        hasFreeRiskProfit:
+            freeRiskProfitStrategies.includes(strategy.strategyTypeTitle) &&
+            strategy.profitPercent > 0.08
+    }));
+};
+
+
 const createListFilterContetnByList=(list)=>{
 
 
@@ -11727,7 +11701,9 @@ const createListFilterContetnByList=(list)=>{
             // a must be equal to b
             return 0;
         }
-        )
+        );
+
+        filteredStrategies = enrichStrategiesWithProfitTypes(filteredStrategies);
 
 
         return {
@@ -12348,6 +12324,59 @@ const injectStyles = ()=>{
             flex-wrap: wrap;
             align-items: stretch;
             gap: 10px;
+        }
+
+
+        .strategy-filter-list-title {
+            padding: 5px 10px;
+            height: 50px;
+            flex-shrink: 0;
+        }
+
+        .strategy-filter-list-title.expected-profit-title {
+            color: green;
+        }
+
+        .strategy-filter-list-content {
+            display: flex;
+            flex-direction: column;
+            row-gap: 10px;
+            overflow: auto;
+            padding: 5px;
+            border: 1px solid;
+            flex-grow: 1;
+        }
+
+        .strategy-filter-list-content.expected-profit-content {
+            background: #f4fdf4;
+        }
+
+        .strategy-filter-list-content.has-expected-profit-border {
+            border: 7px solid #00d820;
+        }
+
+        .strategy-item {
+            display: flex;
+            column-gap: 5px;
+            font-size: 16px;
+        }
+
+        .strategy-profit {
+            margin-right: auto;
+        }
+
+        .strategy-profit.profit-positive {
+            color: #005d00;
+        }
+
+        .strategy-profit.profit-negative {
+            color: red;
+        }
+
+
+        .strategy-filter-list-content.has-special-profit,
+        .strategy-filter-list-content.has-free-risk-profit {
+            border: 7px solid #5a43fe;
         }
     `;
 
