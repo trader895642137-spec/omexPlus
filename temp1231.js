@@ -1,139 +1,98 @@
-const calcSellPutStrategies = (list, { priceType, expectedProfitPerMonth,
-    minProfitToFilter,
-    filteredList,
-    optionsGroupedByStock,
-    minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity,
-    min_time_to_settlement = -Infinity, max_time_to_settlement = Infinity,
-    minVol = CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif = false, ...restConfig }) => {
+const createList2 = async ()=>{
 
-   
+    return normalizeAssets(await getAssetsFromService());
+    const tradedAssetList = await getListOfTradedAssets();
+    if(!tradedAssetList?.length) return []
 
-    let enrichedList = [];
-    for (let [stockSymbol, optionList] of Object.entries(optionsGroupedByStock)) {
-        const optionsGroupedByDate = Object.groupBy(optionList, ({ optionDetails }) => optionDetails.date);
+    let allStockSymbolDetailsMap = {};
 
-        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap(([date, optionListOfSameDate]) => {
+    let list = tradedAssetList.map(tradedAsset => {
 
-            const _enrichedList = optionListOfSameDate.map(option => {
+        const symbolID = tradedAsset.nc;
+        // const cells = document.querySelectorAll(`[id='${symbolID}'] >div`)
 
-                if (!option.optionDetails?.stockSymbolDetails || !option.isPut) {
-                    return option
-                }
+        const name = tradedAsset.cn;
+        const quantityOfTrades = tradedAsset.nt;
+        const isOption = ['اختیارخ', 'اختیارف'].some(optionTypeName => name.includes(optionTypeName));
 
+        const symbol = tradedAsset.sf;
 
-                const marginPerQuantity = option.calculatedRequiredMargin / 1000;
+        const prevRecordObj = prevListSymbolMap[symbol];
 
-                const strategyPositions = [
-                    {
-                        ...option,
-                        isBuy: false,
-                        getQuantity: () => baseQuantity,
-                        getRequiredMargin: () => marginPerQuantity
-                    },
-
-                ]
-
-
-
-                const totalCost = totalCostCalculatorCommon({
-                    strategyPositions,
-                    getPrice: (strategyPosition) => getPriceOfAsset({
-                        asset: strategyPosition,
-                        priceType,
-                        sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                    })
-                });
-
-
-                const breakevenList = findBreakevenList({
-                    positions: strategyPositions,
-                    getPrice: (strategyPosition) => getPriceOfAsset({
-                        asset: strategyPosition,
-                        priceType,
-                        sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                    })
-                });
-
-                const breakeven = breakevenList[0];
-
-
-
-                const stockPriceToSarBeSarPercent = (breakeven / option.optionDetails.stockSymbolDetails.last) - 1;
-
-                if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSar || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSar) {
-                    return option
-                }
-
-                
-
-                const profit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: option.optionDetails.stockSymbolDetails.last });
-
-
-
-               const profitPercent = profit / Math.abs(totalCost);
-
-
-
-                const strategyObj = {
-                    option: {
-                        ...option
-                    },
-                    positions: [option],
-                    strategyTypeTitle: "SellPut",
-                    strategyPositions,
-                    currentStockPrice: option.optionDetails?.stockSymbolDetails?.last,
-                    totalCost,
-                    minProfitToFilter,
-                    expectedProfitNotif,
-                    stockPriceToSarBeSarPercent,
-                    expectedProfitPerMonth,
-                    name: createStrategyName([option]),
-                    profitPercent
-                }
-
-                if (Number.isNaN(strategyObj.profitPercent))
-                    return option
-
-
-                let allPossibleStrategies = [strategyObj]
-
-                return {
-                    ...option,
-                    allPossibleStrategies
-                }
-
+        const lastTradedTime = ( () => {
+            if (!prevRecordObj || !prevRecordObj.quantityOfTrades || (quantityOfTrades > prevRecordObj.quantityOfTrades)) {
+                return Date.now();
             }
-            );
-
-            return _enrichedList
+            return prevRecordObj.lastTradedTime
 
         }
-        )
+        )();
+        const isCall = isOption && symbol.startsWith('ض');
+        const isPut = isOption && symbol.startsWith('ط');
+        let optionDetails,strikePrice;
+        if (isOption) {
+            let date = name.split('-').pop();
+            let dateArray = date.split('/');
+            if(dateArray[0].length===2){
+                dateArray[0] = '14' + dateArray[0];
+                date = dateArray.join('/')
+            }
+            strikePrice = convertStringToInt(name.split('-')[1]);
+            const stockSymbol = name.split('-')[0].replace('اختيارخ', '').replace('اختيارف', '').replace('اختیارخ', '').replace('اختیارف', '').trim();
 
-        enrichedList = enrichedList.concat(enrichedListOfStock)
+            optionDetails = {
+                date,
+                stockSymbol,
+                strikePrice
+            }
+        }
 
+        prevListSymbolMap[symbol] = {
+            quantityOfTrades,
+            lastTradedTime
+        }
+
+        const assetInfo ={
+            instrumentName:symbol,
+            isOption,
+            isCall,
+            lastTradedTime,
+            isPut,
+            isETF: isETF(symbol),
+            strikePrice,
+            optionDetails,
+        }
+        return assetInfo
     }
+    );
 
+    list = list.map(listItem => {
+
+        if (!listItem.isOption)
+            return listItem
+        allStockSymbolDetailsMap[listItem.optionDetails.stockSymbol] = allStockSymbolDetailsMap[listItem.optionDetails.stockSymbol] || list.find(_item => _item.symbol === listItem.optionDetails.stockSymbol);
+        const stockSymbolDetails = allStockSymbolDetailsMap[listItem.optionDetails.stockSymbol]
+        listItem.optionDetails.stockSymbolDetails = stockSymbolDetails
+
+
+        if(listItem.optionDetails.stockSymbolDetails){
+
+            const calculatedRequiredMargin = calculateOptionMargin({
+                priceSpot: listItem.optionDetails.stockSymbolDetails.last,
+                strikePrice: listItem.optionDetails.strikePrice,
+                contractSize: 1000,
+                optionPremium: listItem.last,
+                optionType: listItem.isCall ? "call" : "put"
+            })?.required || 0;
     
+            listItem.calculatedRequiredMargin = calculatedRequiredMargin
+        }
 
-    return {
-        
-        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
-        strategyName: "SellPut",
-        priceType,
-        min_time_to_settlement,
-        max_time_to_settlement,
-        minVol,
-        expectedProfitNotif,
-        expectedProfitPerMonth,
-        ...restConfig,
-        htmlTitle: configsToHtmlTitle({
-            strategyName: "SellPut",
-            priceType,
-            min_time_to_settlement,
-            max_time_to_settlement,
-            minVol
-        })
+
+        return listItem
     }
+    );
+
+    return list
 
 }

@@ -26216,48 +26216,82 @@ const createListFilterContetnByList=(list)=>{
 
 }
 
-const createList = ()=>{
-    const allElementList = Array.from(document.querySelectorAll('#main [class="{c}"]'));
-    if(!allElementList?.length) return []
 
-    let allStockSymbolDetailsMap = {};
+function getAssetsFromHTML() {
+    const rows = Array.from(
+        document.querySelectorAll('#main [class="{c}"]')
+    );
+
+    return rows.map(row => {
+        const symbolID = row.getAttribute('id');
+        const cells = document.querySelectorAll(
+            `[id='${symbolID}'] >div`
+        );
+
+        return {
+            symbol: cells[0].querySelector('a').innerHTML.trim(),
+            name: cells[1].querySelector('a').innerHTML,
+            quantityOfTrades: convertStringToInt(cells[2].innerHTML),
+
+            vol: parseStringToNumber(
+                cells[4].querySelector('div').innerHTML
+            ),
+            beforeTodayPrice: convertStringToInt(cells[5].innerHTML),
+            last: convertStringToInt(cells[7].innerHTML),
+            close: convertStringToInt(cells[10].innerHTML),
+            bestBuyQ: parseStringToNumber(
+                cells[18].querySelector('div').innerHTML
+            ),
+            bestBuy: convertStringToInt(cells[19].innerHTML),
+            bestSell: convertStringToInt(cells[20].innerHTML),
+            bestSellQ: parseStringToNumber(
+                cells[21].querySelector('div').innerHTML
+            )
+        };
+    });
+}
+
+
+function normalizeAssets(rawAssets) {
+    if (!rawAssets?.length) return [];
+
+
+     let allStockSymbolDetailsMap = {};
     const now = Date.now();
 
-    let list = allElementList.map(row => {
+    let list = rawAssets.map(asset => {
 
-        const symbolID = row.getAttribute('id')
-        const cells = document.querySelectorAll(`[id='${symbolID}'] >div`)
 
-        const name = cells[1].querySelector('a').innerHTML;
-        const quantityOfTrades = convertStringToInt(cells[2].innerHTML);
-        const isOption = ['اختيارخ', 'اختيارف'].some(optionTypeName => name.includes(optionTypeName));
+        const isOption = /اختیار[خف]|اختيار[خف]/.test(asset.name);
 
-        const symbol = cells[0].querySelector('a').innerHTML.trim();
 
-        const prevRecordObj = prevListSymbolMap[symbol];
+        const prevRecordObj = prevListSymbolMap[asset.symbol];
 
 
         const lastTradedTime = ( () => {
-            if (!prevRecordObj || !prevRecordObj.quantityOfTrades || (quantityOfTrades > prevRecordObj.quantityOfTrades)) {
-                return Date.now();
+            if (!prevRecordObj || !prevRecordObj.quantityOfTrades || (asset.quantityOfTrades > prevRecordObj.quantityOfTrades)) {
+                return now;
             }
             return prevRecordObj.lastTradedTime
 
         }
         )();
-        const isCall = isOption && symbol.startsWith('ض');
-        const isPut = isOption && symbol.startsWith('ط');
+        const isCall = isOption && asset.symbol.startsWith('ض');
+        const isPut = isOption && asset.symbol.startsWith('ط');
         let optionDetails,strikePrice,settlementTimeDiff;
         if (isOption) {
-            let date = name.split('-').pop();
+            let date = asset.name.split('-').pop();
             let dateArray = date.split('/');
             if(dateArray[0].length===2){
                 dateArray[0] = '14' + dateArray[0];
                 date = dateArray.join('/')
             }
 
-            strikePrice = convertStringToInt(name.split('-')[1]);
-            const stockSymbol = name.split('-')[0].replace('اختيارخ', '').replace('اختيارف', '').trim();
+            strikePrice = convertStringToInt(asset.name.split('-')[1]);
+            const stockSymbol = asset.name
+                .split('-')[0]
+                .replace(/اختیار[خف]|اختيار[خف]/g, '')
+                .trim();
 
             optionDetails = {
                 date,
@@ -26274,8 +26308,8 @@ const createList = ()=>{
         }
 
 
-        prevListSymbolMap[symbol] = {
-            quantityOfTrades,
+        prevListSymbolMap[asset.symbol] = {
+            quantityOfTrades: asset.quantityOfTrades,
             lastTradedTime
         }
 
@@ -26283,26 +26317,16 @@ const createList = ()=>{
 
 
         const assetInfo ={
-            symbol,
-            name,
-            instrumentName:symbol,
+            ...asset,
+            instrumentName:asset.symbol,
             isOption,
             isCall,
-            quantityOfTrades,
             lastTradedTime,
             isPut,
-            isETF: isETF(symbol),
+            isETF: isETF(asset.symbol),
             strikePrice,
             optionDetails,
             settlementTimeDiff,
-            vol: parseStringToNumber(cells[4].querySelector('div').innerHTML),
-            beforeTodayPrice: convertStringToInt(cells[5].innerHTML),
-            last: convertStringToInt(cells[7].innerHTML),
-            close: convertStringToInt(cells[10].innerHTML),
-            bestBuyQ: parseStringToNumber(cells[18].querySelector('div').innerHTML),
-            bestBuy: convertStringToInt(cells[19].innerHTML),
-            bestSell: convertStringToInt(cells[20].innerHTML),
-            bestSellQ: parseStringToNumber(cells[21].querySelector('div').innerHTML)
         }
         return assetInfo
     }
@@ -26336,6 +26360,40 @@ const createList = ()=>{
     );
 
     return list
+
+    
+}
+
+const createList = ()=>{
+
+    return normalizeAssets(getAssetsFromHTML());
+
+}
+
+
+async function getAssetsFromService() {
+    const assets = await getListOfTradedAssets();
+
+    return (assets || []).map(asset => ({
+        symbol: asset.sf,
+        name: asset.cn,
+        quantityOfTrades: asset.nt,
+
+
+        vol: asset.tv,
+        beforeTodayPrice: asset.rp,
+        last: asset.ltp,
+        close: asset.cp,
+        bestBuyQ: asset.bbq,
+        bestBuy: asset.bbp,
+        bestSell: asset.bsp,
+        bestSellQ: asset.bsq
+    }));
+}
+
+
+const createList2 = async ()=>{
+    return normalizeAssets(await getAssetsFromService());
 
 }
 
@@ -26356,111 +26414,7 @@ const getListOfTradedAssets = async () => {
 
 
 
-const createList2 = async ()=>{
-    const tradedAssetList = await getListOfTradedAssets();
-    if(!tradedAssetList?.length) return []
 
-    let allStockSymbolDetailsMap = {};
-
-    let list = tradedAssetList.map(tradedAsset => {
-
-        const symbolID = tradedAsset.nc;
-        // const cells = document.querySelectorAll(`[id='${symbolID}'] >div`)
-
-        const name = tradedAsset.cn;
-        const quantityOfTrades = tradedAsset.nt;
-        const isOption = ['اختیارخ', 'اختیارف'].some(optionTypeName => name.includes(optionTypeName));
-
-        const symbol = tradedAsset.sf;
-
-        const prevRecordObj = prevListSymbolMap[symbol];
-
-        const lastTradedTime = ( () => {
-            if (!prevRecordObj || !prevRecordObj.quantityOfTrades || (quantityOfTrades > prevRecordObj.quantityOfTrades)) {
-                return Date.now();
-            }
-            return prevRecordObj.lastTradedTime
-
-        }
-        )();
-        const isCall = isOption && symbol.startsWith('ض');
-        const isPut = isOption && symbol.startsWith('ط');
-        let optionDetails,strikePrice;
-        if (isOption) {
-            let date = name.split('-').pop();
-            let dateArray = date.split('/');
-            if(dateArray[0].length===2){
-                dateArray[0] = '14' + dateArray[0];
-                date = dateArray.join('/')
-            }
-            strikePrice = convertStringToInt(name.split('-')[1]);
-            const stockSymbol = name.split('-')[0].replace('اختيارخ', '').replace('اختيارف', '').replace('اختیارخ', '').replace('اختیارف', '').trim();
-
-            optionDetails = {
-                date,
-                stockSymbol,
-                strikePrice
-            }
-        }
-
-        prevListSymbolMap[symbol] = {
-            quantityOfTrades,
-            lastTradedTime
-        }
-
-        const assetInfo ={
-            symbol,
-            name,
-            instrumentName:symbol,
-            isOption,
-            isCall,
-            quantityOfTrades,
-            lastTradedTime,
-            isPut,
-            isETF: isETF(symbol),
-            strikePrice,
-            optionDetails,
-            vol: tradedAsset.tv,
-            last: tradedAsset.ltp,
-            bestBuyQ: tradedAsset.bbq,
-            bestBuy: tradedAsset.bbp,
-            bestSell: tradedAsset.bsp,
-            bestSellQ: tradedAsset.bsq
-        }
-        return assetInfo
-    }
-    );
-
-    list = list.map(listItem => {
-
-        if (!listItem.isOption)
-            return listItem
-        allStockSymbolDetailsMap[listItem.optionDetails.stockSymbol] = allStockSymbolDetailsMap[listItem.optionDetails.stockSymbol] || list.find(_item => _item.symbol === listItem.optionDetails.stockSymbol);
-        const stockSymbolDetails = allStockSymbolDetailsMap[listItem.optionDetails.stockSymbol]
-        listItem.optionDetails.stockSymbolDetails = stockSymbolDetails
-
-
-        if(listItem.optionDetails.stockSymbolDetails){
-
-            const calculatedRequiredMargin = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.calculateOptionMargin)({
-                priceSpot: listItem.optionDetails.stockSymbolDetails.last,
-                strikePrice: listItem.optionDetails.strikePrice,
-                contractSize: 1000,
-                optionPremium: listItem.last,
-                optionType: listItem.isCall ? "call" : "put"
-            })?.required || 0;
-    
-            listItem.calculatedRequiredMargin = calculatedRequiredMargin
-        }
-
-
-        return listItem
-    }
-    );
-
-    return list
-
-}
 
 const ignoreStrategyTemporary = (strategyName)=>{
 
