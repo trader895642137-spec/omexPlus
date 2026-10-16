@@ -10111,7 +10111,6 @@ const filterStrategiesByConfig = ({
 
 const createGroupedStrategiesHtml = (allStrategyListObject) => {
 
-
     const groups = {
         [STRATEGY_DIRECTION.BULLISH]: [],
         [STRATEGY_DIRECTION.BEARISH]: [],
@@ -10119,16 +10118,24 @@ const createGroupedStrategiesHtml = (allStrategyListObject) => {
         [STRATEGY_DIRECTION.RISK_FREE_BUS]: [],
         [STRATEGY_DIRECTION.RISK_FREE_BES]: [],
         [STRATEGY_DIRECTION.RISK_FREE_NUT]: [],
-        unknown: []
+        unknown: [],
+        specialProfits: []
     };
 
     for (const strategyObj of allStrategyListObject) {
         const direction = strategyObj.strategyDirection;
 
+        // گروه مستقل سود ویژه و فری‌ریسک
+        if (strategyObj.hasSpecialProfit || strategyObj.hasFreeRiskProfit) {
+            groups.specialProfits.push(strategyObj);
+        }
+
+        // گروه‌بندی اصلی بر اساس جهت استراتژی
         (groups[direction] ?? groups.unknown).push(strategyObj);
     }
 
     const groupTitles = {
+        specialProfits: 'سود ویژه و فری‌ریسک',
         bullish: 'صعودی',
         bearish: 'نزولی',
         neutral: 'خنثی',
@@ -10141,26 +10148,25 @@ const createGroupedStrategiesHtml = (allStrategyListObject) => {
     const htmlContent = Object.entries(groups)
         .filter(([, strategies]) => strategies.length > 0)
         .map(([direction, strategies]) => `
-        <section class="strategy-direction-group"
-                 data-direction="${direction}">
+            <section
+                class="strategy-direction-group"
+                data-direction="${direction}"
+            >
+                <h3 class="strategy-direction-title">
+                    ${groupTitles[direction]}
+                </h3>
 
-            <h3 class="strategy-direction-title">
-                ${groupTitles[direction]}
-            </h3>
-
-            <div class="strategy-direction-items">
-                ${strategies
-                .map(strategyObj => strategyObj.htmlContent)
-                .join('')}
-            </div>
-
-        </section>
-    `)
+                <div class="strategy-direction-items">
+                    ${strategies
+                        .map(strategyObj => strategyObj.htmlContent)
+                        .join('')}
+                </div>
+            </section>
+        `)
         .join('');
 
-    return htmlContent
-
-}
+    return htmlContent;
+};
 
 
 
@@ -11705,6 +11711,9 @@ const createListFilterContetnByList=(list)=>{
 
         filteredStrategies = enrichStrategiesWithProfitTypes(filteredStrategies);
 
+        const hasSpecialProfit = filteredStrategies.some(strategy => strategy.hasSpecialProfit);
+        const hasFreeRiskProfit = filteredStrategies.some(strategy => strategy.hasFreeRiskProfit);
+
 
         return {
             strategyName,
@@ -11715,6 +11724,8 @@ const createListFilterContetnByList=(list)=>{
                 expectedProfitNotif
             }),
             filteredStrategies,
+            hasSpecialProfit,
+            hasFreeRiskProfit,
             expectedProfitNotif,
             htmlTitle
         }
@@ -12006,7 +12017,7 @@ const getMainContainer = () => {
         flex-wrap: wrap;
         align-content: flex-start;
         width:100%;
-        min-height: 300vh;
+        min-height: 500vh;
     `;
 
         filtersCnt.addEventListener('click', (event) => {
