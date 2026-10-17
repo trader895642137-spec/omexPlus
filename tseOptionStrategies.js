@@ -8729,7 +8729,7 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
                         const priceThatCauseMaxLossOfBUCS = Math.min(...strategyPositionsOfBUCS.map(strategyPosition => strategyPosition.strikePrice)) / 1.2;
                         const maxLossOfBUCS = totalCostOfBUCS + calcOffsetGainOfPositions({ strategyPositions: strategyPositionsOfBUCS, stockPrice: priceThatCauseMaxLossOfBUCS });
 
-                        const factorToCoverMaxLoss = Math.abs(maxLossOfBUCS) / (buyingPut.optionDetails?.strikePrice - buyingCall.optionDetails?.strikePrice);
+                        const factorToCoverMaxLoss =Math.max(0.1, Math.abs(maxLossOfBUCS) / (buyingPut.optionDetails?.strikePrice - buyingCall.optionDetails?.strikePrice));
                         const maxOfPossibleFactor = Math.abs(maxProfitOfBUCS / buyingPutPrice);
 
 
@@ -8768,12 +8768,12 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
                             })
                         });
 
-                        const priceThatCauseMinProfitOfBUCS_Long_Put = Math.max(...strategyPositionsOfBUCS_Long_Put.map(strategyPosition=>strategyPosition.strikePrice)) * 1.3;
                       
+                        const currentStokPrice = buyingCall?.optionDetails?.stockSymbolDetails?.last;
 
-                        const minProfitOfBUCS_Long_Put = totalCostOfBUCS_Long_Put + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUCS_Long_Put, stockPrice:priceThatCauseMinProfitOfBUCS_Long_Put});
+                        const profitOfBUCS_Long_Put = totalCostOfBUCS_Long_Put + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUCS_Long_Put, stockPrice:currentStokPrice});
 
-                        const minProfitPercentOfBUCS_Long_Put = minProfitOfBUCS_Long_Put / Math.abs(totalCostOfBUCS_Long_Put);
+                        const profitPercentOfBUCS_Long_Put = profitOfBUCS_Long_Put / Math.abs(totalCostOfBUCS_Long_Put);
 
                         const breakevenList = findBreakevenList({
                             positions:strategyPositionsOfBUCS_Long_Put, 
@@ -8819,10 +8819,10 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
                             isWholeProfitable:isFullBodyProfitable,
-                            isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBUCS_Long_Put),
+                            isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(profitPercentOfBUCS_Long_Put),
                             name: createStrategyName([buyingCall, sellingCall, buyingPut]),
                             // profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
-                            profitPercent: minProfitPercentOfBUCS_Long_Put 
+                            profitPercent: profitPercentOfBUCS_Long_Put 
                         }])
                     }
                     , []);
@@ -8998,7 +8998,7 @@ const calcBECS_Long_CallStrategies = (list, {priceType, strategySubName,
                         const priceThatCauseMaxLossOfBECS = Math.max(...strategyPositionsOfBECS.map(strategyPosition => strategyPosition.strikePrice)) * 1.2;
                         const maxLossOfBECS = totalCostOfBECS + calcOffsetGainOfPositions({ strategyPositions: strategyPositionsOfBECS, stockPrice: priceThatCauseMaxLossOfBECS });
 
-                        const factorToCoverMaxLoss = Math.abs(maxLossOfBECS) / (buyingCall.optionDetails?.strikePrice - anotherBuyingCall.optionDetails?.strikePrice);
+                        const factorToCoverMaxLoss =Math.max(0.1, Math.abs(maxLossOfBECS) / (buyingCall.optionDetails?.strikePrice - anotherBuyingCall.optionDetails?.strikePrice));
                         const maxOfPossibleFactor = Math.abs(maxProfitOfBECS / anotherBuyingCallPrice);
 
 
@@ -9037,12 +9037,12 @@ const calcBECS_Long_CallStrategies = (list, {priceType, strategySubName,
                             })
                         });
 
-                        const priceThatCauseMinProfitOfBECS_Long_Call = Math.min(...strategyPositionsOfBECS_Long_Call.map(strategyPosition=>strategyPosition.strikePrice)) / 1.3;
+                        const currentStokPrice = buyingCall?.optionDetails?.stockSymbolDetails?.last
                       
 
-                        const minProfitOfBECS_Long_Call = totalCostOfBECS_Long_Call + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBECS_Long_Call, stockPrice:priceThatCauseMinProfitOfBECS_Long_Call});
+                        const profitOfBECS_Long_Call = totalCostOfBECS_Long_Call + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBECS_Long_Call, stockPrice:currentStokPrice});
 
-                        const minProfitPercentOfBECS_Long_Call = minProfitOfBECS_Long_Call / Math.abs(totalCostOfBECS_Long_Call);
+                        const profitPercentOfBECS_Long_Call = profitOfBECS_Long_Call / Math.abs(totalCostOfBECS_Long_Call);
 
                         const breakevenList = findBreakevenList({
                             positions:strategyPositionsOfBECS_Long_Call, 
@@ -9088,10 +9088,10 @@ const calcBECS_Long_CallStrategies = (list, {priceType, strategySubName,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
                             isWholeProfitable:isFullBodyProfitable,
-                            isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBECS_Long_Call),
+                            isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(profitPercentOfBECS_Long_Call),
                             name: createStrategyName([buyingCall, sellingCall, anotherBuyingCall]),
                             // profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
-                            profitPercent: minProfitPercentOfBECS_Long_Call 
+                            profitPercent: profitPercentOfBECS_Long_Call 
                         }])
                     }
                     , []);
@@ -9267,7 +9267,7 @@ const calcBEPS_Long_CallStrategies = (list, {priceType, strategySubName,
                         const priceThatCauseMaxLossOfBEPS = Math.max(...strategyPositionsOfBEPS.map(strategyPosition => strategyPosition.strikePrice)) * 1.2;
                         const maxLossOfBEPS = totalCostOfBEPS + calcOffsetGainOfPositions({ strategyPositions: strategyPositionsOfBEPS, stockPrice: priceThatCauseMaxLossOfBEPS });
 
-                        const factorToCoverMaxLoss = Math.abs(maxLossOfBEPS) / (buyingPut.optionDetails?.strikePrice - buyingCall.optionDetails?.strikePrice);
+                        const factorToCoverMaxLoss =Math.max(0.1, Math.abs(maxLossOfBEPS) / (buyingPut.optionDetails?.strikePrice - buyingCall.optionDetails?.strikePrice));
                         const maxOfPossibleFactor = Math.abs(maxProfitOfBEPS / buyingCallPrice);
 
 
@@ -9306,12 +9306,12 @@ const calcBEPS_Long_CallStrategies = (list, {priceType, strategySubName,
                             })
                         });
 
-                        const priceThatCauseMinProfitOfBEPS_Long_Call = Math.min(...strategyPositionsOfBEPS_Long_Call.map(strategyPosition=>strategyPosition.strikePrice)) / 1.3;
                       
+                        const currentStokPrice = buyingPut?.optionDetails?.stockSymbolDetails?.last;
 
-                        const minProfitOfBEPS_Long_Call = totalCostOfBEPS_Long_Call + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBEPS_Long_Call, stockPrice:priceThatCauseMinProfitOfBEPS_Long_Call});
+                        const profitOfBEPS_Long_Call = totalCostOfBEPS_Long_Call + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBEPS_Long_Call, stockPrice:currentStokPrice});
 
-                        const minProfitPercentOfBEPS_Long_Call = minProfitOfBEPS_Long_Call / Math.abs(totalCostOfBEPS_Long_Call);
+                        const profitPercentOfBEPS_Long_Call = profitOfBEPS_Long_Call / Math.abs(totalCostOfBEPS_Long_Call);
 
                         const breakevenList = findBreakevenList({
                             positions:strategyPositionsOfBEPS_Long_Call, 
@@ -9357,10 +9357,10 @@ const calcBEPS_Long_CallStrategies = (list, {priceType, strategySubName,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
                             isWholeProfitable:isFullBodyProfitable,
-                            isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBEPS_Long_Call),
+                            isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(profitPercentOfBEPS_Long_Call),
                             name: createStrategyName([buyingPut, sellingPut, buyingCall]),
                             // profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
-                            profitPercent:  minProfitPercentOfBEPS_Long_Call 
+                            profitPercent:  profitPercentOfBEPS_Long_Call 
                         }])
                     }
                     , []);
@@ -9534,7 +9534,7 @@ const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName,
                         const priceThatCauseMaxLossOfBUPS = Math.min(...strategyPositionsOfBUPS.map(strategyPosition => strategyPosition.strikePrice)) / 1.2;
                         const maxLossOfBUPS = totalCostOfBUPS + calcOffsetGainOfPositions({ strategyPositions: strategyPositionsOfBUPS, stockPrice: priceThatCauseMaxLossOfBUPS });
 
-                        const factorToCoverMaxLoss = Math.abs(maxLossOfBUPS) / (anotherBuyingPut.optionDetails?.strikePrice - buyingPut.optionDetails?.strikePrice);
+                        const factorToCoverMaxLoss =Math.max(0.1, Math.abs(maxLossOfBUPS) / (anotherBuyingPut.optionDetails?.strikePrice - buyingPut.optionDetails?.strikePrice));
                         const maxOfPossibleFactor = Math.abs(maxProfitOfBUPS / anotherBuyingPutPrice);
 
 
@@ -9577,12 +9577,12 @@ const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName,
                             })
                         });
 
-                        const priceThatCauseMinProfitOfBUPS_Long_Put = Math.max(...strategyPositionsOfBUPS_Long_Put.map(strategyPosition=>strategyPosition.strikePrice)) * 1.3;
                       
+                        const currentStokPrice = buyingPut?.optionDetails?.stockSymbolDetails?.last;
 
-                        const minProfitOfBUPS_Long_Put = totalCostOfBUPS_Long_Put + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUPS_Long_Put, stockPrice:priceThatCauseMinProfitOfBUPS_Long_Put});
+                        const profitOfBUPS_Long_Put = totalCostOfBUPS_Long_Put + calcOffsetGainOfPositions({strategyPositions:strategyPositionsOfBUPS_Long_Put, stockPrice:currentStokPrice});
 
-                        const minProfitPercentOfBUPS_Long_Put = minProfitOfBUPS_Long_Put / Math.abs(totalCostOfBUPS_Long_Put);
+                        const profitPercentOfBUPS_Long_Put = profitOfBUPS_Long_Put / Math.abs(totalCostOfBUPS_Long_Put);
 
                         const breakevenList = findBreakevenList({
                             positions:strategyPositionsOfBUPS_Long_Put, 
@@ -9628,10 +9628,10 @@ const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
                             isWholeProfitable:isFullBodyProfitable,
-                            isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBUPS_Long_Put),
+                            isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(profitPercentOfBUPS_Long_Put),
                             name: createStrategyName([buyingPut, sellingPut, anotherBuyingPut]),
                             // profitPercent: isFullBodyProfitable ? 1: -stockPriceToSarBeSarPercent 
-                            profitPercent: minProfitPercentOfBUPS_Long_Put 
+                            profitPercent: profitPercentOfBUPS_Long_Put 
                         }])
                     }
                     , []);
