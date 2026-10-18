@@ -13775,8 +13775,11 @@ __webpack_require__.r(__webpack_exports__);
 const CONFIG_TYPE_EXPANSIONS = {
     BUS: [
         { type: 'BUCS' },
-        {
-            type: 'SellPut',
+        { type: 'SellPut',
+            modify: config => ({
+                ...config,
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+            }),
         },
         { type: 'BUCS_LONG_PUT' },
         { type: 'BUCS_BEPS_LongPut' },
