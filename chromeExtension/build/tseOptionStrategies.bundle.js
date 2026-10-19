@@ -23185,12 +23185,16 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
                         const priceThatCauseMaxLossOfBUCS = Math.min(...strategyPositionsOfBUCS.map(strategyPosition => strategyPosition.strikePrice)) / 1.2;
                         const maxLossOfBUCS = totalCostOfBUCS + calcOffsetGainOfPositions({ strategyPositions: strategyPositionsOfBUCS, stockPrice: priceThatCauseMaxLossOfBUCS });
 
-                        const factorToCoverMaxLoss =Math.max(0.1, Math.abs(maxLossOfBUCS) / (buyingPut.optionDetails?.strikePrice - buyingCall.optionDetails?.strikePrice));
+                        const factorToCoverMaxLoss = Math.abs(maxLossOfBUCS) / (buyingPut.optionDetails?.strikePrice - buyingCall.optionDetails?.strikePrice);
                         const maxOfPossibleFactor = Math.abs(maxProfitOfBUCS / buyingPutPrice);
 
 
                         const quantityFactorOfBuyingPut = Math.min(factorToCoverMaxLoss, maxOfPossibleFactor);
 
+
+                        if (quantityFactorOfBuyingPut < 0.1) {
+                            return ___allPossibleStrategies
+                        }
 
 
                         const strategyPositionsOfBUCS_Long_Put = [
@@ -23454,12 +23458,16 @@ const calcBECS_Long_CallStrategies = (list, {priceType, strategySubName,
                         const priceThatCauseMaxLossOfBECS = Math.max(...strategyPositionsOfBECS.map(strategyPosition => strategyPosition.strikePrice)) * 1.2;
                         const maxLossOfBECS = totalCostOfBECS + calcOffsetGainOfPositions({ strategyPositions: strategyPositionsOfBECS, stockPrice: priceThatCauseMaxLossOfBECS });
 
-                        const factorToCoverMaxLoss =Math.max(0.1, Math.abs(maxLossOfBECS) / (buyingCall.optionDetails?.strikePrice - anotherBuyingCall.optionDetails?.strikePrice));
+                        const factorToCoverMaxLoss = Math.abs(maxLossOfBECS) / (buyingCall.optionDetails?.strikePrice - anotherBuyingCall.optionDetails?.strikePrice);
                         const maxOfPossibleFactor = Math.abs(maxProfitOfBECS / anotherBuyingCallPrice);
 
 
                         const quantityFactorOfBuyingCall = Math.min(factorToCoverMaxLoss, maxOfPossibleFactor);
 
+
+                        if (quantityFactorOfBuyingCall < 0.1) {
+                            return ___allPossibleStrategies
+                        }
 
 
                         const strategyPositionsOfBECS_Long_Call = [
@@ -23723,13 +23731,16 @@ const calcBEPS_Long_CallStrategies = (list, {priceType, strategySubName,
                         const priceThatCauseMaxLossOfBEPS = Math.max(...strategyPositionsOfBEPS.map(strategyPosition => strategyPosition.strikePrice)) * 1.2;
                         const maxLossOfBEPS = totalCostOfBEPS + calcOffsetGainOfPositions({ strategyPositions: strategyPositionsOfBEPS, stockPrice: priceThatCauseMaxLossOfBEPS });
 
-                        const factorToCoverMaxLoss =Math.max(0.1, Math.abs(maxLossOfBEPS) / (buyingPut.optionDetails?.strikePrice - buyingCall.optionDetails?.strikePrice));
+                        const factorToCoverMaxLoss = Math.abs(maxLossOfBEPS) / (buyingPut.optionDetails?.strikePrice - buyingCall.optionDetails?.strikePrice);
                         const maxOfPossibleFactor = Math.abs(maxProfitOfBEPS / buyingCallPrice);
 
 
                         const quantityFactorOfBuyingCall = Math.min(factorToCoverMaxLoss, maxOfPossibleFactor);
 
 
+                        if (quantityFactorOfBuyingCall < 0.1) {
+                            return ___allPossibleStrategies
+                        }
 
                         const strategyPositionsOfBEPS_Long_Call = [
                             {
@@ -23990,12 +24001,16 @@ const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName,
                         const priceThatCauseMaxLossOfBUPS = Math.min(...strategyPositionsOfBUPS.map(strategyPosition => strategyPosition.strikePrice)) / 1.2;
                         const maxLossOfBUPS = totalCostOfBUPS + calcOffsetGainOfPositions({ strategyPositions: strategyPositionsOfBUPS, stockPrice: priceThatCauseMaxLossOfBUPS });
 
-                        const factorToCoverMaxLoss =Math.max(0.1, Math.abs(maxLossOfBUPS) / (anotherBuyingPut.optionDetails?.strikePrice - buyingPut.optionDetails?.strikePrice));
+                        const factorToCoverMaxLoss = Math.abs(maxLossOfBUPS) / (anotherBuyingPut.optionDetails?.strikePrice - buyingPut.optionDetails?.strikePrice);
                         const maxOfPossibleFactor = Math.abs(maxProfitOfBUPS / anotherBuyingPutPrice);
 
 
                         const quantityFactorOfBuyingPut = Math.min(factorToCoverMaxLoss, maxOfPossibleFactor);
 
+
+                        if (quantityFactorOfBuyingPut < 0.1) {
+                            return ___allPossibleStrategies
+                        }
 
 
                         const diffOfBUPS_Strikes = sellingPut.optionDetails?.strikePrice - buyingPut.optionDetails?.strikePrice;
