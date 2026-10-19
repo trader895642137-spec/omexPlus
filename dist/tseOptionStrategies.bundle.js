@@ -14666,6 +14666,8 @@ const isProfitEnough = ({strategy,profitPercent})=>{
 
     if(daysToSettlement<=0) return true
 
+
+    // TODO: use calcPercentPerMoth
     const percentPerDay = Math.pow((1 + profitPercent), 1 / daysToSettlement);
     const percentPerMonth = Math.pow(percentPerDay, 30);
 
@@ -24623,36 +24625,115 @@ const createGroupedStrategiesHtml = (allStrategyListObject) => {
 };
 
 
+const calcPercentPerMoth = (strategy)=>{
+    const settlementTimeDiff = strategy.option.settlementTimeDiff;
+    if(!settlementTimeDiff) return null
+    let daysToSettlement = Math.floor(settlementTimeDiff / (24 * 3600000));
+    daysToSettlement  = daysToSettlement<=0 ? 1 : daysToSettlement
+    const percentPerDay = Math.pow((1 + strategy.profitPercent), 1 / daysToSettlement);
+    const percentPerMonth = Math.pow(percentPerDay, 30);
+    return percentPerMonth 
+}
 
-const enrichStrategiesWithProfitTypes = (strategies) => {
 
-    const specialProfitStrategies = ['BECS', 'BEPS'];
+const ATTRACTIVE_PROFIT_CONFIG  = {
+    special: {
+        default: strategy => strategy.profitPercent > 1,
 
-    const freeRiskProfitStrategies = [
-        'BOX',
-        'BOX_BUPS_BECS',
-        'BUCS_COLLAR',
-        'BEPS_COLLAR',
-        'BECS_COLLAR',
-        'BUPS_COLLAR',
-        'BUCS_LONG_PUT',
-        'BECS_LONG_CALL',
-        'BEPS_LONG_CALL',
-        'BUPS_LONG_PUT',
-        'LongGUTS_STRANGLE'
-    ];
+        strategies: {
+            // مثال:
+            // BECS: strategy => strategy.percentPerMonth > 5,
+            // BEPS: strategy => strategy.profitPercent > 2,
+        }
+    },
 
-    return strategies.map(strategy => ({
-        ...strategy,
+    freeRisk: {
+        default: strategy => strategy.profitPercent > 0.08,
 
-        hasSpecialProfit:
-            specialProfitStrategies.includes(strategy.strategyTypeTitle) &&
-            strategy.profitPercent > 1,
+        strategies: {
+            ARBITRAGE_PUT: strategy => strategy.percentPerMonth > 0.07,
+            SHORT_STRANGLE: strategy => strategy.percentPerMonth > 0.20,
+            SHORT_GUTS: strategy => strategy.percentPerMonth > 0.20,
+            CALL_BUTTERFLY: strategy => strategy.profitPercent > 1,
+            PUT_BUTTERFLY: strategy => strategy.profitPercent > 1,
+            CALL_BUTT_CONDOR: strategy => strategy.percentPerMonth > 0.07,
+            PUT_BUTT_CONDOR: strategy => strategy.percentPerMonth > 0.07,
+            IRON_BUTT_CONDOR_BUCS: strategy => strategy.percentPerMonth > 0.07,
+            IRON_BUTT_CONDOR_BUPS: strategy => strategy.percentPerMonth > 0.07,
+            CONVERSION: strategy => strategy.percentPerMonth > 0.07,
+        }
+    }
+};
 
-        hasFreeRiskProfit:
-            freeRiskProfitStrategies.includes(strategy.strategyTypeTitle) &&
-            strategy.profitPercent > 0.08
-    }));
+
+const specialProfitStrategies = new Set([
+    'BECS',
+    'BEPS',
+    'BUCS',
+    'BUPS'
+]);
+
+const freeRiskProfitStrategies = new Set([
+    'BOX',
+    'BOX_BUPS_BECS',
+    'BUCS_COLLAR',
+    'BEPS_COLLAR',
+    'BECS_COLLAR',
+    'BUPS_COLLAR',
+    'BUCS_LONG_PUT',
+    'BECS_LONG_CALL',
+    'BEPS_LONG_CALL',
+    'BUPS_LONG_PUT',
+    'LongGUTS_STRANGLE',
+    'ARBITRAGE_PUT',
+    'SHORT_STRANGLE',
+    'SHORT_GUTS',
+    'PUT_BUTTERFLY',
+    'CALL_BUTT_CONDOR',
+    'PUT_BUTT_CONDOR',
+    'IRON_BUTT_CONDOR_BUCS',
+    'IRON_BUTT_CONDOR_BUPS',
+    'CONVERSION',
+]);
+
+
+const enrichStrategiesWithProfitTypes = strategies => {
+
+
+    return strategies.map(strategy => {
+
+        const { strategyTypeTitle } = strategy;
+
+        const percentPerMonth = calcPercentPerMoth(strategy);
+
+        const enrichedStrategy = {
+            ...strategy,
+            percentPerMonth
+        };
+
+        const specialConfig = ATTRACTIVE_PROFIT_CONFIG .special;
+        const freeRiskConfig = ATTRACTIVE_PROFIT_CONFIG .freeRisk;
+
+        const hasSpecialProfit =
+            specialProfitStrategies.has(strategyTypeTitle) &&
+            (
+                specialConfig.strategies[strategyTypeTitle]
+                ?? specialConfig.default
+            )(enrichedStrategy);
+
+        const hasFreeRiskProfit =
+            freeRiskProfitStrategies.has(strategyTypeTitle) &&
+            (
+                freeRiskConfig.strategies[strategyTypeTitle]
+                ?? freeRiskConfig.default
+            )(enrichedStrategy);
+
+        return {
+            ...enrichedStrategy,
+            hasSpecialProfit,
+            hasFreeRiskProfit
+        };
+    });
 };
 
 
