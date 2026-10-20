@@ -8119,7 +8119,10 @@ const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMo
 
                 const percentDifference = ((currentStockPrice - buyingPriceOfStock) / buyingPriceOfStock)
 
-                if(percentDifference<-1 ) return option
+                const maxStockCostDifference = 0.05;
+
+                if (percentDifference < -maxStockCostDifference)
+                    return option;
                 
                 
                 const strategyPositions = [
@@ -10650,6 +10653,30 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitNotif: true,
         });
 
+
+        const ShortGUTSStrategies = calcShortGUTSStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            callListIgnorer: ({ option, minVol }) => {
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض')  || option.optionDetails?.strikePrice >= option.optionDetails.stockSymbolDetails.last)
+                    return true
+                return false
+            },
+            expectedProfitNotif: true
+        });
+        
+        
+
+        const ShortSTRANGLEStrategies = calcShortSTRANGLEStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            callListIgnorer: ({ option, minVol }) => {
+                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض')  || option.optionDetails?.strikePrice <= option.optionDetails.stockSymbolDetails.last)
+                    return true
+
+                return false
+            },
+            expectedProfitNotif: true
+        });
+
         
 
 
@@ -10780,34 +10807,22 @@ const createListFilterContetnByList=(list)=>{
             minProfitPercentOfSettlement:0
         }),
 
-        
-        calcShortGUTSStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            callListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض')  || option.optionDetails?.strikePrice >= option.optionDetails.stockSymbolDetails.last)
-                    return true
-                return false
-            }
-            ,
-            // min_time_to_settlement: 15 * 24 * 3600000,
-            max_time_to_settlement: 15 * 24 * 3600000,
-            expectedProfitNotif: true
+
+
+        filterStrategiesByConfig({
+            strategies: ShortGUTSStrategies,
+            max_time_to_settlement: 20 * 24 * 3600000,
+            expectedProfitPerMonth: 0.10,
+        }),
+
+
+        filterStrategiesByConfig({
+            strategies: ShortSTRANGLEStrategies,
+            max_time_to_settlement: 20 * 24 * 3600000,
+            expectedProfitPerMonth: 0.10,
         }),
         
-
-        calcShortSTRANGLEStrategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            callListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض')  || option.optionDetails?.strikePrice <= option.optionDetails.stockSymbolDetails.last)
-                    return true
-
-                return false
-            }
-            ,
-            max_time_to_settlement: 15 * 24 * 3600000,
-            // minVol: 1000 * 1000 * 1000,
-            expectedProfitNotif: true
-        }),
+       
 
         (()=>{
             const strategyName = "CALL_BUTTERFLY";
