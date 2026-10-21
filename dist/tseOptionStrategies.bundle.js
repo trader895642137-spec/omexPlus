@@ -24577,12 +24577,12 @@ const createGroupedStrategiesHtml = (allStrategyListObject) => {
     const groups = {
         specialProfits: [],
         unknown: [],
-        [STRATEGY_DIRECTION.BULLISH]: [],
-        [STRATEGY_DIRECTION.BEARISH]: [],
-        [STRATEGY_DIRECTION.NEUTRAL]: [],
         [STRATEGY_DIRECTION.RISK_FREE_BUS]: [],
         [STRATEGY_DIRECTION.RISK_FREE_BES]: [],
         [STRATEGY_DIRECTION.RISK_FREE_NUT]: [],
+        [STRATEGY_DIRECTION.BULLISH]: [],
+        [STRATEGY_DIRECTION.BEARISH]: [],
+        [STRATEGY_DIRECTION.NEUTRAL]: [],
     };
 
     for (const strategyObj of allStrategyListObject) {
