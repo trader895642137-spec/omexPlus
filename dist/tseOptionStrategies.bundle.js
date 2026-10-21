@@ -24575,17 +24575,19 @@ const filterStrategiesByConfig = ({
 const createGroupedStrategiesHtml = (allStrategyListObject) => {
 
     const groups = {
+        specialProfits: [],
+        unknown: [],
         [STRATEGY_DIRECTION.BULLISH]: [],
         [STRATEGY_DIRECTION.BEARISH]: [],
         [STRATEGY_DIRECTION.NEUTRAL]: [],
         [STRATEGY_DIRECTION.RISK_FREE_BUS]: [],
         [STRATEGY_DIRECTION.RISK_FREE_BES]: [],
         [STRATEGY_DIRECTION.RISK_FREE_NUT]: [],
-        unknown: [],
-        specialProfits: []
     };
 
     for (const strategyObj of allStrategyListObject) {
+
+        if (!strategyObj.filteredStrategies?.length) continue;
         const direction = strategyObj.strategyDirection;
 
         // گروه مستقل سود ویژه و فری‌ریسک
@@ -24672,10 +24674,10 @@ const ATTRACTIVE_PROFIT_CONFIG  = {
             SHORT_GUTS: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.20,
             CALL_BUTTERFLY: strategy => strategy.profitPercent > 1,
             PUT_BUTTERFLY: strategy => strategy.profitPercent > 1,
-            CALL_BUTT_CONDOR: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.07,
-            PUT_BUTT_CONDOR: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.07,
-            IRON_BUTT_CONDOR_BUCS: strategy => strategy.profitPercent >0.05 &&  strategy.percentPerMonth > 0.07,
-            IRON_BUTT_CONDOR_BUPS: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.07,
+            CALL_BUTT_CONDOR: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.10,
+            PUT_BUTT_CONDOR: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.10,
+            IRON_BUTT_CONDOR_BUCS: strategy => strategy.profitPercent >0.05 &&  strategy.percentPerMonth > 0.10,
+            IRON_BUTT_CONDOR_BUPS: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.10,
             CONVERSION: strategy => strategy.percentPerMonth > 0.07,
         }
     }
