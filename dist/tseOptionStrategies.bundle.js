@@ -22660,7 +22660,7 @@ const calcBuyByCallNokoolGainStrategies = (list, {priceType, expectedProfitPerMo
         
         allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "BuyByCallNokoolGain",
-        strategyDirection: STRATEGY_DIRECTION.BULLISH,
+        // strategyDirection: STRATEGY_DIRECTION.BULLISH,
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
@@ -22919,7 +22919,7 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
         
         allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "ARBITRAGE_PUT",
-        strategyDirection: STRATEGY_DIRECTION.NEUTRAL,
+        // strategyDirection: STRATEGY_DIRECTION.NEUTRAL,
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
