@@ -20415,7 +20415,7 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
         
         allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
         strategyName: "CONVERSION",
-        strategyDirection: STRATEGY_DIRECTION.NEUTRAL,
+        strategyDirection: STRATEGY_DIRECTION.RISK_FREE_NUT,
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
@@ -24672,8 +24672,8 @@ const ATTRACTIVE_PROFIT_CONFIG  = {
             ARBITRAGE_PUT: strategy => strategy.percentPerMonth > 0.07,
             SHORT_STRANGLE: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.20,
             SHORT_GUTS: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.20,
-            CALL_BUTTERFLY: strategy => strategy.profitPercent > 1,
-            PUT_BUTTERFLY: strategy => strategy.profitPercent > 1,
+            CALL_BUTTERFLY: strategy => strategy.profitPercent > 0.1,
+            PUT_BUTTERFLY: strategy => strategy.profitPercent > 0.1,
             CALL_BUTT_CONDOR: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.10,
             PUT_BUTT_CONDOR: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.10,
             IRON_BUTT_CONDOR_BUCS: strategy => strategy.profitPercent >0.05 &&  strategy.percentPerMonth > 0.10,
@@ -25286,6 +25286,7 @@ const createListFilterContetnByList=(list)=>{
             return {
                 ...CALL_BUTT_CONDORStrategies,
                 strategyName,
+                strategyDirection: STRATEGY_DIRECTION.RISK_FREE_NUT,
                 htmlTitle: CALL_BUTT_CONDORStrategies.htmlTitle.replace("CALL_BUTT_CONDOR",strategyName),
                 allStrategies: CALL_BUTT_CONDORStrategies.allStrategies.filter(st => st.isButterFly).map(strategy=>({...strategy,strategyTypeTitle:strategyName})),
             }
@@ -25303,6 +25304,7 @@ const createListFilterContetnByList=(list)=>{
             return {
                 ...PUT_BUTT_CONDORStrategies,
                 strategyName,
+                strategyDirection: STRATEGY_DIRECTION.RISK_FREE_NUT,
                 htmlTitle: PUT_BUTT_CONDORStrategies.htmlTitle.replace("PUT_BUTT_CONDOR",strategyName),
                 allStrategies: PUT_BUTT_CONDORStrategies.allStrategies.filter(st => st.isButterFly).map(strategy=>({...strategy,strategyTypeTitle:strategyName})),
             }
