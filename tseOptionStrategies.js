@@ -10205,9 +10205,10 @@ const ATTRACTIVE_PROFIT_CONFIG  = {
         default: strategy => strategy.profitPercent > 1,
 
         strategies: {
-            // مثال:
-            // BECS: strategy => strategy.percentPerMonth > 5,
-            // BEPS: strategy => strategy.profitPercent > 2,
+            BECS: null,
+            BEPS: null,
+            BUCS: null,
+            BUPS: null
         }
     },
 
@@ -10215,88 +10216,67 @@ const ATTRACTIVE_PROFIT_CONFIG  = {
         default: strategy => strategy.profitPercent > 0.08,
 
         strategies: {
+            BOX: null,
+            BOX_BUPS_BECS: null,
+            BUCS_COLLAR: null,
+            BEPS_COLLAR: null,
+            BECS_COLLAR: null,
+            BUPS_COLLAR: null,
+            BUCS_LONG_PUT: null,
+            BECS_LONG_CALL: null,
+            BEPS_LONG_CALL: null,
+            BUPS_LONG_PUT: null,
+            LongGUTS_STRANGLE: null,
             ARBITRAGE_PUT: strategy => strategy.percentPerMonth > 0.07,
-            SHORT_STRANGLE: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.20,
-            SHORT_GUTS: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.20,
+            SHORT_STRANGLE: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.20,
+            SHORT_GUTS: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.20,
             CALL_BUTTERFLY: strategy => strategy.profitPercent > 0.1,
             PUT_BUTTERFLY: strategy => strategy.profitPercent > 0.1,
-            CALL_BUTT_CONDOR: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.10,
-            PUT_BUTT_CONDOR: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.10,
-            IRON_BUTT_CONDOR_BUCS: strategy => strategy.profitPercent >0.05 &&  strategy.percentPerMonth > 0.10,
-            IRON_BUTT_CONDOR_BUPS: strategy => strategy.profitPercent >0.05 && strategy.percentPerMonth > 0.10,
+            CALL_BUTT_CONDOR: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.10,
+            PUT_BUTT_CONDOR: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.10,
+            IRON_BUTT_CONDOR_BUCS: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.10,
+            IRON_BUTT_CONDOR_BUPS: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.10,
             CONVERSION: strategy => strategy.percentPerMonth > 0.07,
         }
     }
 };
 
 
-const specialProfitStrategies = new Set([
-    'BECS',
-    'BEPS',
-    'BUCS',
-    'BUPS'
-]);
-
-const freeRiskProfitStrategies = new Set([
-    'BOX',
-    'BOX_BUPS_BECS',
-    'BUCS_COLLAR',
-    'BEPS_COLLAR',
-    'BECS_COLLAR',
-    'BUPS_COLLAR',
-    'BUCS_LONG_PUT',
-    'BECS_LONG_CALL',
-    'BEPS_LONG_CALL',
-    'BUPS_LONG_PUT',
-    'LongGUTS_STRANGLE',
-    'ARBITRAGE_PUT',
-    'SHORT_STRANGLE',
-    'SHORT_GUTS',
-    'PUT_BUTTERFLY',
-    'CALL_BUTT_CONDOR',
-    'PUT_BUTT_CONDOR',
-    'IRON_BUTT_CONDOR_BUCS',
-    'IRON_BUTT_CONDOR_BUPS',
-    'CONVERSION',
-]);
-
-
 const enrichStrategiesWithProfitTypes = strategies => {
-
-
     return strategies.map(strategy => {
-
         const { strategyTypeTitle } = strategy;
-
-        const percentPerMonth = calcPercentPerMoth(strategy);
 
         const enrichedStrategy = {
             ...strategy,
-            percentPerMonth
+            percentPerMonth: calcPercentPerMoth(strategy)
         };
 
-        const specialConfig = ATTRACTIVE_PROFIT_CONFIG .special;
-        const freeRiskConfig = ATTRACTIVE_PROFIT_CONFIG .freeRisk;
-
-        const hasSpecialProfit =
-            specialProfitStrategies.has(strategyTypeTitle) &&
-            (
-                specialConfig.strategies[strategyTypeTitle]
-                ?? specialConfig.default
-            )(enrichedStrategy);
-
-        const hasFreeRiskProfit =
-            freeRiskProfitStrategies.has(strategyTypeTitle) &&
-            (
-                freeRiskConfig.strategies[strategyTypeTitle]
-                ?? freeRiskConfig.default
-            )(enrichedStrategy);
-
-        return {
+        const result = {
             ...enrichedStrategy,
-            hasSpecialProfit,
-            hasFreeRiskProfit
+            hasSpecialProfit: false,
+            hasFreeRiskProfit: false
         };
+
+        for (const [profitType, config] of Object.entries(ATTRACTIVE_PROFIT_CONFIG)) {
+            // اگر استراتژی صراحتاً در این دسته تعریف نشده، رد شو
+            if (!Object.hasOwn(config.strategies, strategyTypeTitle)) {
+                continue;
+            }
+
+            const isAttractive = config.strategies[strategyTypeTitle]
+                ? config.strategies[strategyTypeTitle](enrichedStrategy)
+                : config.default(enrichedStrategy);
+
+            if (isAttractive) {
+                if (profitType === 'special') {
+                    result.hasSpecialProfit = true;
+                } else if (profitType === 'freeRisk') {
+                    result.hasFreeRiskProfit = true;
+                }
+            }
+        }
+
+        return result;
     });
 };
 
