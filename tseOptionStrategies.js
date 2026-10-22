@@ -8730,7 +8730,7 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
                         const quantityFactorOfBuyingPut = Math.min(factorToCoverMaxLoss, maxOfPossibleFactor);
 
 
-                        if (quantityFactorOfBuyingPut < 0.1) {
+                        if (quantityFactorOfBuyingPut < 0.2) {
                             return ___allPossibleStrategies
                         }
 
@@ -9003,7 +9003,7 @@ const calcBECS_Long_CallStrategies = (list, {priceType, strategySubName,
                         const quantityFactorOfBuyingCall = Math.min(factorToCoverMaxLoss, maxOfPossibleFactor);
 
 
-                        if (quantityFactorOfBuyingCall < 0.1) {
+                        if (quantityFactorOfBuyingCall < 0.2) {
                             return ___allPossibleStrategies
                         }
 
@@ -9276,7 +9276,7 @@ const calcBEPS_Long_CallStrategies = (list, {priceType, strategySubName,
                         const quantityFactorOfBuyingCall = Math.min(factorToCoverMaxLoss, maxOfPossibleFactor);
 
 
-                        if (quantityFactorOfBuyingCall < 0.1) {
+                        if (quantityFactorOfBuyingCall < 0.2) {
                             return ___allPossibleStrategies
                         }
 
@@ -9546,7 +9546,7 @@ const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName,
                         const quantityFactorOfBuyingPut = Math.min(factorToCoverMaxLoss, maxOfPossibleFactor);
 
 
-                        if (quantityFactorOfBuyingPut < 0.1) {
+                        if (quantityFactorOfBuyingPut < 0.2) {
                             return ___allPossibleStrategies
                         }
 
@@ -10793,14 +10793,14 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: ShortGUTSStrategies,
-            max_time_to_settlement: 20 * 24 * 3600000,
+            max_time_to_settlement: 22 * 24 * 3600000,
             expectedProfitPerMonth: 0.10,
         }),
 
 
         filterStrategiesByConfig({
             strategies: ShortSTRANGLEStrategies,
-            max_time_to_settlement: 20 * 24 * 3600000,
+            max_time_to_settlement: 22 * 24 * 3600000,
             expectedProfitPerMonth: 0.10,
         }),
         
