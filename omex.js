@@ -3303,7 +3303,7 @@ export const checkCalculatedAvgPriceMismatchForAll = async ()=>{
 
         showNotification({
             title: 'مشکل میانگین و تعداد محاسباتی',
-            body: ``,
+            body: `قیمت :${priceMismatchIssueList.length}   تعداد :${quantityMismatchIssueList.length}   نیست :${calculatedAverageInfoNotExists.length}`,
             requireInteraction: true,
             tag: `checkCalculatedAvgPriceMismatchForAll`
         });
