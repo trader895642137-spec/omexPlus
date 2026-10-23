@@ -3258,8 +3258,8 @@ export function sendToBackground(data) {
 
 
 
-export const checkCalculatedAvgPriceMismatchForAll = async () => {
 
+export const checkCalculatedAvgPriceMismatchForAll = async () => {
     const {
         optionsWithAvgPrice: portfolioOptionsWithAvgPricesList,
         stocksWithAvgPrice: portfolioStocksWithAvgPrices
@@ -3277,12 +3277,11 @@ export const checkCalculatedAvgPriceMismatchForAll = async () => {
         data: allCalcPortfolioList
     }));
 
-    const priceMismatchIssueList = [];
-    const quantityMismatchIssueList = [];
     const calculatedAverageInfoNotExists = [];
+    const quantityMismatchIssueList = [];
+    const priceMismatchIssueList = [];
 
     for (const item of allCalcPortfolioList) {
-
         const avgInfo = item.calculatedAverageInfo;
 
         if (!avgInfo) {
@@ -3290,59 +3289,52 @@ export const checkCalculatedAvgPriceMismatchForAll = async () => {
             continue;
         }
 
-        const hasQuantityIssue = avgInfo.quantity !== item.count;
-
-        if (hasQuantityIssue) {
+        // تا زمانی که تعداد اشتباه است، میانگین را بررسی نکن
+        if (avgInfo.quantity !== item.count) {
             quantityMismatchIssueList.push(item);
             continue;
         }
 
-        const hasPriceMismatchIssue = hasSignificantPriceMismatch(
-            avgInfo.averagePrice,
-            item.executedPrice
-        );
-
-        if (hasPriceMismatchIssue) {
+        // فقط میانگین دارایی‌هایی بررسی می‌شود که تعدادشان درست است
+        if (
+            hasSignificantPriceMismatch(
+                avgInfo.averagePrice,
+                item.executedPrice
+            )
+        ) {
             priceMismatchIssueList.push(item);
         }
     }
 
     const hasIssue =
-        priceMismatchIssueList.length > 0 ||
+        calculatedAverageInfoNotExists.length > 0 ||
         quantityMismatchIssueList.length > 0 ||
-        calculatedAverageInfoNotExists.length > 0;
+        priceMismatchIssueList.length > 0;
 
-    if (hasIssue) {
+    // گزارش تفکیک‌شده برای بررسی دقیق
+    console.log('Average price check result:', {
+        calculatedAverageInfoNotExists,
+        quantityMismatchIssueList,
+        priceMismatchIssueList
+    });
 
-        console.log({
-            calculatedAverageInfoNotExists,
-            quantityMismatchIssueList,
-            priceMismatchIssueList
-        });
-
-        const notificationBody = [
-            quantityMismatchIssueList.length > 0
-                ? `تعداد اشتباه: ${quantityMismatchIssueList.length}`
-                : null,
-
-            calculatedAverageInfoNotExists.length > 0
-                ? `اطلاعات میانگین موجود نیست: ${calculatedAverageInfoNotExists.length}`
-                : null,
-
-            priceMismatchIssueList.length > 0
-                ? `اختلاف واقعی قیمت: ${priceMismatchIssueList.length}`
-                : null
-        ].filter(Boolean).join(' | ');
-
+    if (priceMismatchIssueList.length > 0) {
         showNotification({
-            title: priceMismatchIssueList.length > 0
-                ? 'نیاز به بررسی میانگین قیمت'
-                : 'مشکل در تعداد یا اطلاعات میانگین',
-            body: notificationBody,
+            title: 'مغایرت میانگین قیمت',
+            body: `${priceMismatchIssueList.length} دارایی با تعداد صحیح، میانگین قیمت مغایر دارند.`,
             requireInteraction: true,
             tag: 'checkCalculatedAvgPriceMismatchForAll'
         });
-
+    } else if (
+        quantityMismatchIssueList.length > 0 ||
+        calculatedAverageInfoNotExists.length > 0
+    ) {
+        showNotification({
+            title: 'مشکل در تعداد یا اطلاعات محاسباتی',
+            body: `تعداد: ${quantityMismatchIssueList.length} | اطلاعات ناموجود: ${calculatedAverageInfoNotExists.length}`,
+            requireInteraction: true,
+            tag: 'checkCalculatedAvgPriceMismatchForAll'
+        });
     } else {
         showToast('میانگین و تعداد درست هستند');
         console.log('checkCalculatedAvgPriceMismatchForAll is ok!');
@@ -3357,8 +3349,8 @@ export const checkCalculatedAvgPriceMismatchForAll = async () => {
             hasIssue
         }
     });
-
 };
+
 
 
 export const Run = async (_window = window) => {
