@@ -3258,74 +3258,107 @@ export function sendToBackground(data) {
 
 
 
-export const checkCalculatedAvgPriceMismatchForAll = async ()=>{
+export const checkCalculatedAvgPriceMismatchForAll = async () => {
 
-    const {optionsWithAvgPrice:portfolioOptionsWithAvgPricesList , stocksWithAvgPrice:portfolioStocksWithAvgPrices} = await OMEXApi.calcAveragePriceForAll();
+    const {
+        optionsWithAvgPrice: portfolioOptionsWithAvgPricesList,
+        stocksWithAvgPrice: portfolioStocksWithAvgPrices
+    } = await OMEXApi.calcAveragePriceForAll();
 
-    const allCalcPortfolioList = [...portfolioOptionsWithAvgPricesList,...portfolioStocksWithAvgPrices.filter(stock=>!OMEXApi.isAutomaticFreeETF(stock.instrumentId))];
+    const allCalcPortfolioList = [
+        ...portfolioOptionsWithAvgPricesList,
+        ...portfolioStocksWithAvgPrices.filter(
+            stock => !OMEXApi.isAutomaticFreeETF(stock.instrumentId)
+        )
+    ];
 
     localStorage.setItem('calculatedAvgPrices', JSON.stringify({
         calculatedAt: Date.now(),
         data: allCalcPortfolioList
     }));
 
-    let hasIssue = false;
-    const priceMismatchIssueList =[];
-    const quantityMismatchIssueList =[];
+    const priceMismatchIssueList = [];
+    const quantityMismatchIssueList = [];
     const calculatedAverageInfoNotExists = [];
 
-    for (let optionWithAvgInfo of allCalcPortfolioList) {
-        if(!optionWithAvgInfo.calculatedAverageInfo){
-            hasIssue = true;
-            calculatedAverageInfoNotExists.push(optionWithAvgInfo);
+    for (const item of allCalcPortfolioList) {
+
+        const avgInfo = item.calculatedAverageInfo;
+
+        if (!avgInfo) {
+            calculatedAverageInfoNotExists.push(item);
             continue;
         }
-        
-        const hasPriceMismatchIssue = hasSignificantPriceMismatch(optionWithAvgInfo.calculatedAverageInfo.averagePrice,optionWithAvgInfo.executedPrice);
-        const hasQuantityIssue = optionWithAvgInfo.calculatedAverageInfo.quantity!== optionWithAvgInfo.count;
 
-        if(hasPriceMismatchIssue){
-            priceMismatchIssueList.push(optionWithAvgInfo);
-            hasIssue = true;
-        }
-        if(hasQuantityIssue){
-            quantityMismatchIssueList.push(optionWithAvgInfo);
-            hasIssue = true;
+        const hasQuantityIssue = avgInfo.quantity !== item.count;
+
+        if (hasQuantityIssue) {
+            quantityMismatchIssueList.push(item);
+            continue;
         }
 
+        const hasPriceMismatchIssue = hasSignificantPriceMismatch(
+            avgInfo.averagePrice,
+            item.executedPrice
+        );
+
+        if (hasPriceMismatchIssue) {
+            priceMismatchIssueList.push(item);
+        }
     }
 
+    const hasIssue =
+        priceMismatchIssueList.length > 0 ||
+        quantityMismatchIssueList.length > 0 ||
+        calculatedAverageInfoNotExists.length > 0;
 
     if (hasIssue) {
 
-        console.log({calculatedAverageInfoNotExists,priceMismatchIssueList,quantityMismatchIssueList});
-        
+        console.log({
+            calculatedAverageInfoNotExists,
+            quantityMismatchIssueList,
+            priceMismatchIssueList
+        });
+
+        const notificationBody = [
+            quantityMismatchIssueList.length > 0
+                ? `تعداد اشتباه: ${quantityMismatchIssueList.length}`
+                : null,
+
+            calculatedAverageInfoNotExists.length > 0
+                ? `اطلاعات میانگین موجود نیست: ${calculatedAverageInfoNotExists.length}`
+                : null,
+
+            priceMismatchIssueList.length > 0
+                ? `اختلاف واقعی قیمت: ${priceMismatchIssueList.length}`
+                : null
+        ].filter(Boolean).join(' | ');
 
         showNotification({
-            title: 'مشکل میانگین و تعداد محاسباتی',
-            body: `قیمت :${priceMismatchIssueList.length}   تعداد :${quantityMismatchIssueList.length}   نیست :${calculatedAverageInfoNotExists.length}`,
+            title: priceMismatchIssueList.length > 0
+                ? 'نیاز به بررسی میانگین قیمت'
+                : 'مشکل در تعداد یا اطلاعات میانگین',
+            body: notificationBody,
             requireInteraction: true,
-            tag: `checkCalculatedAvgPriceMismatchForAll`
+            tag: 'checkCalculatedAvgPriceMismatchForAll'
         });
-    }else{
-        showToast('میانگین درسته');
+
+    } else {
+        showToast('میانگین و تعداد درست هستند');
         console.log('checkCalculatedAvgPriceMismatchForAll is ok!');
     }
 
-
     sendToBackground({
-        type: "calculatedAvgPriceMismatchForAllResult",
+        type: 'calculatedAvgPriceMismatchForAllResult',
         payload: {
             priceMismatchIssueList,
             quantityMismatchIssueList,
             calculatedAverageInfoNotExists,
             hasIssue
-
         }
-    })
+    });
 
-
-}
+};
 
 
 export const Run = async (_window = window) => {
