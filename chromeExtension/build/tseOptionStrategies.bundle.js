@@ -21006,6 +21006,44 @@ const createAndCalcBUS_BES_Strategy = ({ buyingCall, sellingCall, buyingPut, sel
 
 
 
+    const buyingPutPrice = getPriceOfAsset({
+        asset: buyingPut,
+        priceType,
+        sideType: 'BUY'
+    });
+    const sellingPutPrice = getPriceOfAsset({
+        asset: sellingPut,
+        priceType,
+        sideType: 'SELL'
+    });
+    const buyingCallPrice = getPriceOfAsset({
+        asset: buyingCall,
+        priceType,
+        sideType: 'BUY'
+    });
+    const sellingCallPrice = getPriceOfAsset({
+        asset: sellingCall,
+        priceType,
+        sideType: 'SELL'
+    });
+
+    
+
+    const callTotalPrice = buyingCallPrice - sellingCallPrice;
+    const putTotalPrice = buyingPutPrice - sellingPutPrice;
+
+    if (
+        (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.hasGreaterRatio)({
+            num1: callTotalPrice,
+            num2: putTotalPrice,
+            properRatio: 10
+        })
+    ) {
+        return null
+    }
+
+
+
 
     const diffOfPuts_Strikes = sellingPut.optionDetails?.strikePrice - buyingPut.optionDetails?.strikePrice;
     const diffOfCalls_Strikes = buyingCall.optionDetails?.strikePrice - sellingCall.optionDetails?.strikePrice;
