@@ -6167,7 +6167,7 @@ const checkCalculatedAvgPriceMismatchForAll = async ()=>{
 
         (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.showNotification)({
             title: 'مشکل میانگین و تعداد محاسباتی',
-            body: ``,
+            body: `قیمت :${priceMismatchIssueList.length}   تعداد :${quantityMismatchIssueList.length}   نیست :${calculatedAverageInfoNotExists.length}`,
             requireInteraction: true,
             tag: `checkCalculatedAvgPriceMismatchForAll`
         });
