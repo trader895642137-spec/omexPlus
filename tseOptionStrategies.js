@@ -2638,7 +2638,44 @@ const IRON_BUTTERFLY_CONDOR_BUCS_strategyObjCreator = (option, option2, option3,
     if (!option?.optionDetails || !option2?.optionDetails || !option3?.optionDetails || !option4?.optionDetails) {
         return
     }
+    
 
+    
+    const buyingPutPrice = getPriceOfAsset({
+        asset: option4,
+        priceType,
+        sideType: 'BUY'
+    });
+    const sellingPutPrice = getPriceOfAsset({
+        asset: option3,
+        priceType,
+        sideType: 'SELL'
+    });
+    const buyingCallPrice = getPriceOfAsset({
+        asset: option,
+        priceType,
+        sideType: 'BUY'
+    });
+    const sellingCallPrice = getPriceOfAsset({
+        asset: option2,
+        priceType,
+        sideType: 'SELL'
+    });
+
+    
+
+    const callTotalPrice = buyingCallPrice - sellingCallPrice;
+    const putTotalPrice = buyingPutPrice - sellingPutPrice;
+
+    if (
+        hasGreaterRatio({
+            num1: callTotalPrice,
+            num2: putTotalPrice,
+            properRatio: 10
+        })
+    ) {
+        return null
+    }
 
 
 
@@ -2658,6 +2695,9 @@ const IRON_BUTTERFLY_CONDOR_BUCS_strategyObjCreator = (option, option2, option3,
     // if (option.optionDetails.stockSymbolDetails.last  > option4.optionDetails?.strikePrice) return 
     if (option4.optionDetails?.strikePrice < option2.optionDetails?.strikePrice)
         return 
+
+
+    
 
  
 
