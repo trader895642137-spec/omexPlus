@@ -1056,10 +1056,10 @@ const createPositionObjectArray  = (strategyItemList) => {
             return insertedPrice;
         }
 
-        const getInsertedQuantity = () => {
+        const getDefinedQuantity = () => {
             if(!isDOM) return 
-            const insertedQuantity = convertStringToInt(strategyItem.querySelector('[formcontrolname="quantity"] input').value);
-            return insertedQuantity;
+            const definedQuantity = convertStringToInt(strategyItem.querySelector('[formcontrolname="quantity"] input').value);
+            return definedQuantity;
         }
 
         const calcBestSecondOrderPriceRatioDiff = (priceOrderElements) => {
@@ -1232,7 +1232,7 @@ const createPositionObjectArray  = (strategyItemList) => {
             getOrderModalPriceInputElement,
             getOrderModalQuantityInputArrowUpElement,
             getInsertedPrice,
-            getInsertedQuantity,
+            getDefinedQuantity,
             getRequiredMargin,
             getCurrentPositionAvgPrice,
             getUnreliableCurrentPositionAvgPrice,
@@ -2435,7 +2435,7 @@ const quantityUnbalanceInformer = ({ orderModalQuantityGetter, informer, informC
     const hasModalInsertedQuantityIssue = hasCurrentQuantityIssue({
         strategyPositions,
         currentQuantityGetter : orderModalQuantityGetter,
-        strategyQuantityGetter :  (strategyPosition) => strategyPosition.getInsertedQuantity()
+        strategyQuantityGetter :  (strategyPosition) => strategyPosition.getDefinedQuantity()
 
     });
 
@@ -2669,6 +2669,13 @@ const injectStyles = () => {
                 font-size: 14px !important;
                 display: flex !important;
                 column-gap: 20px !important;    
+            }
+            .trade-modal-toolbox-button{
+                position: absolute;
+                z-index: 5000;
+                bottom: 105px;
+                background: #ddfffd;
+                right: 4px;
             }
         `;
 
@@ -3199,6 +3206,100 @@ const setTradeModalQuantityOfAllTradeModals = () => {
     }
 
 }
+
+const setTradeModalToolboxAllTradeModals = () => {
+    for (const strategyPosition of strategyPositions) {
+        const modal = strategyPosition.ordersModal;
+
+        if (!modal) continue;
+
+        const main = modal.querySelector('main');
+        if (!main) continue;
+
+        if (main.querySelector('.trade-modal-toolbox')) continue;
+
+        const toolbox = document.createElement('div');
+        toolbox.className = 'trade-modal-toolbox';
+
+        const balanceButton = document.createElement('button');
+        balanceButton.type = 'button';
+        balanceButton.textContent = 'بالانس';
+        balanceButton.className = 'trade-modal-toolbox-button';
+
+        balanceButton.addEventListener('click', (event) => {
+            event.stopPropagation();
+
+            const quantityInput = strategyPosition.getOrderModalQuantityInputElement();
+            if (!quantityInput) return;
+
+            const requestedQuantity = Number(quantityInput.value);
+
+            if (!Number.isSafeInteger(requestedQuantity) || requestedQuantity <= 0) return;
+
+            const sameInstrumentPositions = strategyPositions.filter(
+                sp => sp.instrumentName === strategyPosition.instrumentName
+            );
+
+            const baseQuantity = sameInstrumentPositions.reduce(
+                (sum, sp) => sum + sp.getDefinedQuantity(),
+                0
+            );
+
+            if (!Number.isSafeInteger(baseQuantity) || baseQuantity <= 0) return;
+
+            // تعداد پایه سایر موقعیت‌ها
+            const otherPositions = strategyPositions.filter(
+                sp => sp.instrumentName !== strategyPosition.instrumentName
+            );
+
+            // پیدا کردن بزرگ‌ترین تعداد صحیح که تمام تعدادهای استراتژی را صحیح نگه دارد
+            let balancedCurrentQuantity = requestedQuantity;
+
+            while (balancedCurrentQuantity > 0) {
+                const ratio = balancedCurrentQuantity / baseQuantity;
+
+                const allQuantitiesAreIntegers = otherPositions.every(sp => {
+                    const quantity = sp.getDefinedQuantity() * ratio;
+
+                    return Number.isSafeInteger(quantity);
+                });
+
+                if (allQuantitiesAreIntegers) break;
+
+                balancedCurrentQuantity--;
+            }
+
+            if (balancedCurrentQuantity <= 0) {
+                console.warn('هیچ تعداد صحیح معتبری پیدا نشد.');
+                return;
+            }
+
+            const ratio = balancedCurrentQuantity / baseQuantity;
+
+            // اصلاح تعداد مدال فعلی
+            quantityInput.value = balancedCurrentQuantity;
+            quantityInput.dispatchEvent(new Event('input', { bubbles: true }));
+            quantityInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+            // اصلاح تعداد سایر مدال‌ها
+            for (const sp of otherPositions) {
+                const input = sp.getOrderModalQuantityInputElement();
+                if (!input) continue;
+
+                input.value = sp.getDefinedQuantity() * ratio;
+
+                input.dispatchEvent(new Event('input', { bubbles: true }));
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+
+        toolbox.appendChild(balanceButton);
+        main.appendChild(toolbox);
+    }
+};
+
+
+
 const setTradeModalQuantity = (strategyPosition) => {
 
     const cSize = strategyPosition.getCSize();
@@ -3398,6 +3499,7 @@ export const Run = async (_window = window) => {
     
 
     setTradeModalQuantityOfAllTradeModals();
+    setTradeModalToolboxAllTradeModals();
 
     setTradeModalUiPositions({strategyPositions});
     setDaysFromToday();
