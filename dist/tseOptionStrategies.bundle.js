@@ -24561,9 +24561,6 @@ const calcSyntheticBuyStrategies = (list, {
             );
 
             const enrichedListOfDate = callList.map(call => {
-                if (BUCSSOptionListIgnorer({ option: call, minVol })) {
-                    return call;
-                }
 
                 const callPrice = getPriceOfAsset({
                     asset: call,
@@ -24641,11 +24638,10 @@ const calcSyntheticBuyStrategies = (list, {
                     getPrice: getPositionPrice
                 });
 
-                if (!Number.isFinite(totalCost) || totalCost === 0) {
+                if (!Number.isFinite(totalCost) ) {
                     return call;
                 }
 
-                const distanceCurrentPrice = (currentStockPrice / breakeven)-1;
              
 
                 const strategyObj = {
@@ -24662,7 +24658,7 @@ const calcSyntheticBuyStrategies = (list, {
                     settlementTimeDiff: call.settlementTimeDiff,
                     name: createStrategyName([call, sameStrikePut]),
                     isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(call),
-                    profitPercent : distanceCurrentPrice
+                    profitPercent : stockPriceToSarBeSarPercent
                 };
 
                 return {
@@ -24729,7 +24725,6 @@ const calcSyntheticSellStrategies = (list, {
     settlementGainChoosePriceType = "MIN",
     strategySubName,
     isProfitEnoughFn,
-    BUCSSOptionListIgnorer = generalConfig.BUCSSOptionListIgnorer,
     min_time_to_settlement = -Infinity,
     max_time_to_settlement = generalConfig.max_time_to_settlement,
     filteredList,
@@ -24758,9 +24753,6 @@ const calcSyntheticSellStrategies = (list, {
             );
 
             const enrichedListOfDate = callList.map(call => {
-                if (BUCSSOptionListIgnorer({ option: call, minVol })) {
-                    return call;
-                }
 
                 // فروش کال
                 const callPrice = getPriceOfAsset({
@@ -24841,11 +24833,10 @@ const calcSyntheticSellStrategies = (list, {
                     getPrice: getPositionPrice
                 });
 
-                if (!Number.isFinite(totalCost) || totalCost === 0) {
+                if (!Number.isFinite(totalCost)) {
                     return call;
                 }
 
-                const distanceCurrentPrice = (currentStockPrice / breakeven)-1;
 
                 const strategyObj = {
                     option: { ...call },
@@ -24861,7 +24852,7 @@ const calcSyntheticSellStrategies = (list, {
                     settlementTimeDiff: call.settlementTimeDiff,
                     name: createStrategyName([call, sameStrikePut]),
                     isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(call),
-                    profitPercent: distanceCurrentPrice
+                    profitPercent: stockPriceToSarBeSarPercent
                 };
 
                 return {
