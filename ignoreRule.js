@@ -1,5 +1,6 @@
 const CONFIG_TYPE_EXPANSIONS = {
     BUS: [
+        { type: 'SyntheticBuy' },
         { type: 'BUCS' },
         { type: 'SellPut',
             modify: config => ({
