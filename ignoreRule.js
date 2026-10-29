@@ -79,6 +79,7 @@ const CONFIG_TYPE_EXPANSIONS = {
         {
             type: 'SellCall',
         },
+        { type: 'SyntheticSell' },
         {
             type: 'BECS',
         },
