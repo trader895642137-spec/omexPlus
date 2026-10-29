@@ -1,78 +1,442 @@
-document.getElementById('addToWatcher').addEventListener('click', async () => {
-    try {
-        // ۱. تب فعال رو بگیر
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        
-        // ۲. از تب فعلی داده‌ها رو بگیر (اگه نیاز داری)
-        const result = await chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: () => {
+const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", strategySubName, BUCSSOptionListIgnorer=generalConfig.BUCSSOptionListIgnorer, 
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement,
+    filteredList, 
+    optionsGroupedByStock,
+    minStockPriceDistanceFromHigherStrikeInPercent=-Infinity, maxStockPriceDistanceFromHigherStrikeInPercent=Infinity, 
+    minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
+    
+    minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
 
-                const strategyInfo = window.omexLib?.getStrategyInfoForExport() || null;
-                if(!strategyInfo) return
+   
 
-                const positions = strategyInfo.strategyPositionsForExport;
-                if(!positions) return
+    
+    let enrichedList = [];
+    for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
+        const optionsGroupedByDate = Object.groupBy(optionList, ({optionDetails}) => optionDetails.date);
+
+        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
+
+            const _enrichedList = optionListOfSameDate.map(option => {
+
+                if (BUCSSOptionListIgnorer({
+                    option,
+                    minVol
+                }))
+                    return option
+
+                const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
+
+                    if (!_option.optionDetails?.stockSymbolDetails?.last)
+                        return false
+
+                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') )
+                        return false
+                    if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
+                        return false
+
+                    const stockPriceHigherStrikeRatio = (_option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
+
+                    if (stockPriceHigherStrikeRatio > minStockPriceDistanceFromHigherStrikeInPercent && stockPriceHigherStrikeRatio < maxStockPriceDistanceFromHigherStrikeInPercent) {} else {
+                        return false
+                    }
+
+                    
+                    
+                    return true
+
+                }
+                );
+
+                let allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (_allPossibleStrategies, _option) => {
+
+                    const strategyPositions = [
+                        {
+                            ...option,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ..._option,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                     
+                    ]
 
 
-                const prepareForSerialization = (obj) => {
 
-                    const result = { ...obj };
 
-                    for (const [key, value] of Object.entries(result)) {
-                        if (typeof value === 'function') {
-                            const returnValue = value();
-                            // ذخیره تابع به صورت string
-                            result[key] = {
-                                __isFunction: true,
-                                __returnValue: returnValue,
-                                __functionString: `function() { return ${JSON.stringify(returnValue)}; }`
-                            };
-                        }
+                     const breakevenList = findBreakevenList({
+                        positions: strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    });
+
+                    const breakeven = breakevenList[0];
+
+
+
+                    const stockPriceToSarBeSarPercent = (breakeven / option.optionDetails.stockSymbolDetails.last) - 1;
+
+                    if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSar || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSar) {
+                        return _allPossibleStrategies
                     }
 
 
-                    return result
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    });
+
+                    
+
+                   
+
+
+                    const settlementOn = settlementGainChoosePriceType === 'MIN' ? (_option.strikePrice < _option.optionDetails.stockSymbolDetails.last ? "OPTION" : "STOCK") : settlementGainChoosePriceType === 'MAX' ? (_option.strikePrice > _option.optionDetails.stockSymbolDetails.last ? "OPTION" : "STOCK") : "OPTION"
+                    const offsetPrice = settlementOn === "OPTION" ? _option.strikePrice*1.2 : _option.optionDetails.stockSymbolDetails.last;
+
+
+
+                    const priceThatCauseMaxProfit = Math.max(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) * 1.3;
+                    const priceThatCauseMaxLoss = Math.min(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) / 1.3;
+
+
+
+                    const maxProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxProfit });
+                    const maxLoss = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxLoss });
+
+
+                    const profitLossRatio = maxProfit / (maxProfit - maxLoss);
+
+                   
+
+                    const profitPercent = profitPercentCalculator(
+                        {
+                            costWithSign:totalCost, 
+                            gainWithSign:calcOffsetGainOfPositions({ strategyPositions, stockPrice: offsetPrice })
+                        }) / 100
+
+
+
+                
+                    
+                    const strategyObj = {
+                        option: {
+                            ...option
+                        },
+                        positions:[option, _option],
+                        strategyTypeTitle: "BUCS",
+                        strategyPositions,
+                        currentStockPrice: option.optionDetails?.stockSymbolDetails?.last,
+                        totalCost,
+                        expectedProfitNotif,
+                        minProfitToFilter,
+                        expectedProfitPerMonth,
+                        stockPriceToSarBeSarPercent,
+                        isWholeProfitable:!breakeven,
+                        profitLossRatio,
+                        settlementTimeDiff : option.settlementTimeDiff,
+                        name: createStrategyName([option, _option]),
+                        profitPercent
+                    }
+
+                    if (Number.isNaN(strategyObj.profitPercent))
+                        return _allPossibleStrategies
+
+                    return _allPossibleStrategies.concat([strategyObj])
 
                 }
-                
-                const positionsPrepareForSerialization = positions.map(position => {
-                    return prepareForSerialization(position)
-                });
+                , []);
 
                 return {
+                    ...option,
+                    allPossibleStrategies
+                }
 
-                    ...strategyInfo,
-                    positionsPrepareForSerialization
+            }
+            );
+
+            return _enrichedList
+
+        }
+        )
+
+        enrichedList = enrichedList.concat(enrichedListOfStock)
+
+    }
+
+    
+
+    return {
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
+        strategyName: "BUCS",
+        strategyDirection: STRATEGY_DIRECTION.BULLISH,
+        priceType,
+        min_time_to_settlement,
+        max_time_to_settlement,
+        minStockPriceDistanceFromHigherStrikeInPercent,
+        maxStockPriceDistanceFromHigherStrikeInPercent,
+        minVol,
+        expectedProfitNotif,
+        expectedProfitPerMonth,
+        ...restConfig,
+        htmlTitle: configsToHtmlTitle({
+            strategyName: "BUCS",
+            strategySubName,
+            priceType,
+            min_time_to_settlement,
+            max_time_to_settlement,
+            customLabels: [typeof minStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && minStockPriceDistanceFromHigherStrikeInPercent !== null && minStockPriceDistanceFromHigherStrikeInPercent !== -Infinity && {
+                label: "minToHigh",
+                value: `${((minStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
+            }, typeof maxStockPriceDistanceFromHigherStrikeInPercent !== 'undefined' && maxStockPriceDistanceFromHigherStrikeInPercent !== null && maxStockPriceDistanceFromHigherStrikeInPercent !== Infinity && {
+                label: "maxToHigh",
+                value: `${((maxStockPriceDistanceFromHigherStrikeInPercent) * 100).toFixed(0)}%`
+            }, typeof minStockPriceToSarBeSar !== 'undefined' && minStockPriceToSarBeSar !== null && minStockPriceToSarBeSar !== 0 && {
+                label: "minToSar",
+                value: `${((minStockPriceToSarBeSar) * 100).toFixed(0)}%`
+            }, typeof maxStockPriceToSarBeSar !== 'undefined' && maxStockPriceToSarBeSar !== null && maxStockPriceToSarBeSar !== Infinity && {
+                label: "maxToSar",
+                value: `${((maxStockPriceToSarBeSar) * 100).toFixed(0)}%`
+            }, ].filter(Boolean),
+            minVol
+        })
+    }
+
+}
+
+
+const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPerMonth, settlementGainChoosePriceType="MIN", 
+    strategySubName, BUPSOptionListIgnorer=generalConfig.BUPSOptionListIgnorer, 
+    filteredList,
+    optionsGroupedByStock,
+    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement, 
+    minStockPriceToSarBeSar=-Infinity, maxStockPriceToSarBeSar=Infinity, 
+    minVol=CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif=false, ...restConfig}) => {
+
+
+    let enrichedList = [];
+    for (let[stockSymbol,optionList] of Object.entries(optionsGroupedByStock)) {
+        const optionsGroupedByDate = Object.groupBy(optionList, ({optionDetails}) => optionDetails.date);
+
+        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap( ([date,optionListOfSameDate]) => {
+
+            const _enrichedList = optionListOfSameDate.map(option => {
+
+                if (BUPSOptionListIgnorer({
+                    option,
+                    minVol
+                }))
+                    return option
+
+
+                const optionPrice = getPriceOfAsset({
+                    asset: option,
+                    priceType,
+                    sideType: 'BUY'
+                });
+
+                if(optionPrice===0) return option
+               
+
+                const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
+                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط'))
+                        return false
+                    if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
+                        return false
+                    
+                    return true
 
                 }
-               
-                
-            },
-            world: "MAIN"
-        });
-        
-        let strategyInfo = result[0]?.result;
-        if(!strategyInfo) return
+                );
 
-        // ۳. مستقیم از popup به watcher بفرست
-        chrome.runtime.sendMessage({
-            type: "addToWatcher",
-            payload: {
-                strategyInfo,
-                tabId: tab.id,
-                url: tab.url,
-                title: tab.title
+                let allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (_allPossibleStrategies, _option) => {
+
+
+
+
+                    const _optionPrice = getPriceOfAsset({
+                        asset: _option,
+                        priceType,
+                        sideType: 'SELL'
+                    });
+
+                    if(_optionPrice===0) return _allPossibleStrategies
+
+
+
+
+                    
+
+
+
+
+
+                    const diffOfBUPS_Strikes = _option.optionDetails.strikePrice - option.optionDetails.strikePrice
+
+
+
+                    const strategyPositions = [
+                        {
+                            ...option,
+                            isBuy: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin() { }
+                        },
+                        {
+                            ..._option,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin: () => diffOfBUPS_Strikes
+                        },
+                       
+                    ]
+
+
+
+                    const breakevenList = findBreakevenList({
+                        positions: strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    });
+
+                    const breakeven = breakevenList[0];
+
+
+
+                    const stockPriceToSarBeSarPercent = (breakeven /option.optionDetails.stockSymbolDetails.last ) - 1;
+
+                    if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSar || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSar) {
+                        return _allPossibleStrategies
+                    }
+
+
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    });
+
+
+                    const settlementOn = settlementGainChoosePriceType === 'MIN' ? (_option.strikePrice < _option.optionDetails.stockSymbolDetails.last ? "OPTION" : "STOCK") : settlementGainChoosePriceType === 'MAX' ? (_option.strikePrice > _option.optionDetails.stockSymbolDetails.last ? "OPTION" : "STOCK") : "OPTION"
+                    const offsetPrice = settlementOn === "OPTION" ? _option.strikePrice*1.2 : _option.optionDetails.stockSymbolDetails.last;
+
+
+
+                    const priceThatCauseMaxProfit = Math.max(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) * 1.3;
+                    const priceThatCauseMaxLoss = Math.min(...strategyPositions.map(strategyPosition => strategyPosition.strikePrice)) / 1.3;
+
+
+
+                    const maxProfit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxProfit });
+                    const maxLoss = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: priceThatCauseMaxLoss });
+
+
+                    const profitLossRatio = maxProfit / (maxProfit - maxLoss);
+
+
+
+
+                     const profitPercent = profitPercentCalculator(
+                        {
+                            costWithSign: totalCost, 
+                            gainWithSign: calcOffsetGainOfPositions({ strategyPositions, stockPrice: offsetPrice })
+                        }) / 100
+
+
+
+
+                    const strategyObj = {
+                        option: {
+                            ...option
+                        },
+                        positions:[option, _option],
+                        strategyTypeTitle: "BUPS",
+                        strategyPositions,
+                        currentStockPrice: option.optionDetails?.stockSymbolDetails?.last,
+                        totalCost,
+                        expectedProfitNotif,
+                        minProfitToFilter,
+                        expectedProfitPerMonth,
+                        stockPriceToSarBeSarPercent,
+                        isWholeProfitable:!breakeven,
+                        profitLossRatio,
+                        settlementTimeDiff : option.settlementTimeDiff,
+                        name: createStrategyName([option, _option]),
+                        profitPercent
+                    }
+
+                    if (Number.isNaN(strategyObj.profitPercent))
+                        return _allPossibleStrategies
+
+                    return _allPossibleStrategies.concat([strategyObj])
+
+                }
+                , []);
+
+                return {
+                    ...option,
+                    allPossibleStrategies
+                }
+
             }
-        }, (response) => {
-            if (chrome.runtime.lastError) {
-                console.error("❌ خطا:", chrome.runtime.lastError);
-            } else {
-                console.log("✅ پیام ارسال شد:", response);
-            }
-        });
-        
-    } catch (error) {
-        console.error("❌ خطا:", error);
+            );
+
+            return _enrichedList
+
+        }
+        )
+
+        enrichedList = enrichedList.concat(enrichedListOfStock)
+
     }
-});
+
+    
+
+    return {
+        
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
+        strategyName: "BUPS",
+        strategyDirection: STRATEGY_DIRECTION.BULLISH,
+        priceType,
+        min_time_to_settlement,
+        max_time_to_settlement,
+        minStockPriceToSarBeSar,
+        maxStockPriceToSarBeSar,
+        
+        minVol,
+        expectedProfitNotif,
+        expectedProfitPerMonth,
+        ...restConfig,
+        htmlTitle: configsToHtmlTitle({
+            strategyName: "BUPS",
+            strategySubName,
+            priceType,
+            min_time_to_settlement,
+            max_time_to_settlement,
+            minStockPriceToSarBeSar,
+            maxStockPriceToSarBeSar,
+            minVol
+        })
+    }
+
+}
