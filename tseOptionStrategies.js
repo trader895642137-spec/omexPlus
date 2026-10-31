@@ -11289,7 +11289,7 @@ const createListFilterContetnByList=(list)=>{
             max_time_to_settlement: 2 * 24 * 3600000,
             minProfitToFilter : 0.01,
             nokoolOrNoRequestFactor:0.3,
-            minProfitPercentOfSettlement:0
+            minProfitPercentOfSettlement:-0.10
         }),
 
 
@@ -11297,14 +11297,14 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: ShortGUTSStrategies,
             max_time_to_settlement: 22 * 24 * 3600000,
-            expectedProfitPerMonth: 0.10,
+            expectedProfitPerMonth: 0.07,
         }),
 
 
         filterStrategiesByConfig({
             strategies: ShortSTRANGLEStrategies,
             max_time_to_settlement: 22 * 24 * 3600000,
-            expectedProfitPerMonth: 0.10,
+            expectedProfitPerMonth: 0.07,
         }),
         
        
@@ -11674,16 +11674,16 @@ const createListFilterContetnByList=(list)=>{
             min_time_to_settlement: 2 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.10
         }),
          filterStrategiesByConfig({
             strategies: BUPS_COLLARStrategies,
             expectedProfitPerMonth: 0.08,
             max_time_to_settlement: 2 * 24 * 3600000,
             minProfitToFilter : 0.01,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.05
         }),
         
        
@@ -11721,16 +11721,16 @@ const createListFilterContetnByList=(list)=>{
             min_time_to_settlement: 2 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.10
         }),
         filterStrategiesByConfig({
             strategies: BUCS_COLLAR_Strategies,
             expectedProfitPerMonth: 0.08,
             max_time_to_settlement: 2 * 24 * 3600000,
             minProfitToFilter : 0.01,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.05
         }),
 
 
@@ -11762,16 +11762,16 @@ const createListFilterContetnByList=(list)=>{
             min_time_to_settlement: 2 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.10
         }),
         filterStrategiesByConfig({
             strategies: BEPS_COLLARStrategies,
             expectedProfitPerMonth: 0.08,
             max_time_to_settlement: 2 * 24 * 3600000,
             minProfitToFilter : 0.01,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.05
         }),
         
 
@@ -11809,16 +11809,16 @@ const createListFilterContetnByList=(list)=>{
             min_time_to_settlement: 2 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.10
         }),
          filterStrategiesByConfig({
             strategies: BECS_COLLAR_Strategies,
             expectedProfitPerMonth: 0.08,
             max_time_to_settlement: 2 * 24 * 3600000,
             minProfitToFilter : 0.01,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.05
         }),
 
 
@@ -11848,16 +11848,16 @@ const createListFilterContetnByList=(list)=>{
             min_time_to_settlement: 2 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.10
         }),
         filterStrategiesByConfig({
             strategies: BUCS_Long_PutStrategies,
             expectedProfitPerMonth: 0.08,
             max_time_to_settlement: 2 * 24 * 3600000,
             minProfitToFilter : 0.01,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.05
         }),
 
         
@@ -11890,16 +11890,16 @@ const createListFilterContetnByList=(list)=>{
             min_time_to_settlement: 2 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.10
         }),
         filterStrategiesByConfig({
             strategies: BECS_Long_CallStrategies,
             expectedProfitPerMonth: 0.08,
             max_time_to_settlement: 2 * 24 * 3600000,
             minProfitToFilter : 0.01,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.05
         }),
 
 
@@ -11932,16 +11932,16 @@ const createListFilterContetnByList=(list)=>{
             min_time_to_settlement: 2 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.10
         }),
         filterStrategiesByConfig({
             strategies: BEPS_Long_CallStrategies,
             expectedProfitPerMonth: 0.08,
             max_time_to_settlement: 2 * 24 * 3600000,
             minProfitToFilter : 0.01,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.05
         }),
 
 
@@ -11968,16 +11968,16 @@ const createListFilterContetnByList=(list)=>{
             min_time_to_settlement: 2 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.10
         }),
         filterStrategiesByConfig({
             strategies: BUPS_Long_PutStrategies,
             expectedProfitPerMonth: 0.08,
             max_time_to_settlement: 2 * 24 * 3600000,
             minProfitToFilter : 0.01,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.05
         }),
 
 
@@ -12033,8 +12033,8 @@ const createListFilterContetnByList=(list)=>{
             strategies: BOXStrategies,
             max_time_to_settlement : 1 * 27 * 3600000,
             minProfitToFilter : 0.01,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.05
         }),
 
 
@@ -12059,8 +12059,8 @@ const createListFilterContetnByList=(list)=>{
             strategies: BOX_BUPS_BECSStrategies,
             max_time_to_settlement : 1 * 27 * 3600000,
             minProfitToFilter : 0.01,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.05
         }),
         
 
@@ -12074,10 +12074,6 @@ const createListFilterContetnByList=(list)=>{
             max_time_to_settlement: 40 * 24 * 3600000,
             minProfitToFilter : 0.03
         }),
-
-
-
-        
 
         filterStrategiesByConfig({
             strategies: BECSStrategies,
@@ -12102,7 +12098,7 @@ const createListFilterContetnByList=(list)=>{
             strategies: BECSStrategies,
             max_time_to_settlement : 1 * 27 * 3600000,
             minProfitToFilter : 0.005,
-            nokoolOrNoRequestFactor:0.5,
+            nokoolOrNoRequestFactor:0.30,
             minProfitPercentOfSettlement:0
         }),
 
@@ -12185,8 +12181,8 @@ const createListFilterContetnByList=(list)=>{
             strategies: SyntheticCoveredCallStrategies,
             max_time_to_settlement : 1 * 27 * 3600000,
             minProfitToFilter : 0.005,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.05
         }),
 
 
@@ -12311,8 +12307,8 @@ const createListFilterContetnByList=(list)=>{
             strategies: BEPSStrategies,
             max_time_to_settlement : 1 * 27 * 3600000,
             minProfitToFilter : 0.005,
-            nokoolOrNoRequestFactor:0.5,
-            minProfitPercentOfSettlement:0
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.05
         }),
 
 
