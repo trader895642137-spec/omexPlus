@@ -3226,13 +3226,21 @@ const setTradeModalToolboxAllTradeModals = () => {
         balanceButton.textContent = 'بالانس';
         balanceButton.className = 'trade-modal-toolbox-button';
 
+   
+
+        balanceButton.addEventListener("mousedown", (e) => {
+            e.stopPropagation();
+        });
+
         balanceButton.addEventListener('click', (event) => {
             event.stopPropagation();
 
             const quantityInput = strategyPosition.getOrderModalQuantityInputElement();
             if (!quantityInput) return;
 
-            const requestedQuantity = Number(quantityInput.value);
+            convertStringToInt
+
+            const requestedQuantity = convertStringToInt(quantityInput.value);
 
             if (!Number.isSafeInteger(requestedQuantity) || requestedQuantity <= 0) return;
 
