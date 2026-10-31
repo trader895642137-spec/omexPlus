@@ -6102,7 +6102,6 @@ const setTradeModalToolboxAllTradeModals = () => {
             const quantityInput = strategyPosition.getOrderModalQuantityInputElement();
             if (!quantityInput) return;
 
-            convertStringToInt
 
             const requestedQuantity = convertStringToInt(quantityInput.value);
 
