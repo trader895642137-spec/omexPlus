@@ -21,7 +21,18 @@ const CONFIG_TYPE_EXPANSIONS = {
                     : null,
             })
         },
-        { type: 'COVERED'},
+        {
+            type: 'COVERED',
+            modify: config => ({
+                ...config,
+                toSarBeSar: config.toSarBeSar
+                    ? {
+                        ...config.toSarBeSar,
+                        max: config.toSarBeSar.max / 1.2,
+                    }
+                    : null,
+            }),
+        },
         { type: 'BECS_Ratio' },
         { type: 'BESRatio_BUCS' },
         {
