@@ -787,8 +787,8 @@ function createDeferredPromise() {
   
 // }
 
-const ETF_LIST = ['اهرم', 'توان', 'موج', 'جهش','هم تراز','طعام','دارونو','اطلس'];
-const TAX_FREE_SYMBOLS = ['ضهرم', 'طهرم', 'ضتوان', 'طتوان', 'ضموج', 'طموج','ضجهش','طجهش','ضراز','طراز','ضطعام','ططعام','ضدرو','طدرو','ضاطلس','طاطلس'];
+const ETF_LIST = ['اهرم', 'توان', 'موج', 'جهش','هم تراز','طعام','دارونو','اطلس','کاریس'];
+const TAX_FREE_SYMBOLS = ['ضهرم', 'طهرم', 'ضتوان', 'طتوان', 'ضموج', 'طموج','ضجهش','طجهش','ضراز','طراز','ضطعام','ططعام','ضدرو','طدرو','ضاطلس','طاطلس','ضکاریس','طکاریس'];
 
 
 const isETF = (instrumentName)=>{
@@ -13795,7 +13795,18 @@ const CONFIG_TYPE_EXPANSIONS = {
                     : null,
             })
         },
-        { type: 'COVERED'},
+        {
+            type: 'COVERED',
+            modify: config => ({
+                ...config,
+                toSarBeSar: config.toSarBeSar
+                    ? {
+                        ...config.toSarBeSar,
+                        max: config.toSarBeSar.max / 1.2,
+                    }
+                    : null,
+            }),
+        },
         { type: 'BECS_Ratio' },
         { type: 'BESRatio_BUCS' },
         {
@@ -14864,17 +14875,18 @@ const htmlStrategyListCreator = ({ strategyList, title, expectedProfitNotif }) =
 };
 
 const parseStringToNumber = (str) => {
+    str = str.trim().replace(/,/g, '');
+
     let number = parseFloat(str);
-    // ابتدا عدد را استخراج می‌کنیم
+
     if (str.endsWith('M') || str.endsWith('m')) {
         number *= 1e6;
-        // در صورتی که با M ختم شود، به میلیون تبدیل می‌کنیم
     } else if (str.endsWith('B') || str.endsWith('b')) {
         number *= 1e9;
-        // در صورتی که با B ختم شود، به میلیارد تبدیل می‌کنیم
     }
+
     return number;
-}
+};
 
 const convertStringToInt = (stringNumber) => {
     if (!stringNumber)
@@ -26152,29 +26164,24 @@ const createListFilterContetnByList=(list)=>{
 
 
 
-        filterStrategiesByConfig({
-            strategies: BUCS_COLLAR_Strategies,
-            expectedProfitPerMonth: 0.06,
-            min_time_to_settlement: 40 * 24 * 3600000,
-        }),
+       
 
         filterStrategiesByConfig({
             strategies: BUCS_COLLAR_Strategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 20 * 24 * 3600000,
-            max_time_to_settlement: 40 * 24 * 3600000,
         }),
         filterStrategiesByConfig({
             strategies: BUCS_COLLAR_Strategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
-            minProfitToFilter : 0.05,
+            minProfitToFilter : 0.04,
         }),
         filterStrategiesByConfig({
             strategies: BUCS_COLLAR_Strategies,
             expectedProfitPerMonth: 0.08,
-            min_time_to_settlement: 2 * 24 * 3600000,
+            min_time_to_settlement: 1 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
             nokoolOrNoRequestFactor:0.30,
@@ -26183,7 +26190,7 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: BUCS_COLLAR_Strategies,
             expectedProfitPerMonth: 0.08,
-            max_time_to_settlement: 2 * 24 * 3600000,
+            max_time_to_settlement: 1 * 24 * 3600000,
             minProfitToFilter : 0.01,
             nokoolOrNoRequestFactor:0.30,
             minProfitPercentOfSettlement:-0.05
@@ -26193,29 +26200,23 @@ const createListFilterContetnByList=(list)=>{
 
 
 
-        filterStrategiesByConfig({
-            strategies: BEPS_COLLARStrategies,
-            expectedProfitPerMonth: 0.06,
-            min_time_to_settlement: 40 * 24 * 3600000,
-        }),
 
         filterStrategiesByConfig({
             strategies: BEPS_COLLARStrategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 20 * 24 * 3600000,
-            max_time_to_settlement: 40 * 24 * 3600000,
         }),
         filterStrategiesByConfig({
             strategies: BEPS_COLLARStrategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
-            minProfitToFilter : 0.05
+            minProfitToFilter : 0.04
         }),
         filterStrategiesByConfig({
             strategies: BEPS_COLLARStrategies,
             expectedProfitPerMonth: 0.08,
-            min_time_to_settlement: 2 * 24 * 3600000,
+            min_time_to_settlement: 1 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
             nokoolOrNoRequestFactor:0.30,
@@ -26224,7 +26225,7 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: BEPS_COLLARStrategies,
             expectedProfitPerMonth: 0.08,
-            max_time_to_settlement: 2 * 24 * 3600000,
+            max_time_to_settlement: 1 * 24 * 3600000,
             minProfitToFilter : 0.01,
             nokoolOrNoRequestFactor:0.30,
             minProfitPercentOfSettlement:-0.05
@@ -26239,30 +26240,23 @@ const createListFilterContetnByList=(list)=>{
 
 
 
-
-        filterStrategiesByConfig({
-            strategies: BECS_COLLAR_Strategies,
-            expectedProfitPerMonth: 0.06,
-            min_time_to_settlement: 40 * 24 * 3600000,
-        }),
         
         filterStrategiesByConfig({
             strategies: BECS_COLLAR_Strategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 20 * 24 * 3600000,
-            max_time_to_settlement: 40 * 24 * 3600000,
         }),
         filterStrategiesByConfig({
             strategies: BECS_COLLAR_Strategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
-            minProfitToFilter : 0.05
+            minProfitToFilter : 0.04
         }),
         filterStrategiesByConfig({
             strategies: BECS_COLLAR_Strategies,
             expectedProfitPerMonth: 0.08,
-            min_time_to_settlement: 2 * 24 * 3600000,
+            min_time_to_settlement: 1 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
             nokoolOrNoRequestFactor:0.30,
@@ -26271,7 +26265,7 @@ const createListFilterContetnByList=(list)=>{
          filterStrategiesByConfig({
             strategies: BECS_COLLAR_Strategies,
             expectedProfitPerMonth: 0.08,
-            max_time_to_settlement: 2 * 24 * 3600000,
+            max_time_to_settlement: 1 * 24 * 3600000,
             minProfitToFilter : 0.01,
             nokoolOrNoRequestFactor:0.30,
             minProfitPercentOfSettlement:-0.05
@@ -26301,7 +26295,7 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: BUCS_Long_PutStrategies,
             expectedProfitPerMonth: 0.08,
-            min_time_to_settlement: 2 * 24 * 3600000,
+            min_time_to_settlement: 1 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
             nokoolOrNoRequestFactor:0.30,
@@ -26310,7 +26304,7 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: BUCS_Long_PutStrategies,
             expectedProfitPerMonth: 0.08,
-            max_time_to_settlement: 2 * 24 * 3600000,
+            max_time_to_settlement: 1 * 24 * 3600000,
             minProfitToFilter : 0.01,
             nokoolOrNoRequestFactor:0.30,
             minProfitPercentOfSettlement:-0.05
@@ -26343,7 +26337,7 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: BECS_Long_CallStrategies,
             expectedProfitPerMonth: 0.08,
-            min_time_to_settlement: 2 * 24 * 3600000,
+            min_time_to_settlement: 1 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
             nokoolOrNoRequestFactor:0.30,
@@ -26352,7 +26346,7 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: BECS_Long_CallStrategies,
             expectedProfitPerMonth: 0.08,
-            max_time_to_settlement: 2 * 24 * 3600000,
+            max_time_to_settlement: 1 * 24 * 3600000,
             minProfitToFilter : 0.01,
             nokoolOrNoRequestFactor:0.30,
             minProfitPercentOfSettlement:-0.05
@@ -26385,7 +26379,7 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: BEPS_Long_CallStrategies,
             expectedProfitPerMonth: 0.08,
-            min_time_to_settlement: 2 * 24 * 3600000,
+            min_time_to_settlement: 1 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
             nokoolOrNoRequestFactor:0.30,
@@ -26394,7 +26388,7 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: BEPS_Long_CallStrategies,
             expectedProfitPerMonth: 0.08,
-            max_time_to_settlement: 2 * 24 * 3600000,
+            max_time_to_settlement: 1 * 24 * 3600000,
             minProfitToFilter : 0.01,
             nokoolOrNoRequestFactor:0.30,
             minProfitPercentOfSettlement:-0.05
@@ -26421,7 +26415,7 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: BUPS_Long_PutStrategies,
             expectedProfitPerMonth: 0.08,
-            min_time_to_settlement: 2 * 24 * 3600000,
+            min_time_to_settlement: 1 * 24 * 3600000,
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
             nokoolOrNoRequestFactor:0.30,
@@ -26430,7 +26424,7 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: BUPS_Long_PutStrategies,
             expectedProfitPerMonth: 0.08,
-            max_time_to_settlement: 2 * 24 * 3600000,
+            max_time_to_settlement: 1 * 24 * 3600000,
             minProfitToFilter : 0.01,
             nokoolOrNoRequestFactor:0.30,
             minProfitPercentOfSettlement:-0.05
@@ -26474,14 +26468,14 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: BOXStrategies,
-            expectedProfitPerMonth: 0.06,
-            minProfitToFilter: 0.07,
+            expectedProfitPerMonth: 0.05,
+            minProfitToFilter: 0.06,
             min_time_to_settlement : 40 * 24 * 3600000,
         }),
         filterStrategiesByConfig({
             strategies: BOXStrategies,
             expectedProfitPerMonth: 0.05,
-            minProfitToFilter: 0.045,
+            minProfitToFilter: 0.04,
             min_time_to_settlement : 1 * 24 * 3600000,
             max_time_to_settlement: 40 * 24 * 3600000,
         }),
@@ -26498,15 +26492,15 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: BOX_BUPS_BECSStrategies,
-            expectedProfitPerMonth: 0.06,
-            minProfitToFilter: 0.07,
+            expectedProfitPerMonth: 0.05,
+            minProfitToFilter: 0.06,
             min_time_to_settlement : 40 * 24 * 3600000,
         }),
 
         filterStrategiesByConfig({
             strategies: BOX_BUPS_BECSStrategies,
             expectedProfitPerMonth: 0.05,
-            minProfitToFilter: 0.045,
+            minProfitToFilter: 0.04,
             min_time_to_settlement : 1 * 24 * 3600000,
             max_time_to_settlement: 40 * 24 * 3600000,
         }),
@@ -26681,7 +26675,7 @@ const createListFilterContetnByList=(list)=>{
         filterStrategiesByConfig({
             strategies: COVEREDStrategies,
             max_time_to_settlement: 1 * 3 * 3600000,
-            minProfitToFilter: 0.005,
+            minProfitToFilter: 0.003,
         }),
        
         
@@ -27018,16 +27012,19 @@ const createList = ()=>{
 
 }
 
+const createList2 = async ()=>{
+    // return normalizeAssets(await getAssetsFromTadbirService());
+    return normalizeAssets(await getAssetsFromTSETMCService());
+}
 
-async function getAssetsFromService() {
-    const assets = await getListOfTradedAssets();
+
+async function getAssetsFromTadbirService() {
+    const assets = await getListOfTradedAssetsFromTadbir();
 
     return (assets || []).map(asset => ({
         symbol: asset.sf,
         name: asset.cn,
         quantityOfTrades: asset.nt,
-
-
         vol: asset.tv,
         beforeTodayPrice: asset.rp,
         last: asset.ltp,
@@ -27039,14 +27036,29 @@ async function getAssetsFromService() {
     }));
 }
 
+async function getAssetsFromTSETMCService() {
+    const assets = await getListOfTradedAssetsFromTSETMC();
 
-const createList2 = async ()=>{
-    return normalizeAssets(await getAssetsFromService());
-
+    return (assets || []).map(asset => ({
+        symbol: asset.lva,
+        name: asset.lvc,
+        quantityOfTrades: asset.ztt,
+        vol: asset.qtc,
+        beforeTodayPrice: asset.py,
+        last: asset.pdv,
+        close: asset.pcl,
+        bestBuyQ: asset.blDs[0].qmd,
+        bestBuy: asset.blDs[0].pmd,
+        bestSell: asset.blDs[0].pmo,
+        bestSellQ: asset.blDs[0].qmo,
+    }));
 }
 
 
-const getListOfTradedAssets = async () => {
+
+
+
+const getListOfTradedAssetsFromTadbir = async () => {
     const list = await fetch('https://core.tadbirrlc.com//StocksHandler?%7B%22Type%22:%22ALL21%22,%22la%22:%22Fa%22%7D&jsoncallback=').then(response => {
         if (!response.ok) {
             throw new Error('خطا در دریافت اطلاعات');
@@ -27057,6 +27069,21 @@ const getListOfTradedAssets = async () => {
     });
 
     return list
+
+}
+
+
+const getListOfTradedAssetsFromTSETMC = async () => {
+    const data = await fetch('https://cdn.tsetmc.com/api/ClosingPrice/GetMarketWatch?market=0&industrialGroup=&paperTypes%5B0%5D=1&paperTypes%5B1%5D=2&paperTypes%5B2%5D=3&paperTypes%5B3%5D=4&paperTypes%5B4%5D=5&paperTypes%5B5%5D=6&paperTypes%5B6%5D=7&paperTypes%5B7%5D=8&paperTypes%5B8%5D=9&showTraded=false&withBestLimits=true&hEven=0&RefID=0').then(response => {
+        if (!response.ok) {
+            throw new Error('خطا در دریافت اطلاعات');
+            // removed by dead control flow
+
+        }
+        return response.json(); 
+    });
+
+    return data.marketwatch
 
 }
 
