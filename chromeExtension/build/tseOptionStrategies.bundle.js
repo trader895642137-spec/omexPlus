@@ -13776,10 +13776,17 @@ const CONFIG_TYPE_EXPANSIONS = {
     BUS: [
         { type: 'SyntheticBuy' },
         { type: 'BUCS' },
-        { type: 'SellPut',
+        {
+            type: 'SellPut',
             modify: config => ({
                 ...config,
-                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null,
+                breakeven: config.breakeven
+                    ? {
+                        ...config.breakeven,
+                        max: config.breakeven.max / 1.04,
+                    }
+                    : null,
             }),
         },
         { type: 'BUCS_LONG_PUT' },
@@ -13787,10 +13794,10 @@ const CONFIG_TYPE_EXPANSIONS = {
         { type: 'SYNTHETIC_COVERED_CALL',  
             modify: config => ({
                 ...config,
-                toSarBeSar: config.toSarBeSar
+                breakeven: config.breakeven
                     ? {
-                        ...config.toSarBeSar,
-                        max: config.toSarBeSar.max * 1.1,
+                        ...config.breakeven,
+                        max: config.breakeven.max / 1.04,
                     }
                     : null,
             })
@@ -13799,10 +13806,10 @@ const CONFIG_TYPE_EXPANSIONS = {
             type: 'COVERED',
             modify: config => ({
                 ...config,
-                toSarBeSar: config.toSarBeSar
+                breakeven: config.breakeven
                     ? {
-                        ...config.toSarBeSar,
-                        max: config.toSarBeSar.max / 1.2,
+                        ...config.breakeven,
+                        max: config.breakeven.max * 1.04,
                     }
                     : null,
             }),
@@ -13838,10 +13845,10 @@ const CONFIG_TYPE_EXPANSIONS = {
             type: 'BUS_With_BUCS_BEPS',
             modify: config => ({
                 ...config,
-                toSarBeSar: config.toSarBeSar
+                breakeven: config.breakeven
                     ? {
-                        ...config.toSarBeSar,
-                        max: config.toSarBeSar.max / 1.2,
+                        ...config.breakeven,
+                        max: config.breakeven.max * 1.04,
                     }
                     : null,
             }),
@@ -13850,10 +13857,10 @@ const CONFIG_TYPE_EXPANSIONS = {
             type: 'BUS_With_BUPS_BECS',
             modify: config => ({
                 ...config,
-                toSarBeSar: config.toSarBeSar
+                breakeven: config.breakeven
                     ? {
-                        ...config.toSarBeSar,
-                        max: config.toSarBeSar.max / 1.2,
+                        ...config.breakeven,
+                        max: config.breakeven.max * 1.04,
                     }
                     : null,
                 name: config.name ? config.name.replace(/^ض/, 'ط') : null
@@ -13863,6 +13870,15 @@ const CONFIG_TYPE_EXPANSIONS = {
     BES: [
         {
             type: 'SellCall',
+            modify: config => ({
+                ...config,
+                breakeven: config.breakeven
+                    ? {
+                        ...config.breakeven,
+                        min: config.breakeven.min * 1.04,
+                    }
+                    : null,
+            }),
         },
         { type: 'SyntheticSell' },
         {
@@ -13899,10 +13915,10 @@ const CONFIG_TYPE_EXPANSIONS = {
             type: 'BES_With_BUCS_BEPS',
             modify: config => ({
                 ...config,
-                toSarBeSar: config.toSarBeSar
+                breakeven: config.breakeven
                     ? {
-                        ...config.toSarBeSar,
-                        min: config.toSarBeSar.min / 1.2,
+                        ...config.breakeven,
+                        min: config.breakeven.min / 1.04,
                     }
                     : null,
             }),
@@ -13911,10 +13927,10 @@ const CONFIG_TYPE_EXPANSIONS = {
             type: 'BES_With_BUPS_BECS',
             modify: config => ({
                 ...config,
-                toSarBeSar: config.toSarBeSar
+                breakeven: config.breakeven
                     ? {
-                        ...config.toSarBeSar,
-                        min: config.toSarBeSar.min / 1.2,
+                        ...config.breakeven,
+                        min: config.breakeven.min / 1.04,
                     }
                     : null,
                 name: config.name ? config.name.replace(/^ض/, 'ط') : null
@@ -13936,11 +13952,17 @@ const COMMON_CONFIG_TYPE_EXPANSIONS = [
 ];
 
 const RULE_NAME_MAP = {
-    toSar: 'toSarBeSar',
-    toLSar: 'toLowSarBeSar',
-    toHSar: 'toHighSarBeSar',
+    sar: 'breakeven',
+    LSar: 'lowBreakeven',
+    HSar: 'highBreakeven',
+
     p: 'profitPercent',
     profit: 'profitPercent',
+
+    // سازگاری با تنظیمات قدیمی
+    toSar: 'toBreakeven',
+    toLSar: 'toLowBreakeven',
+    toHSar: 'toHighBreakeven',
 };
 
 const parseRuleConfigs = (configs) => {
@@ -13966,10 +13988,17 @@ const parseIgnoreStrategy = (ignoreStrategyName) => {
     const result = {
         type: null,
         name: null,
+
         profitPercent: null,
-        toSarBeSar: null,
-        toLowSarBeSar: null,
-        toHighSarBeSar: null,
+
+        breakeven: null,
+        lowBreakeven: null,
+        highBreakeven: null,
+
+        toBreakeven: null,
+        toLowBreakeven: null,
+        toHighBreakeven: null,
+
         allProfit: null,
     };
 
@@ -14231,14 +14260,14 @@ const expandIgnoreStrategy = config => {
         let result = { ...expandedConfig };
 
         if (isCommonExpansion) {
-            const { toSarBeSar, ...rest } = result;
+            const { breakeven, ...rest } = result;
 
             result = {
                 ...rest,
-                ...(toSarBeSar != null
+                ...(breakeven != null
                     ? config.type === 'BUS'
-                        ? { toLowSarBeSar: toSarBeSar }
-                        : { toHighSarBeSar: toSarBeSar }
+                        ? { lowBreakeven: breakeven }
+                        : { highBreakeven: breakeven }
                     : {}),
             };
         }
@@ -14255,82 +14284,81 @@ const expandIgnoreStrategies = (configs) => {
 
 
 
+
 const isStrategyIgnored = (strategy, ignoreStrategyList) => {
 
+    if (!ignoreStrategyList?.length) return false;
 
-    if (!ignoreStrategyList?.length) return false
-    const strategySymbols = strategy.positions.map(pos => pos.symbol).map(symbol => symbol.replaceAll('ي', 'ی'));
-    const strategyFullSymbolNames = strategy.positions.map(opt => opt.symbol).join('-').replaceAll('ي', 'ی');
+    const normalizeSymbol = symbol => symbol.replaceAll('ي', 'ی');
 
-    const isSymbolNameIgnoredChecker = ({ ignoreStrategyObj, strategy, strategySymbols }) => {
-        if (!ignoreStrategyObj.name) return true
+    const strategySymbols = strategy.positions.map(pos =>
+        normalizeSymbol(pos.symbol)
+    );
 
-        const ignoreStrategyName = ignoreStrategyObj.name.replaceAll('ي', 'ی');
-        if (ignoreStrategyName === strategyFullSymbolNames) return true
-        if (strategySymbols.some(symbol => symbol.includes(ignoreStrategyName))) return true
+    const strategyFullSymbolNames = strategySymbols.join('-');
 
+    const isSymbolNameIgnoredChecker = ({ ignoreStrategyObj }) => {
 
-    }
+        if (!ignoreStrategyObj.name) return true;
 
+        const ignoreStrategyName = normalizeSymbol(ignoreStrategyObj.name);
 
+        if (ignoreStrategyName === strategyFullSymbolNames) return true;
+
+        return strategySymbols.some(symbol =>
+            symbol.includes(ignoreStrategyName)
+        );
+    };
 
     const profitFilterCheck = ({ ignoreStrategyObj, strategy }) => {
 
-
-        const hasFilter = ignoreStrategyObj.profitPercent != null;
+        const filter = ignoreStrategyObj.profitPercent;
+        const hasFilter = filter != null;
 
         return {
-            isPass: hasFilter ? strategy.profitPercent >= ignoreStrategyObj.profitPercent.val : null,
+            isPass: hasFilter
+                ? strategy.profitPercent >= filter.val
+                : null,
             hasFilter
-        }
+        };
+    };
 
-    }
+    const breakevenFilterCheck = ({ ignoreStrategyObj, strategy }) => {
 
+        const filters = [
+            {
+                filter: ignoreStrategyObj.breakeven,
+                value: strategy.breakeven
+            },
+            {
+                filter: ignoreStrategyObj.lowBreakeven,
+                value: strategy.lowBreakeven
+            },
+            {
+                filter: ignoreStrategyObj.highBreakeven,
+                value: strategy.highBreakeven
+            }
+        ];
 
-
-    const sarBeSarFilterCheck = ({ ignoreStrategyObj, strategy }) => {
-
-        const hasToSarBeSarFilter = ignoreStrategyObj.toSarBeSar != null;
-        const hasToHighSarBeSarFilter = ignoreStrategyObj.toHighSarBeSar != null;
-        const hasToLowSarBeSarFilter = ignoreStrategyObj.toLowSarBeSar != null;
-
-        const hasFilter =
-            hasToSarBeSarFilter ||
-            hasToHighSarBeSarFilter ||
-            hasToLowSarBeSarFilter;
+        const hasFilter = filters.some(({ filter }) => filter != null);
 
         const check = (value, filter) => {
-            if (value == null) {
-                return true;
-            }
 
-            if (filter.min != null && value < filter.min) {
-                return false;
-            }
+            if (value == null) return true;
 
-            if (filter.max != null && value > filter.max) {
-                return false;
-            }
+            if (filter.min != null && value < filter.min) return false;
+
+            if (filter.max != null && value > filter.max) return false;
 
             return true;
         };
 
-        const isPass =
-            (!hasToSarBeSarFilter ||
-                check(
-                    strategy.stockPriceToSarBeSarPercent,
-                    ignoreStrategyObj.toSarBeSar
-                )) &&
-            (!hasToHighSarBeSarFilter ||
-                check(
-                    strategy.stockPriceToHighSarBeSarPercent,
-                    ignoreStrategyObj.toHighSarBeSar
-                )) &&
-            (!hasToLowSarBeSarFilter ||
-                check(
-                    strategy.stockPriceToLowSarBeSarPercent,
-                    ignoreStrategyObj.toLowSarBeSar
-                ));
+        const isPass = filters.every(({ filter, value }) => {
+
+            if (filter == null) return true;
+
+            return check(value, filter);
+        });
 
         return {
             isPass,
@@ -14342,55 +14370,60 @@ const isStrategyIgnored = (strategy, ignoreStrategyList) => {
 
         const hasFilter = ignoreStrategyObj.allProfit != null;
 
-        let isPass = null;
-        if (hasFilter) {
-            isPass = strategy.isWholeProfitable;
-        }
-
-
         return {
-            isPass,
+            isPass: hasFilter ? strategy.isWholeProfitable : null,
             hasFilter
-        }
-
-    }
-
-
-
+        };
+    };
 
     return ignoreStrategyList.find(ignoreStrategyObj => {
 
-        const isTypeIgnored = ignoreStrategyObj.type === 'ALL' || (ignoreStrategyObj.type === strategy.strategyTypeTitle);
+        const isTypeIgnored =
+            ignoreStrategyObj.type === 'ALL' ||
+            ignoreStrategyObj.type === strategy.strategyTypeTitle;
 
-        if (!isTypeIgnored) return false
+        if (!isTypeIgnored) return false;
 
+        const isSymbolNameIgnored = isSymbolNameIgnoredChecker({
+            ignoreStrategyObj
+        });
 
-        const isSymbolNameIgnored = isSymbolNameIgnoredChecker({ ignoreStrategyObj, strategy, strategySymbols });
-        if (!isSymbolNameIgnored) return false
+        if (!isSymbolNameIgnored) return false;
 
+        const {
+            hasFilter: hasProfitFilter,
+            isPass: isProfitPass
+        } = profitFilterCheck({ ignoreStrategyObj, strategy });
 
+        if (hasProfitFilter && !isProfitPass) return true;
 
-        const { hasFilter: hasProfitFilter, isPass: isProfitPass } = profitFilterCheck({ ignoreStrategyObj, strategy });
-        if (hasProfitFilter && !isProfitPass) return true
+        const {
+            hasFilter: hasBreakevenFilter,
+            isPass: isBreakevenPass
+        } = breakevenFilterCheck({ ignoreStrategyObj, strategy });
 
+        if (
+            hasBreakevenFilter &&
+            !isBreakevenPass &&
+            !strategy.isWholeProfitable
+        ) return true;
 
-        const { hasFilter: hasToSarBeSarFilter, isPass: isSarBeSarPass } = sarBeSarFilterCheck({ ignoreStrategyObj, strategy });
-        if (hasToSarBeSarFilter && !isSarBeSarPass && !strategy.isWholeProfitable) return true
+        const {
+            hasFilter: hasAllProfitFilter,
+            isPass: isAllProfitPass
+        } = allProfitFilterCheck({ ignoreStrategyObj, strategy });
 
+        if (hasAllProfitFilter && !isAllProfitPass) return true;
 
+        const hasAnyFilter =
+            hasProfitFilter ||
+            hasBreakevenFilter ||
+            hasAllProfitFilter;
 
-        const { hasFilter: hasAllProfitFilter, isPass: isAllProfitPass } = allProfitFilterCheck({ ignoreStrategyObj, strategy });
-        if (hasAllProfitFilter && !isAllProfitPass) return true
+        return !hasAnyFilter;
+    });
+};
 
-
-        const hasAnyFilter = hasProfitFilter || hasToSarBeSarFilter || hasAllProfitFilter;
-
-        return !hasAnyFilter
-
-    }
-    )
-
-}
 
 /***/ })
 /******/ 	]);
@@ -15579,10 +15612,10 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
                             sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
                         })
                     });
-                    let stockPriceToHighSarBeSarPercent,stockPriceToLowSarBeSarPercent;
+                    let stockPriceToHighSarBeSarPercent,stockPriceToLowSarBeSarPercent,lowBreakeven,highBreakeven;
                     if(breakevenList?.length){
-                        const lowBreakeven = Math.min(...breakevenList);
-                        const highBreakeven = Math.max(...breakevenList);
+                        lowBreakeven = Math.min(...breakevenList);
+                        highBreakeven = Math.max(...breakevenList);
                         stockPriceToLowSarBeSarPercent = (lowBreakeven / option.optionDetails.stockSymbolDetails.last) - 1;
                         stockPriceToHighSarBeSarPercent = (highBreakeven / option.optionDetails.stockSymbolDetails.last) - 1;
 
@@ -15621,6 +15654,7 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
                         strategyPositions,
                         currentStockPrice: option.optionDetails?.stockSymbolDetails?.last,
                         totalCost,
+                        
 
                         expectedProfitNotif,
                         minProfitToFilter,
@@ -15628,6 +15662,8 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
                         isWholeProfitable : !breakevenList?.length,
                         stockPriceToLowSarBeSarPercent,
                         stockPriceToHighSarBeSarPercent,
+                        lowBreakeven,
+                        highBreakeven,
                         name: createStrategyName([option, _option]),
                         profitPercent
                     }
@@ -15790,11 +15826,11 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
                         })
                     });
 
-                    let stockPriceToLowSarBeSarPercent, stockPriceToHighSarBeSarPercent;
+                    let stockPriceToLowSarBeSarPercent, stockPriceToHighSarBeSarPercent,lowBreakeven,highBreakeven;
 
                     if (breakevenList?.length) {
-                        const lowBreakeven = Math.min(...breakevenList);
-                        const highBreakeven = Math.max(...breakevenList);
+                        lowBreakeven = Math.min(...breakevenList);
+                        highBreakeven = Math.max(...breakevenList);
                         stockPriceToLowSarBeSarPercent = (lowBreakeven / option.optionDetails.stockSymbolDetails.last) - 1;
                         stockPriceToHighSarBeSarPercent = (highBreakeven / option.optionDetails.stockSymbolDetails.last) - 1;
 
@@ -15820,10 +15856,13 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
                         },
                         positions:[option, _option],
                         strategyTypeTitle: "SHORT_GUTS",
+                        
                         expectedProfitNotif,
                         minProfitToFilter,
                         stockPriceToLowSarBeSarPercent,
                         stockPriceToHighSarBeSarPercent,
+                        lowBreakeven,
+                        highBreakeven,
                         expectedProfitPerMonth,
                         name: createStrategyName([option, _option]),
                         profitPercent
@@ -15976,11 +16015,11 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
                         })
                     });
 
-                    let stockPriceToLowSarBeSarPercent, stockPriceToHighSarBeSarPercent;
+                    let stockPriceToLowSarBeSarPercent, stockPriceToHighSarBeSarPercent,lowBreakeven,highBreakeven;
 
                     if (breakevenList?.length) {
-                        const lowBreakeven = Math.min(...breakevenList);
-                        const highBreakeven = Math.max(...breakevenList);
+                        lowBreakeven = Math.min(...breakevenList);
+                        highBreakeven = Math.max(...breakevenList);
                         stockPriceToLowSarBeSarPercent = (lowBreakeven / option.optionDetails.stockSymbolDetails.last) - 1;
                         stockPriceToHighSarBeSarPercent = (highBreakeven / option.optionDetails.stockSymbolDetails.last) - 1;
 
@@ -16002,9 +16041,12 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
                         positions:[option, _option],
                         strategyTypeTitle: "SHORT_STRANGLE",
                         expectedProfitNotif,
+                        
                         minProfitToFilter,
                         stockPriceToLowSarBeSarPercent, 
                         stockPriceToHighSarBeSarPercent,
+                        lowBreakeven,
+                        highBreakeven,
                         expectedProfitPerMonth,
                         name: createStrategyName([option, _option]),
                         profitPercent
@@ -16220,6 +16262,7 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                         minProfitToFilter,
                         expectedProfitPerMonth,
                         stockPriceToSarBeSarPercent,
+                        breakeven,
                         isWholeProfitable:!breakeven,
                         profitLossRatio,
                         settlementTimeDiff : option.settlementTimeDiff,
@@ -16454,6 +16497,7 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                         minProfitToFilter,
                         expectedProfitPerMonth,
                         stockPriceToSarBeSarPercent,
+                        breakeven,
                         isWholeProfitable:!breakeven,
                         profitLossRatio,
                         settlementTimeDiff : option.settlementTimeDiff,
@@ -16689,6 +16733,7 @@ const calcSyntheticCoveredCallStrategies = (list,
                         expectedProfitNotif,
                         minProfitToFilter,
                         stockPriceToSarBeSarPercent,
+                        breakeven,
                         isWholeProfitable:!breakeven,
                         name: createStrategyName([buyingCall, sameStrikePut, sellingCall]),
                         profitPercent: profitPercent,
@@ -18477,6 +18522,7 @@ const calcBUCSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
+                            breakeven,
                             isWholeProfitable:isFullBodyProfitable,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBUCS_RATIO),
                             name: createStrategyName([buyingCall, sellingCall, anotherSellingCall]),
@@ -18765,6 +18811,7 @@ const calcBUPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
+                            breakeven,
                             isWholeProfitable:isFullBodyProfitable,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBUPS_RATIO),
                             name: createStrategyName([buyingPut, sellingPut, sellingCall]),
@@ -19060,6 +19107,7 @@ const calcBECSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             minProfitToFilter,
                             expectedProfitNotif,
                             stockPriceToSarBeSarPercent,
+                            breakeven,
                             isWholeProfitable:isFullBodyProfitable,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBECS_RATIO),
                             name: createStrategyName([buyingCall, sellingCall, sellingPut]),
@@ -19352,6 +19400,7 @@ const calcBEPSRatioStrategies = (list, {priceType, strategySubName, minQuantityF
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
+                            breakeven,
                             isWholeProfitable:isFullBodyProfitable,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(minProfitPercentOfBEPS_RATIO),
                             name: createStrategyName([buyingPut, sellingPut, anotherSellingPut]),
@@ -20323,6 +20372,7 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
                 expectedProfitNotif,
                 expectedProfitPerMonth,
                 stockPriceToSarBeSarPercent,
+                breakeven,
                 settlementTimeDiff : option.settlementTimeDiff,
                 name: createStrategyName([option.optionDetails?.stockSymbolDetails, option]),
                 profitPercent
@@ -20780,6 +20830,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
                         expectedProfitPerMonth,
                         isWholeProfitable: !breakeven,
                         stockPriceToSarBeSarPercent,
+                        breakeven,
                         profitLossRatio,
                         name: createStrategyName([option, _option]),
                         profitPercent
@@ -20979,6 +21030,7 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
                         expectedProfitNotif,
                         expectedProfitPerMonth,
                         stockPriceToSarBeSarPercent,
+                        breakeven,
                         profitLossRatio,
                         isWholeProfitable: !breakeven,
                         name: createStrategyName([option, _option]),
@@ -21191,6 +21243,7 @@ const createAndCalcBUS_BES_Strategy = ({ buyingCall, sellingCall, buyingPut, sel
         positions: isBUCS ? [ buyingCall, sellingCall,buyingPut, sellingPut]:[buyingPut, sellingPut,buyingCall, sellingCall],
         isWholeProfitable: !breakeven,
         stockPriceToSarBeSarPercent,
+        breakeven,
         
         maxProfit,
         maxLoss,
@@ -21583,6 +21636,7 @@ const calcBUCS_BEPS_LongPutStrategies = ({ filteredBusList, priceType, strategyS
                 expectedProfitNotif,
                 minProfitToFilter,
                 stockPriceToSarBeSarPercent,
+                breakeven,
                 isWholeProfitable: isFullBodyProfitable,
                 isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(minProfitPercent),
                 name: createStrategyName([...busPositions, buyingPut],),
@@ -21765,6 +21819,7 @@ const calcBESRatio_BY_BUS_BES_Strategies = ({ filteredBesList, priceType, strate
                 expectedProfitNotif,
                 minProfitToFilter,
                 stockPriceToSarBeSarPercent,
+                breakeven,
                 isWholeProfitable: isFullBodyProfitable,
                 isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(minProfitPercent),
                 name: createStrategyName([...besPositions, sellingPut],),
@@ -22855,6 +22910,7 @@ const calcBuyStockByPutStrategies = (list, {priceType, expectedProfitPerMonth,
                         minProfitToFilter,
                         expectedProfitPerMonth,
                         stockPriceToSarBeSarPercent:distanceCurrentPrice,
+                        breakeven:calculateBuyingPrice,
                         name: createStrategyName([option]),
                         isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(option),
                         profitPercent : distanceCurrentPrice
@@ -23363,6 +23419,7 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
+                            breakeven,
                             isWholeProfitable:isFullBodyProfitable,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(profitPercentOfBUCS_Long_Put),
                             name: createStrategyName([buyingCall, sellingCall, buyingPut]),
@@ -23636,6 +23693,7 @@ const calcBECS_Long_CallStrategies = (list, {priceType, strategySubName,
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
+                            breakeven,
                             isWholeProfitable:isFullBodyProfitable,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(profitPercentOfBECS_Long_Call),
                             name: createStrategyName([buyingCall, sellingCall, anotherBuyingCall]),
@@ -23908,6 +23966,7 @@ const calcBEPS_Long_CallStrategies = (list, {priceType, strategySubName,
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
+                            breakeven,
                             isWholeProfitable:isFullBodyProfitable,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(profitPercentOfBEPS_Long_Call),
                             name: createStrategyName([buyingPut, sellingPut, buyingCall]),
@@ -24183,6 +24242,7 @@ const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName,
                             expectedProfitNotif,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
+                            breakeven,
                             isWholeProfitable:isFullBodyProfitable,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(profitPercentOfBUPS_Long_Put),
                             name: createStrategyName([buyingPut, sellingPut, anotherBuyingPut]),
@@ -24331,6 +24391,7 @@ const calcSellCallStrategies = (list, { priceType, expectedProfitPerMonth,
                     minProfitToFilter,
                     expectedProfitNotif,
                     stockPriceToSarBeSarPercent,
+                    breakeven,
                     expectedProfitPerMonth,
                     name: createStrategyName([option]),
                     profitPercent
@@ -24473,6 +24534,7 @@ const calcSellPutStrategies = (list, { priceType, expectedProfitPerMonth,
                     minProfitToFilter,
                     expectedProfitNotif,
                     stockPriceToSarBeSarPercent,
+                    breakeven,
                     expectedProfitPerMonth,
                     name: createStrategyName([option]),
                     profitPercent
@@ -24667,6 +24729,7 @@ const calcSyntheticBuyStrategies = (list, {
                     minProfitToFilter,
                     expectedProfitPerMonth,
                     stockPriceToSarBeSarPercent,
+                    breakeven,
                     settlementTimeDiff: call.settlementTimeDiff,
                     name: createStrategyName([call, sameStrikePut]),
                     isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(call),
@@ -24861,6 +24924,7 @@ const calcSyntheticSellStrategies = (list, {
                     minProfitToFilter,
                     expectedProfitPerMonth,
                     stockPriceToSarBeSarPercent,
+                    breakeven,
                     settlementTimeDiff: call.settlementTimeDiff,
                     name: createStrategyName([call, sameStrikePut]),
                     isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(call),

@@ -2,10 +2,17 @@ const CONFIG_TYPE_EXPANSIONS = {
     BUS: [
         { type: 'SyntheticBuy' },
         { type: 'BUCS' },
-        { type: 'SellPut',
+        {
+            type: 'SellPut',
             modify: config => ({
                 ...config,
-                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null,
+                breakeven: config.breakeven
+                    ? {
+                        ...config.breakeven,
+                        max: config.breakeven.max / 1.04,
+                    }
+                    : null,
             }),
         },
         { type: 'BUCS_LONG_PUT' },
@@ -13,10 +20,10 @@ const CONFIG_TYPE_EXPANSIONS = {
         { type: 'SYNTHETIC_COVERED_CALL',  
             modify: config => ({
                 ...config,
-                toSarBeSar: config.toSarBeSar
+                breakeven: config.breakeven
                     ? {
-                        ...config.toSarBeSar,
-                        max: config.toSarBeSar.max * 1.1,
+                        ...config.breakeven,
+                        max: config.breakeven.max / 1.04,
                     }
                     : null,
             })
@@ -25,10 +32,10 @@ const CONFIG_TYPE_EXPANSIONS = {
             type: 'COVERED',
             modify: config => ({
                 ...config,
-                toSarBeSar: config.toSarBeSar
+                breakeven: config.breakeven
                     ? {
-                        ...config.toSarBeSar,
-                        max: config.toSarBeSar.max / 1.2,
+                        ...config.breakeven,
+                        max: config.breakeven.max * 1.04,
                     }
                     : null,
             }),
@@ -64,10 +71,10 @@ const CONFIG_TYPE_EXPANSIONS = {
             type: 'BUS_With_BUCS_BEPS',
             modify: config => ({
                 ...config,
-                toSarBeSar: config.toSarBeSar
+                breakeven: config.breakeven
                     ? {
-                        ...config.toSarBeSar,
-                        max: config.toSarBeSar.max / 1.2,
+                        ...config.breakeven,
+                        max: config.breakeven.max * 1.04,
                     }
                     : null,
             }),
@@ -76,10 +83,10 @@ const CONFIG_TYPE_EXPANSIONS = {
             type: 'BUS_With_BUPS_BECS',
             modify: config => ({
                 ...config,
-                toSarBeSar: config.toSarBeSar
+                breakeven: config.breakeven
                     ? {
-                        ...config.toSarBeSar,
-                        max: config.toSarBeSar.max / 1.2,
+                        ...config.breakeven,
+                        max: config.breakeven.max * 1.04,
                     }
                     : null,
                 name: config.name ? config.name.replace(/^ض/, 'ط') : null
@@ -89,6 +96,15 @@ const CONFIG_TYPE_EXPANSIONS = {
     BES: [
         {
             type: 'SellCall',
+            modify: config => ({
+                ...config,
+                breakeven: config.breakeven
+                    ? {
+                        ...config.breakeven,
+                        min: config.breakeven.min * 1.04,
+                    }
+                    : null,
+            }),
         },
         { type: 'SyntheticSell' },
         {
@@ -125,10 +141,10 @@ const CONFIG_TYPE_EXPANSIONS = {
             type: 'BES_With_BUCS_BEPS',
             modify: config => ({
                 ...config,
-                toSarBeSar: config.toSarBeSar
+                breakeven: config.breakeven
                     ? {
-                        ...config.toSarBeSar,
-                        min: config.toSarBeSar.min / 1.2,
+                        ...config.breakeven,
+                        min: config.breakeven.min / 1.04,
                     }
                     : null,
             }),
@@ -137,10 +153,10 @@ const CONFIG_TYPE_EXPANSIONS = {
             type: 'BES_With_BUPS_BECS',
             modify: config => ({
                 ...config,
-                toSarBeSar: config.toSarBeSar
+                breakeven: config.breakeven
                     ? {
-                        ...config.toSarBeSar,
-                        min: config.toSarBeSar.min / 1.2,
+                        ...config.breakeven,
+                        min: config.breakeven.min / 1.04,
                     }
                     : null,
                 name: config.name ? config.name.replace(/^ض/, 'ط') : null
@@ -162,11 +178,17 @@ const COMMON_CONFIG_TYPE_EXPANSIONS = [
 ];
 
 const RULE_NAME_MAP = {
-    toSar: 'toSarBeSar',
-    toLSar: 'toLowSarBeSar',
-    toHSar: 'toHighSarBeSar',
+    sar: 'breakeven',
+    LSar: 'lowBreakeven',
+    HSar: 'highBreakeven',
+
     p: 'profitPercent',
     profit: 'profitPercent',
+
+    // سازگاری با تنظیمات قدیمی
+    toSar: 'toBreakeven',
+    toLSar: 'toLowBreakeven',
+    toHSar: 'toHighBreakeven',
 };
 
 const parseRuleConfigs = (configs) => {
@@ -192,10 +214,17 @@ const parseIgnoreStrategy = (ignoreStrategyName) => {
     const result = {
         type: null,
         name: null,
+
         profitPercent: null,
-        toSarBeSar: null,
-        toLowSarBeSar: null,
-        toHighSarBeSar: null,
+
+        breakeven: null,
+        lowBreakeven: null,
+        highBreakeven: null,
+
+        toBreakeven: null,
+        toLowBreakeven: null,
+        toHighBreakeven: null,
+
         allProfit: null,
     };
 
@@ -457,14 +486,14 @@ const expandIgnoreStrategy = config => {
         let result = { ...expandedConfig };
 
         if (isCommonExpansion) {
-            const { toSarBeSar, ...rest } = result;
+            const { breakeven, ...rest } = result;
 
             result = {
                 ...rest,
-                ...(toSarBeSar != null
+                ...(breakeven != null
                     ? config.type === 'BUS'
-                        ? { toLowSarBeSar: toSarBeSar }
-                        : { toHighSarBeSar: toSarBeSar }
+                        ? { lowBreakeven: breakeven }
+                        : { highBreakeven: breakeven }
                     : {}),
             };
         }
@@ -481,82 +510,81 @@ export const expandIgnoreStrategies = (configs) => {
 
 
 
+
 export const isStrategyIgnored = (strategy, ignoreStrategyList) => {
 
+    if (!ignoreStrategyList?.length) return false;
 
-    if (!ignoreStrategyList?.length) return false
-    const strategySymbols = strategy.positions.map(pos => pos.symbol).map(symbol => symbol.replaceAll('ي', 'ی'));
-    const strategyFullSymbolNames = strategy.positions.map(opt => opt.symbol).join('-').replaceAll('ي', 'ی');
+    const normalizeSymbol = symbol => symbol.replaceAll('ي', 'ی');
 
-    const isSymbolNameIgnoredChecker = ({ ignoreStrategyObj, strategy, strategySymbols }) => {
-        if (!ignoreStrategyObj.name) return true
+    const strategySymbols = strategy.positions.map(pos =>
+        normalizeSymbol(pos.symbol)
+    );
 
-        const ignoreStrategyName = ignoreStrategyObj.name.replaceAll('ي', 'ی');
-        if (ignoreStrategyName === strategyFullSymbolNames) return true
-        if (strategySymbols.some(symbol => symbol.includes(ignoreStrategyName))) return true
+    const strategyFullSymbolNames = strategySymbols.join('-');
 
+    const isSymbolNameIgnoredChecker = ({ ignoreStrategyObj }) => {
 
-    }
+        if (!ignoreStrategyObj.name) return true;
 
+        const ignoreStrategyName = normalizeSymbol(ignoreStrategyObj.name);
 
+        if (ignoreStrategyName === strategyFullSymbolNames) return true;
+
+        return strategySymbols.some(symbol =>
+            symbol.includes(ignoreStrategyName)
+        );
+    };
 
     const profitFilterCheck = ({ ignoreStrategyObj, strategy }) => {
 
-
-        const hasFilter = ignoreStrategyObj.profitPercent != null;
+        const filter = ignoreStrategyObj.profitPercent;
+        const hasFilter = filter != null;
 
         return {
-            isPass: hasFilter ? strategy.profitPercent >= ignoreStrategyObj.profitPercent.val : null,
+            isPass: hasFilter
+                ? strategy.profitPercent >= filter.val
+                : null,
             hasFilter
-        }
+        };
+    };
 
-    }
+    const breakevenFilterCheck = ({ ignoreStrategyObj, strategy }) => {
 
+        const filters = [
+            {
+                filter: ignoreStrategyObj.breakeven,
+                value: strategy.breakeven
+            },
+            {
+                filter: ignoreStrategyObj.lowBreakeven,
+                value: strategy.lowBreakeven
+            },
+            {
+                filter: ignoreStrategyObj.highBreakeven,
+                value: strategy.highBreakeven
+            }
+        ];
 
-
-    const sarBeSarFilterCheck = ({ ignoreStrategyObj, strategy }) => {
-
-        const hasToSarBeSarFilter = ignoreStrategyObj.toSarBeSar != null;
-        const hasToHighSarBeSarFilter = ignoreStrategyObj.toHighSarBeSar != null;
-        const hasToLowSarBeSarFilter = ignoreStrategyObj.toLowSarBeSar != null;
-
-        const hasFilter =
-            hasToSarBeSarFilter ||
-            hasToHighSarBeSarFilter ||
-            hasToLowSarBeSarFilter;
+        const hasFilter = filters.some(({ filter }) => filter != null);
 
         const check = (value, filter) => {
-            if (value == null) {
-                return true;
-            }
 
-            if (filter.min != null && value < filter.min) {
-                return false;
-            }
+            if (value == null) return true;
 
-            if (filter.max != null && value > filter.max) {
-                return false;
-            }
+            if (filter.min != null && value < filter.min) return false;
+
+            if (filter.max != null && value > filter.max) return false;
 
             return true;
         };
 
-        const isPass =
-            (!hasToSarBeSarFilter ||
-                check(
-                    strategy.stockPriceToSarBeSarPercent,
-                    ignoreStrategyObj.toSarBeSar
-                )) &&
-            (!hasToHighSarBeSarFilter ||
-                check(
-                    strategy.stockPriceToHighSarBeSarPercent,
-                    ignoreStrategyObj.toHighSarBeSar
-                )) &&
-            (!hasToLowSarBeSarFilter ||
-                check(
-                    strategy.stockPriceToLowSarBeSarPercent,
-                    ignoreStrategyObj.toLowSarBeSar
-                ));
+        const isPass = filters.every(({ filter, value }) => {
+
+            if (filter == null) return true;
+
+            return check(value, filter);
+        });
 
         return {
             isPass,
@@ -568,52 +596,56 @@ export const isStrategyIgnored = (strategy, ignoreStrategyList) => {
 
         const hasFilter = ignoreStrategyObj.allProfit != null;
 
-        let isPass = null;
-        if (hasFilter) {
-            isPass = strategy.isWholeProfitable;
-        }
-
-
         return {
-            isPass,
+            isPass: hasFilter ? strategy.isWholeProfitable : null,
             hasFilter
-        }
-
-    }
-
-
-
+        };
+    };
 
     return ignoreStrategyList.find(ignoreStrategyObj => {
 
-        const isTypeIgnored = ignoreStrategyObj.type === 'ALL' || (ignoreStrategyObj.type === strategy.strategyTypeTitle);
+        const isTypeIgnored =
+            ignoreStrategyObj.type === 'ALL' ||
+            ignoreStrategyObj.type === strategy.strategyTypeTitle;
 
-        if (!isTypeIgnored) return false
+        if (!isTypeIgnored) return false;
 
+        const isSymbolNameIgnored = isSymbolNameIgnoredChecker({
+            ignoreStrategyObj
+        });
 
-        const isSymbolNameIgnored = isSymbolNameIgnoredChecker({ ignoreStrategyObj, strategy, strategySymbols });
-        if (!isSymbolNameIgnored) return false
+        if (!isSymbolNameIgnored) return false;
 
+        const {
+            hasFilter: hasProfitFilter,
+            isPass: isProfitPass
+        } = profitFilterCheck({ ignoreStrategyObj, strategy });
 
+        if (hasProfitFilter && !isProfitPass) return true;
 
-        const { hasFilter: hasProfitFilter, isPass: isProfitPass } = profitFilterCheck({ ignoreStrategyObj, strategy });
-        if (hasProfitFilter && !isProfitPass) return true
+        const {
+            hasFilter: hasBreakevenFilter,
+            isPass: isBreakevenPass
+        } = breakevenFilterCheck({ ignoreStrategyObj, strategy });
 
+        if (
+            hasBreakevenFilter &&
+            !isBreakevenPass &&
+            !strategy.isWholeProfitable
+        ) return true;
 
-        const { hasFilter: hasToSarBeSarFilter, isPass: isSarBeSarPass } = sarBeSarFilterCheck({ ignoreStrategyObj, strategy });
-        if (hasToSarBeSarFilter && !isSarBeSarPass && !strategy.isWholeProfitable) return true
+        const {
+            hasFilter: hasAllProfitFilter,
+            isPass: isAllProfitPass
+        } = allProfitFilterCheck({ ignoreStrategyObj, strategy });
 
+        if (hasAllProfitFilter && !isAllProfitPass) return true;
 
+        const hasAnyFilter =
+            hasProfitFilter ||
+            hasBreakevenFilter ||
+            hasAllProfitFilter;
 
-        const { hasFilter: hasAllProfitFilter, isPass: isAllProfitPass } = allProfitFilterCheck({ ignoreStrategyObj, strategy });
-        if (hasAllProfitFilter && !isAllProfitPass) return true
-
-
-        const hasAnyFilter = hasProfitFilter || hasToSarBeSarFilter || hasAllProfitFilter;
-
-        return !hasAnyFilter
-
-    }
-    )
-
-}
+        return !hasAnyFilter;
+    });
+};
