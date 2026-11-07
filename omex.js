@@ -3226,8 +3226,6 @@ const setTradeModalToolboxAllTradeModals = () => {
         balanceButton.textContent = 'بالانس';
         balanceButton.className = 'trade-modal-toolbox-button';
 
-   
-
         balanceButton.addEventListener("mousedown", (e) => {
             e.stopPropagation();
         });
@@ -3238,35 +3236,46 @@ const setTradeModalToolboxAllTradeModals = () => {
             const quantityInput = strategyPosition.getOrderModalQuantityInputElement();
             if (!quantityInput) return;
 
-
             const requestedQuantity = convertStringToInt(quantityInput.value);
 
             if (!Number.isSafeInteger(requestedQuantity) || requestedQuantity <= 0) return;
 
-            const sameInstrumentPositions = strategyPositions.filter(
-                sp => sp.instrumentName === strategyPosition.instrumentName
-            );
+            // گروه‌بندی تمام موقعیت‌ها بر اساس نماد
+            const instrumentGroups = new Map();
 
-            const baseQuantity = sameInstrumentPositions.reduce(
-                (sum, sp) => sum + sp.getDefinedQuantity(),
-                0
-            );
+            for (const sp of strategyPositions) {
+                if (!instrumentGroups.has(sp.instrumentName)) {
+                    instrumentGroups.set(sp.instrumentName, {
+                        positions: [],
+                        baseQuantity: 0,
+                        input: null
+                    });
+                }
 
-            if (!Number.isSafeInteger(baseQuantity) || baseQuantity <= 0) return;
+                const group = instrumentGroups.get(sp.instrumentName);
 
-            // تعداد پایه سایر موقعیت‌ها
-            const otherPositions = strategyPositions.filter(
-                sp => sp.instrumentName !== strategyPosition.instrumentName
-            );
+                group.positions.push(sp);
+                group.baseQuantity += sp.getDefinedQuantity();
 
-            // پیدا کردن بزرگ‌ترین تعداد صحیح که تمام تعدادهای استراتژی را صحیح نگه دارد
+                // هر نماد فقط یک مدال و یک اینپوت دارد
+                if (!group.input) {
+                    group.input = sp.getOrderModalQuantityInputElement();
+                }
+            }
+
+            const currentGroup = instrumentGroups.get(strategyPosition.instrumentName);
+
+            if (!currentGroup || !Number.isSafeInteger(currentGroup.baseQuantity) ||
+                currentGroup.baseQuantity <= 0) return;
+
+            // پیدا کردن بزرگ‌ترین تعداد معتبر بدون اعشار
             let balancedCurrentQuantity = requestedQuantity;
 
             while (balancedCurrentQuantity > 0) {
-                const ratio = balancedCurrentQuantity / baseQuantity;
+                const ratio = balancedCurrentQuantity / currentGroup.baseQuantity;
 
-                const allQuantitiesAreIntegers = otherPositions.every(sp => {
-                    const quantity = sp.getDefinedQuantity() * ratio;
+                const allQuantitiesAreIntegers = [...instrumentGroups.values()].every(group => {
+                    const quantity = group.baseQuantity * ratio;
 
                     return Number.isSafeInteger(quantity);
                 });
@@ -3281,23 +3290,22 @@ const setTradeModalToolboxAllTradeModals = () => {
                 return;
             }
 
-            const ratio = balancedCurrentQuantity / baseQuantity;
+            const ratio = balancedCurrentQuantity / currentGroup.baseQuantity;
 
-            // اصلاح تعداد مدال فعلی
-            quantityInput.value = balancedCurrentQuantity;
-            quantityInput.dispatchEvent(new Event('input', { bubbles: true }));
-            quantityInput.dispatchEvent(new Event('change', { bubbles: true }));
+            // اعمال تعداد نهایی؛ هر نماد فقط یک بار
+            for (const group of instrumentGroups.values()) {
+                const input = group.input;
 
-            // اصلاح تعداد سایر مدال‌ها
-            for (const sp of otherPositions) {
-                const input = sp.getOrderModalQuantityInputElement();
                 if (!input) continue;
 
-                input.value = sp.getDefinedQuantity() * ratio;
+                const balancedQuantity = Math.round(group.baseQuantity * ratio);
+
+                input.value = balancedQuantity;
 
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
             }
+
         });
 
         toolbox.appendChild(balanceButton);
