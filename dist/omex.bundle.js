@@ -4067,6 +4067,13 @@ const createPositionObjectArray  = (strategyItemList) => {
         }
 
 
+        const isOrderModalInBuyingMode = () =>
+            !!ordersModal.querySelector('.-is-frontView.-is-buy');
+
+        const isOrderModalInSellingMode = () =>
+            !!ordersModal.querySelector('.-is-frontView.-is-sell');
+
+
       
 
 
@@ -4082,6 +4089,8 @@ const createPositionObjectArray  = (strategyItemList) => {
             isCall,
             isPut,
             cSize,
+            isOrderModalInBuyingMode,
+            isOrderModalInSellingMode,
             getCSize,
             getOptionID,
             getInstrumentID,
@@ -4264,6 +4273,52 @@ const getAllGroupStrategyListForExport = async ()=>{
     }
 }
 
+const unusualPriceOfInsertedOrderInformer = ({
+    orderModalPriceGetter,
+    informer,
+    informCleaner,
+    ratio = 3
+}) => {
+
+    strategyPositions.forEach(strategyPosition => {
+
+        const insertedPrice = orderModalPriceGetter(strategyPosition);
+
+        const isBuying = strategyPosition.isOrderModalInBuyingMode();
+        const isSelling = strategyPosition.isOrderModalInSellingMode();
+
+        if (!isBuying && !isSelling) {
+            informCleaner(strategyPosition);
+            return;
+        }
+
+        const isOpeningNewPosition =
+            (strategyPosition.isBuy  && isBuying) ||
+            (!strategyPosition.isBuy && isSelling);
+
+        const oppositePrice = isOpeningNewPosition
+            ? strategyPosition.getBestOpenMorePrice()
+            : strategyPosition.getBestOffsetPrice();
+
+        if (
+            !insertedPrice ||
+            !oppositePrice ||
+            insertedPrice <= 0 ||
+            oppositePrice <= 0
+        ) {
+            informCleaner(strategyPosition);
+            return;
+        }
+
+        const priceRatio = insertedPrice / oppositePrice;
+
+        if (priceRatio <= 1 / ratio || priceRatio >= ratio) {
+            informer(strategyPosition);
+        } else {
+            informCleaner(strategyPosition);
+        }
+    });
+};
 
 
 const orderModalInputCheckAndInformer = () => {
@@ -4332,6 +4387,25 @@ const orderModalInputCheckAndInformer = () => {
             }
         });
 
+        unusualPriceOfInsertedOrderInformer({
+            orderModalPriceGetter: (strategyPosition) =>
+                convertStringToInt(
+                    strategyPosition.getOrderModalPriceInputElement()?.value
+                ),
+
+            informer: (strategyPosition) => {
+                const priceInput = strategyPosition.getOrderModalPriceInputElement();
+
+                priceInput?.classList.add('inserted-unusual-price-error');
+            },
+
+            informCleaner: (strategyPosition) => {
+                const priceInput = strategyPosition.getOrderModalPriceInputElement();
+
+                priceInput?.classList.remove('inserted-unusual-price-error');
+            }
+        });
+
 
         
     }, 100);
@@ -4340,51 +4414,86 @@ const orderModalInputCheckAndInformer = () => {
 }
 const observeInputQuantityOfOrderModal = () => {
 
-
     return strategyPositions.map(strategyPositionObj => {
 
-        strategyPositionObj.observers.filter(observerInfoObj => ['inputQuantityOfOrderModal'].includes(observerInfoObj.key)).forEach(observerInfoObj => observerInfoObj.observer.disconnect())
+        strategyPositionObj.observers
+            .filter(observerInfoObj =>
+                ['inputQuantityOfOrderModal'].includes(observerInfoObj.key)
+            )
+            .forEach(observerInfoObj => observerInfoObj.observer.disconnect());
 
-        const inputQuantityOfOrderModal = strategyPositionObj.getOrderModalQuantityInputElement();
+        const inputQuantity = strategyPositionObj.getOrderModalQuantityInputElement();
+        const inputPrice = strategyPositionObj.getOrderModalPriceInputElement();
         const ordersModal = strategyPositionObj.ordersModal;
 
         const eventNames = ['input', 'change', 'click'];
-        eventNames.forEach(eventName => inputQuantityOfOrderModal.removeEventListener(eventName, orderModalInputCheckAndInformer));
-        eventNames.forEach(eventName => inputQuantityOfOrderModal.addEventListener(eventName, orderModalInputCheckAndInformer));
 
+        [inputQuantity, inputPrice].forEach(input => {
+            if (!input) return;
 
-        const eventNamesOnOrderModal =['click','mousedown','mouseup']
+            eventNames.forEach(eventName =>
+                input.removeEventListener(eventName, orderModalInputCheckAndInformer)
+            );
 
-        eventNamesOnOrderModal.forEach(eventName => ordersModal.removeEventListener(eventName, orderModalInputCheckAndInformer));
-        eventNamesOnOrderModal.forEach(eventName => ordersModal.addEventListener(eventName, orderModalInputCheckAndInformer));
-        
+            eventNames.forEach(eventName =>
+                input.addEventListener(eventName, orderModalInputCheckAndInformer)
+            );
+        });
+
+        const eventNamesOnOrderModal = ['click', 'mousedown', 'mouseup'];
+
+        eventNamesOnOrderModal.forEach(eventName =>
+            ordersModal.removeEventListener(eventName, orderModalInputCheckAndInformer)
+        );
+
+        eventNamesOnOrderModal.forEach(eventName =>
+            ordersModal.addEventListener(eventName, orderModalInputCheckAndInformer)
+        );
 
         let lastClickTime = 0;
         const minInterval = 300;
+
         const mousemoveEventHandler = () => {
             const currentTime = new Date().getTime();
+
             if ((currentTime - lastClickTime) < minInterval)
-                return
+                return;
+
             lastClickTime = currentTime;
             orderModalInputCheckAndInformer();
+        };
 
-        }
+        strategyPositionObj.mouseMoveOnOrderModalEventHandler &&
+            ordersModal.removeEventListener(
+                'mousemove',
+                strategyPositionObj.mouseMoveOnOrderModalEventHandler
+            );
 
-        // TODO:FIXME: refactor this name and persist event handler code
-        
-        strategyPositionObj.mouseMoveOnOrderModalEventHandler && ordersModal.addEventListener('mousemove', strategyPositionObj.mouseMoveOnOrderModalEventHandler);
         ordersModal.addEventListener('mousemove', mousemoveEventHandler);
+
         strategyPositionObj.mouseMoveOnOrderModalEventHandler = mousemoveEventHandler;
 
         const inputObserver = {
             disconnect() {
-                eventNames.forEach(eventName => inputQuantityOfOrderModal.removeEventListener(eventName, orderModalInputCheckAndInformer));
-                ordersModal.removeEventListener('click', orderModalInputCheckAndInformer)
-                ordersModal.removeEventListener('mousemove ', mousemoveEventHandler)
-            }
-        }
+                [inputQuantity, inputPrice].forEach(input => {
+                    if (!input) return;
 
-        let observers = strategyPositionObj.observers.filter(observerInfoObj => !['inputQuantityOfOrderModal'].includes(observerInfoObj.key));
+                    eventNames.forEach(eventName =>
+                        input.removeEventListener(eventName, orderModalInputCheckAndInformer)
+                    );
+                });
+
+                eventNamesOnOrderModal.forEach(eventName =>
+                    ordersModal.removeEventListener(eventName, orderModalInputCheckAndInformer)
+                );
+
+                ordersModal.removeEventListener('mousemove', mousemoveEventHandler);
+            }
+        };
+
+        const observers = strategyPositionObj.observers.filter(
+            observerInfoObj => observerInfoObj.key !== 'inputQuantityOfOrderModal'
+        );
 
         observers.push({
             key: 'inputQuantityOfOrderModal',
@@ -4394,11 +4503,9 @@ const observeInputQuantityOfOrderModal = () => {
         return {
             ...strategyPositionObj,
             observers
-        }
-    }
-    )
-
-}
+        };
+    });
+};
 
 const observeInputBoxInRowOfStrategy = () => {
 
@@ -5230,16 +5337,14 @@ const higherQuantityOfInsertedOrderInformer = ({ orderModalQuantityGetter, infor
         const insertedQuantity = orderModalQuantityGetter(strategyPosition);
         const currentPortFolioQuantity = (strategyPosition.getCurrentPositionQuantity()/strategyPosition.getCSize());
 
-        const isOrderModalInBuyingTab =  strategyPosition.ordersModal.querySelector('.-is-frontView.-is-buy');
-        const isOrderModalInSellingTab =  strategyPosition.ordersModal.querySelector('.-is-frontView.-is-sell');
         
         if(!currentPortFolioQuantity){
             return informCleaner(strategyPosition);
         }
 
-        if(strategyPosition.isBuy && isOrderModalInSellingTab && insertedQuantity>currentPortFolioQuantity){
+        if(strategyPosition.isBuy && strategyPosition.isOrderModalInSellingMode() && insertedQuantity>currentPortFolioQuantity){
             informer(strategyPosition);
-        }else if(!strategyPosition.isBuy && isOrderModalInBuyingTab && insertedQuantity>currentPortFolioQuantity){
+        }else if(!strategyPosition.isBuy && strategyPosition.isOrderModalInBuyingMode() && insertedQuantity>currentPortFolioQuantity){
             informer(strategyPosition);
         }else{
             informCleaner(strategyPosition);
@@ -5540,6 +5645,10 @@ const injectStyles = () => {
                 bottom: 105px;
                 background: #ddfffd;
                 right: 4px;
+            }
+            .inserted-unusual-price-error {
+                outline: 2px solid red !important;
+                outline-offset: 1px;
             }
         `;
 
