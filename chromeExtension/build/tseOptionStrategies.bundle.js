@@ -14425,6 +14425,105 @@ const isStrategyIgnored = (strategy, ignoreStrategyList) => {
 };
 
 
+/***/ }),
+/* 12 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   getListOfTradedAssetsFromTSETMC: () => (/* binding */ getListOfTradedAssetsFromTSETMC)
+/* harmony export */ });
+const TSETMC_BASE_URL =
+    'https://cdn.tsetmc.com/api/ClosingPrice/GetMarketWatch';
+
+// تمام این متغیرها خصوصی و مختص همین ماژول هستند
+const assetsCache = new Map();
+
+let currentHEven = 0;
+let currentRefID = 0;
+
+let pendingRequest = null;
+
+
+const getListOfTradedAssetsFromTSETMC = async () => {
+
+    if (pendingRequest) {
+        return pendingRequest;
+    }
+
+    pendingRequest = (async () => {
+
+        const params = new URLSearchParams({
+            market: '0',
+            industrialGroup: '',
+            'paperTypes[0]': '1',
+            'paperTypes[1]': '2',
+            'paperTypes[2]': '3',
+            'paperTypes[3]': '4',
+            'paperTypes[4]': '5',
+            'paperTypes[5]': '6',
+            'paperTypes[6]': '7',
+            'paperTypes[7]': '8',
+            'paperTypes[8]': '9',
+            showTraded: 'false',
+            withBestLimits: 'true',
+            hEven: String(currentHEven),
+            RefID: String(currentRefID)
+        });
+
+        const response = await fetch(
+            `${TSETMC_BASE_URL}?${params.toString()}`
+        );
+
+        if (!response.ok) {
+            throw new Error('خطا در دریافت اطلاعات TSETMC');
+        }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data.marketwatch)) {
+            throw new Error('ساختار پاسخ TSETMC معتبر نیست');
+        }
+
+        let maxHEven = currentHEven;
+        let maxRefID = currentRefID;
+
+        for (const asset of data.marketwatch) {
+
+            maxHEven = Math.max(
+                maxHEven,
+                Number(asset.hEven) || 0
+            );
+
+            for (const order of asset.blDs || []) {
+                maxRefID = Math.max(
+                    maxRefID,
+                    Number(order.rid) || 0
+                );
+            }
+
+            const previousAsset = assetsCache.get(asset.insCode) || {};
+
+            assetsCache.set(asset.insCode, {
+                ...previousAsset,
+                ...asset
+            });
+        }
+
+        currentHEven = maxHEven;
+        currentRefID = maxRefID;
+
+        return Array.from(assetsCache.values());
+
+    })();
+
+    try {
+        return await pendingRequest;
+    } finally {
+        pendingRequest = null;
+    }
+};
+
 /***/ })
 /******/ 	]);
 /************************************************************************/
@@ -14498,6 +14597,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _common_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(1);
 /* harmony import */ var _findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(10);
 /* harmony import */ var _ignoreRule_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(11);
+/* harmony import */ var _tsetmcService_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(12);
+
 
 
 
@@ -27087,21 +27188,25 @@ async function getAssetsFromTadbirService() {
 }
 
 async function getAssetsFromTSETMCService() {
-    const assets = await getListOfTradedAssetsFromTSETMC();
+    const assets = await (0,_tsetmcService_js__WEBPACK_IMPORTED_MODULE_6__.getListOfTradedAssetsFromTSETMC)();
 
-    return (assets || []).map(asset => ({
-        symbol: asset.lva,
-        name: asset.lvc,
-        quantityOfTrades: asset.ztt,
-        vol: asset.qtc,
-        beforeTodayPrice: asset.py,
-        last: asset.pdv,
-        close: asset.pcl,
-        bestBuyQ: asset.blDs[0].qmd,
-        bestBuy: asset.blDs[0].pmd,
-        bestSell: asset.blDs[0].pmo,
-        bestSellQ: asset.blDs[0].qmo,
-    }));
+    return (assets || []).map(asset => {
+        const bestLimit = asset.blDs?.[0] || {};
+
+        return {
+            symbol: asset.lva,
+            name: asset.lvc,
+            quantityOfTrades: asset.ztt,
+            vol: asset.qtc,
+            beforeTodayPrice: asset.py,
+            last: asset.pdv,
+            close: asset.pcl,
+            bestBuyQ: bestLimit.qmd,
+            bestBuy: bestLimit.pmd,
+            bestSell: bestLimit.pmo,
+            bestSellQ: bestLimit.qmo,
+        };
+    });
 }
 
 
@@ -27123,19 +27228,7 @@ const getListOfTradedAssetsFromTadbir = async () => {
 }
 
 
-const getListOfTradedAssetsFromTSETMC = async () => {
-    const data = await fetch('https://cdn.tsetmc.com/api/ClosingPrice/GetMarketWatch?market=0&industrialGroup=&paperTypes%5B0%5D=1&paperTypes%5B1%5D=2&paperTypes%5B2%5D=3&paperTypes%5B3%5D=4&paperTypes%5B4%5D=5&paperTypes%5B5%5D=6&paperTypes%5B6%5D=7&paperTypes%5B7%5D=8&paperTypes%5B8%5D=9&showTraded=false&withBestLimits=true&hEven=0&RefID=0').then(response => {
-        if (!response.ok) {
-            throw new Error('خطا در دریافت اطلاعات');
-            // removed by dead control flow
 
-        }
-        return response.json(); 
-    });
-
-    return data.marketwatch
-
-}
 
 
 
@@ -27399,8 +27492,8 @@ const interval = async () => {
 
     try {
 
-        const list = createList();
-        // const list = await createList2();
+        // const list = createList();
+        const list = await createList2();
 
          
         sendToBackGround(list);

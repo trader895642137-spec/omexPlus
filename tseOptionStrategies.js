@@ -7,6 +7,7 @@ import './desktopNotificationCheck.js'
 import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalculator,getNearSettlementPrice,totalCostCalculator as totalCostCalculatorCommon, hasGreaterRatio, calculateOptionMargin, settlementProfitCalculator, settlementGainCalculator, showNotification, someOfNokoolGainCalculator, isHourMinGreaterThan, profitPercentCalculator, ETF_LIST, isBuyQueue } from './common.js';
 import { findBreakevenList } from './findBreakevens.js';
 import { generateObjConfigByText, isStrategyIgnored } from './ignoreRule.js';
+import { getListOfTradedAssetsFromTSETMC } from './tsetmcService.js';
 
 
 
@@ -12589,19 +12590,23 @@ async function getAssetsFromTadbirService() {
 async function getAssetsFromTSETMCService() {
     const assets = await getListOfTradedAssetsFromTSETMC();
 
-    return (assets || []).map(asset => ({
-        symbol: asset.lva,
-        name: asset.lvc,
-        quantityOfTrades: asset.ztt,
-        vol: asset.qtc,
-        beforeTodayPrice: asset.py,
-        last: asset.pdv,
-        close: asset.pcl,
-        bestBuyQ: asset.blDs[0].qmd,
-        bestBuy: asset.blDs[0].pmd,
-        bestSell: asset.blDs[0].pmo,
-        bestSellQ: asset.blDs[0].qmo,
-    }));
+    return (assets || []).map(asset => {
+        const bestLimit = asset.blDs?.[0] || {};
+
+        return {
+            symbol: asset.lva,
+            name: asset.lvc,
+            quantityOfTrades: asset.ztt,
+            vol: asset.qtc,
+            beforeTodayPrice: asset.py,
+            last: asset.pdv,
+            close: asset.pcl,
+            bestBuyQ: bestLimit.qmd,
+            bestBuy: bestLimit.pmd,
+            bestSell: bestLimit.pmo,
+            bestSellQ: bestLimit.qmo,
+        };
+    });
 }
 
 
@@ -12622,18 +12627,7 @@ const getListOfTradedAssetsFromTadbir = async () => {
 }
 
 
-const getListOfTradedAssetsFromTSETMC = async () => {
-    const data = await fetch('https://cdn.tsetmc.com/api/ClosingPrice/GetMarketWatch?market=0&industrialGroup=&paperTypes%5B0%5D=1&paperTypes%5B1%5D=2&paperTypes%5B2%5D=3&paperTypes%5B3%5D=4&paperTypes%5B4%5D=5&paperTypes%5B5%5D=6&paperTypes%5B6%5D=7&paperTypes%5B7%5D=8&paperTypes%5B8%5D=9&showTraded=false&withBestLimits=true&hEven=0&RefID=0').then(response => {
-        if (!response.ok) {
-            throw new Error('خطا در دریافت اطلاعات');
-            alert('خطا در دریافت اطلاعات')
-        }
-        return response.json(); 
-    });
 
-    return data.marketwatch
-
-}
 
 
 
@@ -12897,8 +12891,8 @@ const interval = async () => {
 
     try {
 
-        const list = createList();
-        // const list = await createList2();
+        // const list = createList();
+        const list = await createList2();
 
          
         sendToBackGround(list);
