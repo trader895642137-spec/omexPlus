@@ -26701,10 +26701,22 @@ const createListFilterContetnByList=(list)=>{
 
         filterStrategiesByConfig({
             strategies: BECSStrategies,
-            max_time_to_settlement : 1 * 27 * 3600000,
-            minProfitToFilter : 0.005,
-            nokoolOrNoRequestFactor:0.30,
-            minProfitPercentOfSettlement:0
+            max_time_to_settlement: 1 * 27 * 3600000,
+            minProfitToFilter: 0.005,
+            nokoolOrNoRequestFactor: 0.30,
+            // minProfitPercentOfSettlement:0,
+            isProfitEnoughFn: (strategy) => {
+                const { totalCost, profitPercent, strategyPositions, currentStockPrice } = strategy;
+
+                return (
+                    isProfitEnough({ strategy, profitPercent }) ||
+                    (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.settlementGainCalculator)({
+                        strategyPositions,
+                        stockPrice: currentStockPrice
+                    }) + totalCost > 0
+                );
+            }
+
         }),
 
 
