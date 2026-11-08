@@ -10,6 +10,18 @@ export const getPortfolioOptionList = async (tabId) => {
   return result[0]?.result;
 };
 
+export const getPortfolioStockList = async (tabId) => {
+  const result = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: async () => {
+      return await window.omexLib?.OMEXApi?.getStockPortfolioList() || null;
+    },
+    world: "MAIN"
+  });
+
+  return result[0]?.result;
+};
+
 
 
 export const sendMessageToFilter = async (msg) => {
@@ -126,14 +138,22 @@ export async function tellPortfolioOptionsToFilter() {
     throw new Error("تب OMEX پیدا نشد");
   }
 
-  const portfolioOptionList = await getPortfolioOptionList(tab.id);
+  const [portfolioOptionList, portfolioStockList] = await Promise.all([
+    getPortfolioOptionList(tab.id),
+    getPortfolioStockList(tab.id)
+  ]);
 
-  if (!portfolioOptionList) return;
+  const portfolioList = [
+    ...(portfolioOptionList || []),
+    ...(portfolioStockList || [])
+  ];
+
+  if (!portfolioList.length) return;
 
   await sendMessageToFilter({
-    type: "portfolioOptionList",
+    type: "portfolioList",
     payload: {
-      portfolioOptionList,
+      portfolioList,
       tabId: tab.id,
       url: tab.url,
       title: tab.title

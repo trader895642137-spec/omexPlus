@@ -27685,10 +27685,10 @@ const listenToBackgroundMessages = () => {
     chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         try {
 
-            if (message.type === "portfolioOptionList") {
+            if (message.type === "portfolioList") {
                 console.log(message.payload);
-                const {portfolioOptionList} = message.payload;
-                setPrivateIgnoreListText(portfolioOptionList.map(instrumentInfo=>`ALL@${instrumentInfo.instrumentName}`).join(' '));
+                const {portfolioList} = message.payload;
+                setPrivateIgnoreListText(portfolioList.map(instrumentInfo=>`ALL@${instrumentInfo.instrumentName}`).join(' '));
 
             }
 

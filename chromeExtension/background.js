@@ -210,7 +210,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         await startTellingLoopPortfolioToFilter();
       }
 
-      if (msg.type === "portfolioOptionList") {
+      if (msg.type === "portfolioList") {
 
         await sendMessageToFilter(msg);
       }
