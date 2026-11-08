@@ -30,8 +30,7 @@ const getPortfolioOptionList = async (tabId) => {
 const sendMessageToFilter = async (msg) => {
     const tabs = await chrome.tabs.query({
         url: [
-            "https://old.tsetmc.com/*",
-            "https://cdn.tsetmc.com/*"
+            "*://*.tsetmc.com/*"
         ]
     });
 
