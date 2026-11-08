@@ -447,7 +447,10 @@ const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolOrNoRequ
 
 
 
-  const remainedStockQuantity = sumSettlementBuyStockCostInfo.quantity - sumSettlementSellStockGainInfo.quantity;
+  const remainedStockQuantity =
+    totalStockQuantity +
+    sumSettlementBuyStockCostInfo.quantity -
+    sumSettlementSellStockGainInfo.quantity;
 
   let sumOfGain =  sumSettlementSellStockGainInfo.sumOfGains - sumSettlementBuyStockCostInfo.sumOfCost;
 
@@ -20543,11 +20546,6 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
             if (sellingOptionPrice === 0) return option
 
 
-            if(option.optionDetails?.stockSymbol!=='ذوب' && !option.optionDetails?.stockSymbolDetails?.bestSell) return option
-
-            if(option.optionDetails?.stockSymbol!=='ذوب' && (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
-
-
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
             if (!option.symbol.startsWith('ض')  || stockPriceStrikeRatio < minStockPriceDistanceInPercent || stockPriceStrikeRatio > maxStockPriceDistanceInPercent)
@@ -20575,22 +20573,53 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
 
             if (buyingPutOptionPrice === 0) return option
 
-            
 
-            const totalCostWithSign = totalCostCalculator({
-                buyStocks: [option.optionDetails?.stockSymbolDetails],
-                buyOptions: [putOptionWithSameStrike],
-                sellOptions: [option],
-                priceType
+            const strategyPositions = [
+                {
+                    ...option.optionDetails?.stockSymbolDetails,
+                    isBuy: true,
+                    getQuantity: () => baseQuantity,
+                    getRequiredMargin() { }
+                },
+                {
+                    ...option,
+                    isSell: true,
+                    getQuantity: () => baseQuantity,
+                    getRequiredMargin() { }
+                },
+                {
+                    ...putOptionWithSameStrike,
+                    isBuy: true,
+                    getQuantity: () => baseQuantity,
+                    getRequiredMargin() { }
+                },
+
+            ]
+
+
+
+            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
+                strategyPositions,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
             });
-            const totalOffsetGainWithSign = totalSettlementGain([{
-                option,
-                positionSide: "SELL"
-            }, ]);
 
-            const profit = totalCostWithSign + totalOffsetGainWithSign;
+            
+            const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
 
-            const profitPercent = profit / Math.abs(totalCostWithSign);
+            const profit = totalCost + settlementGain;
+            const profitPercent = profit / Math.abs(totalCost);
+
+
+
+            const settlementTimeDiff = option.settlementTimeDiff;
+
+                        
+
+            
             const strategyObj = {
                 option: {
                     ...option
@@ -20598,6 +20627,10 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
                 minProfitToFilter,
                 positions:[option.optionDetails?.stockSymbolDetails, option,putOptionWithSameStrike],
                 strategyTypeTitle: "CONVERSION",
+                currentStockPrice : option.optionDetails?.stockSymbolDetails.last,
+                strategyPositions,
+                totalCost,
+                settlementTimeDiff,
                 expectedProfitNotif,
                 expectedProfitPerMonth,
                 isWholeProfitable : profit>=0,
@@ -23145,8 +23178,11 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
                 },
                 positions:[option.optionDetails?.stockSymbolDetails, option],
                 strategyTypeTitle: "ARBITRAGE_PUT",
+                totalCost,
+                currentStockPrice: option.optionDetails?.stockSymbolDetails?.last,
                 expectedProfitNotif,
                 expectedProfitPerMonth,
+                strategyPositions,
                 minProfitToFilter,
                 name: createStrategyName([option.optionDetails?.stockSymbolDetails, option]),
                 isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(profitPercentOfSettlement,settlementTimeDiff,option),
@@ -26873,7 +26909,7 @@ const createListFilterContetnByList=(list)=>{
 
 
 
-        
+
         filterStrategiesByConfig({
             strategies: COVERED_CONVERSION_Strategies,
             expectedProfitPerMonth: 0.04,

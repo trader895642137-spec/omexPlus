@@ -404,7 +404,10 @@ export const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolO
 
 
 
-  const remainedStockQuantity = sumSettlementBuyStockCostInfo.quantity - sumSettlementSellStockGainInfo.quantity;
+  const remainedStockQuantity =
+    totalStockQuantity +
+    sumSettlementBuyStockCostInfo.quantity -
+    sumSettlementSellStockGainInfo.quantity;
 
   let sumOfGain =  sumSettlementSellStockGainInfo.sumOfGains - sumSettlementBuyStockCostInfo.sumOfCost;
 

@@ -447,7 +447,10 @@ const settlementGainCalculator = ({ strategyPositions, stockPrice,nokoolOrNoRequ
 
 
 
-  const remainedStockQuantity = sumSettlementBuyStockCostInfo.quantity - sumSettlementSellStockGainInfo.quantity;
+  const remainedStockQuantity =
+    totalStockQuantity +
+    sumSettlementBuyStockCostInfo.quantity -
+    sumSettlementSellStockGainInfo.quantity;
 
   let sumOfGain =  sumSettlementSellStockGainInfo.sumOfGains - sumSettlementBuyStockCostInfo.sumOfCost;
 
@@ -20543,11 +20546,6 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
             if (sellingOptionPrice === 0) return option
 
 
-            if(option.optionDetails?.stockSymbol!=='ذوب' && !option.optionDetails?.stockSymbolDetails?.bestSell) return option
-
-            if(option.optionDetails?.stockSymbol!=='ذوب' && (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.isBuyQueue)(option.optionDetails?.stockSymbolDetails)) return option
-
-
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
             if (!option.symbol.startsWith('ض')  || stockPriceStrikeRatio < minStockPriceDistanceInPercent || stockPriceStrikeRatio > maxStockPriceDistanceInPercent)
@@ -20575,22 +20573,53 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
 
             if (buyingPutOptionPrice === 0) return option
 
-            
 
-            const totalCostWithSign = totalCostCalculator({
-                buyStocks: [option.optionDetails?.stockSymbolDetails],
-                buyOptions: [putOptionWithSameStrike],
-                sellOptions: [option],
-                priceType
+            const strategyPositions = [
+                {
+                    ...option.optionDetails?.stockSymbolDetails,
+                    isBuy: true,
+                    getQuantity: () => baseQuantity,
+                    getRequiredMargin() { }
+                },
+                {
+                    ...option,
+                    isSell: true,
+                    getQuantity: () => baseQuantity,
+                    getRequiredMargin() { }
+                },
+                {
+                    ...putOptionWithSameStrike,
+                    isBuy: true,
+                    getQuantity: () => baseQuantity,
+                    getRequiredMargin() { }
+                },
+
+            ]
+
+
+
+            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
+                strategyPositions,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
             });
-            const totalOffsetGainWithSign = totalSettlementGain([{
-                option,
-                positionSide: "SELL"
-            }, ]);
 
-            const profit = totalCostWithSign + totalOffsetGainWithSign;
+            
+            const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
 
-            const profitPercent = profit / Math.abs(totalCostWithSign);
+            const profit = totalCost + settlementGain;
+            const profitPercent = profit / Math.abs(totalCost);
+
+
+
+            const settlementTimeDiff = option.settlementTimeDiff;
+
+                        
+
+            
             const strategyObj = {
                 option: {
                     ...option
@@ -20598,6 +20627,10 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
                 minProfitToFilter,
                 positions:[option.optionDetails?.stockSymbolDetails, option,putOptionWithSameStrike],
                 strategyTypeTitle: "CONVERSION",
+                currentStockPrice : option.optionDetails?.stockSymbolDetails.last,
+                strategyPositions,
+                totalCost,
+                settlementTimeDiff,
                 expectedProfitNotif,
                 expectedProfitPerMonth,
                 isWholeProfitable : profit>=0,
@@ -23145,8 +23178,11 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
                 },
                 positions:[option.optionDetails?.stockSymbolDetails, option],
                 strategyTypeTitle: "ARBITRAGE_PUT",
+                totalCost,
+                currentStockPrice: option.optionDetails?.stockSymbolDetails?.last,
                 expectedProfitNotif,
                 expectedProfitPerMonth,
+                strategyPositions,
                 minProfitToFilter,
                 name: createStrategyName([option.optionDetails?.stockSymbolDetails, option]),
                 isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(profitPercentOfSettlement,settlementTimeDiff,option),
@@ -25337,7 +25373,6 @@ const ATTRACTIVE_PROFIT_CONFIG = {
             BEPS_LONG_CALL: null,
             BUPS_LONG_PUT: null,
             LongGUTS_STRANGLE: strategy => strategy.percentPerMonth > 0.07,
-            ARBITRAGE_PUT: strategy => strategy.percentPerMonth > 0.07,
             SHORT_STRANGLE: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.20,
             SHORT_GUTS: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.20,
             CALL_BUTTERFLY: strategy => strategy.profitPercent > 0.1,
@@ -25346,6 +25381,7 @@ const ATTRACTIVE_PROFIT_CONFIG = {
             PUT_BUTT_CONDOR: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.10,
             IRON_BUTT_CONDOR_BUCS: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.10,
             IRON_BUTT_CONDOR_BUPS: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.10,
+            ARBITRAGE_PUT: strategy => (strategy.settlementTimeDiff <= TWO_DAYS_MS && strategy.percentPerMonth > 0.05) || strategy.percentPerMonth > 0.07,
             CONVERSION: strategy => (strategy.settlementTimeDiff <= TWO_DAYS_MS && strategy.percentPerMonth > 0.05) || strategy.percentPerMonth > 0.07,
             COVERED: strategy => (strategy.settlementTimeDiff <= TWO_DAYS_MS && strategy.percentPerMonth > 0.05) || strategy.percentPerMonth > 0.07,
             COVERED_COLLAR: strategy => (strategy.settlementTimeDiff <= TWO_DAYS_MS && strategy.percentPerMonth > 0.05) || strategy.percentPerMonth > 0.07
@@ -25708,6 +25744,19 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitNotif: true,
             
         });
+
+
+        const COVERED_CONVERSION_Strategies = calcCOVERED_CONVERSION_Strategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
+            expectedProfitNotif: true
+        });
+
+        
+
+
+
         const SellCallNokoolGainStrategies = calcSellCallNokoolGainStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             filteredList,
@@ -25813,11 +25862,7 @@ const createListFilterContetnByList=(list)=>{
         }),
 
 
-        filterStrategiesByConfig({
-            strategies: ARBITRAGE_PUTStrategies,
-            minProfitToFilter: 0.001,
-            expectedProfitPerMonth: 0.04,
-        }),
+        
 
         filterStrategiesByConfig({
             strategies: SellCallNokoolGainStrategies,
@@ -26703,7 +26748,7 @@ const createListFilterContetnByList=(list)=>{
             strategies: BECSStrategies,
             max_time_to_settlement: 1 * 27 * 3600000,
             minProfitToFilter: 0.005,
-            nokoolOrNoRequestFactor: 0.30,
+            // nokoolOrNoRequestFactor: 0.30,
             // minProfitPercentOfSettlement:0,
             isProfitEnoughFn: (strategy) => {
                 const { totalCost, profitPercent, strategyPositions, currentStockPrice } = strategy;
@@ -26852,19 +26897,71 @@ const createListFilterContetnByList=(list)=>{
             minProfitToFilter: 0.005,
             max_time_to_settlement: 40 * 24 * 3600000,
             expectedProfitNotif: true
-        })
-        , calcCOVERED_CONVERSION_Strategies(list, {
+        }),
+
+
+
+
+
+
+
+
+
+
+
+
+        filterStrategiesByConfig({
+            strategies: COVERED_CONVERSION_Strategies,
             expectedProfitPerMonth: 0.04,
-            minProfitToFilter: 0.005,
-            filteredList,
-            optionsGroupedByStock,
-            max_time_to_settlement: 40 * 24 * 3600000,
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            expectedProfitNotif: true
-        }), 
+            minProfitToFilter: 0.001,
+            min_time_to_settlement : 2 * 27 * 3600000,
+        }),
+        filterStrategiesByConfig({
+            strategies: COVERED_CONVERSION_Strategies,
+            expectedProfitPerMonth: 0.04,
+            minProfitToFilter: 0.001,
+            max_time_to_settlement : 2 * 27 * 3600000,
+            isProfitEnoughFn: (strategy) => {
+                const { totalCost, profitPercent, strategyPositions, currentStockPrice } = strategy;
+
+                return (
+                    isProfitEnough({ strategy, profitPercent }) ||
+                    (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.settlementGainCalculator)({
+                        strategyPositions,
+                        stockPrice: currentStockPrice
+                    }) + totalCost > 0
+                );
+            }
+        }),
 
 
 
+
+
+
+        filterStrategiesByConfig({
+            strategies: ARBITRAGE_PUTStrategies,
+            expectedProfitPerMonth: 0.04,
+            minProfitToFilter: 0.001,
+            min_time_to_settlement : 2 * 27 * 3600000,
+        }),
+        filterStrategiesByConfig({
+            strategies: ARBITRAGE_PUTStrategies,
+            expectedProfitPerMonth: 0.04,
+            minProfitToFilter: 0.001,
+            max_time_to_settlement : 2 * 27 * 3600000,
+            isProfitEnoughFn: (strategy) => {
+                const { totalCost, profitPercent, strategyPositions, currentStockPrice } = strategy;
+
+                return (
+                    isProfitEnough({ strategy, profitPercent }) ||
+                    (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.settlementGainCalculator)({
+                        strategyPositions,
+                        stockPrice: currentStockPrice
+                    }) + totalCost > 0
+                );
+            }
+        }),
 
 
 
