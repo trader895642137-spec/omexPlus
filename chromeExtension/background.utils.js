@@ -13,24 +13,27 @@ export const getPortfolioOptionList = async (tabId) => {
 
 
 export const sendMessageToFilter = async (msg) => {
-  const tabs = await chrome.tabs.query({
-    url: "https://old.tsetmc.com/*"
-  });
+    const tabs = await chrome.tabs.query({
+        url: [
+            "https://old.tsetmc.com/*",
+            "https://cdn.tsetmc.com/*"
+        ]
+    });
 
-  await Promise.all(
-    tabs
-      .filter(tab => tab.id)
-      .map(tab =>
-        chrome.tabs.sendMessage(tab.id, msg).catch(error => {
-          console.error(`خطا در ارسال به تب ${tab.id}:`, error);
+    await Promise.all(
+        tabs
+            .filter(tab => tab.id)
+            .map(tab =>
+                chrome.tabs.sendMessage(tab.id, msg).catch(error => {
+                    console.error(`خطا در ارسال به تب ${tab.id}:`, error);
 
-          simpleNotifyError(
-            error,
-            `ارسال پیام به فیلتر (${tab.id})`
-          );
-        })
-      )
-  );
+                    simpleNotifyError(
+                        error,
+                        `ارسال پیام به فیلتر (${tab.id})`
+                    );
+                })
+            )
+    );
 };
 
 
