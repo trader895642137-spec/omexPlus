@@ -1203,11 +1203,9 @@ const createPositionObjectArray  = (strategyItemList) => {
         }
 
 
-        const isOrderModalInBuyingMode = () =>
-            !!ordersModal.querySelector('.-is-frontView.-is-buy');
+        const isOrderModalInBuyingMode = () =>ordersModal &&  !!ordersModal.querySelector('.-is-frontView.-is-buy');
 
-        const isOrderModalInSellingMode = () =>
-            !!ordersModal.querySelector('.-is-frontView.-is-sell');
+        const isOrderModalInSellingMode = () =>ordersModal &&   !!ordersModal.querySelector('.-is-frontView.-is-sell');
 
 
       
