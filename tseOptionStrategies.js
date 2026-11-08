@@ -10708,7 +10708,9 @@ const calcPercentPerMoth = (strategy, profitPercent = strategy.profitPercent) =>
 };
 
 
-const ATTRACTIVE_PROFIT_CONFIG  = {
+const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+
+const ATTRACTIVE_PROFIT_CONFIG = {
     special: {
         default: strategy => strategy.profitPercent > 1,
 
@@ -10734,7 +10736,7 @@ const ATTRACTIVE_PROFIT_CONFIG  = {
             BECS_LONG_CALL: null,
             BEPS_LONG_CALL: null,
             BUPS_LONG_PUT: null,
-            LongGUTS_STRANGLE: null,
+            LongGUTS_STRANGLE: strategy => strategy.percentPerMonth > 0.07,
             ARBITRAGE_PUT: strategy => strategy.percentPerMonth > 0.07,
             SHORT_STRANGLE: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.20,
             SHORT_GUTS: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.20,
@@ -10744,7 +10746,9 @@ const ATTRACTIVE_PROFIT_CONFIG  = {
             PUT_BUTT_CONDOR: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.10,
             IRON_BUTT_CONDOR_BUCS: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.10,
             IRON_BUTT_CONDOR_BUPS: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.10,
-            CONVERSION: strategy => strategy.percentPerMonth > 0.07,
+            CONVERSION: strategy => (strategy.settlementTimeDiff <= TWO_DAYS_MS && strategy.percentPerMonth > 0.05) || strategy.percentPerMonth > 0.07,
+            COVERED: strategy => (strategy.settlementTimeDiff <= TWO_DAYS_MS && strategy.percentPerMonth > 0.05) || strategy.percentPerMonth > 0.07,
+            COVERED_COLLAR: strategy => (strategy.settlementTimeDiff <= TWO_DAYS_MS && strategy.percentPerMonth > 0.05) || strategy.percentPerMonth > 0.07
         }
     }
 };
