@@ -10737,7 +10737,6 @@ const ATTRACTIVE_PROFIT_CONFIG = {
             BEPS_LONG_CALL: null,
             BUPS_LONG_PUT: null,
             LongGUTS_STRANGLE: strategy => strategy.percentPerMonth > 0.07,
-            ARBITRAGE_PUT: strategy => strategy.percentPerMonth > 0.07,
             SHORT_STRANGLE: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.20,
             SHORT_GUTS: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.20,
             CALL_BUTTERFLY: strategy => strategy.profitPercent > 0.1,
@@ -10746,6 +10745,7 @@ const ATTRACTIVE_PROFIT_CONFIG = {
             PUT_BUTT_CONDOR: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.10,
             IRON_BUTT_CONDOR_BUCS: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.10,
             IRON_BUTT_CONDOR_BUPS: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.10,
+            ARBITRAGE_PUT: strategy => (strategy.settlementTimeDiff <= TWO_DAYS_MS && strategy.percentPerMonth > 0.05) || strategy.percentPerMonth > 0.07,
             CONVERSION: strategy => (strategy.settlementTimeDiff <= TWO_DAYS_MS && strategy.percentPerMonth > 0.05) || strategy.percentPerMonth > 0.07,
             COVERED: strategy => (strategy.settlementTimeDiff <= TWO_DAYS_MS && strategy.percentPerMonth > 0.05) || strategy.percentPerMonth > 0.07,
             COVERED_COLLAR: strategy => (strategy.settlementTimeDiff <= TWO_DAYS_MS && strategy.percentPerMonth > 0.05) || strategy.percentPerMonth > 0.07
@@ -11108,6 +11108,19 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitNotif: true,
             
         });
+
+
+        const COVERED_CONVERSION_Strategies = calcCOVERED_CONVERSION_Strategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
+            expectedProfitNotif: true
+        });
+
+        
+
+
+
         const SellCallNokoolGainStrategies = calcSellCallNokoolGainStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             filteredList,
@@ -11213,11 +11226,7 @@ const createListFilterContetnByList=(list)=>{
         }),
 
 
-        filterStrategiesByConfig({
-            strategies: ARBITRAGE_PUTStrategies,
-            minProfitToFilter: 0.001,
-            expectedProfitPerMonth: 0.04,
-        }),
+        
 
         filterStrategiesByConfig({
             strategies: SellCallNokoolGainStrategies,
@@ -12103,7 +12112,7 @@ const createListFilterContetnByList=(list)=>{
             strategies: BECSStrategies,
             max_time_to_settlement: 1 * 27 * 3600000,
             minProfitToFilter: 0.005,
-            nokoolOrNoRequestFactor: 0.30,
+            // nokoolOrNoRequestFactor: 0.30,
             // minProfitPercentOfSettlement:0,
             isProfitEnoughFn: (strategy) => {
                 const { totalCost, profitPercent, strategyPositions, currentStockPrice } = strategy;
@@ -12252,19 +12261,71 @@ const createListFilterContetnByList=(list)=>{
             minProfitToFilter: 0.005,
             max_time_to_settlement: 40 * 24 * 3600000,
             expectedProfitNotif: true
-        })
-        , calcCOVERED_CONVERSION_Strategies(list, {
+        }),
+
+
+
+
+
+
+
+
+
+
+
+        
+        filterStrategiesByConfig({
+            strategies: COVERED_CONVERSION_Strategies,
             expectedProfitPerMonth: 0.04,
-            minProfitToFilter: 0.005,
-            filteredList,
-            optionsGroupedByStock,
-            max_time_to_settlement: 40 * 24 * 3600000,
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            expectedProfitNotif: true
-        }), 
+            minProfitToFilter: 0.001,
+            min_time_to_settlement : 2 * 27 * 3600000,
+        }),
+        filterStrategiesByConfig({
+            strategies: COVERED_CONVERSION_Strategies,
+            expectedProfitPerMonth: 0.04,
+            minProfitToFilter: 0.001,
+            max_time_to_settlement : 2 * 27 * 3600000,
+            isProfitEnoughFn: (strategy) => {
+                const { totalCost, profitPercent, strategyPositions, currentStockPrice } = strategy;
+
+                return (
+                    isProfitEnough({ strategy, profitPercent }) ||
+                    settlementGainCalculator({
+                        strategyPositions,
+                        stockPrice: currentStockPrice
+                    }) + totalCost > 0
+                );
+            }
+        }),
 
 
 
+
+
+
+        filterStrategiesByConfig({
+            strategies: ARBITRAGE_PUTStrategies,
+            expectedProfitPerMonth: 0.04,
+            minProfitToFilter: 0.001,
+            min_time_to_settlement : 2 * 27 * 3600000,
+        }),
+        filterStrategiesByConfig({
+            strategies: ARBITRAGE_PUTStrategies,
+            expectedProfitPerMonth: 0.04,
+            minProfitToFilter: 0.001,
+            max_time_to_settlement : 2 * 27 * 3600000,
+            isProfitEnoughFn: (strategy) => {
+                const { totalCost, profitPercent, strategyPositions, currentStockPrice } = strategy;
+
+                return (
+                    isProfitEnough({ strategy, profitPercent }) ||
+                    settlementGainCalculator({
+                        strategyPositions,
+                        stockPrice: currentStockPrice
+                    }) + totalCost > 0
+                );
+            }
+        }),
 
 
 
