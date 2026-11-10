@@ -26836,7 +26836,7 @@ const createListFilterContetnByList=(list)=>{
 
         thresholdPercent: 5,
         maxAlternatives: 3,
-        refreshInterval: 2000
+        refreshInterval: 10000
     });
 
 
