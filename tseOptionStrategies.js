@@ -10,6 +10,9 @@ import { generateObjConfigByText, isStrategyIgnored } from './ignoreRule.js';
 import { getListOfTradedAssetsFromTSETMC } from './tsetmcService.js';
 
 
+import {
+    initSyntheticMarketMonitor
+} from "./synthetic-market-monitor.js";
 
 
 
@@ -5829,9 +5832,6 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
 
             if (sellingOptionPrice === 0) return option
 
-            if(option.optionDetails?.stockSymbol!=='ذوب' && !option.optionDetails?.stockSymbolDetails?.bestSell) return option
-
-            if(option.optionDetails?.stockSymbol!=='ذوب' && isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
 
 
             const breakeven = option.optionDetails.stockSymbolDetails.last - sellingOptionPrice;
@@ -6106,9 +6106,6 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
             if (sellingOptionPrice === 0) return option
 
             
-            if(option.optionDetails?.stockSymbol!=='ذوب' && !option.optionDetails?.stockSymbolDetails?.bestSell) return option
-
-            if(option.optionDetails?.stockSymbol!=='ذوب' && isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
 
             
 
@@ -8522,11 +8519,6 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
-            if(option.optionDetails?.stockSymbol!=='ذوب' && !option.optionDetails?.stockSymbolDetails?.bestSell) return option
-
-            if(option.optionDetails?.stockSymbol!=='ذوب' && isBuyQueue(option.optionDetails?.stockSymbolDetails)) return option
-
-
 
             const strategyPositions = [
                 {
@@ -10532,7 +10524,7 @@ const filterStrategiesByConfig = ({
     isProfitEnoughFn,
     expectedProfitNotif,
     minProfitToFilter ,expectedProfitPerMonth,
-
+customFilterFn,
     nokoolOrNoRequestFactor=0,
     minProfitPercentOfSettlement,
 
@@ -10565,6 +10557,16 @@ const filterStrategiesByConfig = ({
 
 
     let allStrategies = strategies.allStrategies.filter(strategy => {
+
+
+       
+       
+         // Custom filter
+        if (customFilterFn && !customFilterFn(strategy)){
+            
+            
+            return false;
+        } 
 
 
         const settlementTimeDiff = strategy.option.settlementTimeDiff;
@@ -10825,6 +10827,8 @@ const enrichStrategiesWithProfitTypes = strategies => {
     });
 };
 
+
+let syntheticMonitor;
 
 const createListFilterContetnByList=(list)=>{
 
@@ -11241,7 +11245,18 @@ const createListFilterContetnByList=(list)=>{
 
 
         
-        
+
+    syntheticMonitor = syntheticMonitor || initSyntheticMarketMonitor({
+        getPositions: () => [
+            ...SyntheticBuyStrategies.allStrategies,
+            ...SyntheticSellStrategies.allStrategies
+        ],
+
+        thresholdPercent: 5,
+        maxAlternatives: 3,
+        refreshInterval: 2000
+    });
+
 
 
 
@@ -12265,12 +12280,14 @@ const createListFilterContetnByList=(list)=>{
             strategies: COVEREDStrategies,
             min_time_to_settlement: 15 * 24 * 3600000,
             max_time_to_settlement: 40 * 24 * 3600000,
+            customFilterFn: strategy => !isBuyQueue(strategy.option.optionDetails?.stockSymbolDetails),
         }),
 
         filterStrategiesByConfig({
             strategies: COVEREDStrategies,
             min_time_to_settlement: 6 * 24 * 3600000,
             max_time_to_settlement: 15 * 24 * 3600000,
+            customFilterFn: strategy => !isBuyQueue(strategy.option.optionDetails?.stockSymbolDetails),
         }),
        
         filterStrategiesByConfig({
@@ -12278,6 +12295,7 @@ const createListFilterContetnByList=(list)=>{
             min_time_to_settlement: 1 * 3 * 3600000,
             max_time_to_settlement: 6 * 24 * 3600000,
             minProfitToFilter: 0.01,
+            customFilterFn: strategy => !isBuyQueue(strategy.option.optionDetails?.stockSymbolDetails),
         }),
 
         // TODO: settlementGainChoosePriceType: "MIN",
@@ -12285,6 +12303,7 @@ const createListFilterContetnByList=(list)=>{
             strategies: COVEREDStrategies,
             max_time_to_settlement: 1 * 3 * 3600000,
             minProfitToFilter: 0.003,
+            customFilterFn: strategy => !isBuyQueue(strategy.option.optionDetails?.stockSymbolDetails),
         }),
        
         
@@ -12312,12 +12331,14 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitPerMonth: 0.04,
             minProfitToFilter: 0.001,
             min_time_to_settlement : 2 * 27 * 3600000,
+            customFilterFn: strategy => !isBuyQueue(strategy.option.optionDetails?.stockSymbolDetails),
         }),
         filterStrategiesByConfig({
             strategies: COVERED_CONVERSION_Strategies,
             expectedProfitPerMonth: 0.04,
             minProfitToFilter: 0.001,
             max_time_to_settlement : 2 * 27 * 3600000,
+            customFilterFn: strategy => !isBuyQueue(strategy.option.optionDetails?.stockSymbolDetails),
             isProfitEnoughFn: (strategy) => {
                 const { totalCost, profitPercent, strategyPositions, currentStockPrice } = strategy;
 
@@ -12340,13 +12361,15 @@ const createListFilterContetnByList=(list)=>{
             strategies: ARBITRAGE_PUTStrategies,
             expectedProfitPerMonth: 0.04,
             minProfitToFilter: 0.001,
-            min_time_to_settlement : 2 * 27 * 3600000,
+            min_time_to_settlement: 2 * 27 * 3600000,
+            customFilterFn: strategy => !isBuyQueue(strategy.option.optionDetails?.stockSymbolDetails)
         }),
         filterStrategiesByConfig({
             strategies: ARBITRAGE_PUTStrategies,
             expectedProfitPerMonth: 0.04,
             minProfitToFilter: 0.001,
             max_time_to_settlement : 2 * 27 * 3600000,
+            customFilterFn: strategy => !isBuyQueue(strategy.option.optionDetails?.stockSymbolDetails),
             isProfitEnoughFn: (strategy) => {
                 const { totalCost, profitPercent, strategyPositions, currentStockPrice } = strategy;
 
