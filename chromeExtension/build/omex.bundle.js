@@ -1207,12 +1207,12 @@ const calculateExerciseCost = ({
         const isCallBuyInMoney =
             item.isCall &&
             item.isBuy &&
-            item.strikePrice < currentStockPrice;
+            item.strikePrice <= currentStockPrice;
 
         const isPutSellInMoney =
             item.isPut &&
             !item.isBuy &&
-            item.strikePrice > currentStockPrice;
+            item.strikePrice >= currentStockPrice;
 
         if (isCallBuyInMoney || isPutSellInMoney) {
             const qty = item.getCurrentPositionQuantity();
@@ -4191,60 +4191,92 @@ const getStrategyInfoForExport = ()=>{
 }
 
 
-const openStrategyExerciseCostSummaryModal = async ()=>{
-    const  groupStrategyInfoList = await enrichGroupByStrategyInfo();
-    console.log(groupStrategyInfoList);
 
+const openStrategyExerciseCostSummaryModal = async () => {
+    const [optionPortfolioList, stockPriceList] = await Promise.all([
+        _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getOptionPortfolioList()
+    ]).then(async ([portfolio]) => {
+        const stocks = await _omexApi_js__WEBPACK_IMPORTED_MODULE_1__.OMEXApi.getStockPricesData(
+            [...new Set(portfolio.map(asset => asset.baseInstrumentId))]
+        );
+
+        return [portfolio, stocks];
+    });
+
+    // قیمت سهام بر اساس شناسه دارایی پایه
+    const stockPriceMap = Object.fromEntries(
+        stockPriceList.map(stock => [
+            stock.instrumentId,
+            stock
+        ])
+    );
+
+    // تبدیل اطلاعات پورتفو به ساختار مورد نیاز calculateExerciseCost
     const uniquePositions = [
         ...new Map(
-            groupStrategyInfoList
-                .map(groupStrategyInfo => groupStrategyInfo.strategy)
-                .filter(Boolean)
-                .flatMap(strategy =>
-                    strategy.strategyPositions.map(position => [
-                        position.optionID,
-                        {
-                            position,
-                            stockPrice: strategy.stockPrice,
-                            daysLeftToSettlement: strategy.daysLeftToSettlement
-                        }
-                    ])
-                )
+            optionPortfolioList.map(asset => {
+                const stock = stockPriceMap[asset.baseInstrumentId];
+
+                const position = {
+                    optionID: asset.instrumentId,
+                    strikePrice: asset.strikePrice,
+
+                    isCall: asset.optionSide === "Call",
+                    isPut: asset.optionSide === "Put",
+
+                    isBuy: asset.orderSide === "Buy",
+
+                    getCurrentPositionQuantity: () =>
+                        asset.count * asset.cSize
+                };
+
+                return [
+                    asset.instrumentId,
+                    {
+                        position,
+                        stockPrice: stock?.pClosing,
+                        daysLeftToSettlement: asset.remainCsDateDays
+                    }
+                ];
+            })
         ).values()
     ];
 
+    // گروه‌بندی بر اساس روزهای مانده تا تسویه
     const positionsBySettlement = Object.groupBy(
         uniquePositions,
         item => item.daysLeftToSettlement
     );
 
-    const exerciseCostBySettlement = Object.values(
+    const exerciseCostBySettlement = Object.entries(
         positionsBySettlement
-    ).map(sameSettlementPositions => {
+    ).map(([daysLeftToSettlement, positions]) => {
 
         const optionStockPriceMap = {};
 
-        for (const positionInfo of sameSettlementPositions) {
-            const optionID = positionInfo.position.optionID;
-
-            optionStockPriceMap[optionID] = {
-                stockPrice: positionInfo.stockPrice,
+        for (const item of positions) {
+            optionStockPriceMap[item.position.optionID] = {
+                stockPrice: item.stockPrice
             };
         }
 
         return {
-            daysLeftToSettlement: sameSettlementPositions[0].daysLeftToSettlement,
+            daysLeftToSettlement: Number(daysLeftToSettlement),
+
             exerciseCost: (0,_common_js__WEBPACK_IMPORTED_MODULE_0__.calculateExerciseCost)({
-                strategyPositions: sameSettlementPositions.map(item => item.position),
+                strategyPositions: positions.map(item => item.position),
                 optionStockPriceMap
             }),
-            positionCount: sameSettlementPositions.length
 
-        }
-    });
-    
+            positionCount: positions.length
+        };
+    }).sort(
+        (a, b) => a.daysLeftToSettlement - b.daysLeftToSettlement
+    );
+
     (0,_strategyExerciseCostSummary_js__WEBPACK_IMPORTED_MODULE_4__.showStrategyExerciseCostSummary)(exerciseCostBySettlement);
-}
+};
+
 
 const getAllGroupStrategyListForExport = async ()=>{
  try {

@@ -1207,12 +1207,12 @@ const calculateExerciseCost = ({
         const isCallBuyInMoney =
             item.isCall &&
             item.isBuy &&
-            item.strikePrice < currentStockPrice;
+            item.strikePrice <= currentStockPrice;
 
         const isPutSellInMoney =
             item.isPut &&
             !item.isBuy &&
-            item.strikePrice > currentStockPrice;
+            item.strikePrice >= currentStockPrice;
 
         if (isCallBuyInMoney || isPutSellInMoney) {
             const qty = item.getCurrentPositionQuantity();
