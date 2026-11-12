@@ -1,125 +1,133 @@
-export function findBreakevenList({positions,getPrice}) {
-  // تابع که مجموع P/L را در قیمت مشخص حساب می‌کند
-  function totalPL(price) {
-    let tot = 0;
-    for (const p of positions) {
-      const qty = (p.getQuantity ? p.getQuantity() : (p.quantity ?? 1));
-      const premiumTotal = (getPrice ? getPrice(p) : (p.premium ?? 0)) * qty;
-      let intrinsic = 0;
-      if (p.isCall) intrinsic = Math.max(0, price - p.strikePrice) * qty;
-      else if (p.isPut) intrinsic = Math.max(0, p.strikePrice - price) * qty;
+export function findBreakevenList({ positions, getPrice }) {
+  if (!Array.isArray(positions) || !positions.length) return [];
 
-      const pnl = p.isBuy ? (intrinsic - premiumTotal) : (premiumTotal - intrinsic);
-      tot += pnl;
+  const getPositionQuantity = p =>
+    p.getQuantity ? p.getQuantity() : (p.quantity ?? 1);
+
+  const getPositionPrice = p =>
+    getPrice ? getPrice(p) : (p.premium ?? 0);
+
+  function totalPL(price) {
+    let total = 0;
+
+    for (const p of positions) {
+      const qty = getPositionQuantity(p);
+      const entryPrice = getPositionPrice(p);
+
+      if (!Number.isFinite(qty) || !Number.isFinite(entryPrice)) {
+        continue;
+      }
+
+      // پوزیشن سهم
+      if (!p.isCall && !p.isPut) {
+        total += (p.isBuy ? 1 : -1) * (price - entryPrice) * qty;
+        continue;
+      }
+
+      // پوزیشن اختیار معامله
+      const premiumTotal = entryPrice * qty;
+
+      let intrinsic = 0;
+
+      if (p.isCall) {
+        intrinsic = Math.max(0, price - p.strikePrice) * qty;
+      } else if (p.isPut) {
+        intrinsic = Math.max(0, p.strikePrice - price) * qty;
+      }
+
+      total += p.isBuy
+        ? intrinsic - premiumTotal
+        : premiumTotal - intrinsic;
     }
-    return tot;
+
+    return total;
   }
 
-  // breakpoints = همه strike ها (مرتب)
-  const strikes = [...new Set(positions.map(p => p.strikePrice))].sort((a, b) => a - b);
-  if (strikes.length === 0) return [];
+  // فقط Strikeهای اختیار معامله؛ سهم Strike ندارد.
+  const strikes = [
+    ...new Set(
+      positions
+        .filter(p => p.isCall || p.isPut)
+        .map(p => p.strikePrice)
+        .filter(Number.isFinite)
+    )
+  ].sort((a, b) => a - b);
 
-  // نقاطی که بین‌شون خطی‌سازی می‌کنیم: صریحاً همه strikeها + یک نقطه پایین و بالا
-  const leftExtreme = strikes[0] - 10000;   // این مقدار بزرگ انتخاب شده تا دامنهٔ سمت چپ پوشش داده شود
-  const rightExtreme = strikes[strikes.length - 1] + 10000; // و همین برای سمت راست
-  const points = [leftExtreme, ...strikes, rightExtreme];
+  if (!strikes.length) return [];
 
   const roots = new Set();
   const tol = 1e-9;
 
-  // برای هر بازه بین نقاط، اگر علامت P/L تغییر کنه، ریشه را با فرمول خطی محاسبه کن
-  for (let i = 0; i < points.length - 1; i++) {
-    const x1 = points[i], x2 = points[i + 1];
-    const y1 = totalPL(x1), y2 = totalPL(x2);
+  const addRoot = price => {
+    if (Number.isFinite(price)) {
+      roots.add(Number(price.toFixed(8)));
+    }
+  };
 
-    // اگر دقیقاً یکی از نقاط صفر باشه، اضافه کن
-    if (Math.abs(y1) <= tol) roots.add(Number(x1.toFixed(8)));
-    if (Math.abs(y2) <= tol) roots.add(Number(x2.toFixed(8)));
-
-    // اگر علامت متفاوت باشه، ریشه داخل بازه است -> حل خطی
-    if (y1 * y2 < 0) {
-      const x = x1 - y1 * (x2 - x1) / (y2 - y1);
-      roots.add(Number(x.toFixed(8)));
+  // بررسی نقاط شکست و بازه‌های بین Strikeها
+  for (const strike of strikes) {
+    if (Math.abs(totalPL(strike)) <= tol) {
+      addRoot(strike);
     }
   }
 
-  // ---------- بررسی تحلیلی دم راست (S > maxStrike) ----------
-  // برای S > maxStrike: put ها intrinsic = 0، call ها intrinsic = S - K
-  // بنابراین totalPL(S) = aR * S + bR  (خطی). اگر aR != 0، ریشه = -bR / aR
-  (function checkRightTail() {
-    const maxK = strikes[strikes.length - 1];
-    let aR = 0, bR = 0;
-    for (const p of positions) {
-      const qty = (p.getQuantity ? p.getQuantity() : (p.quantity ?? 1));
-      const prem = (getPrice ? getPrice(p) : (p.premium ?? 0));
-      const K = p.strikePrice;
+  for (let i = 0; i < strikes.length - 1; i++) {
+    const x1 = strikes[i];
+    const x2 = strikes[i + 1];
 
-      if (p.isCall) {
-        // intrinsic = S - K
-        if (p.isBuy) {
-          // long call: (S-K) - prem  => +1*S + (-(K+prem))
-          aR += 1 * qty;
-          bR += (-(K + prem)) * qty;
-        } else {
-          // short call: prem - (S-K) => -1*S + (K + prem)
-          aR += -1 * qty;
-          bR += (K + prem) * qty;
-        }
-      } else {
-        // put -> intrinsic = 0 in right tail
-        if (p.isBuy) bR += (-prem) * qty;
-        else bR += (prem) * qty;
+    const y1 = totalPL(x1);
+    const y2 = totalPL(x2);
+
+    if (Math.abs(y1) <= tol) addRoot(x1);
+    if (Math.abs(y2) <= tol) addRoot(x2);
+
+    if ((y1 < 0 && y2 > 0) || (y1 > 0 && y2 < 0)) {
+      const root = x1 - (y1 * (x2 - x1)) / (y2 - y1);
+      addRoot(root);
+    }
+  }
+
+  // بررسی Tail چپ: قیمت کمتر از کمترین Strike
+  {
+    const minStrike = strikes[0];
+
+    const x1 = minStrike - 1;
+    const x2 = minStrike - 2;
+
+    const y1 = totalPL(x1);
+    const y2 = totalPL(x2);
+
+    const slope = (y2 - y1) / (x2 - x1);
+
+    if (Math.abs(slope) > tol) {
+      const root = x1 - y1 / slope;
+
+      if (root < minStrike) {
+        addRoot(root);
       }
     }
-    if (Math.abs(aR) > 1e-12) {
-      const root = -bR / aR;
-      if (root > maxK + 1e-9) roots.add(Number(root.toFixed(8)));
-    }
-  })();
+  }
 
-  // ---------- بررسی تحلیلی دم چپ (S < minStrike) ----------
-  // برای S < minStrike: call ها intrinsic = 0، put ها intrinsic = K - S
-  // totalPL(S) = aL * S + bL
-  (function checkLeftTail() {
-    const minK = strikes[0];
-    let aL = 0, bL = 0;
-    for (const p of positions) {
-      const qty = (p.getQuantity ? p.getQuantity() : (p.quantity ?? 1));
-      const prem = (getPrice ? getPrice(p) : (p.premium ?? 0));
-      const K = p.strikePrice;
+  // بررسی Tail راست: قیمت بیشتر از بیشترین Strike
+  {
+    const maxStrike = strikes[strikes.length - 1];
 
-      if (p.isPut) {
-        // intrinsic = K - S  => contributes -1*S + K
-        if (p.isBuy) {
-          // long put: (K - S) - prem => -1*S + (K - prem)
-          aL += -1 * qty;
-          bL += (K - prem) * qty;
-        } else {
-          // short put: prem - (K - S) => +1*S + (prem - K)
-          aL += 1 * qty;
-          bL += (prem - K) * qty;
-        }
-      } else {
-        // call intrinsic = 0
-        if (p.isBuy) bL += (-prem) * qty;
-        else bL += (prem) * qty;
+    const x1 = maxStrike + 1;
+    const x2 = maxStrike + 2;
+
+    const y1 = totalPL(x1);
+    const y2 = totalPL(x2);
+
+    const slope = (y2 - y1) / (x2 - x1);
+
+    if (Math.abs(slope) > tol) {
+      const root = x1 - y1 / slope;
+
+      if (root > maxStrike) {
+        addRoot(root);
       }
     }
-    if (Math.abs(aL) > 1e-12) {
-      const root = -bL / aL;
-      if (root < minK - 1e-9) roots.add(Number(root.toFixed(8)));
-    }
-  })();
+  }
 
-  // بازگرداندن آرایه مرتب از ریشه‌ها (نقاط سر به سر)
-  return Array.from(roots).map(x => Number(x)).sort((a, b) => a - b);
+  return Array.from(roots).sort((a, b) => a - b);
 }
-
-// const examplePositions = [
-//   { isCall: true, isBuy: true, strikePrice: 500, getPrice: () => 20, getQuantity: () => 10 },
-//   { isPut: true, isBuy: false, strikePrice: 500, getPrice: () => 33, getQuantity: () => 10 },
-//   { isCall: true, isBuy: false, strikePrice: 400, getPrice: () => 90, getQuantity: () => 10 },
-
-// ];
-
-// console.log(findBreakevenList({positions:examplePositions, getPrice:(p)=>p.getPrice()}));

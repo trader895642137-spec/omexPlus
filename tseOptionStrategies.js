@@ -5833,33 +5833,47 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
             if (sellingOptionPrice === 0) return option
 
 
+            const strategyPositions = [
+                {
+                    ...option.optionDetails?.stockSymbolDetails,
+                    isBuy: true,
+                    getQuantity: () => baseQuantity,
+                    getRequiredMargin() { }
+                },
+                {
+                    ...option,
+                    isSell: true,
+                    getQuantity: () => baseQuantity,
+                    getRequiredMargin() { }
+                },
+
+            ]
+
+
+
+            const totalCost = totalCostCalculatorCommon({
+                strategyPositions,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
+            });
+
+            
+            const settlementGain =  settlementGainCalculator({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
+
+            const profit = totalCost + settlementGain;
+            const profitPercent = profit / Math.abs(totalCost);
+
+
 
             const breakeven = option.optionDetails.stockSymbolDetails.last - sellingOptionPrice;
             const stockPriceToSarBeSarPercent = (breakeven /option.optionDetails.stockSymbolDetails.last ) - 1;
 
-
             if (stockPriceToSarBeSarPercent < minStockPriceToSarBeSar || stockPriceToSarBeSarPercent > maxStockPriceToSarBeSar) {
                 return option
             }
-
-            const totalCostWithSign = totalCostCalculator({
-                buyStocks: [option.optionDetails?.stockSymbolDetails],
-                buyOptions: [],
-                sellOptions: [option],
-                priceType
-            });
-            const totalOffsetGainWithSign = totalSettlementGain([{
-                option,
-                positionSide: "SELL",
-                choosePriceType: "MIN"
-            }, ]);
-
-            const profit = totalCostWithSign + totalOffsetGainWithSign;
-
-            const profitPercent = profit / Math.abs(totalCostWithSign);
-
-            
-
 
            
 
@@ -5873,6 +5887,7 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
                 expectedProfitNotif,
                 expectedProfitPerMonth,
                 stockPriceToSarBeSarPercent,
+                strategyPositions,
                 breakeven,
                 settlementTimeDiff : option.settlementTimeDiff,
                 name: createStrategyName([option.optionDetails?.stockSymbolDetails, option]),
@@ -5907,6 +5922,166 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
         ...restConfig,
         htmlTitle: configsToHtmlTitle({
             strategyName: "COVERED",
+            priceType,
+            min_time_to_settlement,
+            max_time_to_settlement,
+            minStockPriceDistanceInPercent,
+            maxStockPriceDistanceInPercent,
+            minVol
+        })
+    }
+
+}
+
+
+const calcCOVERED_BUY_PUT_Strategies = (list, { priceType, expectedProfitPerMonth,
+    min_time_to_settlement = -Infinity, max_time_to_settlement = generalConfig.max_time_to_settlement,
+    minProfitToFilter,
+    coveredStrategyList,
+    optionsGroupedByStock,
+    minStockPriceDistanceInPercent = -Infinity, maxStockPriceDistanceInPercent = Infinity,
+    minStockPriceToSarBeSar = -Infinity, maxStockPriceToSarBeSar = Infinity,
+    minVol = CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif = false, ...restConfig }) => {
+
+
+
+    const enrichedList = coveredStrategyList.map(coveredStrategy => {
+
+        if(coveredStrategy.profitPercent<=0) return coveredStrategy.option
+
+        const coveredTotalCost = totalCostCalculatorCommon({
+            strategyPositions: coveredStrategy.strategyPositions,
+            getPrice: (strategyPosition) => getPriceOfAsset({
+                asset: strategyPosition,
+                priceType,
+                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+            })
+        });
+
+
+        const coveredSettlementGain = settlementGainCalculator({ strategyPositions: coveredStrategy.strategyPositions, stockPrice: coveredStrategy.option.strikePrice * 1.2 })
+
+        const coveredProfit = coveredTotalCost + coveredSettlementGain;
+
+
+
+        const allStockOptions = optionsGroupedByStock[coveredStrategy.option.optionDetails.stockSymbol] || [];
+
+
+        const allPutList = allStockOptions.filter(option => option.isPut && option.settlementTimeDiff === coveredStrategy.settlementTimeDiff);
+
+
+
+        const allPossibleStrategies = allPutList.reduce((_allPossibleStrategies, put) => {
+
+            const buyingOptionPrice = getPriceOfAsset({
+                asset: put,
+                priceType,
+                sideType: 'BUY'
+            });
+
+            if (buyingOptionPrice === 0) return _allPossibleStrategies
+
+           
+
+
+
+            const quantityFactorOfBuyingPut = Math.abs(coveredProfit / buyingOptionPrice) / 1.3;
+
+            const strategyPositions = [
+                ...coveredStrategy.strategyPositions,
+                {
+                    ...put,
+                    isBuy: true,
+                    getQuantity: () => quantityFactorOfBuyingPut,
+                    getRequiredMargin() { }
+                },
+
+            ]
+
+
+            const totalCost = totalCostCalculatorCommon({
+                strategyPositions,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
+            });
+
+            const settlementGain = settlementGainCalculator({ strategyPositions, stockPrice: put.optionDetails.stockSymbolDetails.last })
+
+            const profit = totalCost + settlementGain;
+
+            const profitPercent = profit / Math.abs(totalCost);
+
+
+            const breakevenList = findBreakevenList({
+                positions: strategyPositions,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
+            });
+
+            const breakeven = breakevenList[0];
+
+
+
+            const strategyObj = {
+                // TODO:remove option prop
+                option: {
+                    ...put
+                },
+                positions: [coveredStrategy.option.optionDetails?.stockSymbolDetails, coveredStrategy.option, put],
+                strategyTypeTitle: "COVERED_BUY_PUT",
+                strategyPositions,
+                currentStockPrice: put.optionDetails?.stockSymbolDetails?.last,
+                totalCost,
+                expectedProfitNotif,
+                minProfitToFilter,
+                expectedProfitPerMonth,
+                breakeven,
+                isWholeProfitable: !breakeven,
+                settlementTimeDiff: put.settlementTimeDiff,
+                name: createStrategyName([coveredStrategy.option.optionDetails?.stockSymbolDetails, coveredStrategy.option, put]),
+                profitPercent
+            }
+
+            return _allPossibleStrategies.concat([strategyObj])
+
+
+
+        }, []);
+
+        return {
+            ...coveredStrategy.option,
+            allPossibleStrategies
+        }
+
+
+    });
+
+
+
+
+    return {
+
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
+        strategyName: "COVERED_BUY_PUT",
+        strategyDirection: STRATEGY_DIRECTION.BULLISH,
+        priceType,
+        min_time_to_settlement,
+        max_time_to_settlement,
+        minStockPriceDistanceInPercent,
+        maxStockPriceDistanceInPercent,
+        minVol,
+        expectedProfitNotif,
+        expectedProfitPerMonth,
+        ...restConfig,
+        htmlTitle: configsToHtmlTitle({
+            strategyName: "COVERED_BUY_PUT",
             priceType,
             min_time_to_settlement,
             max_time_to_settlement,
@@ -10977,6 +11152,13 @@ const createListFilterContetnByList=(list)=>{
             optionsGroupedByStock,
             expectedProfitNotif: true
         });
+        const COVERED_BUY_PUT_Strategies = calcCOVERED_BUY_PUT_Strategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            coveredStrategyList : COVEREDStrategies.allStrategies,
+            optionsGroupedByStock,
+            expectedProfitNotif: true
+        });
 
 
 
@@ -12305,6 +12487,51 @@ const createListFilterContetnByList=(list)=>{
             minProfitToFilter: 0.003,
             customFilterFn: strategy => !isBuyQueue(strategy.option.optionDetails?.stockSymbolDetails),
         }),
+
+
+
+
+
+        filterStrategiesByConfig({
+            strategies: COVERED_BUY_PUT_Strategies,
+            min_time_to_settlement: 15 * 24 * 3600000,
+            max_time_to_settlement: 40 * 24 * 3600000,
+            customFilterFn: strategy => !isBuyQueue(strategy.option.optionDetails?.stockSymbolDetails),
+        }),
+
+        filterStrategiesByConfig({
+            strategies: COVERED_BUY_PUT_Strategies,
+            min_time_to_settlement: 6 * 24 * 3600000,
+            max_time_to_settlement: 15 * 24 * 3600000,
+            customFilterFn: strategy => !isBuyQueue(strategy.option.optionDetails?.stockSymbolDetails),
+        }),
+       
+        filterStrategiesByConfig({
+            strategies: COVERED_BUY_PUT_Strategies,
+            min_time_to_settlement: 1 * 3 * 3600000,
+            max_time_to_settlement: 6 * 24 * 3600000,
+            minProfitToFilter: 0.01,
+            customFilterFn: strategy => !isBuyQueue(strategy.option.optionDetails?.stockSymbolDetails),
+        }),
+
+        // TODO: settlementGainChoosePriceType: "MIN",
+        filterStrategiesByConfig({
+            strategies: COVERED_BUY_PUT_Strategies,
+            max_time_to_settlement: 1 * 3 * 3600000,
+            minProfitToFilter: 0.003,
+            customFilterFn: strategy => !isBuyQueue(strategy.option.optionDetails?.stockSymbolDetails),
+        }),
+
+
+
+
+
+
+
+
+
+
+        
        
         
         , calcCOVERED_COLLAR_Strategies(list, {

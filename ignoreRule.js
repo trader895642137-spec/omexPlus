@@ -40,6 +40,18 @@ const CONFIG_TYPE_EXPANSIONS = {
                     : null,
             }),
         },
+        {
+            type: 'COVERED_BUY_PUT',
+            modify: config => ({
+                ...config,
+                breakeven: config.breakeven
+                    ? {
+                        ...config.breakeven,
+                        max: config.breakeven.max * 1.04,
+                    }
+                    : null,
+            }),
+        },
         { type: 'BECS_Ratio' },
         { type: 'BESRatio_BUCS' },
         {
