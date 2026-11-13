@@ -182,10 +182,48 @@ const COMMON_CONFIG_TYPE_EXPANSIONS = [
     {
         type: 'SHORT_STRANGLE',
         sources: ['BUS', 'BES'],
+        modify: config => ({
+            ...config,
+            lowBreakeven: config.lowBreakeven
+                ? {
+                    ...config.lowBreakeven,
+                    max: config.lowBreakeven.max != null
+                        ? config.lowBreakeven.max / 1.04
+                        : undefined,
+                }
+                : config.lowBreakeven,
+            highBreakeven: config.highBreakeven
+                ? {
+                    ...config.highBreakeven,
+                    min: config.highBreakeven.min != null
+                        ? config.highBreakeven.min * 1.04
+                        : undefined,
+                }
+                : config.highBreakeven,
+        }),
     },
     {
         type: 'SHORT_GUTS',
         sources: ['BUS', 'BES'],
+        modify: config => ({
+            ...config,
+            lowBreakeven: config.lowBreakeven
+                ? {
+                    ...config.lowBreakeven,
+                    max: config.lowBreakeven.max != null
+                        ? config.lowBreakeven.max / 1.04
+                        : undefined,
+                }
+                : config.lowBreakeven,
+            highBreakeven: config.highBreakeven
+                ? {
+                    ...config.highBreakeven,
+                    min: config.highBreakeven.min != null
+                        ? config.highBreakeven.min * 1.04
+                        : undefined,
+                }
+                : config.highBreakeven,
+        }),
     },
 ];
 

@@ -13967,10 +13967,48 @@ const COMMON_CONFIG_TYPE_EXPANSIONS = [
     {
         type: 'SHORT_STRANGLE',
         sources: ['BUS', 'BES'],
+        modify: config => ({
+            ...config,
+            lowBreakeven: config.lowBreakeven
+                ? {
+                    ...config.lowBreakeven,
+                    max: config.lowBreakeven.max != null
+                        ? config.lowBreakeven.max / 1.04
+                        : undefined,
+                }
+                : config.lowBreakeven,
+            highBreakeven: config.highBreakeven
+                ? {
+                    ...config.highBreakeven,
+                    min: config.highBreakeven.min != null
+                        ? config.highBreakeven.min * 1.04
+                        : undefined,
+                }
+                : config.highBreakeven,
+        }),
     },
     {
         type: 'SHORT_GUTS',
         sources: ['BUS', 'BES'],
+        modify: config => ({
+            ...config,
+            lowBreakeven: config.lowBreakeven
+                ? {
+                    ...config.lowBreakeven,
+                    max: config.lowBreakeven.max != null
+                        ? config.lowBreakeven.max / 1.04
+                        : undefined,
+                }
+                : config.lowBreakeven,
+            highBreakeven: config.highBreakeven
+                ? {
+                    ...config.highBreakeven,
+                    min: config.highBreakeven.min != null
+                        ? config.highBreakeven.min * 1.04
+                        : undefined,
+                }
+                : config.highBreakeven,
+        }),
     },
 ];
 
@@ -16871,6 +16909,15 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
                 }))
                     return option
 
+                const sellingCallPrice = getPriceOfAsset({
+                    asset: option,
+                    priceType,
+                    sideType: 'SELL'
+                });
+
+                if (sellingCallPrice === 0) return option
+
+
                 const putListWithHigherStrikePriceThanStock = optionListOfSameDate.filter(_option => {
 
 
@@ -16892,6 +16939,26 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
                 let allPossibleStrategies = putListWithHigherStrikePriceThanStock.reduce( (_allPossibleStrategies, _option) => {
 
                     
+
+                     const sellingPutPrice = getPriceOfAsset({
+                        asset: _option,
+                        priceType,
+                        sideType: 'SELL'
+                    });
+
+                    if (sellingPutPrice === 0) return _allPossibleStrategies
+
+
+
+                    if (
+                        (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.hasGreaterRatio)({
+                            num1: sellingCallPrice,
+                            num2: sellingPutPrice,
+                            properRatio: 15
+                        })
+                    ) {
+                        return _allPossibleStrategies
+                    }
 
 
 
@@ -17063,6 +17130,14 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
                 }))
                     return option
 
+                const sellingCallPrice = getPriceOfAsset({
+                    asset: option,
+                    priceType,
+                    sideType: 'SELL'
+                });
+
+                if(sellingCallPrice===0) return option
+
                 const putList = optionListOfSameDate.filter(_option => {
 
                     if (!_option.optionDetails?.stockSymbolDetails?.last)
@@ -17082,7 +17157,25 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
 
                 let allPossibleStrategies = putList.reduce( (_allPossibleStrategies, _option) => {
 
+                    const sellingPutPrice = getPriceOfAsset({
+                        asset: _option,
+                        priceType,
+                        sideType: 'SELL'
+                    });
 
+                    if (sellingPutPrice === 0) return _allPossibleStrategies
+
+
+
+                    if (
+                        (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.hasGreaterRatio)({
+                            num1: sellingCallPrice,
+                            num2: sellingPutPrice,
+                            properRatio: 15
+                        })
+                    ) {
+                        return _allPossibleStrategies
+                    }
 
                      const strategyPositions = [
                         {
@@ -22448,7 +22541,7 @@ const createAndCalcBUS_BES_Strategy = ({ buyingCall, sellingCall, buyingPut, sel
         (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.hasGreaterRatio)({
             num1: callTotalPrice,
             num2: putTotalPrice,
-            properRatio: 10
+            properRatio: 15
         })
     ) {
         return null
@@ -26549,8 +26642,8 @@ const ATTRACTIVE_PROFIT_CONFIG = {
             BEPS_LONG_CALL: null,
             BUPS_LONG_PUT: null,
             LongGUTS_STRANGLE: strategy => strategy.percentPerMonth > 0.07,
-            SHORT_STRANGLE: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.20,
-            SHORT_GUTS: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.20,
+            SHORT_STRANGLE: strategy => strategy.profitPercent > 0.04 && strategy.percentPerMonth > 0.20,
+            SHORT_GUTS: strategy => strategy.profitPercent > 0.04 && strategy.percentPerMonth > 0.20,
             CALL_BUTTERFLY: strategy => strategy.profitPercent > 0.1,
             PUT_BUTTERFLY: strategy => strategy.profitPercent > 0.1,
             CALL_BUTT_CONDOR: strategy => strategy.profitPercent > 0.05 && strategy.percentPerMonth > 0.10,
