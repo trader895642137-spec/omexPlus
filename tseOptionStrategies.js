@@ -10828,63 +10828,163 @@ const calcSyntheticSellStrategies = (list, {
 const filterStrategiesByConfig = ({
     strategies,
     strategyTypeTitle,
-    min_time_to_settlement=-Infinity, max_time_to_settlement=generalConfig.max_time_to_settlement,
-    minStockPriceToSarBeSar=-Infinity,
-    maxStockPriceToSarBeSar=Infinity,
+    min_time_to_settlement = -Infinity,
+    max_time_to_settlement = generalConfig.max_time_to_settlement,
+    minStockPriceToSarBeSar = -Infinity,
+    maxStockPriceToSarBeSar = Infinity,
     minProfitLossRatio,
     isWholeProfitable,
     isProfitEnoughFn,
     expectedProfitNotif,
-    minProfitToFilter ,expectedProfitPerMonth,
-customFilterFn,
-    nokoolOrNoRequestFactor=0,
+    minProfitToFilter,
+    expectedProfitPerMonth,
+    customFilterFn,
+    nokoolOrNoRequestFactor = 0,
     minProfitPercentOfSettlement,
 
+    strategyRules = [],
 
 }) => {
 
+    const calcProfitPercentOfSettlement = ({
+        totalCost,
+        strategyPositions,
+        stockPrice,
+        nokoolOrNoRequestFactor
+    }) => {
 
-
-    const calcProfitPercentOfSettlement = ({ totalCost, strategyPositions, stockPrice,nokoolOrNoRequestFactor }) => {
-
-
-
-        const settlementGain = settlementGainCalculator({ strategyPositions, stockPrice,nokoolOrNoRequestFactor })
+        const settlementGain = settlementGainCalculator({
+            strategyPositions,
+            stockPrice,
+            nokoolOrNoRequestFactor
+        });
 
         const profitOfSettlement = totalCost + settlementGain;
-        const profitPercentOfSettlement = profitOfSettlement / Math.abs(totalCost);
 
-        return profitPercentOfSettlement
-
-    }
-
-    const isProfitPercentOfSettlementOk = ({ totalCost, strategyPositions, stockPrice,nokoolOrNoRequestFactor,minProfitPercentOfSettlement })=>{
+        return profitOfSettlement / Math.abs(totalCost);
+    };
 
 
-        const profitPercentOfSettlement = calcProfitPercentOfSettlement({totalCost, strategyPositions, stockPrice,nokoolOrNoRequestFactor});
+    const isProfitPercentOfSettlementOk = ({
+        totalCost,
+        strategyPositions,
+        stockPrice,
+        nokoolOrNoRequestFactor,
+        minProfitPercentOfSettlement
+    }) => {
 
-        return profitPercentOfSettlement >= minProfitPercentOfSettlement
-    }
+        const profitPercentOfSettlement = calcProfitPercentOfSettlement({
+            totalCost,
+            strategyPositions,
+            stockPrice,
+            nokoolOrNoRequestFactor
+        });
 
+        return profitPercentOfSettlement >= minProfitPercentOfSettlement;
+    };
+
+
+    // تنظیمات پیش‌فرض
+    const defaultConfig = {
+        strategyTypeTitle,
+        min_time_to_settlement,
+        max_time_to_settlement,
+        minStockPriceToSarBeSar,
+        maxStockPriceToSarBeSar,
+        minProfitLossRatio,
+        isWholeProfitable,
+        isProfitEnoughFn,
+        expectedProfitNotif,
+        minProfitToFilter,
+        expectedProfitPerMonth,
+        nokoolOrNoRequestFactor,
+        minProfitPercentOfSettlement,
+    };
+
+
+    // مرتب‌سازی قوانین بر اساس اولویت
+    const sortedRules = (Array.isArray(strategyRules) ? strategyRules : [])
+        .filter(rule => typeof rule.when === 'function')
+        .map(rule => {
+            const { when, priority = 0, ...config } = rule;
+
+            return {
+                when,
+                priority,
+                config
+            };
+        })
+        .sort((a, b) => b.priority - a.priority);
+
+
+    // نگهداری تنظیمات محاسبه‌شده برای هر استراتژی
+    const strategyConfigCache = new WeakMap();
+
+
+    const getStrategyConfig = strategy => {
+
+        if (strategyConfigCache.has(strategy)) {
+            return strategyConfigCache.get(strategy);
+        }
+
+        const matchedRule = sortedRules.find(rule =>
+            rule.when(strategy)
+        );
+
+        const config = {
+            ...defaultConfig,
+            ...(matchedRule?.config || {})
+        };
+
+        strategyConfigCache.set(strategy, config);
+
+        return config;
+    };
 
 
     let allStrategies = strategies.allStrategies.filter(strategy => {
 
+        const config = getStrategyConfig(strategy);
 
-       
-       
-         // Custom filter
-        if (customFilterFn && !customFilterFn(strategy)){
-            
-            
+        const {
+            min_time_to_settlement,
+            max_time_to_settlement,
+            minStockPriceToSarBeSar,
+            maxStockPriceToSarBeSar,
+            minProfitLossRatio,
+            isWholeProfitable,
+            nokoolOrNoRequestFactor,
+            minProfitPercentOfSettlement,
+        } = config;
+
+
+        // Custom filter عمومی
+        if (customFilterFn && !customFilterFn(strategy)) {
             return false;
-        } 
+        }
 
 
+        // Custom filter اختصاصی Rule
+        if (
+            config.customFilterFn &&
+            !config.customFilterFn(strategy)
+        ) {
+            return false;
+        }
+
+
+        // Settlement time
         const settlementTimeDiff = strategy.option.settlementTimeDiff;
-        
-        if (settlementTimeDiff < min_time_to_settlement || settlementTimeDiff > max_time_to_settlement) return
 
+        if (
+            settlementTimeDiff < min_time_to_settlement ||
+            settlementTimeDiff > max_time_to_settlement
+        ) {
+            return false;
+        }
+
+
+        // Stock price to breakeven
         if (
             strategy.stockPriceToSarBeSarPercent != null &&
             (
@@ -10892,77 +10992,137 @@ customFilterFn,
                 strategy.stockPriceToSarBeSarPercent > maxStockPriceToSarBeSar
             ) &&
             !strategy.isWholeProfitable
-        ) return;
-
-        if (isWholeProfitable ===true && !strategy.isWholeProfitable) return
-        if (isWholeProfitable ===false && strategy.isWholeProfitable) return
-
-       
-        
-        if(minProfitLossRatio!=null && strategy.profitLossRatio < minProfitLossRatio) {
-            return
-        } 
-        if(minProfitPercentOfSettlement!=null){
-            
-            return isProfitPercentOfSettlementOk({ 
-                    totalCost : strategy.totalCost, 
-                    strategyPositions:strategy.strategyPositions, 
-                    stockPrice: strategy.currentStockPrice,
-                    nokoolOrNoRequestFactor,
-                    minProfitPercentOfSettlement })
+        ) {
+            return false;
         }
 
 
+        // Whole profitable
+        if (isWholeProfitable === true && !strategy.isWholeProfitable) {
+            return false;
+        }
 
-        return true
+        if (isWholeProfitable === false && strategy.isWholeProfitable) {
+            return false;
+        }
+
+
+        // Profit / Loss ratio
+        if (
+            minProfitLossRatio != null &&
+            strategy.profitLossRatio < minProfitLossRatio
+        ) {
+            return false;
+        }
+
+
+        // Profit percent of settlement
+        if (
+            minProfitPercentOfSettlement != null &&
+            !isProfitPercentOfSettlementOk({
+                totalCost: strategy.totalCost,
+                strategyPositions: strategy.strategyPositions,
+                stockPrice: strategy.currentStockPrice,
+                nokoolOrNoRequestFactor,
+                minProfitPercentOfSettlement
+            })
+        ) {
+            return false;
+        }
+
+
+        return true;
 
     });
 
 
+    // آیا نیاز به تغییر اطلاعات خروجی استراتژی داریم؟
+    const hasStrategyMetadata = allStrategies.some(strategy => {
+
+        const config = getStrategyConfig(strategy);
+
+        return (
+            config.minProfitToFilter != null ||
+            config.expectedProfitPerMonth != null ||
+            config.isProfitEnoughFn != null ||
+            config.expectedProfitNotif != null ||
+            config.strategyTypeTitle != null
+        );
+
+    });
 
 
-    const hasMinProfit = minProfitToFilter != null;
-    const hasExpectedProfit = expectedProfitPerMonth != null;
-    const hasIsProfitEnough = isProfitEnoughFn != null;
-    const hasNotif = expectedProfitNotif != null;
-    const hasStrategyType = strategyTypeTitle != null;
+    // اعمال تنظیمات روی استراتژی‌ها
+    if (hasStrategyMetadata) {
 
-
-
-    if (hasMinProfit || hasExpectedProfit || hasIsProfitEnough || hasNotif || hasStrategyType) {
         allStrategies = allStrategies.map(strategy => {
+
+            const config = getStrategyConfig(strategy);
+
             const newStrategy = { ...strategy };
-            if (hasMinProfit) newStrategy.minProfitToFilter = minProfitToFilter;
-            if (hasExpectedProfit) newStrategy.expectedProfitPerMonth = expectedProfitPerMonth;
-            if (hasIsProfitEnough) newStrategy.isProfitEnough = isProfitEnoughFn(strategy);
-            if (hasNotif) newStrategy.expectedProfitNotif = expectedProfitNotif;
-            if (hasStrategyType) newStrategy.strategyTypeTitle = strategyTypeTitle;
+
+            if (config.minProfitToFilter != null) {
+                newStrategy.minProfitToFilter = config.minProfitToFilter;
+            }
+
+            if (config.expectedProfitPerMonth != null) {
+                newStrategy.expectedProfitPerMonth = config.expectedProfitPerMonth;
+            }
+
+            if (config.isProfitEnoughFn != null) {
+                newStrategy.isProfitEnough = config.isProfitEnoughFn(strategy);
+            }
+
+            if (config.expectedProfitNotif != null) {
+                newStrategy.expectedProfitNotif = config.expectedProfitNotif;
+            }
+
+            if (config.strategyTypeTitle != null) {
+                newStrategy.strategyTypeTitle = config.strategyTypeTitle;
+            }
+
             return newStrategy;
+
         });
+
     }
 
 
     return {
         ...strategies,
-        strategyName : strategyTypeTitle || strategies.strategyName,
-        expectedProfitNotif : expectedProfitNotif!=null ? expectedProfitNotif : strategies.expectedProfitNotif,
-        expectedProfitPerMonth : expectedProfitPerMonth!=null ? expectedProfitPerMonth : strategies.expectedProfitPerMonth,
-        allStrategies ,
+
+        strategyName: strategyTypeTitle || strategies.strategyName,
+
+        expectedProfitNotif: expectedProfitNotif != null
+            ? expectedProfitNotif
+            : strategies.expectedProfitNotif,
+
+        expectedProfitPerMonth: expectedProfitPerMonth != null
+            ? expectedProfitPerMonth
+            : strategies.expectedProfitPerMonth,
+
+        allStrategies,
+
         htmlTitle: configsToHtmlTitle({
             ...strategies,
-            strategyName : strategyTypeTitle || strategies.strategyName,
+
+            strategyName: strategyTypeTitle || strategies.strategyName,
+
             min_time_to_settlement,
             max_time_to_settlement,
+
             customLabels: [
                 minStockPriceToSarBeSar != -Infinity && {
                     label: "minToSar",
-                    value: `${((minStockPriceToSarBeSar) * 100).toFixed(0)}%`
+                    value: `${(minStockPriceToSarBeSar * 100).toFixed(0)}%`
                 },
+
                 maxStockPriceToSarBeSar != Infinity && {
                     label: "maxToSar",
-                    value: `${((maxStockPriceToSarBeSar) * 100).toFixed(0)}%`
+                    value: `${(maxStockPriceToSarBeSar * 100).toFixed(0)}%`
                 },
-                isWholeProfitable ===true && {
+
+                isWholeProfitable === true && {
                     label: "",
                     value: `همه سود`
                 },
@@ -10970,8 +11130,9 @@ customFilterFn,
             ].filter(Boolean),
         })
 
-    }
-}
+    };
+
+};
 
 const createGroupedStrategiesHtml = (allStrategyListObject) => {
 
@@ -12416,6 +12577,13 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitPerMonth: 0.035,
             minProfitToFilter: 0.06,
             min_time_to_settlement : 40 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    minProfitToFilter: 0.045
+                }
+            ]
+            
         }),
         filterStrategiesByConfig({
             strategies: BOXStrategies,
@@ -12423,6 +12591,13 @@ const createListFilterContetnByList=(list)=>{
             minProfitToFilter: 0.03,
             min_time_to_settlement : 1 * 24 * 3600000,
             max_time_to_settlement: 40 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.03,
+                    minProfitToFilter: 0.038
+                }
+            ]
         }),
 
 
@@ -12432,6 +12607,12 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitPerMonth: 0.035,
             minProfitToFilter: 0.06,
             min_time_to_settlement : 40 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    minProfitToFilter: 0.045
+                }
+            ]
         }),
 
         filterStrategiesByConfig({
@@ -12440,6 +12621,13 @@ const createListFilterContetnByList=(list)=>{
             minProfitToFilter: 0.03,
             min_time_to_settlement : 1 * 24 * 3600000,
             max_time_to_settlement: 40 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.03,
+                    minProfitToFilter: 0.038
+                }
+            ]
         }),
 
         

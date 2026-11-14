@@ -62,9 +62,9 @@ export const doJob=()=>{
 
 // FIXME:expectedProfitPerMonth is factor but minExpectedProfitOfStrategy is percent
 export let expectedProfit = {
-    expectedProfitPerMonth: 1.04,
+    expectedProfitPerMonth: 1.035,
     minExpectedProfitOfStrategy: 0.4,
-    defaultCurrentPositions: 0.9,
+    defaultCurrentPositions: 0.8,
     // strategy:3
 }
 
