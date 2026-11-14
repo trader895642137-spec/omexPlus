@@ -8777,6 +8777,16 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
                 })
             });
 
+            const breakevenList = findBreakevenList({
+                positions: strategyPositions,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
+            });
+            const breakeven = breakevenList[0];
+
 
 
 
@@ -8798,10 +8808,12 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
                 positions:[option.optionDetails?.stockSymbolDetails, option],
                 strategyTypeTitle: "ARBITRAGE_PUT",
                 totalCost,
+                breakeven,
                 currentStockPrice: option.optionDetails?.stockSymbolDetails?.last,
                 expectedProfitNotif,
                 expectedProfitPerMonth,
                 strategyPositions,
+                isWholeProfitable:!breakeven,
                 minProfitToFilter,
                 name: createStrategyName([option.optionDetails?.stockSymbolDetails, option]),
                 isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(profitPercentOfSettlement,settlementTimeDiff,option),

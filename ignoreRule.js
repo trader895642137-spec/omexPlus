@@ -3,6 +3,13 @@ const CONFIG_TYPE_EXPANSIONS = {
         { type: 'SyntheticBuy' },
         { type: 'BUCS' },
         {
+            type: 'ARBITRAGE_PUT',
+            modify: config => ({
+                ...config,
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+            }),
+        },
+        {
             type: 'SellPut',
             modify: config => ({
                 ...config,

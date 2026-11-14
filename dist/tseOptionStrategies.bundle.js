@@ -13788,6 +13788,13 @@ const CONFIG_TYPE_EXPANSIONS = {
         { type: 'SyntheticBuy' },
         { type: 'BUCS' },
         {
+            type: 'ARBITRAGE_PUT',
+            modify: config => ({
+                ...config,
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+            }),
+        },
+        {
             type: 'SellPut',
             modify: config => ({
                 ...config,
@@ -24417,6 +24424,16 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
                 })
             });
 
+            const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__.findBreakevenList)({
+                positions: strategyPositions,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
+            });
+            const breakeven = breakevenList[0];
+
 
 
 
@@ -24438,10 +24455,12 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
                 positions:[option.optionDetails?.stockSymbolDetails, option],
                 strategyTypeTitle: "ARBITRAGE_PUT",
                 totalCost,
+                breakeven,
                 currentStockPrice: option.optionDetails?.stockSymbolDetails?.last,
                 expectedProfitNotif,
                 expectedProfitPerMonth,
                 strategyPositions,
+                isWholeProfitable:!breakeven,
                 minProfitToFilter,
                 name: createStrategyName([option.optionDetails?.stockSymbolDetails, option]),
                 isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(profitPercentOfSettlement,settlementTimeDiff,option),
