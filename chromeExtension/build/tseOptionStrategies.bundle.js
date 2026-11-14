@@ -27691,6 +27691,12 @@ const createListFilterContetnByList=(list)=>{
             max_time_to_settlement : 40 * 24 * 3600000,
             minProfitToFilter : 0.03,
             isWholeProfitable:false,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
 
 
@@ -27702,6 +27708,12 @@ const createListFilterContetnByList=(list)=>{
             max_time_to_settlement : 40 * 24 * 3600000,
             minProfitToFilter : 0.03,
             isWholeProfitable:true,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
 
         // calcBUCS_BEPS_LongPutStrategies({
@@ -27736,6 +27748,12 @@ const createListFilterContetnByList=(list)=>{
             max_time_to_settlement : 40 * 24 * 3600000,
             minProfitToFilter : 0.03,
             isWholeProfitable:false,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
 
 
@@ -27746,6 +27764,12 @@ const createListFilterContetnByList=(list)=>{
             max_time_to_settlement : 40 * 24 * 3600000,
             minProfitToFilter : 0.03,
             isWholeProfitable:true,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
 
 
@@ -27756,7 +27780,13 @@ const createListFilterContetnByList=(list)=>{
             strategies: BES_With_BUCS_BEPSStrategies,
             max_time_to_settlement : 40 * 24 * 3600000,
             minProfitToFilter : 0.03,
-            isWholeProfitable:false
+            isWholeProfitable:false,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
 
        
@@ -27766,7 +27796,13 @@ const createListFilterContetnByList=(list)=>{
             strategies: BES_With_BUCS_BEPSStrategies,
             max_time_to_settlement : 40 * 24 * 3600000,
             minProfitToFilter : 0.03,
-            isWholeProfitable:true
+            isWholeProfitable:true,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
 
 
@@ -27777,7 +27813,13 @@ const createListFilterContetnByList=(list)=>{
             strategies: BES_With_BUPS_BECSStrategies,
             max_time_to_settlement : 40 * 24 * 3600000,
             minProfitToFilter : 0.03,
-            isWholeProfitable:false
+            isWholeProfitable:false,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
 
 
@@ -27786,7 +27828,13 @@ const createListFilterContetnByList=(list)=>{
             strategies: BES_With_BUPS_BECSStrategies,
             max_time_to_settlement : 40 * 24 * 3600000,
             minProfitToFilter : 0.03,
-            isWholeProfitable:true
+            isWholeProfitable:true,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
 
 
@@ -27873,6 +27921,12 @@ const createListFilterContetnByList=(list)=>{
             strategies: BUPS_COLLARStrategies,
             expectedProfitPerMonth: 0.06,
             min_time_to_settlement: 40 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
 
 
@@ -27881,6 +27935,12 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 20 * 24 * 3600000,
             max_time_to_settlement : 40 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BUPS_COLLARStrategies,
@@ -27923,6 +27983,12 @@ const createListFilterContetnByList=(list)=>{
             strategies: BUCS_COLLAR_Strategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 20 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BUCS_COLLAR_Strategies,
@@ -27930,6 +27996,12 @@ const createListFilterContetnByList=(list)=>{
             min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
             minProfitToFilter : 0.04,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BUCS_COLLAR_Strategies,
@@ -27938,7 +28010,13 @@ const createListFilterContetnByList=(list)=>{
             max_time_to_settlement: 10 * 24 * 3600000,
             minProfitToFilter : 0.04,
             nokoolOrNoRequestFactor:0.30,
-            minProfitPercentOfSettlement:-0.10
+            minProfitPercentOfSettlement:-0.10,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.04,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BUCS_COLLAR_Strategies,
@@ -27958,13 +28036,25 @@ const createListFilterContetnByList=(list)=>{
             strategies: BEPS_COLLARStrategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 20 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BEPS_COLLARStrategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
-            minProfitToFilter : 0.04
+            minProfitToFilter : 0.04,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BEPS_COLLARStrategies,
@@ -27998,13 +28088,25 @@ const createListFilterContetnByList=(list)=>{
             strategies: BECS_COLLAR_Strategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 20 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BECS_COLLAR_Strategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
-            minProfitToFilter : 0.04
+            minProfitToFilter : 0.04,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BECS_COLLAR_Strategies,
@@ -28037,13 +28139,25 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 20 * 24 * 3600000,
             max_time_to_settlement: 40 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BUCS_Long_PutStrategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
-            minProfitToFilter : 0.05
+            minProfitToFilter : 0.05,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BUCS_Long_PutStrategies,
@@ -28079,13 +28193,25 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 20 * 24 * 3600000,
             max_time_to_settlement: 40 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BECS_Long_CallStrategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
-            minProfitToFilter : 0.05
+            minProfitToFilter : 0.05,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BECS_Long_CallStrategies,
@@ -28121,13 +28247,25 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 20 * 24 * 3600000,
             max_time_to_settlement: 40 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BEPS_Long_CallStrategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
-            minProfitToFilter : 0.05
+            minProfitToFilter : 0.05,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BEPS_Long_CallStrategies,
@@ -28157,13 +28295,25 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 20 * 24 * 3600000,
             max_time_to_settlement: 40 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BUPS_Long_PutStrategies,
             expectedProfitPerMonth: 0.05,
             min_time_to_settlement: 10 * 24 * 3600000,
             max_time_to_settlement: 20 * 24 * 3600000,
-            minProfitToFilter : 0.05
+            minProfitToFilter : 0.05,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
         }),
         filterStrategiesByConfig({
             strategies: BUPS_Long_PutStrategies,
