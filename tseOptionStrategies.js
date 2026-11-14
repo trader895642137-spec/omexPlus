@@ -1314,7 +1314,7 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
                         hasGreaterRatio({
                             num1: sellingCallPrice,
                             num2: sellingPutPrice,
-                            properRatio: 15
+                            properRatio: 20
                         })
                     ) {
                         return _allPossibleStrategies
@@ -1531,7 +1531,7 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
                         hasGreaterRatio({
                             num1: sellingCallPrice,
                             num2: sellingPutPrice,
-                            properRatio: 15
+                            properRatio: 20
                         })
                     ) {
                         return _allPossibleStrategies
@@ -2717,7 +2717,7 @@ const IRON_BUTTERFLY_CONDOR_strategyObjCreator = (
         priceType,
         minProfitLossRatio = 0.7,
         isProfitEnoughFn,
-        BUCS_BEPS_COST_notProperRatio = 15,
+        BUCS_BEPS_COST_notProperRatio = 25,
         strategyTypeTitle = `IRON_BUT_CONDOR_${strategyKind}`,
     }
 ) => {
@@ -2766,7 +2766,7 @@ const IRON_BUTTERFLY_CONDOR_strategyObjCreator = (
         hasGreaterRatio({
             num1: BUSTotalPrice,
             num2: BESTotalPrice,
-            properRatio: 10,
+            properRatio: 30,
         })
     ) {
         return;
@@ -5100,6 +5100,17 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
 
                     if(callOptionWithSameStrikePrice===0) return _allPossibleStrategies
 
+
+                    if (
+                        hasGreaterRatio({
+                            num1: Math.abs(_optionPrice -optionPrice) ,
+                            num2: callOptionWithSameStrikePrice,
+                            properRatio: 30
+                        })
+                    ) {
+                        return _allPossibleStrategies
+                    }
+
                     const stockPriceHigherStrikeRatio = (option.optionDetails.stockSymbolDetails.last / _option.optionDetails?.strikePrice) - 1;
 
                     if (stockPriceHigherStrikeRatio < minStockPriceDistanceInPercent || stockPriceHigherStrikeRatio > maxStockPriceDistanceInPercent)
@@ -5274,6 +5285,15 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
                 }))
                     return option
 
+
+                const optionPrice = getPriceOfAsset({
+                    asset: option,
+                    priceType,
+                    sideType: 'BUY'
+                });
+
+                if(optionPrice===0) return option
+
                 const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
                     if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') )
                         return
@@ -5292,12 +5312,40 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
 
                 let allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (_allPossibleStrategies, _option) => {
 
+
+                    const _optionPrice = getPriceOfAsset({
+                        asset: _option,
+                        priceType,
+                        sideType: 'SELL'
+                    });
+
+                    if (_optionPrice === 0) return _allPossibleStrategies
+
                     const putOptionWithSameStrike = optionListOfSameDate.find(optionOfSameDate => {
                         return optionOfSameDate.isPut && optionOfSameDate.bestSell > 0 && (optionOfSameDate.optionDetails?.strikePrice === _option.optionDetails?.strikePrice)
                     }
                     );
 
                     if (!putOptionWithSameStrike) {
+                        return _allPossibleStrategies
+                    }
+
+                    const putOptionWithSameStrikePrice = getPriceOfAsset({
+                        asset: putOptionWithSameStrike,
+                        priceType,
+                        sideType: 'BUY'
+                    });
+
+                    if (putOptionWithSameStrikePrice === 0) return _allPossibleStrategies
+
+
+                    if (
+                        hasGreaterRatio({
+                            num1: Math.abs(optionPrice -optionPrice) ,
+                            num2: putOptionWithSameStrikePrice,
+                            properRatio: 30
+                        })
+                    ) {
                         return _allPossibleStrategies
                     }
 
@@ -5511,6 +5559,18 @@ const calcBEPS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
 
 
 
+                    if (
+                        hasGreaterRatio({
+                            num1: Math.abs(buyingPutPrice -optionPrice) ,
+                            num2: callWithSameStrikeOfSellingPutPrice,
+                            properRatio: 30
+                        })
+                    ) {
+                        return _allPossibleStrategies
+                    }
+
+
+
                     const strategyPositions = [
                         {
                             ...buyingPut,
@@ -5720,6 +5780,16 @@ const calcBECS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth,
                     if(putWithSameStrikeOfSellingCallPrice===0) return _allPossibleStrategies
 
 
+
+                    if (
+                        hasGreaterRatio({
+                            num1: Math.abs(buyingCallPrice -optionPrice) ,
+                            num2: putWithSameStrikeOfSellingCallPrice,
+                            properRatio: 30
+                        })
+                    ) {
+                        return _allPossibleStrategies
+                    }
 
 
                      const diffOfBECS_Strikes = buyingCall.optionDetails?.strikePrice - option.optionDetails?.strikePrice;
@@ -6901,7 +6971,7 @@ const createAndCalcBUS_BES_Strategy = ({ buyingCall, sellingCall, buyingPut, sel
         hasGreaterRatio({
             num1: callTotalPrice,
             num2: putTotalPrice,
-            properRatio: 15
+            properRatio: 25
         })
     ) {
         return null
