@@ -111,7 +111,7 @@ const createDeleteAllOrdersButton = () => {
         OMEXApi.deleteAllOpenOrders();
     });
     
-    domContextWindow.document.querySelector('client-option-reports-actions').append(removeAllOrderButton)
+    domContextWindow.document.querySelector('client-option-reports-actions,client-cmd-reports-actions').append(removeAllOrderButton)
     return removeAllOrderButton
 }
 
@@ -855,12 +855,12 @@ const createPositionObjectArray  = (strategyItemList) => {
         let cSize = isOption ? defaultCSize : 1;
         let daysLeftToSettlement = defaultDaysLeftToSettlement;
 
-        const ordersModal =isDOM ? Array.from(domContextWindow.document.querySelectorAll('client-option-modal-trade-layout')).find(modal => {
+        const ordersModal =isDOM ? Array.from(domContextWindow.document.querySelectorAll('client-option-modal-trade-layout,client-cmd-modal')).find(modal => {
             return Array.from(modal.querySelectorAll('label')).find(label => label.innerHTML === instrumentName)
         }
         ):null;
 
-        const instrumentFullTitle = isDOM?  ordersModal && ordersModal.querySelector('client-option-instruments-favorites-item-header main > span').innerHTML : strategyItem.portfolioAssetInfo?.lVal30;
+        const instrumentFullTitle = isDOM?  ordersModal && ordersModal.querySelector('header main > span').innerHTML : strategyItem.portfolioAssetInfo?.lVal30;
 
         const getOffsetOrderPriceElements = () => (ordersModal && ordersModal.querySelectorAll(`client-instrument-best-limit-ui-option client-instrument-price-position-row[orderside="${isBuy ? 'Buy' : 'Sell'}"] .-is-price span`)) || [];
 
@@ -2720,7 +2720,7 @@ const injectStyles = () => {
                 background-color: rgba(250, 174, 180, 0.6) !important
             }
 
-            client-option-modal-trade-layout{
+            client-option-modal-trade-layout,client-cmd-modal{
                 width: 270px !important;
             }
 
@@ -2729,7 +2729,7 @@ const injectStyles = () => {
                 padding-right : 9px !important;
             }
 
-            client-option-modal-trade-layout .o-inModalWrapper{
+            client-option-modal-trade-layout .o-inModalWrapper,client-cmd-modal .o-inModalWrapper{
                 overflow: initial !important;
             }
 
@@ -3062,7 +3062,7 @@ const setTradeModalUiPositions = ({strategyPositions}={}) => {
         });
 
     }else{
-        Array.from(domContextWindow.document.querySelectorAll('client-modal-main client-option-modal-trade-layout')).forEach((tradeModal,i) => {
+        Array.from(domContextWindow.document.querySelectorAll('client-modal-main client-option-modal-trade-layout,client-modal-main client-cmd-modal')).forEach((tradeModal,i) => {
             setPosition({tradeModal,index:i,isOption:true})
         });
     }
@@ -3494,7 +3494,7 @@ const setModalHeaders = (strategyPositions)=>{
 
      for (const strategyPosition of strategyPositions) {
 
-        const headerTitleElement  = strategyPosition.ordersModal.querySelector('client-option-instruments-favorites-item-header main > span');
+        const headerTitleElement  = strategyPosition.ordersModal.querySelector('header main > span');
 
         if(strategyPosition.getDaysLeftToSettlement()!=null){
 
