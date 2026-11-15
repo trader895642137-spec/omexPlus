@@ -13003,19 +13003,17 @@ const createListFilterContetnByList=(list)=>{
 
 
 
-
-
-
-        
-       
-        
-        , calcCOVERED_COLLAR_Strategies(list, {
-            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
-            expectedProfitPerMonth: 0.04,
-            minProfitToFilter: 0.005,
-            max_time_to_settlement: 40 * 24 * 3600000,
-            expectedProfitNotif: true
+        filterStrategiesByConfig({
+            strategies: calcCOVERED_COLLAR_Strategies(list, {
+                priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+                expectedProfitPerMonth: 0.04,
+                minProfitToFilter: 0.005,
+                max_time_to_settlement: 40 * 24 * 3600000,
+                expectedProfitNotif: true
+            }),
+            customFilterFn: strategy => !isBuyQueue(strategy.option.optionDetails?.stockSymbolDetails),
         }),
+
 
 
 
