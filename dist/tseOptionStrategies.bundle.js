@@ -14357,7 +14357,11 @@ const isStrategyIgnored = (strategy, ignoreStrategyList) => {
 
     if (!ignoreStrategyList?.length) return false;
 
-    const normalizeSymbol = symbol => symbol.replaceAll('ي', 'ی');
+    const normalizeSymbol = symbol => symbol.replace(/[يىك]/g, char => ({
+        'ي': 'ی',
+        'ى': 'ی',
+        'ك': 'ک'
+    }[char]));
 
     const strategySymbols = strategy.positions.map(pos =>
         normalizeSymbol(pos.symbol)
