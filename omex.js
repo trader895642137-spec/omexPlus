@@ -86,13 +86,13 @@ const createStatusCnt = () => {
     statusCnt.addEventListener('click', function(event) {
         doubleCheckProfitByExactDecimalPricesOfPortFolio({strategyPositions,isForce:true})
     });
-    domContextWindow.document.querySelector('client-option-layout-action-bar').append(statusCnt)
+    domContextWindow.document.querySelector('client-option-layout-action-bar,client-cmd-option-layout-action-bar').append(statusCnt)
     return statusCnt
 }
 
 const getStatusCnt = () => {
 
-    let statusCnt = domContextWindow.document.querySelector('client-option-layout-action-bar .status-cnt') || createStatusCnt()
+    let statusCnt = domContextWindow.document.querySelector('client-option-layout-action-bar .status-cnt,client-cmd-option-layout-action-bar .status-cnt') || createStatusCnt()
 
     return statusCnt
 
@@ -1112,8 +1112,8 @@ const createPositionObjectArray  = (strategyItemList) => {
             }else{
 
                 if(isDOM){
-                    const executedPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="executedPrice"]`;
-                    const breakEvenPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="breakEvenPrice"]`;
+                    const executedPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="executedPrice"], client-cmd-positions-main .ag-center-cols-clipper [row-id="${instrumentName}"] [col-id="executedPrice"]`;
+                    const breakEvenPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="breakEvenPrice"] , client-cmd-positions-main .ag-center-cols-clipper [row-id="${instrumentName}"] [col-id="breakEvenPrice"]`;
                     executedPrice = convertStringToInt(domContextWindow.document.querySelector(executedPriceSelector)?.innerHTML);
                     breakEvenPrice = convertStringToInt(domContextWindow.document.querySelector(breakEvenPriceSelector)?.innerHTML);
 
@@ -1165,7 +1165,7 @@ const createPositionObjectArray  = (strategyItemList) => {
 
             }
 
-            return convertStringToInt(cachedUnreliableCurrentPositionAvgPriceElement.innerHTML) || 0
+            return cachedUnreliableCurrentPositionAvgPriceElement ? convertStringToInt(cachedUnreliableCurrentPositionAvgPriceElement.innerHTML) :  0
 
         }
 
@@ -2851,14 +2851,16 @@ const getAndSetInstrumentData = async (strategyPositions)=>{
 
         instIdInfoMap.forEach(instIdInfo=>{
             const strategyPosition = strategyPositions.find(stP=>stP.instrumentName===instIdInfo.instrumentName);
+
+            const isOption = instIdInfo.isOption ?? strategyPosition.isOption;
     
-            const daysLeftToSettlement = strategyPosition.isOption ? Math.ceil((new Date(instIdInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000)): null;
+            const daysLeftToSettlement = isOption ? Math.ceil((new Date(instIdInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000)): null;
     
             instrumentExtraDataMap[instIdInfo.instrumentName] = {
-                optionID : strategyPosition.isOption ?  instIdInfo.instrumentId: null,
+                optionID :  isOption ?  instIdInfo.instrumentId: null,
                 instrumentId: instIdInfo.instrumentId,
-                cSize: strategyPosition.isOption ? instIdInfo.cSize: 1,
-                stockPrice:strategyPosition.isOption ? instIdInfo.stockPrice: null,
+                cSize: isOption ? instIdInfo.cSize: 1,
+                stockPrice:isOption ? instIdInfo.stockPrice: null,
                 daysLeftToSettlement
             }
 
