@@ -445,7 +445,8 @@ const getInstrumentInfoBySymbol = async (instrumentNames) => {
 
                         cSize: contract.lot,
                         isOption:true,
-
+                        isCall: contract.optionType==="Call" ? true :false,
+                        isPut: contract.optionType==="Put" ? true :false,
                         lastExerciseDate: contract.lastExerciseDate,
                         psDate: contract.lastExerciseDate,
 

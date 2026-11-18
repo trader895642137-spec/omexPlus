@@ -837,105 +837,91 @@ const getnokoolOrNoRequestFactor = () => {
 }
 
 
+const applyExtraData = (target, data) => {
+    if (!data) return;
+    Object.entries(data).forEach(([key, value]) => {
+        if (value === undefined) return;
+        if (key === 'cSize' && !(value > 0)) return; // cSize نامعتبر رد می‌شود
+        target[key] = value;
+    });
+};
 
 
-const createPositionObjectArray  = (strategyItemList) => {
+
+const createPositionObjectArray = (strategyItemList) => {
     return strategyItemList.map(strategyItem => {
         const isDOM = strategyItem instanceof Element;
 
-        const instrumentName =  isDOM ? strategyItem.querySelector('.instrument-title span').innerHTML:strategyItem.portfolioAssetInfo?.instrumentName;
-        let optionID = isDOM ? Array.from(domContextWindow.document.querySelectorAll('client-option-positions-main .ag-pinned-right-cols-container .ag-row'))?.find(optionNameCellEl => Array.from(optionNameCellEl.querySelectorAll('span'))?.find(span => span.innerHTML === instrumentName))?.getAttribute('row-id') : strategyItem.portfolioAssetInfo?.instrumentId;
-        const isBuy = isDOM ? strategyItem.querySelector('client-option-strategy-estimation-main-ui-order-side .-isActive')?.classList?.contains('buy') : strategyItem.side==="Buy";
+        const instrumentName = isDOM ? strategyItem.querySelector('.instrument-title span').innerHTML : strategyItem.portfolioAssetInfo?.instrumentName;
+        const initialOptionID = isDOM ? Array.from(domContextWindow.document.querySelectorAll('client-option-positions-main .ag-pinned-right-cols-container .ag-row'))?.find(optionNameCellEl => Array.from(optionNameCellEl.querySelectorAll('span'))?.find(span => span.innerHTML === instrumentName))?.getAttribute('row-id') : strategyItem.portfolioAssetInfo?.instrumentId;
+        const isBuy = isDOM ? strategyItem.querySelector('client-option-strategy-estimation-main-ui-order-side .-isActive')?.classList?.contains('buy') : strategyItem.side === "Buy";
 
-        const isOption = isInstrumentNameOfOption(instrumentName);
+        // مقدارهای اولیه (بعداً با setExtraData روی خود آبجکت تغییر می‌کنند)
+        const initialIsOption = isInstrumentNameOfOption(instrumentName);
+        const initialIsPut = initialIsOption && instrumentName && instrumentName.charAt(0) === 'ط';
+        const initialIsCall = initialIsOption && instrumentName && instrumentName.charAt(0) === 'ض';
+        const initialCSize = (!isDOM && strategyItem.portfolioAssetInfo?.cSize) || (initialIsOption ? defaultCSize : 1);
+        const initialDaysLeftToSettlement = (!isDOM && initialIsOption)
+            ? Math.ceil((new Date(strategyItem.portfolioAssetInfo?.psDate).valueOf() - Date.now()) / (24 * 60 * 60000))
+            : defaultDaysLeftToSettlement;
 
-        const isPut = isOption && instrumentName && instrumentName.charAt(0) === 'ط';
-
-        const isCall = isOption && instrumentName && instrumentName.charAt(0) === 'ض';
-        let cSize = isOption ? defaultCSize : 1;
-        let daysLeftToSettlement = defaultDaysLeftToSettlement;
-
-        const ordersModal =isDOM ? Array.from(domContextWindow.document.querySelectorAll('client-option-modal-trade-layout,client-cmd-modal')).find(modal => {
+        const ordersModal = isDOM ? Array.from(domContextWindow.document.querySelectorAll('client-option-modal-trade-layout,client-cmd-modal')).find(modal => {
             return Array.from(modal.querySelectorAll('label')).find(label => label.innerHTML === instrumentName)
         }
-        ):null;
+        ) : null;
 
-        const instrumentFullTitle = isDOM?  ordersModal && ordersModal.querySelector('header main > span').innerHTML : strategyItem.portfolioAssetInfo?.lVal30;
+        const instrumentFullTitle = isDOM ? ordersModal && ordersModal.querySelector('header main > span').innerHTML : strategyItem.portfolioAssetInfo?.lVal30;
 
-        const getOffsetOrderPriceElements = () => (ordersModal && ordersModal.querySelectorAll(`client-instrument-best-limit-ui-option client-instrument-price-position-row[orderside="${isBuy ? 'Buy' : 'Sell'}"] .-is-price span`)) || [];
+        const getOffsetOrderPriceElements = () => (ordersModal && ordersModal.querySelectorAll(`client-instrument-best-limit-ui-option client-instrument-price-position-row[orderside="${isBuy ? 'Buy' : 'Sell'}"] .-is-price span , client-cmd-contract-card-best-limit client-cmd-price-position-row[orderside="${isBuy ? 'Buy' : 'Sell'}"] .-is-price span`)) || [];
 
-        const getOpenMoreOrderPriceElements = () => (ordersModal && ordersModal.querySelectorAll(`client-instrument-best-limit-ui-option client-instrument-price-position-row[orderside="${isBuy ? 'Sell' : 'Buy'}"] .-is-price span`)) || [];
+        const getOpenMoreOrderPriceElements = () => (ordersModal && ordersModal.querySelectorAll(`client-instrument-best-limit-ui-option client-instrument-price-position-row[orderside="${isBuy ? 'Sell' : 'Buy'}"] .-is-price span , client-cmd-contract-card-best-limit client-cmd-price-position-row[orderside="${isBuy ? 'Sell' : 'Buy'}"] .-is-price span`)) || [];
 
         const getBestOffsetPrice = () => {
-            if(!isDOM) return 
+            if (!isDOM) return
             const priceElement = getOffsetOrderPriceElements()[0];
             return priceElement && convertStringToInt(priceElement.innerHTML);
         }
 
         const getBestOpenMorePrice = () => {
-            if(!isDOM) return 
+            if (!isDOM) return
             const priceElement = getOpenMoreOrderPriceElements()[0];
             return priceElement && convertStringToInt(priceElement.innerHTML);
         }
 
+        // ---------- همه‌ی این توابع از خود strategyPosition می‌خوانند ----------
+
+        const getCSize = () => {
+            const size = strategyPosition.cSize;
+            return size > 0 ? size : 1;
+        }
+
+        const getOptionID = () => {
+            return strategyPosition.optionID
+                || (!isDOM ? strategyItem.instrumentId : undefined);
+        }
+
+        const getInstrumentID = () => {
+            return strategyPosition.instrumentId
+                ?? (!isDOM ? strategyItem.instrumentId : undefined);
+        }
+
+        const getDaysLeftToSettlement = () => strategyPosition.daysLeftToSettlement;
+
         const getQuantity = () => {
             const cSize = getCSize();
-            const quantity = isDOM? convertStringToInt(strategyItem.querySelector('[formcontrolname="quantity"] input').value): strategyItem.quantity;
-            const quantityMultiplier = isOption ? cSize : 1;
+            const quantity = isDOM ? convertStringToInt(strategyItem.querySelector('[formcontrolname="quantity"] input').value) : strategyItem.quantity;
+            const quantityMultiplier = strategyPosition.isOption ? cSize : 1;
             return quantity * quantityMultiplier;
         }
 
-
         let cachedCurrentPositionQuantityElement;
-        const getCSize = ()=>{
-            let size;
-            if(instrumentExtraDataMap[instrumentName]){
-                const instrumentExtraData = instrumentExtraDataMap[instrumentName];
-                size = instrumentExtraData?.cSize ;
-
-            }else if(!isDOM){
-                size =  strategyItem.portfolioAssetInfo?.cSize;
-            }
-            return size || cSize
-        }
-        const getOptionID = ()=>{
-            let id;
-            if(instrumentExtraDataMap[instrumentName]){
-                const instrumentExtraData = instrumentExtraDataMap[instrumentName];
-                id = instrumentExtraData?.optionID;
-            }else if(!isDOM){
-                id = strategyItem.instrumentId
-            }
-            return id || optionID
-        }
-        const getInstrumentID = ()=>{
-            if(instrumentExtraDataMap[instrumentName]){
-                const instrumentExtraData = instrumentExtraDataMap[instrumentName];
-                return instrumentExtraData?.instrumentId;
-            }else if(!isDOM){
-                return strategyItem.instrumentId
-            }
-        }
-        const getDaysLeftToSettlement= ()=>{
-            if(instrumentExtraDataMap[instrumentName]){
-                const instrumentExtraData = instrumentExtraDataMap[instrumentName];
-                return instrumentExtraData?.daysLeftToSettlement;
-
-            }else if(!isDOM){
-                const daysLeftToSettlement = isOption ? Math.ceil((new Date(strategyItem.portfolioAssetInfo?.psDate).valueOf() - Date.now()) / (24 * 60 * 60000)): null;
-                return daysLeftToSettlement
-
-            }
-
-
-        }
         const getCurrentPositionQuantity = () => {
 
-            optionID = getOptionID();
+            const optionID = getOptionID();
             const cSize = getCSize();
 
             let currentPositionQuantity
-            if(isDOM){
+            if (isDOM) {
 
                 cachedCurrentPositionQuantityElement = domContextWindow.document.body.contains(cachedCurrentPositionQuantityElement) ? cachedCurrentPositionQuantityElement : domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="${isBuy ? 'buyCount' : 'sellCount'}"]`);
                 if (cachedCurrentPositionQuantityElement) {
@@ -943,127 +929,105 @@ const createPositionObjectArray  = (strategyItemList) => {
                 } else {
                     currentPositionQuantity = getOrderModalPortfolioQuantity();
                 }
-            }else{
+            } else {
                 currentPositionQuantity = strategyItem.portfolioAssetInfo?.count || strategyItem.portfolioAssetInfo?.quantity;
             }
 
-
-            const quantityMultiplier = isOption ? cSize : 1;
+            const quantityMultiplier = strategyPosition.isOption ? cSize : 1;
             return currentPositionQuantity * quantityMultiplier;
 
         }
 
-
         let cachedOrderModalPortfolioQuantityElement;
         const getOrderModalPortfolioQuantity = () => {
-            if(!domContextWindow || !ordersModal) return 
+            if (!domContextWindow || !ordersModal) return
             cachedOrderModalPortfolioQuantityElement = domContextWindow.document.body.contains(cachedOrderModalPortfolioQuantityElement) ? cachedOrderModalPortfolioQuantityElement : ordersModal.querySelector('.o-quantityContainer footer span');
             return convertStringToInt(cachedOrderModalPortfolioQuantityElement?.innerHTML) || 0
 
         }
+
         let cachedOrderModalQuantityFooterElement
         const getOrderModalQuantityFooterElement = () => {
-            if(!domContextWindow || !ordersModal) return 
+            if (!domContextWindow || !ordersModal) return
             if (!domContextWindow.document.body.contains(cachedOrderModalQuantityFooterElement)) {
                 cachedOrderModalQuantityFooterElement = ordersModal.querySelector('.o-quantityContainer footer')
             }
-
-
             return cachedOrderModalQuantityFooterElement
-
         }
 
         let cachedOrderModalTradePanelElement
         const getOrderModalTradePanelElement = () => {
-             if(!domContextWindow || !ordersModal) return 
+            if (!domContextWindow || !ordersModal) return
             if (!domContextWindow.document.body.contains(cachedOrderModalTradePanelElement)) {
                 cachedOrderModalTradePanelElement = ordersModal.querySelector('client-instrument-favorites-item-trade-panel')
             }
-
-
             return cachedOrderModalTradePanelElement
-
         }
 
-
         let cachedOrderModalStrategyDropdownElement;
-        const getOrderModalStrategyDropdownElement = ()=>{
-             if(!domContextWindow || !ordersModal) return 
-            if (!domContextWindow.document.body.contains(cachedOrderModalTradePanelElement)) {
+        const getOrderModalStrategyDropdownElement = () => {
+            if (!domContextWindow || !ordersModal) return
+            // قبلاً اشتباهاً cachedOrderModalTradePanelElement چک می‌شد
+            if (!domContextWindow.document.body.contains(cachedOrderModalStrategyDropdownElement)) {
                 cachedOrderModalStrategyDropdownElement = ordersModal.querySelector('client-instrument-favorites-item-trade-panel ng-select.-is-strategyDropdown');
             }
-
-
             return cachedOrderModalStrategyDropdownElement
         }
 
-
-        
-
-
-         let cachedOrderModalQuantityInputElement;
-        const getOrderModalQuantityInputElement = ()=>{
-             if(!domContextWindow || !ordersModal) return 
+        let cachedOrderModalQuantityInputElement;
+        const getOrderModalQuantityInputElement = () => {
+            if (!domContextWindow || !ordersModal) return
             if (!domContextWindow.document.body.contains(cachedOrderModalQuantityInputElement)) {
-                cachedOrderModalQuantityInputElement =ordersModal.querySelector('#tabKey-optionTradeQuantityInput');
+                cachedOrderModalQuantityInputElement = ordersModal.querySelector('#tabKey-optionTradeQuantityInput');
             }
-
-
             return cachedOrderModalQuantityInputElement
         }
 
-
-
-        
-         let cachedOrderModalQuantityInputArrowUpElement;
-        const getOrderModalQuantityInputArrowUpElement = ()=>{
-             if(!domContextWindow || !ordersModal) return 
+        let cachedOrderModalQuantityInputArrowUpElement;
+        const getOrderModalQuantityInputArrowUpElement = () => {
+            if (!domContextWindow || !ordersModal) return
             if (!domContextWindow.document.body.contains(cachedOrderModalQuantityInputArrowUpElement)) {
                 cachedOrderModalQuantityInputArrowUpElement = ordersModal.querySelector('[iconname="arrow-up-filled"]');
             }
-
-
             return cachedOrderModalQuantityInputArrowUpElement
         }
 
-
-         let cachedOrderModalPriceElement;
-        const getOrderModalPriceInputElement = ()=>{
-             if(!domContextWindow || !ordersModal) return 
+        let cachedOrderModalPriceElement;
+        const getOrderModalPriceInputElement = () => {
+            if (!domContextWindow || !ordersModal) return
             if (!domContextWindow.document.body.contains(cachedOrderModalPriceElement)) {
-                 cachedOrderModalPriceElement =ordersModal.querySelector('#tabKey-optionTradePriceInput');
+                cachedOrderModalPriceElement = ordersModal.querySelector('#tabKey-optionTradePriceInput');
             }
-
             return cachedOrderModalPriceElement
         }
 
         const getRequiredMargin = () => {
 
-            const isMarginRequired = isDOM ? strategyItem.querySelector('input[formcontrolname="requiredMarginIsSelected"]')?.checked: strategyItem.requiredMarginIsSelected;
+            const isMarginRequired = isDOM ? strategyItem.querySelector('input[formcontrolname="requiredMarginIsSelected"]')?.checked : strategyItem.requiredMarginIsSelected;
             const cSize = getCSize()
 
             if (!isMarginRequired)
                 return 0
 
-            const requiredMargin = (isDOM? convertStringToInt(strategyItem.querySelector('[formcontrolname="requiredMargin"] input').value) : strategyItem.requiredMargin) / cSize;
+            const requiredMargin = (isDOM ? convertStringToInt(strategyItem.querySelector('[formcontrolname="requiredMargin"] input').value) : strategyItem.requiredMargin) / cSize;
 
             return requiredMargin
         }
 
         const getInsertedPrice = () => {
-            if(!isDOM) return 
+            if (!isDOM) return
             const insertedPrice = convertStringToInt(strategyItem.querySelector('[formcontrolname="price"] input').value);
             return insertedPrice;
         }
 
         const getDefinedQuantity = () => {
-            if(!isDOM) return 
+            if (!isDOM) return
             const definedQuantity = convertStringToInt(strategyItem.querySelector('[formcontrolname="quantity"] input').value);
             return definedQuantity;
         }
 
         const calcBestSecondOrderPriceRatioDiff = (priceOrderElements) => {
-            if(!isDOM) return 
+            if (!isDOM) return
             if (!priceOrderElements || priceOrderElements.length < 2)
                 return
 
@@ -1082,59 +1046,51 @@ const createPositionObjectArray  = (strategyItemList) => {
         }
 
         const getBestSecondPriceRatioDiff = (chooseBestPriceType) => {
-            if(!isDOM) return 
+            if (!isDOM) return
             return calcBestSecondOrderPriceRatioDiff(chooseBestPriceType === 'offset' ? getOffsetOrderPriceElements() : getOpenMoreOrderPriceElements());
         }
 
-
-        function getCurrentPositionAvgPrice(position)  {
-
+        function getCurrentPositionAvgPrice(position) {
 
             const instrumentId = (position || this).getInstrumentID();
             const instrumentName = (position || this).instrumentName;
-            let executedPrice,breakEvenPrice;
-            optionID = getOptionID();
+            let executedPrice, breakEvenPrice;
+            const optionID = getOptionID();
 
-            const recentExactDecimalPricesOfPortFolioObj = (instrumentId || instrumentName) && getRecentExactDecimalPricesOfPortFolio({instrumentId,instrumentName});
+            const recentExactDecimalPricesOfPortFolioObj = (instrumentId || instrumentName) && getRecentExactDecimalPricesOfPortFolio({ instrumentId, instrumentName });
 
-
-            const recentCalculatedAvgPrices  =  getRecentCalculatedAvgPrices({instrumentId,instrumentName});
-            if(recentCalculatedAvgPrices){
+            const recentCalculatedAvgPrices = getRecentCalculatedAvgPrices({ instrumentId, instrumentName });
+            if (recentCalculatedAvgPrices) {
 
                 executedPrice = recentCalculatedAvgPrices.avgPrice;
                 breakEvenPrice = recentCalculatedAvgPrices.avgPrice;
                 showToast('استفاده از میانگین های حساب شده');
 
             }
-            else if(recentExactDecimalPricesOfPortFolioObj){
+            else if (recentExactDecimalPricesOfPortFolioObj) {
                 executedPrice = recentExactDecimalPricesOfPortFolioObj.executedPrice;
                 breakEvenPrice = recentExactDecimalPricesOfPortFolioObj.breakEvenPrice;
-            }else{
+            } else {
 
-                if(isDOM){
+                if (isDOM) {
                     const executedPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="executedPrice"], client-cmd-positions-main .ag-center-cols-clipper [row-id="${instrumentName}"] [col-id="executedPrice"]`;
                     const breakEvenPriceSelector = `client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="breakEvenPrice"] , client-cmd-positions-main .ag-center-cols-clipper [row-id="${instrumentName}"] [col-id="breakEvenPrice"]`;
                     executedPrice = convertStringToInt(domContextWindow.document.querySelector(executedPriceSelector)?.innerHTML);
                     breakEvenPrice = convertStringToInt(domContextWindow.document.querySelector(breakEvenPriceSelector)?.innerHTML);
 
-                }else{
+                } else {
 
                     executedPrice = strategyItem.portfolioAssetInfo?.executedPrice;
                     breakEvenPrice = strategyItem.portfolioAssetInfo?.breakEvenPrice;
 
                 }
             }
-            if (executedPrice && breakEvenPrice && hasBreakevenExecutedPriceDiffIssue({executedPrice,breakEvenPrice})) {
+            if (executedPrice && breakEvenPrice && hasBreakevenExecutedPriceDiffIssue({ executedPrice, breakEvenPrice })) {
 
                 const issueMessage = 'مشکل تفاوت میانگین و سر به سر';
-                console.log(issueMessage,{instrumentName,executedPrice,breakEvenPrice});
-                
-                showToast(issueMessage,50000,'error');
-                // !domContextWindow.window.doNotNotifAvrageIssue && showNotification({
-                //     title: issueMessage,
-                //     body: `${instrumentName}`,
-                //     tag: `CurrentPositionAvgPriceIssue`
-                // });
+                console.log(issueMessage, { instrumentName, executedPrice, breakEvenPrice });
+
+                showToast(issueMessage, 50000, 'error');
                 return breakEvenPrice
             }
 
@@ -1142,12 +1098,10 @@ const createPositionObjectArray  = (strategyItemList) => {
 
         }
 
-
         let cachedUnreliableCurrentPositionAvgPriceElement;
         const getUnreliableCurrentPositionAvgPrice = () => {
-             
- 
-            if(!isDOM) return 
+
+            if (!isDOM) return
 
             if (!domContextWindow.document.body.contains(cachedUnreliableCurrentPositionAvgPriceElement)) {
                 const labelText = 'میانگین';
@@ -1165,15 +1119,9 @@ const createPositionObjectArray  = (strategyItemList) => {
 
             }
 
-            return cachedUnreliableCurrentPositionAvgPriceElement ? convertStringToInt(cachedUnreliableCurrentPositionAvgPriceElement.innerHTML) :  0
+            return cachedUnreliableCurrentPositionAvgPriceElement ? convertStringToInt(cachedUnreliableCurrentPositionAvgPriceElement.innerHTML) : 0
 
         }
-
-
-
-       
-
-
 
         const getStrategyName = () => {
             return isDOM ? domContextWindow.document.querySelector('client-option-strategy-estimation-header c-k-input-text input')?.value : strategyItem.strategyTitle
@@ -1186,10 +1134,7 @@ const createPositionObjectArray  = (strategyItemList) => {
             return bestOpenMorePrice * (isBuy ? -1 : 1);
         }
 
-        const strikePrice = isDOM ? convertStringToInt(domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${optionID}"] [col-id="strikePrice"]`)?.innerHTML) || convertStringToInt(strategyItem.querySelectorAll('.o-item-row > div')[5].innerHTML) : strategyItem.portfolioAssetInfo?.strikePrice;
-        
-
-       
+        const strikePrice = isDOM ? convertStringToInt(domContextWindow.document.querySelector(`client-option-positions-main .ag-center-cols-clipper [row-id="${initialOptionID}"] [col-id="strikePrice"]`)?.innerHTML) || convertStringToInt(strategyItem.querySelectorAll('.o-item-row > div')[5].innerHTML) : strategyItem.portfolioAssetInfo?.strikePrice;
 
         const getStrategyType = () => {
             const strategyName = getStrategyName();
@@ -1197,32 +1142,34 @@ const createPositionObjectArray  = (strategyItemList) => {
                 return
 
             const strategyType = strategyName.split('@')[0];
-            return 
+            return
             // return ['COVERED'].find(type => strategyType === type);
             // return ['BUCS_COLLAR', 'BUPS_COLLAR', 'BEPS_COLLAR', 'BUCS', 'BECS', 'BUPS', 'BEPS', 'BOX_BUPS_BECS', 'BOX', 'COVERED', 'GUTS', 'LongGUTS_STRANGLE', 'CALL_BUTT_CONDOR'].find(type => strategyType === type);
         }
 
+        const isOrderModalInBuyingMode = () => ordersModal && !!ordersModal.querySelector('.-is-frontView.-is-buy');
 
-        const isOrderModalInBuyingMode = () =>ordersModal &&  !!ordersModal.querySelector('.-is-frontView.-is-buy');
+        const isOrderModalInSellingMode = () => ordersModal && !!ordersModal.querySelector('.-is-frontView.-is-sell');
 
-        const isOrderModalInSellingMode = () =>ordersModal &&   !!ordersModal.querySelector('.-is-frontView.-is-sell');
+        // تنها راه تغییر داده‌های اضافی: مقدار مستقیم روی خود آبجکت نوشته می‌شود
+        const setExtraData = (data) => applyExtraData(strategyPosition, data);
 
-
-      
-
-
-        let strategyPosition = {
-            optionRowEl:isDOM ?strategyItem : null,
+        const strategyPosition = {
+            optionRowEl: isDOM ? strategyItem : null,
             // TODO: is not just option meybe stock
             instrumentName,
             instrumentFullTitle,
             isBuy,
-            isETF : isETF(instrumentName),
-            optionID,
-            isOption,
-            isCall,
-            isPut,
-            cSize,
+            isETF: isETF(instrumentName),
+            optionID: initialOptionID,
+            instrumentId: !isDOM ? strategyItem.instrumentId : undefined,
+            stockPrice: undefined,
+            isOption: initialIsOption,
+            isCall: initialIsCall,
+            isPut: initialIsPut,
+            cSize: initialCSize,
+            daysLeftToSettlement: initialDaysLeftToSettlement,
+            setExtraData,
             isOrderModalInBuyingMode,
             isOrderModalInSellingMode,
             getCSize,
@@ -1244,7 +1191,6 @@ const createPositionObjectArray  = (strategyItemList) => {
             getCurrentPositionAvgPrice,
             getUnreliableCurrentPositionAvgPrice,
             strikePrice,
-            daysLeftToSettlement,
             ordersModal,
             getOffsetOrderPriceElements,
             getOpenMoreOrderPriceElements,
@@ -1256,6 +1202,9 @@ const createPositionObjectArray  = (strategyItemList) => {
             getStrategyType,
             observers: []
         }
+
+        // اگر از اجرای قبلی داده‌ای در map مانده، همان ابتدا روی آبجکت ست کن
+        setExtraData(instrumentExtraDataMap[instrumentName]);
 
         return strategyPosition
     }
@@ -2843,50 +2792,57 @@ const fillCurrentStockPriceByStrikes = (strategyPositions) => {
 
 const  instrumentExtraDataMap = {};
 
-const getAndSetInstrumentData = async (strategyPositions)=>{
+const getAndSetInstrumentData = async (strategyPositions) => {
 
-    const strategyPositionWithInstrumentInfo = async (strategyPositions) => {
+    // یکسان‌سازی ی/ک عربی و فارسی برای مقایسه‌ی نام‌ها
+    const norm = s => s?.replace(/ي/g, 'ی').replace(/ك/g, 'ک').trim();
 
-        const instIdInfoMap = await OMEXApi.getInstrumentInfoBySymbol(strategyPositions.map(stP=>stP.instrumentName));
+    const instIdInfoMap = await OMEXApi.getInstrumentInfoBySymbol(
+        strategyPositions.map(stP => stP.instrumentName)
+    );
 
-        instIdInfoMap.forEach(instIdInfo=>{
-            const strategyPosition = strategyPositions.find(stP=>stP.instrumentName===instIdInfo.instrumentName);
+    instIdInfoMap.forEach(instIdInfo => {
+        // ممکن است چند position با یک instrument باشد، پس filter
+        const matched = strategyPositions.filter(
+            stP => norm(stP.instrumentName) === norm(instIdInfo.instrumentName)
+        );
 
-            const isOption = instIdInfo.isOption ?? strategyPosition.isOption;
-    
-            const daysLeftToSettlement = isOption ? Math.ceil((new Date(instIdInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000)): null;
-    
-            instrumentExtraDataMap[instIdInfo.instrumentName] = {
-                optionID :  isOption ?  instIdInfo.instrumentId: null,
-                instrumentId: instIdInfo.instrumentId,
-                cSize: isOption ? instIdInfo.cSize: 1,
-                stockPrice:isOption ? instIdInfo.stockPrice: null,
-                daysLeftToSettlement
-            }
+        if (!matched.length) {
+            console.warn('position not found for', instIdInfo.instrumentName);
+            return;
+        }
 
+        const isOption = instIdInfo.isOption ?? matched[0].isOption;
+
+        const daysLeftToSettlement = isOption
+            ? Math.ceil((new Date(instIdInfo.psDate).valueOf() - Date.now()) / (24 * 60 * 60000))
+            : null;
+
+        const extraData = {
+            isOption,
+            isPut: isOption ? (instIdInfo.isPut ?? matched[0].isPut) : false,
+            isCall: isOption ? (instIdInfo.isCall ?? matched[0].isCall) : false,
+            optionID: isOption ? instIdInfo.instrumentId : null,
+            instrumentId: instIdInfo.instrumentId,
+            cSize: isOption ? instIdInfo.cSize : 1,
+            stockPrice: isOption ? instIdInfo.stockPrice : null,
+            daysLeftToSettlement
+        };
+
+        // map قدیمی را برای بقیه‌ی کد نگه می‌داریم (با هر دو نام)
+        instrumentExtraDataMap[instIdInfo.instrumentName] = extraData;
+
+        matched.forEach(stP => {
+            instrumentExtraDataMap[stP.instrumentName] = extraData;
+
+            stP.setExtraData(extraData);     // آبجکت اصلی (که توابع closure به آن وصل‌اند)
+            applyExtraData(stP, extraData);  // خود آبجکتی که در آرایه است (اگر کپی باشد)
         });
-        
+    });
 
-
-        return strategyPositions
-
-    }
-
-    // const options = strategyPositions.filter(stP=>stP.isOption);
-
-
-    await strategyPositionWithInstrumentInfo(strategyPositions);
-
-    // const _strategyPositions = await Promise.all(
-    //     strategyPositions.map(async (strategyPosition) => {
-
-    //         return await strategyPositionWithInstrumentInfo(strategyPosition);
-    //     })
-    // );
-
-    return strategyPositions
-
+    return strategyPositions;
 }
+
 
 const lastCalculatedAvgPrices={}
 let isClickedToUseCalculatedAvgPrices= false;
