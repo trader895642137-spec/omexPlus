@@ -13,6 +13,7 @@ import { getListOfTradedAssetsFromTSETMC } from './tsetmcService.js';
 import {
     initSyntheticMarketMonitor
 } from "./synthetic-market-monitor.js";
+import { getListOfTradedKalaAssetsFromOmex } from './omexKalaService.js';
 
 
 
@@ -13400,6 +13401,34 @@ const createList2 = async ()=>{
     // return normalizeAssets(await getAssetsFromTadbirService());
     return normalizeAssets(await getAssetsFromTSETMCService());
 }
+const createBourseKalaList = async ()=>{
+    // return normalizeAssets(await getAssetsFromTadbirService());
+    return normalizeAssets(await getKalaAssetsFromOmexService());
+}
+
+async function getKalaAssetsFromOmexService() {
+    const assets = await getListOfTradedKalaAssetsFromOmex();
+
+    return (assets || []).map(asset => {
+
+        return {
+            symbol: asset.contractSymbol,
+            name: asset.description,
+            quantityOfTrades: asset.tradesVolume,
+            vol: asset.tradesValue,
+            beforeTodayPrice: 0,
+            last: asset.lastTradedPrice,
+            close: asset.lastTradedPrice,
+            bestBuyQ: asset.askVolume3,
+            bestBuy: asset.askPrice3,
+            bestSell: asset.bidPrice3,
+            bestSellQ: asset.bidVolume3,
+            isOption:asset.market==="Option",
+            isCall:asset.optionType==="Call",
+            isPut:asset.optionType==="Put",
+        };
+    });
+}
 
 
 async function getAssetsFromTadbirService() {
@@ -13726,6 +13755,7 @@ const interval = async () => {
 
         // const list = createList();
         const list = await createList2();
+        // const list = await createBourseKalaList();
 
          
         sendToBackGround(list);
