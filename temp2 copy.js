@@ -1,7 +1,7 @@
-const calcCOVERED_BUY_PUT_Strategies = (list, { priceType, expectedProfitPerMonth,
+const calcBUPS_Long_Put_BESStrategies = (list, { priceType, expectedProfitPerMonth,
     min_time_to_settlement = -Infinity, max_time_to_settlement = generalConfig.max_time_to_settlement,
     minProfitToFilter,
-    coveredStrategyList,
+    BUPS_Long_PutStrategies,
     optionsGroupedByStock,
     minStockPriceDistanceInPercent = -Infinity, maxStockPriceDistanceInPercent = Infinity,
     minStockPriceToSarBeSar = -Infinity, maxStockPriceToSarBeSar = Infinity,
@@ -9,52 +9,74 @@ const calcCOVERED_BUY_PUT_Strategies = (list, { priceType, expectedProfitPerMont
 
 
 
-    const enrichedList = coveredStrategyList.map(coveredStrategy => {
+    
 
-        const coveredTotalCost = totalCostCalculatorCommon({
-            strategyPositions: coveredStrategy.strategyPositions,
-            getPrice: (strategyPosition) => getPriceOfAsset({
-                asset: strategyPosition,
-                priceType,
-                sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-            })
+    const enrichedList = BUPS_Long_PutStrategies.map(BUPS_Long_PutStrategy => {
+
+        if(BUPS_Long_PutStrategy.profitPercent<=0) return BUPS_Long_PutStrategy.option
+
+
+        const allStockOptions = optionsGroupedByStock[BUPS_Long_PutStrategy.option.optionDetails.stockSymbol] || [];
+
+
+        const buyingPut = Math.max(...BUPS_Long_PutStrategy.strategyPositions.optionDetails.strikePrice);
+        const otherPuts = BUPS_Long_PutStrategy.strategyPositions.filter(sp=>sp.symbol!==buyingPut.symbol);
+
+        const buyingPutPrice = getPriceOfAsset({
+            asset: buyingPut,
+            priceType,
+            sideType: 'BUY'
         });
 
 
-        const coveredSettlementGain = settlementGainCalculator({ strategyPositions: coveredStrategy.strategyPositions, stockPrice: coveredStrategy.option.strikePrice * 1.2 })
+        const otherPutsSymbols = otherPuts.map(put=>put.symbol);
+        
 
-        const coveredProfit = coveredTotalCost + coveredSettlementGain;
+        const putsLowerStrikePrice = allStockOptions.filter(_option => {
+            if (_option.settlementTimeDiff !== BUPS_Long_PutStrategy.settlementTimeDiff) return false
+            if (!_option.isPut)
+                return false
+            if (_option.optionDetails?.strikePrice >= buyingPut.optionDetails?.strikePrice)
+                return false
 
-        if (coveredProfit <= 0) return coveredStrategy.option
+            if(otherPutsSymbols.includes(_option.symbol)) return false
 
-
-        const allStockOptions = optionsGroupedByStock[coveredStrategy.option.optionDetails.stockSymbol] || [];
-
-
-        const allPutList = allStockOptions.filter(option => option.isPut && option.settlementTimeDiff === coveredStrategy.settlementTimeDiff);
-
-
-
-        const allPossibleStrategies = allPutList.reduce((_allPossibleStrategies, put) => {
-
-            const buyingOptionPrice = getPriceOfAsset({
-                asset: put,
+            const sellingPutPrice = getPriceOfAsset({
+                asset: _option,
                 priceType,
-                sideType: 'BUY'
+                sideType: 'SELL'
             });
+            if(sellingPutPrice===0) return false
 
-            if (buyingOptionPrice === 0) return _allPossibleStrategies
+            if (
+                hasGreaterRatio({
+                    num1: buyingPutPrice,
+                    num2: sellingPutPrice,
+                    properRatio: 20
+                })
+            ) {
+                return false
+            }
+
+            return true
+        }
+        );
 
 
+        
+        
+       
 
-            const quantityFactorOfBuyingPut = Math.abs(coveredProfit / buyingOptionPrice) * 1.3;
+
+        const allPossibleStrategies = putsLowerStrikePrice.reduce((_allPossibleStrategies, sellingPut) => {
+
 
             const strategyPositions = [
-                ...coveredStrategy.strategyPositions,
+                ...BUPS_Long_PutStrategy.strategyPositions,
                 {
-                    ...put,
-                    isBuy: true,
-                    getQuantity: () => quantityFactorOfBuyingPut,
+                    ...sellingPut,
+                    isBuy: false,
+                    getQuantity: () => buyingPut.getQuantity(),
                     getRequiredMargin() { }
                 },
 
@@ -70,28 +92,41 @@ const calcCOVERED_BUY_PUT_Strategies = (list, { priceType, expectedProfitPerMont
                 })
             });
 
-            const settlementGain = settlementGainCalculator({ strategyPositions, stockPrice: put.optionDetails.stockSymbolDetails.last })
-
-            const profit = totalCost + settlementGain;
+            
+            const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:sellingPut.optionDetails.stockSymbolDetails.last});;
 
             const profitPercent = profit / Math.abs(totalCost);
+
+            const breakevenList = findBreakevenList({
+                positions: strategyPositions,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
+            });
+
+            const breakeven = breakevenList[0];
+
+
 
             const strategyObj = {
                 // TODO:remove option prop
                 option: {
-                    ...put
+                    ...sellingPut
                 },
-                positions: [coveredStrategy.option.optionDetails?.stockSymbolDetails, coveredStrategy.option, put],
-                strategyTypeTitle: "COVERED_BUY_PUT",
+                positions: [...strategyPositions],
+                strategyTypeTitle: "BUPS_Long_Put_BES",
                 strategyPositions,
-                currentStockPrice: put.optionDetails?.stockSymbolDetails?.last,
+                currentStockPrice: sellingPut.optionDetails?.stockSymbolDetails?.last,
                 totalCost,
                 expectedProfitNotif,
                 minProfitToFilter,
                 expectedProfitPerMonth,
-                isWholeProfitable: profit >= 0,
-                settlementTimeDiff: put.settlementTimeDiff,
-                name: createStrategyName([coveredStrategy.option.optionDetails?.stockSymbolDetails, coveredStrategy.option, put]),
+                breakeven,
+                isWholeProfitable: !breakeven,
+                settlementTimeDiff: sellingPut.settlementTimeDiff,
+                name: createStrategyName([...strategyPositions]),
                 profitPercent
             }
 
@@ -102,7 +137,7 @@ const calcCOVERED_BUY_PUT_Strategies = (list, { priceType, expectedProfitPerMont
         }, []);
 
         return {
-            ...coveredStrategy.option,
+            ...BUPS_Long_PutStrategy.option,
             allPossibleStrategies
         }
 
@@ -115,7 +150,7 @@ const calcCOVERED_BUY_PUT_Strategies = (list, { priceType, expectedProfitPerMont
     return {
 
         allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
-        strategyName: "COVERED_BUY_PUT",
+        strategyName: "BUPS_Long_Put_BES",
         strategyDirection: STRATEGY_DIRECTION.BULLISH,
         priceType,
         min_time_to_settlement,
@@ -127,7 +162,7 @@ const calcCOVERED_BUY_PUT_Strategies = (list, { priceType, expectedProfitPerMont
         expectedProfitPerMonth,
         ...restConfig,
         htmlTitle: configsToHtmlTitle({
-            strategyName: "COVERED_BUY_PUT",
+            strategyName: "BUPS_Long_Put_BES",
             priceType,
             min_time_to_settlement,
             max_time_to_settlement,
