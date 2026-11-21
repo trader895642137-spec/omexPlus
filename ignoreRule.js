@@ -23,6 +23,7 @@ const CONFIG_TYPE_EXPANSIONS = {
             }),
         },
         { type: 'BUCS_LONG_PUT' },
+        { type: 'BUCS_Long_Put_BES' },
         { type: 'BUCS_BEPS_LongPut' },
         { type: 'SYNTHETIC_COVERED_CALL',  
             modify: config => ({
@@ -82,6 +83,12 @@ const CONFIG_TYPE_EXPANSIONS = {
         },
         {
             type: 'BUPS_LONG_PUT', modify: config => ({
+                ...config,
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+            }),
+        },
+        {
+            type: 'BUPS_Long_Put_BES', modify: config => ({
                 ...config,
                 name: config.name ? config.name.replace(/^ض/, 'ط') : null
             }),

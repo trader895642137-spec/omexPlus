@@ -13808,6 +13808,7 @@ const CONFIG_TYPE_EXPANSIONS = {
             }),
         },
         { type: 'BUCS_LONG_PUT' },
+        { type: 'BUCS_Long_Put_BES' },
         { type: 'BUCS_BEPS_LongPut' },
         { type: 'SYNTHETIC_COVERED_CALL',  
             modify: config => ({
@@ -13867,6 +13868,12 @@ const CONFIG_TYPE_EXPANSIONS = {
         },
         {
             type: 'BUPS_LONG_PUT', modify: config => ({
+                ...config,
+                name: config.name ? config.name.replace(/^ض/, 'ط') : null
+            }),
+        },
+        {
+            type: 'BUPS_Long_Put_BES', modify: config => ({
                 ...config,
                 name: config.name ? config.name.replace(/^ض/, 'ط') : null
             }),
@@ -15576,6 +15583,87 @@ function initSyntheticMarketMonitor({
 }
 
 
+/***/ }),
+/* 14 */
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   getListOfTradedKalaAssetsFromOmex: () => (/* binding */ getListOfTradedKalaAssetsFromOmex)
+/* harmony export */ });
+let contractsCachePromise = null;
+
+const getOptionContracts = async () => {
+    if (!contractsCachePromise) {
+        contractsCachePromise = fetch(
+            'https://khobregan.tsetab.ir/api/gold/api/DataOperations/GetContracts?market=Option',
+            {
+                headers: {
+                    accept: 'application/json, text/plain, */*',
+                    authorization: JSON.parse(localStorage.getItem('auth')),
+                    'ngsw-bypass': ''
+                },
+                referrer: `${window.location.origin}/`,
+                method: 'GET',
+                mode: 'cors',
+                credentials: 'include'
+            }
+        )
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('خطا در دریافت اطلاعات قراردادها');
+                }
+
+                return response.json();
+            })
+            .then(result => result.response.data)
+            .catch(error => {
+                // در صورت خطا اجازه بده درخواست بعدی مجدداً تلاش کند
+                contractsCachePromise = null;
+                throw error;
+            });
+    }
+
+    return contractsCachePromise;
+};
+
+
+const getListOfTradedKalaAssetsFromOmex = async () => {
+    const [contracts, tradedAssets] = await Promise.all([
+        getOptionContracts(),
+
+        fetch(
+            'https://khobregan.tsetab.ir/api/gold/api/FeMrkViwMes/GetFeMrkViwMes?market=Option',
+            {
+                headers: {
+                    accept: 'application/json, text/plain, */*',
+                    authorization: JSON.parse(localStorage.getItem('auth')),
+                    'ngsw-bypass': ''
+                },
+                referrer: `${window.location.origin}/`,
+                method: 'GET',
+                mode: 'cors',
+                credentials: 'include'
+            }
+        ).then(response => {
+            if (!response.ok) {
+                throw new Error('خطا در دریافت اطلاعات');
+            }
+
+            return response.json();
+        }).then(result => result.response.data)
+    ]);
+
+    const contractsMap = new Map(
+        contracts.map(contract => [contract.symbol, contract])
+    );
+
+    return tradedAssets.map(asset => ({
+        ...contractsMap.get(asset.contractSymbol),
+        ...asset
+    }));
+};
+
 /***/ })
 /******/ 	]);
 /************************************************************************/
@@ -15651,6 +15739,8 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _ignoreRule_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(11);
 /* harmony import */ var _tsetmcService_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(12);
 /* harmony import */ var _synthetic_market_monitor_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(13);
+/* harmony import */ var _omexKalaService_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(14);
+
 
 
 
@@ -24535,6 +24625,7 @@ const calcARBITRAGE_PUTStrategies = (list, {priceType, expectedProfitPerMonth,
                 expectedProfitPerMonth,
                 strategyPositions,
                 isWholeProfitable:!breakeven,
+                settlementTimeDiff,
                 minProfitToFilter,
                 name: createStrategyName([option.optionDetails?.stockSymbolDetails, option]),
                 isProfitEnough: isProfitEnoughFn && isProfitEnoughFn(profitPercentOfSettlement,settlementTimeDiff,option),
@@ -24909,6 +25000,7 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
                             breakeven,
+                            settlementTimeDiff: buyingCall.settlementTimeDiff,
                             isWholeProfitable:isFullBodyProfitable,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(profitPercentOfBUCS_Long_Put),
                             name: createStrategyName([buyingCall, sellingCall, buyingPut]),
@@ -24963,6 +25055,179 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
             max_time_to_settlement,
             minStockPriceToSarBeSar,
             maxStockPriceToSarBeSar,
+            minVol
+        })
+    }
+
+}
+
+
+const calcBUCS_Long_Put_BESStrategies = (list, { priceType, expectedProfitPerMonth,
+    min_time_to_settlement = -Infinity, max_time_to_settlement = generalConfig.max_time_to_settlement,
+    minProfitToFilter,
+    BUCS_Long_PutStrategies,
+    optionsGroupedByStock,
+    minStockPriceDistanceInPercent = -Infinity, maxStockPriceDistanceInPercent = Infinity,
+    minStockPriceToSarBeSar = -Infinity, maxStockPriceToSarBeSar = Infinity,
+    minVol = CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif = false, ...restConfig }) => {
+
+
+
+    
+
+    const enrichedList = BUCS_Long_PutStrategies.map(BUCS_Long_PutStrategy => {
+
+        if(BUCS_Long_PutStrategy.profitPercent<=0) return BUCS_Long_PutStrategy.option
+
+
+        const allStockOptions = optionsGroupedByStock[BUCS_Long_PutStrategy.option.optionDetails.stockSymbol] || [];
+
+
+        const buyingPut = BUCS_Long_PutStrategy.strategyPositions.find(sp=>sp.isPut);
+
+        const buyingPutPrice = getPriceOfAsset({
+            asset: buyingPut,
+            priceType,
+            sideType: 'BUY'
+        });
+
+
+        
+
+        const putsLowerStrikePrice = allStockOptions.filter(_option => {
+            if (_option.settlementTimeDiff !== BUCS_Long_PutStrategy.settlementTimeDiff) return false
+            if (!_option.isPut)
+                return false
+            if (_option.optionDetails?.strikePrice >= buyingPut.optionDetails?.strikePrice)
+                return false
+
+            const sellingPutPrice = getPriceOfAsset({
+                asset: _option,
+                priceType,
+                sideType: 'SELL'
+            });
+            if(sellingPutPrice===0) return false
+
+            if (
+                (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.hasGreaterRatio)({
+                    num1: buyingPutPrice,
+                    num2: sellingPutPrice,
+                    properRatio: 20
+                })
+            ) {
+                return false
+            }
+
+            return true
+        }
+        );
+
+
+        
+        
+       
+
+
+        const allPossibleStrategies = putsLowerStrikePrice.reduce((_allPossibleStrategies, sellingPut) => {
+
+
+            const strategyPositions = [
+                ...BUCS_Long_PutStrategy.strategyPositions,
+                {
+                    ...sellingPut,
+                    isBuy: false,
+                    getQuantity: () => buyingPut.getQuantity(),
+                    getRequiredMargin() { }
+                },
+
+            ]
+
+
+            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
+                strategyPositions,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
+            });
+
+            
+            const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:sellingPut.optionDetails.stockSymbolDetails.last});;
+
+            const profitPercent = profit / Math.abs(totalCost);
+
+            const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__.findBreakevenList)({
+                positions: strategyPositions,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
+            });
+
+            const breakeven = breakevenList[0];
+
+
+
+            const strategyObj = {
+                // TODO:remove option prop
+                option: {
+                    ...sellingPut
+                },
+                positions: [...strategyPositions],
+                strategyTypeTitle: "BUCS_Long_Put_BES",
+                strategyPositions,
+                currentStockPrice: sellingPut.optionDetails?.stockSymbolDetails?.last,
+                totalCost,
+                expectedProfitNotif,
+                minProfitToFilter,
+                expectedProfitPerMonth,
+                breakeven,
+                isWholeProfitable: !breakeven,
+                settlementTimeDiff: sellingPut.settlementTimeDiff,
+                name: createStrategyName([...strategyPositions]),
+                profitPercent
+            }
+
+            return _allPossibleStrategies.concat([strategyObj])
+
+
+
+        }, []);
+
+        return {
+            ...BUCS_Long_PutStrategy.option,
+            allPossibleStrategies
+        }
+
+
+    });
+
+
+
+
+    return {
+
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
+        strategyName: "BUCS_Long_Put_BES",
+        strategyDirection: STRATEGY_DIRECTION.BULLISH,
+        priceType,
+        min_time_to_settlement,
+        max_time_to_settlement,
+        minStockPriceDistanceInPercent,
+        maxStockPriceDistanceInPercent,
+        minVol,
+        expectedProfitNotif,
+        expectedProfitPerMonth,
+        ...restConfig,
+        htmlTitle: configsToHtmlTitle({
+            strategyName: "BUCS_Long_Put_BES",
+            priceType,
+            min_time_to_settlement,
+            max_time_to_settlement,
+            minStockPriceDistanceInPercent,
+            maxStockPriceDistanceInPercent,
             minVol
         })
     }
@@ -25732,6 +25997,7 @@ const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName,
                             minProfitToFilter,
                             stockPriceToSarBeSarPercent,
                             breakeven,
+                            settlementTimeDiff:buyingPut.settlementTimeDiff,
                             isWholeProfitable:isFullBodyProfitable,
                             isProfitEnough : isProfitEnoughFn && isProfitEnoughFn(profitPercentOfBUPS_Long_Put),
                             name: createStrategyName([buyingPut, sellingPut, anotherBuyingPut]),
@@ -25786,6 +26052,185 @@ const calcBUPS_Long_PutStrategies = (list, {priceType, strategySubName,
             max_time_to_settlement,
             minStockPriceToSarBeSar,
             maxStockPriceToSarBeSar,
+            minVol
+        })
+    }
+
+}
+
+
+const calcBUPS_Long_Put_BESStrategies = (list, { priceType, expectedProfitPerMonth,
+    min_time_to_settlement = -Infinity, max_time_to_settlement = generalConfig.max_time_to_settlement,
+    minProfitToFilter,
+    BUPS_Long_PutStrategies,
+    optionsGroupedByStock,
+    minStockPriceDistanceInPercent = -Infinity, maxStockPriceDistanceInPercent = Infinity,
+    minStockPriceToSarBeSar = -Infinity, maxStockPriceToSarBeSar = Infinity,
+    minVol = CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif = false, ...restConfig }) => {
+
+
+
+    
+
+    const enrichedList = BUPS_Long_PutStrategies.map(BUPS_Long_PutStrategy => {
+
+        if(BUPS_Long_PutStrategy.profitPercent<=0) return BUPS_Long_PutStrategy.option
+
+
+        const allStockOptions = optionsGroupedByStock[BUPS_Long_PutStrategy.option.optionDetails.stockSymbol] || [];
+
+
+        const buyingPut = BUPS_Long_PutStrategy.strategyPositions.reduce((max, sp) =>
+            sp.optionDetails.strikePrice > max.optionDetails.strikePrice ? sp : max
+        ); 
+        const otherPuts = BUPS_Long_PutStrategy.strategyPositions.filter(sp=>sp.symbol!==buyingPut.symbol);
+
+        const buyingPutPrice = getPriceOfAsset({
+            asset: buyingPut,
+            priceType,
+            sideType: 'BUY'
+        });
+
+
+        const otherPutsSymbols = otherPuts.map(put=>put.symbol);
+        
+
+        const putsLowerStrikePrice = allStockOptions.filter(_option => {
+            if (_option.settlementTimeDiff !== BUPS_Long_PutStrategy.settlementTimeDiff) return false
+            if (!_option.isPut)
+                return false
+            if (_option.optionDetails?.strikePrice >= buyingPut.optionDetails?.strikePrice)
+                return false
+
+            if(otherPutsSymbols.includes(_option.symbol)) return false
+
+            const sellingPutPrice = getPriceOfAsset({
+                asset: _option,
+                priceType,
+                sideType: 'SELL'
+            });
+            if(sellingPutPrice===0) return false
+
+            if (
+                (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.hasGreaterRatio)({
+                    num1: buyingPutPrice,
+                    num2: sellingPutPrice,
+                    properRatio: 20
+                })
+            ) {
+                return false
+            }
+
+            return true
+        }
+        );
+
+
+        
+        
+       
+
+
+        const allPossibleStrategies = putsLowerStrikePrice.reduce((_allPossibleStrategies, sellingPut) => {
+
+
+            const strategyPositions = [
+                ...BUPS_Long_PutStrategy.strategyPositions,
+                {
+                    ...sellingPut,
+                    isBuy: false,
+                    getQuantity: () => buyingPut.getQuantity(),
+                    getRequiredMargin() { }
+                },
+
+            ]
+
+
+            const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
+                strategyPositions,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
+            });
+
+            
+            const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:sellingPut.optionDetails.stockSymbolDetails.last});;
+
+            const profitPercent = profit / Math.abs(totalCost);
+
+            const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__.findBreakevenList)({
+                positions: strategyPositions,
+                getPrice: (strategyPosition) => getPriceOfAsset({
+                    asset: strategyPosition,
+                    priceType,
+                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                })
+            });
+
+            const breakeven = breakevenList[0];
+
+
+
+            const strategyObj = {
+                // TODO:remove option prop
+                option: {
+                    ...sellingPut
+                },
+                positions: [...strategyPositions],
+                strategyTypeTitle: "BUPS_Long_Put_BES",
+                strategyPositions,
+                currentStockPrice: sellingPut.optionDetails?.stockSymbolDetails?.last,
+                totalCost,
+                expectedProfitNotif,
+                minProfitToFilter,
+                expectedProfitPerMonth,
+                breakeven,
+                isWholeProfitable: !breakeven,
+                settlementTimeDiff: sellingPut.settlementTimeDiff,
+                name: createStrategyName([...strategyPositions]),
+                profitPercent
+            }
+
+            return _allPossibleStrategies.concat([strategyObj])
+
+
+
+        }, []);
+
+        return {
+            ...BUPS_Long_PutStrategy.option,
+            allPossibleStrategies
+        }
+
+
+    });
+
+
+
+
+    return {
+
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
+        strategyName: "BUPS_Long_Put_BES",
+        strategyDirection: STRATEGY_DIRECTION.BULLISH,
+        priceType,
+        min_time_to_settlement,
+        max_time_to_settlement,
+        minStockPriceDistanceInPercent,
+        maxStockPriceDistanceInPercent,
+        minVol,
+        expectedProfitNotif,
+        expectedProfitPerMonth,
+        ...restConfig,
+        htmlTitle: configsToHtmlTitle({
+            strategyName: "BUPS_Long_Put_BES",
+            priceType,
+            min_time_to_settlement,
+            max_time_to_settlement,
+            minStockPriceDistanceInPercent,
+            maxStockPriceDistanceInPercent,
             minVol
         })
     }
@@ -27186,6 +27631,14 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitNotif: true,
         });
 
+        const BUCS_Long_Put_BESStrategies =  calcBUCS_Long_Put_BESStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            BUCS_Long_PutStrategies:BUCS_Long_PutStrategies.allStrategies,
+            optionsGroupedByStock,
+            expectedProfitNotif: true,
+        });
+
 
         const BECS_Long_CallStrategies = calcBECS_Long_CallStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
@@ -27205,6 +27658,15 @@ const createListFilterContetnByList=(list)=>{
         const BUPS_Long_PutStrategies = calcBUPS_Long_PutStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             filteredList,
+            optionsGroupedByStock,
+            expectedProfitNotif: true,
+        });
+
+
+        const BUPS_Long_Put_BESStrategies =  calcBUPS_Long_Put_BESStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            BUPS_Long_PutStrategies:BUPS_Long_PutStrategies.allStrategies,
             optionsGroupedByStock,
             expectedProfitNotif: true,
         });
@@ -28182,10 +28644,69 @@ const createListFilterContetnByList=(list)=>{
         }),
 
         
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        filterStrategiesByConfig({
+            strategies: BUCS_Long_Put_BESStrategies,
+            expectedProfitPerMonth: 0.05,
+            min_time_to_settlement: 20 * 24 * 3600000,
+            max_time_to_settlement: 40 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
+        }),
+        filterStrategiesByConfig({
+            strategies: BUCS_Long_Put_BESStrategies,
+            expectedProfitPerMonth: 0.05,
+            min_time_to_settlement: 10 * 24 * 3600000,
+            max_time_to_settlement: 20 * 24 * 3600000,
+            minProfitToFilter : 0.05,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
+        }),
+        filterStrategiesByConfig({
+            strategies: BUCS_Long_Put_BESStrategies,
+            expectedProfitPerMonth: 0.08,
+            min_time_to_settlement: 1 * 24 * 3600000,
+            max_time_to_settlement: 10 * 24 * 3600000,
+            minProfitToFilter : 0.04,
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.10
+        }),
+        filterStrategiesByConfig({
+            strategies: BUCS_Long_Put_BESStrategies,
+            expectedProfitPerMonth: 0.08,
+            max_time_to_settlement: 1 * 24 * 3600000,
+            minProfitToFilter : 0.01,
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.05
+        }),
         
 
 
 
+
+        
 
 
         
@@ -28338,7 +28859,79 @@ const createListFilterContetnByList=(list)=>{
         }),
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        filterStrategiesByConfig({
+            strategies: BUPS_Long_Put_BESStrategies,
+            expectedProfitPerMonth: 0.05,
+            min_time_to_settlement: 20 * 24 * 3600000,
+            max_time_to_settlement: 40 * 24 * 3600000,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
+        }),
+        filterStrategiesByConfig({
+            strategies: BUPS_Long_Put_BESStrategies,
+            expectedProfitPerMonth: 0.05,
+            min_time_to_settlement: 10 * 24 * 3600000,
+            max_time_to_settlement: 20 * 24 * 3600000,
+            minProfitToFilter : 0.05,
+            strategyRules: [
+                {
+                    when: strategy => strategy?.option?.symbol?.includes('هرم'),
+                    expectedProfitPerMonth: 0.035,
+                }
+            ]
+        }),
+        filterStrategiesByConfig({
+            strategies: BUPS_Long_Put_BESStrategies,
+            expectedProfitPerMonth: 0.08,
+            min_time_to_settlement: 1 * 24 * 3600000,
+            max_time_to_settlement: 10 * 24 * 3600000,
+            minProfitToFilter : 0.04,
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.10
+        }),
+        filterStrategiesByConfig({
+            strategies: BUPS_Long_Put_BESStrategies,
+            expectedProfitPerMonth: 0.08,
+            max_time_to_settlement: 1 * 24 * 3600000,
+            minProfitToFilter : 0.01,
+            nokoolOrNoRequestFactor:0.30,
+            minProfitPercentOfSettlement:-0.05
+        }),
+
+
        
+
+
+
+
+
+
+
+
+        
        
 
         filterStrategiesByConfig({
@@ -29051,6 +29644,34 @@ const createList2 = async ()=>{
     // return normalizeAssets(await getAssetsFromTadbirService());
     return normalizeAssets(await getAssetsFromTSETMCService());
 }
+const createBourseKalaList = async ()=>{
+    // return normalizeAssets(await getAssetsFromTadbirService());
+    return normalizeAssets(await getKalaAssetsFromOmexService());
+}
+
+async function getKalaAssetsFromOmexService() {
+    const assets = await (0,_omexKalaService_js__WEBPACK_IMPORTED_MODULE_8__.getListOfTradedKalaAssetsFromOmex)();
+
+    return (assets || []).map(asset => {
+
+        return {
+            symbol: asset.contractSymbol,
+            name: asset.description,
+            quantityOfTrades: asset.tradesVolume,
+            vol: asset.tradesValue,
+            beforeTodayPrice: 0,
+            last: asset.lastTradedPrice,
+            close: asset.lastTradedPrice,
+            bestBuyQ: asset.askVolume3,
+            bestBuy: asset.askPrice3,
+            bestSell: asset.bidPrice3,
+            bestSellQ: asset.bidVolume3,
+            isOption:asset.market==="Option",
+            isCall:asset.optionType==="Call",
+            isPut:asset.optionType==="Put",
+        };
+    });
+}
 
 
 async function getAssetsFromTadbirService() {
@@ -29378,6 +29999,7 @@ const interval = async () => {
 
         // const list = createList();
         const list = await createList2();
+        // const list = await createBourseKalaList();
 
          
         sendToBackGround(list);

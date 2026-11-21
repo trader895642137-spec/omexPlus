@@ -66,7 +66,7 @@ export const getListOfTradedKalaAssetsFromOmex = async () => {
     );
 
     return tradedAssets.map(asset => ({
-        ...contractsMap.get(asset.symbol),
+        ...contractsMap.get(asset.contractSymbol),
         ...asset
     }));
 };
