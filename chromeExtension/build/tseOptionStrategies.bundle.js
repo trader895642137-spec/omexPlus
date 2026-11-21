@@ -15591,7 +15591,56 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   getListOfTradedKalaAssetsFromOmex: () => (/* binding */ getListOfTradedKalaAssetsFromOmex)
 /* harmony export */ });
+
+const origin = window.location.origin;
+const redOrigin = origin.replace('.tsetab','-red.tsetab');
+const deltaOrigin = origin.replace('.tsetab','-delta.tsetab');
+
 let contractsCachePromise = null;
+let commoditiesCachePromise = null;
+
+
+const stockInfosCache = new Map();
+
+const getStockInfos = async (instrumentIds) => {
+    const ids = [...new Set(instrumentIds.filter(Boolean))].sort();
+
+    if (!ids.length) return [];
+
+    const cacheKey = JSON.stringify(ids);
+
+    if (!stockInfosCache.has(cacheKey)) {
+        const promise = fetch(`${redOrigin}/api/PublicMessages/GetInstruments`, {
+            headers: {
+                accept: 'application/json, text/plain, */*',
+                authorization: JSON.parse(localStorage.getItem('auth')),
+                'content-type': 'application/json',
+                'ngsw-bypass': ''
+            },
+            referrer: `${origin}/`,
+            body: JSON.stringify({ instrumentIds: ids }),
+            method: 'POST',
+            mode: 'cors',
+            credentials: 'include'
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('خطا در دریافت اطلاعات نمادها');
+                }
+
+                return response.json();
+            })
+            .then(res => res.response.data)
+            .catch(error => {
+                stockInfosCache.delete(cacheKey);
+                throw error;
+            });
+
+        stockInfosCache.set(cacheKey, promise);
+    }
+
+    return stockInfosCache.get(cacheKey);
+};
 
 const getOptionContracts = async () => {
     if (!contractsCachePromise) {
@@ -15618,7 +15667,6 @@ const getOptionContracts = async () => {
             })
             .then(result => result.response.data)
             .catch(error => {
-                // در صورت خطا اجازه بده درخواست بعدی مجدداً تلاش کند
                 contractsCachePromise = null;
                 throw error;
             });
@@ -15627,10 +15675,43 @@ const getOptionContracts = async () => {
     return contractsCachePromise;
 };
 
+const getCommodities = async () => {
+    if (!commoditiesCachePromise) {
+        commoditiesCachePromise = fetch(
+            'https://khobregan.tsetab.ir/api/gold/api/DataOperations/GetCommodities',
+            {
+                headers: {
+                    accept: 'application/json, text/plain, */*',
+                    authorization: JSON.parse(localStorage.getItem('auth')),
+                    'ngsw-bypass': ''
+                },
+                referrer: `${window.location.origin}/`,
+                method: 'GET',
+                mode: 'cors',
+                credentials: 'include'
+            }
+        )
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('خطا در دریافت اطلاعات کالاها');
+                }
+
+                return response.json();
+            })
+            .then(result => result.response.data)
+            .catch(error => {
+                commoditiesCachePromise = null;
+                throw error;
+            });
+    }
+
+    return commoditiesCachePromise;
+};
 
 const getListOfTradedKalaAssetsFromOmex = async () => {
-    const [contracts, tradedAssets] = await Promise.all([
+    const [contracts, commodities, tradedAssets] = await Promise.all([
         getOptionContracts(),
+        getCommodities(),
 
         fetch(
             'https://khobregan.tsetab.ir/api/gold/api/FeMrkViwMes/GetFeMrkViwMes?market=Option',
@@ -15640,7 +15721,7 @@ const getListOfTradedKalaAssetsFromOmex = async () => {
                     authorization: JSON.parse(localStorage.getItem('auth')),
                     'ngsw-bypass': ''
                 },
-                referrer: `${window.location.origin}/`,
+                referrer: `${origin}/`,
                 method: 'GET',
                 mode: 'cors',
                 credentials: 'include'
@@ -15658,10 +15739,44 @@ const getListOfTradedKalaAssetsFromOmex = async () => {
         contracts.map(contract => [contract.symbol, contract])
     );
 
-    return tradedAssets.map(asset => ({
-        ...contractsMap.get(asset.contractSymbol),
-        ...asset
-    }));
+    const commoditiesMap = new Map(
+        commodities.map(commodity => [
+            commodity.commodityId,
+            commodity.baseInstrumentIds?.[0]?.instrumentId
+        ])
+    );
+
+    // استخراج شناسه تمام نمادهای پایه
+    const baseInstrumentIds = [
+        ...new Set(
+            [...commoditiesMap.values()].filter(Boolean)
+        )
+    ];
+
+    // دریافت اطلاعات نمادهای پایه (کش‌شونده)
+    const stockInfos = await getStockInfos(baseInstrumentIds);
+
+    const stockInfosMap = new Map(
+        stockInfos.map(info => [
+            info.instrumentId,
+            info.lVal18AFC
+        ])
+    );
+
+    return tradedAssets.map(asset => {
+        const contract = contractsMap.get(asset.contractSymbol);
+
+        const baseInstrumentId = commoditiesMap.get(
+            contract?.commodityId
+        );
+
+        return {
+            ...contract,
+            ...asset,
+            baseInstrumentId,
+            baseInstrumentSymbol: stockInfosMap.get(baseInstrumentId)
+        };
+    });
 };
 
 /***/ })
@@ -15916,14 +16031,14 @@ let generalConfig = {
     expectedProfitPerMonth: 0.05,
     minProfitToFilter: 0.01,
     BUCSSOptionListIgnorer: ({option, minVol}) => {
-        return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض')  )
+        return (!option.optionDetails?.stockSymbolDetails || !option.isCall  )
     }
     ,
     BECSSOptionListIgnorer: ({option, minVol}) => {
-        return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
+        return (!option.optionDetails?.stockSymbolDetails || !option.isCall )
     },
     BUPSOptionListIgnorer: ({option, minVol}) => {
-        return (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط')  )
+        return (!option.optionDetails?.stockSymbolDetails || !option.isPut  )
     }
 }
 
@@ -16383,7 +16498,7 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth,
 
             const _enrichedList = optionListOfSameDate.map(option => {
 
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
+                if (!option.optionDetails?.stockSymbolDetails || !option.isCall )
                     return option
 
 
@@ -16395,7 +16510,7 @@ const calcBOXStrategies = (list, {priceType, expectedProfitPerMonth,
 
                 if(optionPrice===0) return option
 
-                const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => _option.symbol !== option.symbol && _option.symbol.startsWith('ض')  && _option.optionDetails?.strikePrice > option.optionDetails?.strikePrice);
+                const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => _option.symbol !== option.symbol && _option.isCall  && _option.optionDetails?.strikePrice > option.optionDetails?.strikePrice);
 
                 let allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (_allPossibleStrategies, higherStrikeOption) => {
 
@@ -16592,7 +16707,7 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth,
 
             const _enrichedList = optionListOfSameDate.map(option => {
 
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط'))
+                if (!option.optionDetails?.stockSymbolDetails || !option.isPut)
                     return option
 
 
@@ -16604,7 +16719,7 @@ const calcBOX_BUPS_BECSStrategies = (list, {priceType, expectedProfitPerMonth,
 
                 if(optionPrice===0) return option
 
-                const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => _option.symbol !== option.symbol && _option.symbol.startsWith('ط')  && _option.optionDetails?.strikePrice > option.optionDetails?.strikePrice);
+                const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => _option.symbol !== option.symbol && _option.isPut  && _option.optionDetails?.strikePrice > option.optionDetails?.strikePrice);
 
                 let allPossibleStrategies = optionListWithHigherStrikePrice.reduce( (_allPossibleStrategies, higherStrikeOption) => {
 
@@ -16807,14 +16922,14 @@ const calcLongGUTS_STRANGLEStrategies = (list, {priceType, expectedProfitPerMont
             const _enrichedList = optionListOfSameDate.map(option => {
 
                
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
+                if (!option.optionDetails?.stockSymbolDetails || !option.isCall )
                     return option
 
                 const putList = optionListOfSameDate.filter(_option => {
 
                
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') )
+                    if (_option.symbol === option.symbol || !_option.isPut )
                         return false
                    
 
@@ -17026,7 +17141,7 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
                         return false
 
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') )
+                    if (_option.symbol === option.symbol || !_option.isPut )
                         return false
                     if (_option.optionDetails?.strikePrice <= _option.optionDetails.stockSymbolDetails.last)
                         return false
@@ -17244,7 +17359,7 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
                     if (!_option.optionDetails?.stockSymbolDetails?.last)
                         return false
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') )
+                    if (_option.symbol === option.symbol || !_option.isPut )
                         return false
                     if (_option.optionDetails?.strikePrice >= _option.optionDetails.stockSymbolDetails.last)
                         return false
@@ -17447,7 +17562,7 @@ const calcBUCSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                     if (!_option.optionDetails?.stockSymbolDetails?.last)
                         return false
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') )
+                    if (_option.symbol === option.symbol || !_option.isCall )
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -17671,7 +17786,7 @@ const calcBUPSStrategies = (list, {priceType,minProfitToFilter, expectedProfitPe
                
 
                 const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط'))
+                    if (_option.symbol === option.symbol || !_option.isPut)
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -18144,7 +18259,7 @@ const calcCALL_BUTT_CONDORStrategies = (list, {
 
                 const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') )
+                    if (_option.symbol === option.symbol || !_option.isCall )
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -18800,7 +18915,7 @@ const calcIRON_BUTT_CONDOR_BUCS_Strategies = (list, {priceType, settlementGainCh
 
                 const callListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') )
+                    if (_option.symbol === option.symbol || !_option.isCall )
                         return false
                     if (_option.optionDetails?.strikePrice <= option.optionDetails?.strikePrice)
                         return false
@@ -19309,7 +19424,7 @@ const calcPUT_BUTT_CONDORStrategies = (list, {priceType,
 
                 const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
 
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط') )
+                    if (_option.symbol === option.symbol || !_option.isPut )
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -20802,7 +20917,7 @@ const calcBUPS_COLLARStrategies = (list, {priceType, expectedProfitPerMonth,
                
 
                 const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط'))
+                    if (_option.symbol === option.symbol || !_option.isPut)
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -21036,7 +21151,7 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
                 if(optionPrice===0) return option
 
                 const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض') )
+                    if (_option.symbol === option.symbol || !_option.isCall )
                         return
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return
@@ -21687,7 +21802,7 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
             if (!option.optionDetails?.stockSymbolDetails)
                 return option
 
-            if (!option.symbol.startsWith('ض'))
+            if (!option.isCall)
                 return option
 
             const sellingOptionPrice = getPriceOfAsset({
@@ -21986,7 +22101,7 @@ const calcCOVERED_CONVERSION_Strategies = (list, {priceType,
 
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
-            if (!option.symbol.startsWith('ض')  || stockPriceStrikeRatio < minStockPriceDistanceInPercent || stockPriceStrikeRatio > maxStockPriceDistanceInPercent)
+            if (!option.isCall  || stockPriceStrikeRatio < minStockPriceDistanceInPercent || stockPriceStrikeRatio > maxStockPriceDistanceInPercent)
                 return option
 
             const putOptionWithSameStrike = optionListOfStock.find(optionOfStock => {
@@ -22152,7 +22267,7 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
 
             const stockPriceStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
 
-            if (!option.symbol.startsWith('ض')  || stockPriceStrikeRatio < minStockPriceDistanceInPercent || stockPriceStrikeRatio > maxStockPriceDistanceInPercent)
+            if (!option.isCall  || stockPriceStrikeRatio < minStockPriceDistanceInPercent || stockPriceStrikeRatio > maxStockPriceDistanceInPercent)
                 return option
 
 
@@ -22283,7 +22398,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
 
             const _enrichedList = optionListOfSameDate.map(option => {
 
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط') ) {
+                if (!option.optionDetails?.stockSymbolDetails || !option.isPut ) {
                     return option
                 }
                 const stockPriceLowerStrikeRatio = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
@@ -22293,7 +22408,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
                 }
 
                 const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ط'))
+                    if (_option.symbol === option.symbol || !_option.isPut)
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -22488,7 +22603,7 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
               
 
                 const optionListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
-                    if (_option.symbol === option.symbol || !_option.symbol.startsWith('ض'))
+                    if (_option.symbol === option.symbol || !_option.isCall)
                         return false
                     if (_option.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
                         return false
@@ -27435,7 +27550,7 @@ const createListFilterContetnByList=(list)=>{
             filteredList,
             optionsGroupedByStock,
             BUCSSOptionListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
+                if (!option.optionDetails?.stockSymbolDetails || !option.isCall )
                     return true
 
                 return false
@@ -27455,7 +27570,7 @@ const createListFilterContetnByList=(list)=>{
             filteredList,
             optionsGroupedByStock,
             BUCSSOptionListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ط'))
+                if (!option.optionDetails?.stockSymbolDetails || !option.isPut)
                     return true
 
                 return false
@@ -27700,7 +27815,7 @@ const createListFilterContetnByList=(list)=>{
             filteredList,
             optionsGroupedByStock,
             BUCSSOptionListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
+                if (!option.optionDetails?.stockSymbolDetails || !option.isCall )
                     return true
                 return false
             },
@@ -27796,7 +27911,7 @@ const createListFilterContetnByList=(list)=>{
         const ShortGUTSStrategies = calcShortGUTSStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             callListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض')  || option.optionDetails?.strikePrice >= option.optionDetails.stockSymbolDetails.last)
+                if (!option.optionDetails?.stockSymbolDetails || !option.isCall  || option.optionDetails?.strikePrice >= option.optionDetails.stockSymbolDetails.last)
                     return true
                 return false
             },
@@ -27808,7 +27923,7 @@ const createListFilterContetnByList=(list)=>{
         const ShortSTRANGLEStrategies = calcShortSTRANGLEStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
             callListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض')  || option.optionDetails?.strikePrice <= option.optionDetails.stockSymbolDetails.last)
+                if (!option.optionDetails?.stockSymbolDetails || !option.isCall  || option.optionDetails?.strikePrice <= option.optionDetails.stockSymbolDetails.last)
                     return true
 
                 return false
@@ -28045,7 +28160,7 @@ const createListFilterContetnByList=(list)=>{
             // maxStockMiddleDistanceInPercent:0.06,
             // TODO: ignorer of option1
             BUCSSOptionListIgnorer: ({ option, minVol }) => {
-                if (!option.optionDetails?.stockSymbolDetails || !option.symbol.startsWith('ض') )
+                if (!option.optionDetails?.stockSymbolDetails || !option.isCall )
                     return true
 
                 const stockStrikeDistanceInPercent = (option.optionDetails.stockSymbolDetails.last / option.optionDetails?.strikePrice) - 1;
@@ -29532,7 +29647,7 @@ function normalizeAssets(rawAssets) {
     let list = rawAssets.map(asset => {
 
 
-        const isOption = /اختیار[خف]|اختيار[خف]/.test(asset.name);
+        const isOption = asset.isOption ||  /اختیار[خف]|اختيار[خف]/.test(asset.name);
 
 
         const prevRecordObj = prevListSymbolMap[asset.symbol];
@@ -29546,32 +29661,36 @@ function normalizeAssets(rawAssets) {
 
         }
         )();
-        const isCall = isOption && asset.symbol.startsWith('ض');
-        const isPut = isOption && asset.symbol.startsWith('ط');
-        let optionDetails,strikePrice,settlementTimeDiff;
+        const isCall = asset.isCall || (isOption && asset.symbol.startsWith('ض'));
+        const isPut = asset.isPut || (isOption && asset.symbol.startsWith('ط'));
+        let optionDetails,strikePrice,date,settlementTimeDiff;
         if (isOption) {
-            let date = asset.name.split('-').pop();
-            let dateArray = date.split('/');
-            if(dateArray[0].length===2){
-                dateArray[0] = '14' + dateArray[0];
-                date = dateArray.join('/')
+            if(asset.exerciseDate){
+                // FIXME:is miladi
+                date = asset.exerciseDate;
+            }else{
+                date = asset.name.split('-').pop();
+                let dateArray = date.split('/');
+                if(dateArray[0].length===2){
+                    dateArray[0] = '14' + dateArray[0];
+                    date = dateArray.join('/')
+                }
             }
 
-            strikePrice = convertStringToInt(asset.name.split('-')[1]);
-            const stockSymbol = asset.name
-                .split('-')[0]
+                strikePrice = asset.strikePrice || convertStringToInt(asset.name?.split('-')[1] || '');
+                const stockSymbol =asset.baseInstrumentSymbol ||  (asset.name? asset.name.split('-')[0]
                 .replace(/اختیار[خف]|اختيار[خف]/g, '')
-                .trim();
+                .trim():'')
 
             optionDetails = {
                 date,
                 stockSymbol,
                 strikePrice
             }
-            settlementTimeDiff = (0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(
+            settlementTimeDiff = asset.settlementTimeDiff || ((0,_jalali_moment_browser_js__WEBPACK_IMPORTED_MODULE_0__.moment)(
                 optionDetails.date,
                 'jYYYY/jMM/jDD'
-            ).diff(now) ;
+            ).diff(now)) ;
             if (settlementTimeDiff <= 0) {
                 settlementTimeDiff = 1;
             }
@@ -29652,7 +29771,12 @@ const createBourseKalaList = async ()=>{
 async function getKalaAssetsFromOmexService() {
     const assets = await (0,_omexKalaService_js__WEBPACK_IMPORTED_MODULE_8__.getListOfTradedKalaAssetsFromOmex)();
 
+    const now = new Date();
+
     return (assets || []).map(asset => {
+
+        const exerciseDate = new Date(asset.lastExerciseDate);
+        const settlementTimeDiff = (exerciseDate - now) / (1000 * 60 * 60 * 24);
 
         return {
             symbol: asset.contractSymbol,
@@ -29666,9 +29790,14 @@ async function getKalaAssetsFromOmexService() {
             bestBuy: asset.askPrice3,
             bestSell: asset.bidPrice3,
             bestSellQ: asset.bidVolume3,
-            isOption:asset.market==="Option",
-            isCall:asset.optionType==="Call",
-            isPut:asset.optionType==="Put",
+            isOption: asset.market === "Option",
+            isCall: asset.optionType === "Call",
+            isPut: asset.optionType === "Put",
+            settlementTimeDiff,
+            baseInstrumentSymbol:asset.baseInstrumentSymbol,
+            baseInstrumentId:asset.baseInstrumentId,
+            exerciseDate,
+            strikePrice:asset.strikePrice
         };
     });
 }
@@ -29998,8 +30127,8 @@ const interval = async () => {
     try {
 
         // const list = createList();
-        const list = await createList2();
-        // const list = await createBourseKalaList();
+        // const list = await createList2();
+        const list = await createBourseKalaList();
 
          
         sendToBackGround(list);
