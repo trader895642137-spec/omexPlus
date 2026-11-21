@@ -115,6 +115,33 @@ const getCommodities = async () => {
     return commoditiesCachePromise;
 };
 
+
+export const getStockPricesData = async (instrumentIds) => {
+    const ids = [...new Set(instrumentIds.filter(Boolean))];
+
+    if (!ids.length) return [];
+
+    return fetch(`${redOrigin}/api/PublicMessages/InstTrades`, {
+        headers: {
+            accept: 'application/json, text/plain, */*',
+            authorization: JSON.parse(localStorage.getItem('auth')),
+            'content-type': 'application/json',
+            'ngsw-bypass': ''
+        },
+        referrer: `${origin}/`,
+        body: JSON.stringify({ instrumentIds: ids }),
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'include'
+    }).then(response => {
+        if (!response.ok) {
+            throw new Error('خطا در دریافت قیمت معاملات نمادهای پایه');
+        }
+
+        return response.json();
+    }).then(res => res.response.data);
+};
+
 export const getListOfTradedKalaAssetsFromOmex = async () => {
     const [contracts, commodities, tradedAssets] = await Promise.all([
         getOptionContracts(),
@@ -163,10 +190,27 @@ export const getListOfTradedKalaAssetsFromOmex = async () => {
     // دریافت اطلاعات نمادهای پایه (کش‌شونده)
     const stockInfos = await getStockInfos(baseInstrumentIds);
 
+
+
     const stockInfosMap = new Map(
         stockInfos.map(info => [
             info.instrumentId,
             info.lVal18AFC
+        ])
+    );
+
+    // دریافت قیمت تمام نمادهای پایه به صورت تجمیعی و بدون کش
+    const stockPricesData = (await getStockPricesData(baseInstrumentIds)).filter(Boolean);
+    const stockPricesMap = new Map(
+        stockPricesData.map(({ instrumentId, pClosing, pDrCotVal, ...rest }) => [
+            instrumentId,
+            {
+                ...rest,
+                close: pClosing,
+                last: pDrCotVal,
+                bestSell: pDrCotVal,
+                bestBuy: pDrCotVal,
+            }
         ])
     );
 
@@ -181,7 +225,8 @@ export const getListOfTradedKalaAssetsFromOmex = async () => {
             ...contract,
             ...asset,
             baseInstrumentId,
-            baseInstrumentSymbol: stockInfosMap.get(baseInstrumentId)
+            baseInstrumentSymbol: stockInfosMap.get(baseInstrumentId),
+            stockSymbolDetails: stockPricesMap.get(baseInstrumentId)
         };
     });
 };

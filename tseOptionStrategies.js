@@ -13870,7 +13870,7 @@ function normalizeAssets(rawAssets) {
 
         if (!listItem.isOption)
             return listItem
-        allStockSymbolDetailsMap[listItem.optionDetails.stockSymbol] = allStockSymbolDetailsMap[listItem.optionDetails.stockSymbol] || list.find(_item => _item.symbol === listItem.optionDetails.stockSymbol);
+        allStockSymbolDetailsMap[listItem.optionDetails.stockSymbol] = allStockSymbolDetailsMap[listItem.optionDetails.stockSymbol] || listItem.stockSymbolDetails || list.find(_item => _item.symbol === listItem.optionDetails.stockSymbol);
         const stockSymbolDetails = allStockSymbolDetailsMap[listItem.optionDetails.stockSymbol]
         listItem.optionDetails.stockSymbolDetails = stockSymbolDetails
 
@@ -13942,7 +13942,8 @@ async function getKalaAssetsFromOmexService() {
             baseInstrumentSymbol:asset.baseInstrumentSymbol,
             baseInstrumentId:asset.baseInstrumentId,
             exerciseDate,
-            strikePrice:asset.strikePrice
+            strikePrice:asset.strikePrice,
+            stockSymbolDetails:asset.stockSymbolDetails
         };
     });
 }
