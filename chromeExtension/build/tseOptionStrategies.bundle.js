@@ -21879,10 +21879,6 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
             ]
 
 
-            if(option.symbol==='TLTR06C210'){
-                console.log(32423);
-                
-            }
 
             const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
                 strategyPositions,
