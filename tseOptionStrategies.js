@@ -9111,7 +9111,7 @@ const calcBUCS_Long_PutStrategies = (list, {priceType, strategySubName,
                     const putListWithHigherStrikePrice = optionListOfSameDate.filter(_option => {
                         if (!_option.isPut)
                             return false
-                        if (_option.optionDetails?.strikePrice < sellingCall.optionDetails?.strikePrice)
+                        if (_option.optionDetails?.strikePrice <= sellingCall.optionDetails?.strikePrice)
                             return false
 
                         return true
