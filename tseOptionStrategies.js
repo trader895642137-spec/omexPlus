@@ -171,7 +171,7 @@ const isETF = (symbol) => ETF_LIST.some(_etfName => symbol === _etfName);
 
 let prevListSymbolMap = {};
 
-let generalConfig = {
+export const generalConfig = {
     max_time_to_settlement: 60 * 24 * 3600000,
     expectedProfitPerMonth: 0.05,
     minProfitToFilter: 0.01,
@@ -435,6 +435,7 @@ const convertStringToInt = (stringNumber) => {
 const createStrategyName = (options) => {
     let prevOptionSymBolWithoutDigits;
     return `${options.map(_option => {
+        if(!_option.symbol) return '+'
         
         const symbolWithoutDigits = _option.symbol.replace(/[0-9]/g, '');
         if (prevOptionSymBolWithoutDigits === symbolWithoutDigits) {
@@ -5985,6 +5986,8 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
                     sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
                 })
             });
+
+            
 
             
             const settlementGain =  settlementGainCalculator({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
@@ -13921,7 +13924,7 @@ async function getKalaAssetsFromOmexService() {
     return (assets || []).map(asset => {
 
         const exerciseDate = new Date(asset.lastExerciseDate);
-        const settlementTimeDiff = (exerciseDate - now) / (1000 * 60 * 60 * 24);
+        const settlementTimeDiff = (exerciseDate - now);
 
         return {
             symbol: asset.contractSymbol,
@@ -13931,10 +13934,10 @@ async function getKalaAssetsFromOmexService() {
             beforeTodayPrice: 0,
             last: asset.lastTradedPrice,
             close: asset.lastTradedPrice,
-            bestBuyQ: asset.askVolume3,
-            bestBuy: asset.askPrice3,
-            bestSell: asset.bidPrice3,
-            bestSellQ: asset.bidVolume3,
+            bestBuyQ: asset.bidVolume1,
+            bestBuy: asset.bidPrice1,
+            bestSell: asset.askPrice1,
+            bestSellQ: asset.askVolume1,
             isOption: asset.market === "Option",
             isCall: asset.optionType === "Call",
             isPut: asset.optionType === "Put",

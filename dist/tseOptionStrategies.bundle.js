@@ -15889,6 +15889,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   RUN: () => (/* binding */ RUN),
 /* harmony export */   STRATEGY_DIRECTION: () => (/* binding */ STRATEGY_DIRECTION),
+/* harmony export */   generalConfig: () => (/* binding */ generalConfig),
 /* harmony export */   openNewTab: () => (/* binding */ openNewTab),
 /* harmony export */   openPortfolioWatcher: () => (/* binding */ openPortfolioWatcher)
 /* harmony export */ });
@@ -16072,7 +16073,7 @@ const isETF = (symbol) => _common_js__WEBPACK_IMPORTED_MODULE_3__.ETF_LIST.some(
 
 let prevListSymbolMap = {};
 
-let generalConfig = {
+const generalConfig = {
     max_time_to_settlement: 60 * 24 * 3600000,
     expectedProfitPerMonth: 0.05,
     minProfitToFilter: 0.01,
@@ -16336,6 +16337,7 @@ const convertStringToInt = (stringNumber) => {
 const createStrategyName = (options) => {
     let prevOptionSymBolWithoutDigits;
     return `${options.map(_option => {
+        if(!_option.symbol) return '+'
         
         const symbolWithoutDigits = _option.symbol.replace(/[0-9]/g, '');
         if (prevOptionSymBolWithoutDigits === symbolWithoutDigits) {
@@ -21877,6 +21879,10 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
             ]
 
 
+            if(option.symbol==='TLTR06C210'){
+                console.log(32423);
+                
+            }
 
             const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
                 strategyPositions,
@@ -21886,6 +21892,8 @@ const calcCOVEREDStrategies = (list, {priceType, expectedProfitPerMonth,
                     sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
                 })
             });
+
+            
 
             
             const settlementGain =  (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.settlementGainCalculator)({strategyPositions,stockPrice: option.optionDetails?.stockSymbolDetails?.last})
@@ -29822,7 +29830,7 @@ async function getKalaAssetsFromOmexService() {
     return (assets || []).map(asset => {
 
         const exerciseDate = new Date(asset.lastExerciseDate);
-        const settlementTimeDiff = (exerciseDate - now) / (1000 * 60 * 60 * 24);
+        const settlementTimeDiff = (exerciseDate - now);
 
         return {
             symbol: asset.contractSymbol,
@@ -29832,10 +29840,10 @@ async function getKalaAssetsFromOmexService() {
             beforeTodayPrice: 0,
             last: asset.lastTradedPrice,
             close: asset.lastTradedPrice,
-            bestBuyQ: asset.askVolume3,
-            bestBuy: asset.askPrice3,
-            bestSell: asset.bidPrice3,
-            bestSellQ: asset.bidVolume3,
+            bestBuyQ: asset.bidVolume1,
+            bestBuy: asset.bidPrice1,
+            bestSell: asset.askPrice1,
+            bestSellQ: asset.askVolume1,
             isOption: asset.market === "Option",
             isCall: asset.optionType === "Call",
             isPut: asset.optionType === "Put",
