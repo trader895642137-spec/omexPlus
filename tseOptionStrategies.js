@@ -14274,9 +14274,9 @@ const interval = async () => {
 
     try {
 
-        // const list = createList();
+        const list = createList();
         // const list = await createList2();
-        const list = await createBourseKalaList();
+        // const list = await createBourseKalaList();
 
          
         sendToBackGround(list);
