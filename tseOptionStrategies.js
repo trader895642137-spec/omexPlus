@@ -1335,7 +1335,7 @@ const calcShortGUTSStrategies = (list, {priceType,minProfitToFilter, expectedPro
                             ..._option,
                             isSell: true,
                             getQuantity: () => baseQuantity,
-                            getRequiredMargin:()=>option.calculatedRequiredMargin/1000
+                            getRequiredMargin:()=>_option.calculatedRequiredMargin/1000
                         },
                       
                     ]
@@ -5343,7 +5343,7 @@ const calcBUCS_COLLAR_Strategies = (list, {priceType, expectedProfitPerMonth, st
 
                     if (
                         hasGreaterRatio({
-                            num1: Math.abs(optionPrice -optionPrice) ,
+                            num1: Math.abs(optionPrice - _optionPrice) ,
                             num2: putOptionWithSameStrikePrice,
                             properRatio: 30
                         })
@@ -6172,7 +6172,7 @@ const calcCOVERED_BUY_PUT_Strategies = (list, { priceType, expectedProfitPerMont
                 minProfitToFilter,
                 expectedProfitPerMonth,
                 breakeven,
-                isWholeProfitable: !breakeven,
+                isWholeProfitable: (profitPercent>0 && !breakeven),
                 settlementTimeDiff: put.settlementTimeDiff,
                 name: createStrategyName([coveredStrategy.option.optionDetails?.stockSymbolDetails, coveredStrategy.option, put]),
                 profitPercent
@@ -6660,7 +6660,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
                         minProfitToFilter,
                         expectedProfitNotif,
                         expectedProfitPerMonth,
-                        isWholeProfitable: !breakeven,
+                        isWholeProfitable: (profitPercent>0 && !breakeven),
                         stockPriceToSarBeSarPercent,
                         breakeven,
                         profitLossRatio,
@@ -6864,7 +6864,7 @@ const calcBECSStrategies = (list, {priceType, expectedProfitPerMonth, settlement
                         stockPriceToSarBeSarPercent,
                         breakeven,
                         profitLossRatio,
-                        isWholeProfitable: !breakeven,
+                        isWholeProfitable: (profitPercent>0 && !breakeven),
                         name: createStrategyName([option, _option]),
                         profitPercent
                     }
@@ -7073,7 +7073,7 @@ const createAndCalcBUS_BES_Strategy = ({ buyingCall, sellingCall, buyingPut, sel
         },
         strategyPositions,
         positions: isBUCS ? [ buyingCall, sellingCall,buyingPut, sellingPut]:[buyingPut, sellingPut,buyingCall, sellingCall],
-        isWholeProfitable: !breakeven,
+        isWholeProfitable: (profitPercent>0 && !breakeven),
         stockPriceToSarBeSarPercent,
         breakeven,
         
@@ -9447,7 +9447,7 @@ const calcBUCS_Long_Put_BESStrategies = (list, { priceType, expectedProfitPerMon
                 minProfitToFilter,
                 expectedProfitPerMonth,
                 breakeven,
-                isWholeProfitable: !breakeven,
+                isWholeProfitable: (profitPercent>0 && !breakeven),
                 settlementTimeDiff: sellingPut.settlementTimeDiff,
                 name: createStrategyName([...strategyPositions]),
                 profitPercent
@@ -10450,7 +10450,7 @@ const calcBUPS_Long_Put_BESStrategies = (list, { priceType, expectedProfitPerMon
                 minProfitToFilter,
                 expectedProfitPerMonth,
                 breakeven,
-                isWholeProfitable: !breakeven,
+                isWholeProfitable: (profitPercent>0 && !breakeven),
                 settlementTimeDiff: sellingPut.settlementTimeDiff,
                 name: createStrategyName([...strategyPositions]),
                 profitPercent
