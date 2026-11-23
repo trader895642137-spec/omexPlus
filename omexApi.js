@@ -1111,5 +1111,6 @@ export const OMEXApi = {
     getStockPricesData,
     GetBaseDerivativeInstruments,
     isAutomaticFreeETF,
-    deleteGroup
+    deleteGroup,
+    getOrders
 }
