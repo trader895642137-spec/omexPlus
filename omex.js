@@ -12,7 +12,8 @@ import { COMMISSION_FACTOR,isTaxFree,getCommissionFactor,mainTotalOffsetGainCalc
     QueueScenario,
     startMarketCountdown,
     calculateExerciseCost,
-    hasSignificantPriceMismatch} from './common.js';
+    hasSignificantPriceMismatch,
+    calcStockAveragePriceByExecutedOrders} from './common.js';
 import { isInstrumentNameOfOption,  OMEXApi } from './omexApi.js';
 
 
@@ -2848,48 +2849,135 @@ const lastCalculatedAvgPrices={}
 let isClickedToUseCalculatedAvgPrices= false;
 
 
-export const calcAvgPricesByExecutenList =async ()=>{
+
+export const calcAvgPricesByExecutenList = async () => {
 
     const requests = strategyPositions.map(async (strategyPosition) => {
+
         const instrumentID = strategyPosition.getInstrumentID();
-        const averageInfo = await OMEXApi.calcAveragePrice(instrumentID);
-        const avgPrice = averageInfo.averagePrice;
-        console.log({
-            [strategyPosition.instrumentName]:avgPrice,
-            quantity:averageInfo.quantity
-        });
-        return {
-            instrumentName: strategyPosition.instrumentName,
-            instrumentID: instrumentID,
-            quantity: averageInfo.quantity,
-            avgPrice,
-            strategyPosition: strategyPosition,
-            
-        };
-    });
+        const cSize = Number(strategyPosition.getCSize()) || 1;
 
-    const results = await Promise.all(requests);
+        try {
 
+            let averageInfo;
 
-    isClickedToUseCalculatedAvgPrices = true;
-    lastCalculatedAvgPrices.results= results;
-    lastCalculatedAvgPrices.time = Date.now();
-    console.log('همه نتایج:', results);
-    console.log('strategyPosition:', strategyPositions);
-    strategyPositions.some(strategyPosition=>{
-        const foundCalcAvgPrice = results.find(result=>result.instrumentName===strategyPosition.instrumentName);
+            if (strategyPosition.isOption) {
 
-        const calcQuantity = Math.abs(foundCalcAvgPrice.quantity);
-        const currentPositionQuantity = strategyPosition.getCurrentPositionQuantity()/strategyPosition.getCSize();
-        if(calcQuantity!==currentPositionQuantity){
-            const issueMessage = 'تعداد محاسبه شده یکی نیست'
-            showToast(issueMessage,10000,'error');
+                averageInfo = await OMEXApi.calcAveragePrice(instrumentID);
+
+            } else {
+
+                const orders = await OMEXApi.getOrders({
+                    instrumentId: instrumentID
+                });
+
+                // تبدیل تعداد به واحد واقعی سهم
+                const targetQuantity =
+                    strategyPosition.getCurrentPositionQuantity() * cSize;
+
+                averageInfo = calcStockAveragePriceByExecutedOrders({
+                    orders,
+                    targetQuantity
+                });
+            }
+
+            const avgPrice = averageInfo.averagePrice;
+
+            console.log({
+                [strategyPosition.instrumentName]: avgPrice,
+                quantity: averageInfo.quantity,
+                missingQuantity: averageInfo.missingQuantity
+            });
+
+            // هشدار در صورت ناقص بودن تاریخچه سفارش‌ها
+            if (
+                averageInfo.missingQuantity !== undefined &&
+                averageInfo.missingQuantity > 0
+            ) {
+                showToast(
+                    `تاریخچه سفارش‌های ${strategyPosition.instrumentName} ناقص است. تعداد پیدا نشده: ${averageInfo.missingQuantity}`,
+                    10000,
+                    'warning'
+                );
+            }
+
+            return {
+                instrumentName: strategyPosition.instrumentName,
+                instrumentID,
+                quantity: averageInfo.quantity,
+                avgPrice,
+                missingQuantity: averageInfo.missingQuantity,
+                matchedQuantity: averageInfo.matchedQuantity,
+                totalValue: averageInfo.totalValue,
+                strategyPosition,
+                error: null
+            };
+
+        } catch (error) {
+
+            console.error(
+                `خطا در محاسبه میانگین ${strategyPosition.instrumentName}:`,
+                error
+            );
+
+            showToast(
+                `خطا در محاسبه میانگین ${strategyPosition.instrumentName}`,
+                10000,
+                'error'
+            );
+
+            return {
+                instrumentName: strategyPosition.instrumentName,
+                instrumentID,
+                quantity: 0,
+                avgPrice: 0,
+                strategyPosition,
+                error
+            };
         }
     });
 
+    // تمام محاسبات به‌صورت موازی اجرا می‌شوند
+    const results = await Promise.all(requests);
 
+    isClickedToUseCalculatedAvgPrices = true;
 
-}
+    lastCalculatedAvgPrices.results = results;
+    lastCalculatedAvgPrices.time = Date.now();
+
+    console.log('همه نتایج:', results);
+    console.log('strategyPosition:', strategyPositions);
+
+    // بررسی تطابق تعداد محاسبه‌شده با تعداد فعلی
+    strategyPositions.forEach(strategyPosition => {
+
+        const foundCalcAvgPrice = results.find(
+            result =>
+                result.instrumentID === strategyPosition.getInstrumentID()
+        );
+
+        if (!foundCalcAvgPrice || foundCalcAvgPrice.error) {
+            return;
+        }
+
+        const calcQuantity =
+            Math.abs(foundCalcAvgPrice.quantity);
+
+        const currentPositionQuantity =  strategyPosition.getCurrentPositionQuantity() /    strategyPosition.getCSize();
+
+        if (calcQuantity !== currentPositionQuantity) {
+
+            showToast(
+                `تعداد محاسبه‌شده ${strategyPosition.instrumentName} با تعداد فعلی یکی نیست`,
+                10000,
+                'error'
+            );
+        }
+    });
+
+    return results;
+};
+
 
 export const showVariableMargin = async () => {
 
