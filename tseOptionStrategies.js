@@ -11206,18 +11206,30 @@ const filterStrategiesByConfig = ({
         totalCost,
         strategyPositions,
         stockPrice,
-        nokoolOrNoRequestFactor
+        nokoolFactor
     }) => {
 
-        const settlementGain = settlementGainCalculator({
+        const settlementGainWithNokool = settlementGainCalculator({
             strategyPositions,
             stockPrice,
-            nokoolOrNoRequestFactor
+            nokoolOrNoRequestFactor: nokoolFactor
         });
 
-        const profitOfSettlement = totalCost + settlementGain;
+        const settlementGainWithoutNokool = settlementGainCalculator({
+            strategyPositions,
+            stockPrice,
+            nokoolOrNoRequestFactor: 0
+        });
 
-        return profitOfSettlement / Math.abs(totalCost);
+        const profitWithNokool = totalCost + settlementGainWithNokool;
+        const profitWithoutNokool = totalCost + settlementGainWithoutNokool;
+
+        const costAbs = Math.abs(totalCost);
+
+        return {
+            withNokool: profitWithNokool / costAbs,
+            withoutNokool: profitWithoutNokool / costAbs
+        };
     };
 
 
@@ -11229,14 +11241,14 @@ const filterStrategiesByConfig = ({
         minProfitPercentOfSettlement
     }) => {
 
-        const profitPercentOfSettlement = calcProfitPercentOfSettlement({
+        const profitPercentOfSettlementResult = calcProfitPercentOfSettlement({
             totalCost,
             strategyPositions,
             stockPrice,
             nokoolOrNoRequestFactor
         });
 
-        return profitPercentOfSettlement >= minProfitPercentOfSettlement;
+        return profitPercentOfSettlementResult.withoutNokool>0 && (profitPercentOfSettlementResult.withNokool >= minProfitPercentOfSettlement);
     };
 
 
