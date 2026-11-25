@@ -13822,28 +13822,10 @@ const CONFIG_TYPE_EXPANSIONS = {
             })
         },
         {
-            type: 'COVERED',
-            modify: config => ({
-                ...config,
-                breakeven: config.breakeven
-                    ? {
-                        ...config.breakeven,
-                        max: config.breakeven.max * 1.04,
-                    }
-                    : null,
-            }),
+            type: 'COVERED'
         },
         {
-            type: 'COVERED_BUY_PUT',
-            modify: config => ({
-                ...config,
-                breakeven: config.breakeven
-                    ? {
-                        ...config.breakeven,
-                        max: config.breakeven.max * 1.04,
-                    }
-                    : null,
-            }),
+            type: 'COVERED_BUY_PUT'
         },
         { type: 'BECS_Ratio' },
         { type: 'BESRatio_BUCS' },
@@ -13880,26 +13862,12 @@ const CONFIG_TYPE_EXPANSIONS = {
         },
         {
             type: 'BUS_With_BUCS_BEPS',
-            modify: config => ({
-                ...config,
-                breakeven: config.breakeven
-                    ? {
-                        ...config.breakeven,
-                        max: config.breakeven.max * 1.04,
-                    }
-                    : null,
-            }),
+            
         },
         {
             type: 'BUS_With_BUPS_BECS',
             modify: config => ({
                 ...config,
-                breakeven: config.breakeven
-                    ? {
-                        ...config.breakeven,
-                        max: config.breakeven.max * 1.04,
-                    }
-                    : null,
                 name: config.name ? config.name.replace(/^ض/, 'ط') : null
             }),
         },
@@ -13950,26 +13918,12 @@ const CONFIG_TYPE_EXPANSIONS = {
         },
         {
             type: 'BES_With_BUCS_BEPS',
-            modify: config => ({
-                ...config,
-                breakeven: config.breakeven
-                    ? {
-                        ...config.breakeven,
-                        min: config.breakeven.min / 1.04,
-                    }
-                    : null,
-            }),
+            
         },
         {
             type: 'BES_With_BUPS_BECS',
             modify: config => ({
                 ...config,
-                breakeven: config.breakeven
-                    ? {
-                        ...config.breakeven,
-                        min: config.breakeven.min / 1.04,
-                    }
-                    : null,
                 name: config.name ? config.name.replace(/^ض/, 'ط') : null
             }),
         },
