@@ -13941,7 +13941,7 @@ const COMMON_CONFIG_TYPE_EXPANSIONS = [
                 ? {
                     ...config.lowBreakeven,
                     max: config.lowBreakeven.max != null
-                        ? config.lowBreakeven.max / 1.04
+                        ? config.lowBreakeven.max
                         : undefined,
                 }
                 : config.lowBreakeven,
@@ -13949,7 +13949,7 @@ const COMMON_CONFIG_TYPE_EXPANSIONS = [
                 ? {
                     ...config.highBreakeven,
                     min: config.highBreakeven.min != null
-                        ? config.highBreakeven.min * 1.04
+                        ? config.highBreakeven.min
                         : undefined,
                 }
                 : config.highBreakeven,
@@ -13964,7 +13964,7 @@ const COMMON_CONFIG_TYPE_EXPANSIONS = [
                 ? {
                     ...config.lowBreakeven,
                     max: config.lowBreakeven.max != null
-                        ? config.lowBreakeven.max / 1.04
+                        ? config.lowBreakeven.max
                         : undefined,
                 }
                 : config.lowBreakeven,
@@ -13972,7 +13972,31 @@ const COMMON_CONFIG_TYPE_EXPANSIONS = [
                 ? {
                     ...config.highBreakeven,
                     min: config.highBreakeven.min != null
-                        ? config.highBreakeven.min * 1.04
+                        ? config.highBreakeven.min
+                        : undefined,
+                }
+                : config.highBreakeven,
+        }),
+    },
+
+    {
+        type: 'SHORT_STRADDLE',
+        sources: ['BUS', 'BES'],
+        modify: config => ({
+            ...config,
+            lowBreakeven: config.lowBreakeven
+                ? {
+                    ...config.lowBreakeven,
+                    max: config.lowBreakeven.max != null
+                        ? config.lowBreakeven.max
+                        : undefined,
+                }
+                : config.lowBreakeven,
+            highBreakeven: config.highBreakeven
+                ? {
+                    ...config.highBreakeven,
+                    min: config.highBreakeven.min != null
+                        ? config.highBreakeven.min
                         : undefined,
                 }
                 : config.highBreakeven,
@@ -17351,6 +17375,193 @@ const calcShortSTRANGLEStrategies = (list, {priceType,minProfitToFilter, expecte
         ...restConfig,
         htmlTitle: configsToHtmlTitle({
             strategyName: "SHORT_STRANGLE",
+            strategySubName,
+            priceType,
+            min_time_to_settlement,
+            max_time_to_settlement,
+            customLabels: [
+                typeof minStockPriceToLowBreakevenPercent !== 'undefined' && minStockPriceToLowBreakevenPercent !== null && minStockPriceToLowBreakevenPercent !== -Infinity && {
+                    label: "minToLow",
+                    value: `${((minStockPriceToLowBreakevenPercent) * 100).toFixed(0)}%`
+                },
+                typeof maxStockPriceToHighBreakevenPercent !== 'undefined' && maxStockPriceToHighBreakevenPercent !== null && maxStockPriceToHighBreakevenPercent !== Infinity && {
+                    label: "maxToHigh",
+                    value: `${((maxStockPriceToHighBreakevenPercent) * 100).toFixed(0)}%`
+                },].filter(Boolean),
+            minVol
+        })
+    }
+
+}
+
+
+const calcShortStraddleStrategies = (list, { priceType, minProfitToFilter, expectedProfitPerMonth, settlementGainChoosePriceType = "MIN",
+    strategySubName,  min_time_to_settlement = -Infinity, max_time_to_settlement = generalConfig.max_time_to_settlement,
+    toLowBreakevenPercent = -Infinity, maxStockPriceToLowBreakevenPercent = Infinity,
+    filteredList,
+    optionsGroupedByStock,
+    minStockPriceToHighBreakevenPercent = -Infinity, maxStockPriceToHighBreakevenPercent = 0,
+    minVol = CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif = false, ...restConfig }) => {
+
+
+    let enrichedList = [];
+    for (let [stockSymbol, optionList] of Object.entries(optionsGroupedByStock)) {
+        const optionsGroupedByDate = Object.groupBy(optionList, ({ optionDetails }) => optionDetails.date);
+
+        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap(([date, optionListOfSameDate]) => {
+
+            const _enrichedList = optionListOfSameDate.map(sellingCall => {
+
+
+                if (!sellingCall.isCall) return sellingCall
+
+                if(!sellingCall?.optionDetails?.stockSymbolDetails?.last) return sellingCall
+
+
+                const sellingCallPrice = getPriceOfAsset({
+                    asset: sellingCall,
+                    priceType,
+                    sideType: 'SELL'
+                });
+
+                if (sellingCallPrice === 0) return sellingCall
+
+                const putList = optionListOfSameDate.filter(_option =>
+                    _option.isPut &&
+                    _option.optionDetails?.strikePrice === sellingCall.optionDetails?.strikePrice
+                );
+
+                let allPossibleStrategies = putList.reduce((_allPossibleStrategies, sellingPut) => {
+
+                    const sellingPutPrice = getPriceOfAsset({
+                        asset: sellingPut,
+                        priceType,
+                        sideType: 'SELL'
+                    });
+
+                    if (sellingPutPrice === 0) return _allPossibleStrategies
+
+
+                    const strategyPositions = [
+                        {
+                            ...sellingCall,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin: () => sellingCall.calculatedRequiredMargin / 1000
+                        },
+                        {
+                            ...sellingPut,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin: () => sellingPut.calculatedRequiredMargin / 1000
+                        },
+
+                    ]
+
+
+
+                    const totalCost = (0,_common_js__WEBPACK_IMPORTED_MODULE_3__.totalCostCalculator)({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    });
+
+
+                    const breakevenList = (0,_findBreakevens_js__WEBPACK_IMPORTED_MODULE_4__.findBreakevenList)({
+                        positions: strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    });
+
+                    let stockPriceToLowSarBeSarPercent, stockPriceToHighSarBeSarPercent, lowBreakeven, highBreakeven;
+
+
+                    const stockPrice = sellingCall.optionDetails.stockSymbolDetails.last;
+                    if (breakevenList?.length) {
+                        lowBreakeven = Math.min(...breakevenList);
+                        highBreakeven = Math.max(...breakevenList);
+                        stockPriceToLowSarBeSarPercent = (lowBreakeven / stockPrice) - 1;
+                        stockPriceToHighSarBeSarPercent = (highBreakeven / stockPrice) - 1;
+
+                    }
+
+                    const profit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: stockPrice });
+
+
+
+                    const profitPercent = profit / Math.abs(totalCost);
+                    const strategyObj = {
+                        option: {
+                            ...sellingCall
+                        },
+                        positions: [sellingCall, sellingPut],
+                        strategyTypeTitle: "SHORT_STRADDLE",
+                        expectedProfitNotif,
+                        strategyPositions,
+                        currentStockPrice: stockPrice,
+                        totalCost,
+                        settlementTimeDiff: sellingCall.settlementTimeDiff,
+                        minProfitToFilter,
+                        stockPriceToLowSarBeSarPercent,
+                        stockPriceToHighSarBeSarPercent,
+                        lowBreakeven,
+                        highBreakeven,
+                        expectedProfitPerMonth,
+                        name: createStrategyName([sellingCall, sellingPut]),
+                        profitPercent
+                    }
+
+                    if (Number.isNaN(strategyObj.profitPercent))
+                        return _allPossibleStrategies
+
+                    return _allPossibleStrategies.concat([strategyObj])
+
+                }
+                    , []);
+
+                return {
+                    ...sellingCall,
+                    allPossibleStrategies
+                }
+
+            }
+            );
+
+            return _enrichedList
+
+        }
+        )
+
+        enrichedList = enrichedList.concat(enrichedListOfStock)
+
+    }
+
+
+
+
+
+
+
+    return {
+
+        allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
+        strategyName: "SHORT_STRADDLE",
+        strategyDirection: STRATEGY_DIRECTION.NEUTRAL,
+        priceType,
+        min_time_to_settlement,
+        max_time_to_settlement,
+        minVol,
+        expectedProfitNotif,
+        expectedProfitPerMonth,
+        ...restConfig,
+        htmlTitle: configsToHtmlTitle({
+            strategyName: "SHORT_STRADDLE",
             strategySubName,
             priceType,
             min_time_to_settlement,
@@ -27815,6 +28026,13 @@ const createListFilterContetnByList=(list)=>{
             expectedProfitNotif: true
         });
 
+        const ShortStraddleStrategies = calcShortStraddleStrategies(list, {
+            priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
+            filteredList,
+            optionsGroupedByStock,
+            expectedProfitNotif: true,
+        });
+
 
         const SyntheticBuyStrategies = calcSyntheticBuyStrategies(list, {
             priceType: CONSTS.PRICE_TYPE.BEST_PRICE,
@@ -27992,6 +28210,14 @@ const createListFilterContetnByList=(list)=>{
             max_time_to_settlement: 22 * 24 * 3600000,
             expectedProfitPerMonth: 0.07,
         }),
+
+        filterStrategiesByConfig({
+            strategies: ShortStraddleStrategies,
+            max_time_to_settlement: 22 * 24 * 3600000,
+            expectedProfitPerMonth: 0.07,
+        }),
+
+        
         
        
 

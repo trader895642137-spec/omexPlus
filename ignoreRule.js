@@ -156,7 +156,7 @@ const COMMON_CONFIG_TYPE_EXPANSIONS = [
                 ? {
                     ...config.lowBreakeven,
                     max: config.lowBreakeven.max != null
-                        ? config.lowBreakeven.max / 1.04
+                        ? config.lowBreakeven.max
                         : undefined,
                 }
                 : config.lowBreakeven,
@@ -164,7 +164,7 @@ const COMMON_CONFIG_TYPE_EXPANSIONS = [
                 ? {
                     ...config.highBreakeven,
                     min: config.highBreakeven.min != null
-                        ? config.highBreakeven.min * 1.04
+                        ? config.highBreakeven.min
                         : undefined,
                 }
                 : config.highBreakeven,
@@ -179,7 +179,7 @@ const COMMON_CONFIG_TYPE_EXPANSIONS = [
                 ? {
                     ...config.lowBreakeven,
                     max: config.lowBreakeven.max != null
-                        ? config.lowBreakeven.max / 1.04
+                        ? config.lowBreakeven.max
                         : undefined,
                 }
                 : config.lowBreakeven,
@@ -187,7 +187,31 @@ const COMMON_CONFIG_TYPE_EXPANSIONS = [
                 ? {
                     ...config.highBreakeven,
                     min: config.highBreakeven.min != null
-                        ? config.highBreakeven.min * 1.04
+                        ? config.highBreakeven.min
+                        : undefined,
+                }
+                : config.highBreakeven,
+        }),
+    },
+
+    {
+        type: 'SHORT_STRADDLE',
+        sources: ['BUS', 'BES'],
+        modify: config => ({
+            ...config,
+            lowBreakeven: config.lowBreakeven
+                ? {
+                    ...config.lowBreakeven,
+                    max: config.lowBreakeven.max != null
+                        ? config.lowBreakeven.max
+                        : undefined,
+                }
+                : config.lowBreakeven,
+            highBreakeven: config.highBreakeven
+                ? {
+                    ...config.highBreakeven,
+                    min: config.highBreakeven.min != null
+                        ? config.highBreakeven.min
                         : undefined,
                 }
                 : config.highBreakeven,
