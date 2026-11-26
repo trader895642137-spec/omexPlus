@@ -6418,10 +6418,16 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
 
 
 
-            const putOptionListWithLowerStrike = optionListOfStock.filter(optionOfStock => {
-                return optionOfStock.isPut && optionOfStock.optionDetails.date === option.optionDetails.date && optionOfStock.bestSell > 0 && (optionOfStock.optionDetails?.strikePrice < option.optionDetails?.strikePrice)
-            }
-            );
+            const putOptionListWithLowerStrike = optionListOfStock.filter(put => {
+                return put.isPut &&
+                    put.optionDetails.date === option.optionDetails.date &&
+                    put.optionDetails.strikePrice < option.optionDetails.strikePrice &&
+                    getPriceOfAsset({
+                        asset: put,
+                        priceType,
+                        sideType: 'BUY'
+                    }) > 0;
+            });
 
             if (!putOptionListWithLowerStrike.length) {
                 return {
@@ -6447,27 +6453,54 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
                 
 
 
-                const totalCostWithSign = totalCostCalculator({
-                    buyStocks: [option.optionDetails?.stockSymbolDetails],
-                    buyOptions: [putOptionWithLowerStrike],
-                    sellOptions: [option],
-                    priceType
+                
+                const strategyPositions = [
+                    {
+                        ...option.optionDetails?.stockSymbolDetails,
+                        isBuy: true,
+                        getQuantity: () => baseQuantity,
+                        getRequiredMargin() { }
+                    },
+                    {
+                        ...option,
+                        isSell: true,
+                        getQuantity: () => baseQuantity,
+                        getRequiredMargin() { }
+                    },
+                    {
+                        ...putOptionWithLowerStrike,
+                        isBuy: true,
+                        getQuantity: () => baseQuantity,
+                        getRequiredMargin() { }
+                    },
+
+                ]
+
+
+
+                const totalCost = totalCostCalculatorCommon({
+                    strategyPositions,
+                    getPrice: (strategyPosition) => getPriceOfAsset({
+                        asset: strategyPosition,
+                        priceType,
+                        sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                    })
                 });
-                const totalOffsetGainWithSign = totalSettlementGain([{
-                    option,
-                    positionSide: "SELL",
-                    choosePriceType: "MIN"
-                }, ]);
-                const minOffsetGainWithSign = totalSettlementGain([{
-                    option: putOptionWithLowerStrike,
-                    positionSide: "BUY"
-                }, ]);
 
-                const profit = totalCostWithSign + totalOffsetGainWithSign;
-                const minProfit = totalCostWithSign + minOffsetGainWithSign;
+                const profit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: option.optionDetails.stockSymbolDetails.last });;
+                const profitPercent = profit / Math.abs(totalCost);
 
-                const profitPercent = profit / Math.abs(totalCostWithSign);
-                const minProfitPercent = minProfit / Math.abs(totalCostWithSign);
+                const breakevenList = findBreakevenList({
+                    positions: strategyPositions,
+                    getPrice: (strategyPosition) => getPriceOfAsset({
+                        asset: strategyPosition,
+                        priceType,
+                        sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                    })
+                });
+
+                const breakeven = breakevenList[0];
+
                 return strategyObj = {
                     option: {
                         ...option
@@ -6477,9 +6510,14 @@ const calcCOVERED_COLLAR_Strategies = (list, {priceType,
                     expectedProfitNotif,
                     minProfitToFilter,
                     expectedProfitPerMonth,
-                    isWholeProfitable : minProfit>=0,
+                    strategyPositions,
+                    currentStockPrice: option.optionDetails?.stockSymbolDetails?.last,
+                    totalCost,
+                    breakeven,
+                    settlementTimeDiff: option.settlementTimeDiff,
+                    isWholeProfitable : !breakeven && profitPercent>=0 ,
                     name: createStrategyName([option.optionDetails?.stockSymbolDetails, option, putOptionWithLowerStrike]),
-                    profitPercent: minProfitPercent
+                    profitPercent
                 }
 
             }
@@ -6661,6 +6699,7 @@ const calcBEPSStrategies = (list, {priceType, expectedProfitPerMonth,
                         stockPriceToSarBeSarPercent,
                         breakeven,
                         profitLossRatio,
+                        settlementTimeDiff: option.settlementTimeDiff,
                         name: createStrategyName([option, _option]),
                         profitPercent
                     }
