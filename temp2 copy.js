@@ -1,148 +1,150 @@
-const calcBUPS_Long_Put_BESStrategies = (list, { priceType, expectedProfitPerMonth,
-    min_time_to_settlement = -Infinity, max_time_to_settlement = generalConfig.max_time_to_settlement,
-    minProfitToFilter,
-    BUPS_Long_PutStrategies,
+const calcShortStraddleStrategies = (list, { priceType, minProfitToFilter, expectedProfitPerMonth, settlementGainChoosePriceType = "MIN",
+    strategySubName,  min_time_to_settlement = -Infinity, max_time_to_settlement = generalConfig.max_time_to_settlement,
+    toLowBreakevenPercent = -Infinity, maxStockPriceToLowBreakevenPercent = Infinity,
+    filteredList,
     optionsGroupedByStock,
-    minStockPriceDistanceInPercent = -Infinity, maxStockPriceDistanceInPercent = Infinity,
-    minStockPriceToSarBeSar = -Infinity, maxStockPriceToSarBeSar = Infinity,
+    minStockPriceToHighBreakevenPercent = -Infinity, maxStockPriceToHighBreakevenPercent = 0,
     minVol = CONSTS.DEFAULTS.MIN_VOL, expectedProfitNotif = false, ...restConfig }) => {
 
 
+    let enrichedList = [];
+    for (let [stockSymbol, optionList] of Object.entries(optionsGroupedByStock)) {
+        const optionsGroupedByDate = Object.groupBy(optionList, ({ optionDetails }) => optionDetails.date);
 
-    
+        let enrichedListOfStock = Object.entries(optionsGroupedByDate).flatMap(([date, optionListOfSameDate]) => {
 
-    const enrichedList = BUPS_Long_PutStrategies.map(BUPS_Long_PutStrategy => {
-
-        if(BUPS_Long_PutStrategy.profitPercent<=0) return BUPS_Long_PutStrategy.option
-
-
-        const allStockOptions = optionsGroupedByStock[BUPS_Long_PutStrategy.option.optionDetails.stockSymbol] || [];
+            const _enrichedList = optionListOfSameDate.map(sellingCall => {
 
 
-        const buyingPut = Math.max(...BUPS_Long_PutStrategy.strategyPositions.optionDetails.strikePrice);
-        const otherPuts = BUPS_Long_PutStrategy.strategyPositions.filter(sp=>sp.symbol!==buyingPut.symbol);
-
-        const buyingPutPrice = getPriceOfAsset({
-            asset: buyingPut,
-            priceType,
-            sideType: 'BUY'
-        });
+                if (!sellingCall.isCall) return sellingCall
 
 
-        const otherPutsSymbols = otherPuts.map(put=>put.symbol);
-        
-
-        const putsLowerStrikePrice = allStockOptions.filter(_option => {
-            if (_option.settlementTimeDiff !== BUPS_Long_PutStrategy.settlementTimeDiff) return false
-            if (!_option.isPut)
-                return false
-            if (_option.optionDetails?.strikePrice >= buyingPut.optionDetails?.strikePrice)
-                return false
-
-            if(otherPutsSymbols.includes(_option.symbol)) return false
-
-            const sellingPutPrice = getPriceOfAsset({
-                asset: _option,
-                priceType,
-                sideType: 'SELL'
-            });
-            if(sellingPutPrice===0) return false
-
-            if (
-                hasGreaterRatio({
-                    num1: buyingPutPrice,
-                    num2: sellingPutPrice,
-                    properRatio: 20
-                })
-            ) {
-                return false
-            }
-
-            return true
-        }
-        );
-
-
-        
-        
-       
-
-
-        const allPossibleStrategies = putsLowerStrikePrice.reduce((_allPossibleStrategies, sellingPut) => {
-
-
-            const strategyPositions = [
-                ...BUPS_Long_PutStrategy.strategyPositions,
-                {
-                    ...sellingPut,
-                    isBuy: false,
-                    getQuantity: () => buyingPut.getQuantity(),
-                    getRequiredMargin() { }
-                },
-
-            ]
-
-
-            const totalCost = totalCostCalculatorCommon({
-                strategyPositions,
-                getPrice: (strategyPosition) => getPriceOfAsset({
-                    asset: strategyPosition,
+                const sellingCallPrice = getPriceOfAsset({
+                    asset: sellingCall,
                     priceType,
-                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                })
-            });
+                    sideType: 'SELL'
+                });
 
-            
-            const profit = totalCost + calcOffsetGainOfPositions({strategyPositions, stockPrice:sellingPut.optionDetails.stockSymbolDetails.last});;
+                if (sellingCallPrice === 0) return sellingCall
 
-            const profitPercent = profit / Math.abs(totalCost);
+                const putList = optionListOfSameDate.filter(_option =>
+                    _option.isPut &&
+                    _option.optionDetails?.strikePrice === sellingCall.optionDetails?.strikePrice
+                );
 
-            const breakevenList = findBreakevenList({
-                positions: strategyPositions,
-                getPrice: (strategyPosition) => getPriceOfAsset({
-                    asset: strategyPosition,
-                    priceType,
-                    sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
-                })
-            });
+                let allPossibleStrategies = putList.reduce((_allPossibleStrategies, sellingPut) => {
 
-            const breakeven = breakevenList[0];
+                    const sellingPutPrice = getPriceOfAsset({
+                        asset: sellingPut,
+                        priceType,
+                        sideType: 'SELL'
+                    });
 
+                    if (sellingPutPrice === 0) return _allPossibleStrategies
 
 
-            const strategyObj = {
-                // TODO:remove option prop
-                option: {
-                    ...sellingPut
-                },
-                positions: [...strategyPositions],
-                strategyTypeTitle: "BUPS_Long_Put_BES",
-                strategyPositions,
-                currentStockPrice: sellingPut.optionDetails?.stockSymbolDetails?.last,
-                totalCost,
-                expectedProfitNotif,
-                minProfitToFilter,
-                expectedProfitPerMonth,
-                breakeven,
-                isWholeProfitable: !breakeven,
-                settlementTimeDiff: sellingPut.settlementTimeDiff,
-                name: createStrategyName([...strategyPositions]),
-                profitPercent
+                    const strategyPositions = [
+                        {
+                            ...sellingCall,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin: () => sellingCall.calculatedRequiredMargin / 1000
+                        },
+                        {
+                            ...sellingPut,
+                            isSell: true,
+                            getQuantity: () => baseQuantity,
+                            getRequiredMargin: () => sellingPut.calculatedRequiredMargin / 1000
+                        },
+
+                    ]
+
+
+
+                    const totalCost = totalCostCalculatorCommon({
+                        strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    });
+
+
+                    const breakevenList = findBreakevenList({
+                        positions: strategyPositions,
+                        getPrice: (strategyPosition) => getPriceOfAsset({
+                            asset: strategyPosition,
+                            priceType,
+                            sideType: strategyPosition.isBuy ? 'BUY' : 'SELL'
+                        })
+                    });
+
+                    let stockPriceToLowSarBeSarPercent, stockPriceToHighSarBeSarPercent, lowBreakeven, highBreakeven;
+
+
+                    const stockPrice = sellingCall.optionDetails.stockSymbolDetails.last;
+                    if (breakevenList?.length) {
+                        lowBreakeven = Math.min(...breakevenList);
+                        highBreakeven = Math.max(...breakevenList);
+                        stockPriceToLowSarBeSarPercent = (lowBreakeven / stockPrice) - 1;
+                        stockPriceToHighSarBeSarPercent = (highBreakeven / stockPrice) - 1;
+
+                    }
+
+                    const profit = totalCost + calcOffsetGainOfPositions({ strategyPositions, stockPrice: stockPrice });
+
+
+
+                    const profitPercent = profit / Math.abs(totalCost);
+                    const strategyObj = {
+                        option: {
+                            ...sellingCall
+                        },
+                        positions: [sellingCall, sellingPut],
+                        strategyTypeTitle: "SHORT_STRADDLE",
+                        expectedProfitNotif,
+                        strategyPositions,
+                        currentStockPrice: stockPrice,
+                        totalCost,
+                        settlementTimeDiff: sellingCall.settlementTimeDiff,
+                        minProfitToFilter,
+                        stockPriceToLowSarBeSarPercent,
+                        stockPriceToHighSarBeSarPercent,
+                        lowBreakeven,
+                        highBreakeven,
+                        expectedProfitPerMonth,
+                        name: createStrategyName([sellingCall, sellingPut]),
+                        profitPercent
+                    }
+
+                    if (Number.isNaN(strategyObj.profitPercent))
+                        return _allPossibleStrategies
+
+                    return _allPossibleStrategies.concat([strategyObj])
+
+                }
+                    , []);
+
+                return {
+                    ...sellingCall,
+                    allPossibleStrategies
+                }
+
             }
+            );
 
-            return _allPossibleStrategies.concat([strategyObj])
+            return _enrichedList
 
-
-
-        }, []);
-
-        return {
-            ...BUPS_Long_PutStrategy.option,
-            allPossibleStrategies
         }
+        )
+
+        enrichedList = enrichedList.concat(enrichedListOfStock)
+
+    }
 
 
-    });
+
 
 
 
@@ -150,24 +152,30 @@ const calcBUPS_Long_Put_BESStrategies = (list, { priceType, expectedProfitPerMon
     return {
 
         allStrategies: enrichedList.flatMap(_option => _option.allPossibleStrategies).filter(Boolean),
-        strategyName: "BUPS_Long_Put_BES",
-        strategyDirection: STRATEGY_DIRECTION.BULLISH,
+        strategyName: "SHORT_STRADDLE",
+        strategyDirection: STRATEGY_DIRECTION.NEUTRAL,
         priceType,
         min_time_to_settlement,
         max_time_to_settlement,
-        minStockPriceDistanceInPercent,
-        maxStockPriceDistanceInPercent,
         minVol,
         expectedProfitNotif,
         expectedProfitPerMonth,
         ...restConfig,
         htmlTitle: configsToHtmlTitle({
-            strategyName: "BUPS_Long_Put_BES",
+            strategyName: "SHORT_STRADDLE",
+            strategySubName,
             priceType,
             min_time_to_settlement,
             max_time_to_settlement,
-            minStockPriceDistanceInPercent,
-            maxStockPriceDistanceInPercent,
+            customLabels: [
+                typeof minStockPriceToLowBreakevenPercent !== 'undefined' && minStockPriceToLowBreakevenPercent !== null && minStockPriceToLowBreakevenPercent !== -Infinity && {
+                    label: "minToLow",
+                    value: `${((minStockPriceToLowBreakevenPercent) * 100).toFixed(0)}%`
+                },
+                typeof maxStockPriceToHighBreakevenPercent !== 'undefined' && maxStockPriceToHighBreakevenPercent !== null && maxStockPriceToHighBreakevenPercent !== Infinity && {
+                    label: "maxToHigh",
+                    value: `${((maxStockPriceToHighBreakevenPercent) * 100).toFixed(0)}%`
+                },].filter(Boolean),
             minVol
         })
     }
