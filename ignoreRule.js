@@ -42,6 +42,9 @@ const CONFIG_TYPE_EXPANSIONS = {
         {
             type: 'COVERED_BUY_PUT'
         },
+        {
+            type: 'COVERED_COLLAR'
+        },
         { type: 'BECS_Ratio' },
         { type: 'BESRatio_BUCS' },
         {
